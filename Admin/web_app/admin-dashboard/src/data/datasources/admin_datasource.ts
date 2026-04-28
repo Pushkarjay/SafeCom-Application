@@ -84,6 +84,72 @@ export class AdminDatasource {
       return []
     }
   }
+
+  async createCustomer(data: Partial<Customer>): Promise<Customer> {
+    try {
+      return await this.fetchJson<Customer>(`${BASE_URL}/customers`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create customer')
+    }
+  }
+
+  async updateCustomer(id: string, data: Partial<Customer>): Promise<Customer> {
+    try {
+      return await this.fetchJson<Customer>(`${BASE_URL}/customers/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update customer')
+    }
+  }
+
+  async createTechnician(data: Partial<Technician>): Promise<Technician> {
+    try {
+      return await this.fetchJson<Technician>(`${BASE_URL}/technicians`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create technician')
+    }
+  }
+
+  async updateTechnician(id: string, data: Partial<Technician>): Promise<Technician> {
+    try {
+      return await this.fetchJson<Technician>(`${BASE_URL}/technicians/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update technician')
+    }
+  }
+
+  async createJob(data: Partial<Job>): Promise<Job> {
+    try {
+      return await this.fetchJson<Job>(`${BASE_URL}/jobs`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create job')
+    }
+  }
+
+  async updateJob(id: string, data: Partial<Job>): Promise<Job> {
+    try {
+      return await this.fetchJson<Job>(`${BASE_URL}/jobs/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update job')
+    }
+  }
 }
 
 export const adminDatasource = new AdminDatasource()

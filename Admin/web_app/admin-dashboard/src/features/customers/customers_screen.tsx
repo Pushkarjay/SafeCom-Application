@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { Customer } from '@data/models/admin_models'
 import './customers_screen.css'
 
 export default function CustomersScreen() {
+  const navigate = useNavigate()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -25,7 +27,7 @@ export default function CustomersScreen() {
     <div className="customers-screen">
       <div className="screen-header">
         <h1>Customers Management</h1>
-        <button className="add-button">➕ Add Customer</button>
+        <button className="add-button" onClick={() => navigate('/customers/new')}>➕ Add Customer</button>
       </div>
 
       {isLoading ? (
@@ -60,8 +62,12 @@ export default function CustomersScreen() {
                     </span>
                   </td>
                   <td className="actions-cell">
-                    <button className="action-link">View</button>
-                    <button className="action-link">Edit</button>
+                    <button className="action-link" onClick={() => navigate(`/customers/${customer.id}`)}>
+                      View
+                    </button>
+                    <button className="action-link" onClick={() => navigate(`/customers/${customer.id}/edit`)}>
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))}
