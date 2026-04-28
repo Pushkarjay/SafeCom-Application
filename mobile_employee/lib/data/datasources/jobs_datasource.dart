@@ -1,9 +1,46 @@
 import 'package:mobile_employee/data/models/job_models.dart';
+import 'package:dio/dio.dart';
+
+const _backendBase = 'http://localhost:4000/api';
 
 class JobsApiDatasource {
+  final Dio? _dio;
+
+  JobsApiDatasource([this._dio]);
+
   Future<List<AssignedJob>> getAssignedJobs(String technicianId) async {
+    // Try backend first
+    if (_dio != null) {
+      try {
+        final resp = await _dio!.get('$_backendBase/jobs');
+        if (resp.statusCode == 200 && resp.data is List) {
+          final List data = resp.data as List;
+          final filtered = data.where((j) => j['technicianId'] == technicianId).toList();
+          return filtered.map<AssignedJob>((json) {
+            final map = <String, dynamic>{
+              'id': json['id'] ?? '',
+              'customer_id': json['customerId'] ?? '',
+              'customer_name': json['customerName'] ?? json['customerId'] ?? '',
+              'customer_phone': json['customerPhone'] ?? '',
+              'service_type': json['serviceType'] ?? '',
+              'location': json['location'] ?? '',
+              'latitude': (json['latitude'] as num?)?.toDouble() ?? 0.0,
+              'longitude': (json['longitude'] as num?)?.toDouble() ?? 0.0,
+              'scheduled_date_time': json['scheduledDate'] ?? DateTime.now().toIso8601String(),
+              'status': json['status'] ?? 'pending',
+              'estimated_amount': (json['amount'] as num?)?.toDouble() ?? 0.0,
+              'notes': json['notes'] ?? ''
+            };
+            return AssignedJob.fromJson(map);
+          }).toList();
+        }
+      } catch (_) {
+        // fallback to mock
+      }
+    }
+
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     return [
       AssignedJob(
         id: 'JOB001',
@@ -66,6 +103,21 @@ class JobsApiDatasource {
 
   Future<void> submitWorkCompletion(String jobId, String completionNotes,
       double actualAmount, double collectedAmount) async {
+    if (_dio != null) {
+      try {
+        await _dio!.patch('$_backendBase/jobs/$jobId', data: {
+          'status': 'completed',
+          'completed_date': DateTime.now().toIso8601String(),
+          'notes': completionNotes,
+          'actual_amount': actualAmount,
+          'collected_amount': collectedAmount,
+        });
+        return;
+      } catch (_) {
+        // fallback to mock
+      }
+    }
+
     await Future.delayed(const Duration(milliseconds: 500));
   }
 }
