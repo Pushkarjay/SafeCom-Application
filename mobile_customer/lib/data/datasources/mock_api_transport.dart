@@ -6,10 +6,21 @@ class MockApiTransport {
   MockApiTransport(this._dio);
 
   Future<Map<String, dynamic>> get(String path) async {
-    // Keep Dio in the stack so switching from mock to real API requires only transport changes.
-    _dio.options.baseUrl = 'https://mock.safecom.local';
-    await Future<void>.delayed(const Duration(milliseconds: 140));
+    // Try real backend first (dev default), fall back to mock contracts.
+    final backendBase = 'http://localhost:4000/api';
+    _dio.options.baseUrl = backendBase;
 
+    try {
+      final response = await _dio.get(path);
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+    } catch (_) {
+      // ignore and fall back to mock
+    }
+
+    // fallback mock response with small delay for UX
+    await Future<void>.delayed(const Duration(milliseconds: 140));
     final payload = _contracts[path];
     if (payload == null) {
       throw DioException(
