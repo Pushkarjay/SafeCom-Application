@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { Job } from '@data/models/admin_models'
 import './jobs_screen.css'
 
 export default function JobsScreen() {
+  const navigate = useNavigate()
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -40,7 +42,7 @@ export default function JobsScreen() {
     <div className="jobs-screen">
       <div className="screen-header">
         <h1>Jobs Management</h1>
-        <button className="add-button">➕ Create Job</button>
+        <button className="add-button" onClick={() => navigate('/jobs/new')}>➕ Create Job</button>
       </div>
 
       {isLoading ? (
@@ -75,9 +77,13 @@ export default function JobsScreen() {
                   </td>
                   <td>{job.technicianId ? job.technicianId : '—'}</td>
                   <td className="actions-cell">
-                    <button className="action-link">View</button>
+                    <button className="action-link" onClick={() => navigate(`/jobs/${job.id}`)}>
+                      View
+                    </button>
                     {job.status === 'pending' && (
-                      <button className="action-link">Assign</button>
+                      <button className="action-link" onClick={() => navigate(`/jobs/${job.id}/edit`)}>
+                        Edit
+                      </button>
                     )}
                   </td>
                 </tr>

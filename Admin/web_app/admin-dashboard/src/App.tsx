@@ -3,8 +3,12 @@ import { useAuthStore } from '@data/auth.store'
 import LoginScreen from '@features/auth/login_screen'
 import DashboardScreen from '@features/dashboard/dashboard_screen'
 import CustomersScreen from '@features/customers/customers_screen'
+import CustomerDetailScreen from '@features/customers/customer_detail_screen'
+import CustomerFormScreen from '@features/customers/customer_form_screen'
 import TechniciansScreen from '@features/technicians/technicians_screen'
+import TechnicianDetailScreen from '@features/technicians/technician_detail_screen'
 import JobsScreen from '@features/jobs/jobs_screen'
+import JobDetailScreen from '@features/jobs/job_detail_screen'
 import MainLayout from '@widgets/common/main_layout'
 import './App.css'
 
@@ -23,8 +27,13 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<DashboardScreen />} />
             <Route path="/customers" element={<CustomersScreen />} />
+            <Route path="/customers/new" element={<CustomerFormScreen />} />
+            <Route path="/customers/:id" element={<CustomerDetailScreen />} />
+            <Route path="/customers/:id/edit" element={<CustomerFormScreen />} />
             <Route path="/technicians" element={<TechniciansScreen />} />
+            <Route path="/technicians/:id" element={<TechnicianDetailScreen />} />
             <Route path="/jobs" element={<JobsScreen />} />
+            <Route path="/jobs/:id" element={<JobDetailScreen />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />

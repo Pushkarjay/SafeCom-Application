@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { Technician } from '@data/models/admin_models'
 import './technicians_screen.css'
 
 export default function TechniciansScreen() {
+  const navigate = useNavigate()
   const [technicians, setTechnicians] = useState<Technician[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -25,7 +27,7 @@ export default function TechniciansScreen() {
     <div className="technicians-screen">
       <div className="screen-header">
         <h1>Technicians Management</h1>
-        <button className="add-button">➕ Add Technician</button>
+        <button className="add-button" onClick={() => navigate('/technicians/new')}>➕ Add Technician</button>
       </div>
 
       {isLoading ? (
@@ -62,8 +64,12 @@ export default function TechniciansScreen() {
                     </span>
                   </td>
                   <td className="actions-cell">
-                    <button className="action-link">View</button>
-                    <button className="action-link">Assign</button>
+                    <button className="action-link" onClick={() => navigate(`/technicians/${tech.id}`)}>
+                      View
+                    </button>
+                    <button className="action-link" onClick={() => navigate(`/technicians/${tech.id}/edit`)}>
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))}
