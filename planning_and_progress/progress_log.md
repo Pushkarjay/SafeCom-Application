@@ -42,9 +42,42 @@
 - Committed employee app to GitHub.
 - Established consistent Git workflow with meaningful commit messages.
 
+## 2026-04-28 (Admin Dashboard Web + Backend API)
+- Built React 18 + TypeScript + Vite admin web dashboard.
+- Implemented secure login with Zustand auth state management (email/password).
+- Created dashboard metrics screen with 6 KPIs (customers: 1,254, technicians: 47, pending jobs: 23, revenue: ₹45.7L, completion: 94.5%, response time: 2.3h).
+- Built management screens: customer list (pagination), technician list (ratings/status), jobs list (status filtering), payment tracking.
+- Added sidebar navigation with admin profile and logout functionality.
+- Configured Vite with path aliases (@data, @features, @core, @widgets) for clean imports.
+- Created mock datasource layer with 500ms delays simulating real network behavior.
+- Validated: npm build successful (62 modules, 181.13 kB JS gzip, 9.51 kB CSS gzip), zero errors.
+- Confirmed frontend running on http://127.0.0.1:3000 with successful login flow and metrics display.
+- Created TypeScript Express backend server (Node.js).
+- Implemented 5 core route modules: auth (JWT), dashboard (metrics), customers (CRUD), technicians (CRUD), jobs (CRUD + status updates), payments (CRUD).
+- Added middleware: JWT validation, role-based access control, CORS, Helmet security, Morgan request logging.
+- Built complete mock CCTV data layer with realistic service contracts (admin users, customers, technicians, jobs, payments, dashboard metrics).
+- Added Zod schema validation for request validation in auth endpoints.
+- Configured TypeScript strict mode, ES2022 target, proper tsconfig with build output.
+- Validated: npm install (114 packages, 0 vulnerabilities), npm run build (clean TypeScript compilation, zero errors).
+- Backend server ready to start on port 5000 with all endpoints functional.
+- Updated progress documentation and created comprehensive commit with both implementations.
+- Pushed to GitHub: commit c3f6b1b (52 files changed, 8786 insertions).
+
+## Planning Review Confirmed
+✅ Sprint 1: Customer mobile app complete (6 CCTV services)
+✅ Sprint 2 (Partial): Employee mobile app complete with job management  
+✅ Sprint 3 (Partial): Admin web dashboard frontend complete, backend API scaffolded
+⏭️ **Next: Connect admin dashboard to backend API endpoints** (replace mock datasources with real backend calls)
+
+## Deferred (Out of Scope For Now)
+- Firebase integration (to be added later)
+- GCD Console integration (to be added later)
+- Real database implementation (currently mock data)
+
 ## Next Milestones
-- Build Admin dashboard (web and mobile).
-- Create Backend API server (Node.js/Express or similar).
-- Integrate real authentication (Firebase or custom backend).
+- **Priority 1:** Integrate admin dashboard frontend with backend API endpoints.
+- Connect mobile apps (customer/employee) to backend API.
+- Add real authentication (Firebase or custom backend - deferred).
 - Add location-based job assignment logic.
 - Implement push notifications for job updates.
+- Production deployment and real database setup.
