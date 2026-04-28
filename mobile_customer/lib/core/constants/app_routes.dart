@@ -1,0 +1,22 @@
+class AppRoutes {
+  static const splash = '/';
+  static const locationPermission = '/location-permission';
+  static const home = '/home';
+  static const serviceTypes = '/service-types';
+  static const servicePlaceholder = '/service';
+  static const packageSelection = '/package-selection';
+  static const installationCustomization = '/installation-customization';
+  static const maintenanceTypes = '/maintenance-types';
+  static const maintenancePackageSelection = '/maintenance-package-selection';
+  static const maintenanceCustomization = '/maintenance-customization';
+  static const amcPlans = '/amc-plans';
+  static const repairIssues = '/repair-issues';
+  static const repairEstimate = '/repair-estimate';
+  static const systemUpgrade = '/system-upgrade';
+  static const upgradeEstimate = '/upgrade-estimate';
+  static const accessories = '/accessories';
+  static const accessoriesEstimate = '/accessories-estimate';
+  static const scheduling = '/scheduling';
+  static const payment = '/payment';
+  static const confirmation = '/confirmation';
+}
