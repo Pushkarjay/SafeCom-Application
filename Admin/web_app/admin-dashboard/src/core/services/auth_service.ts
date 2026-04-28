@@ -23,20 +23,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true })
     try {
-      // Mock authentication - in production, call real API
-      if (email === 'admin@safecom.com' && password === 'admin123') {
-        const admin: Admin = {
-          id: 'ADMIN001',
-          email: 'admin@safecom.com',
-          name: 'SafeCom Admin',
-          role: 'super_admin'
-        }
-        localStorage.setItem('safecom_admin_token', 'mock_token_' + Date.now())
-        localStorage.setItem('safecom_admin', JSON.stringify(admin))
-        set({ admin, isAuthenticated: true, isLoading: false })
-      } else {
-        throw new Error('Invalid credentials')
+      // Call backend auth endpoint
+      const base = (import.meta.env && import.meta.env.VITE_API_BASE) ? `${import.meta.env.VITE_API_BASE}` : 'http://localhost:4000'
+      const res = await fetch(base + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text || 'Authentication failed')
       }
+
+      const payload = await res.json()
+      const token = payload.token
+      const user = payload.user
+      if (!token || !user) throw new Error('Invalid response from auth server')
+
+      localStorage.setItem('safecom_admin_token', token)
+      localStorage.setItem('safecom_admin', JSON.stringify(user))
+      set({ admin: user, isAuthenticated: true, isLoading: false })
     } catch (error) {
       set({ isLoading: false })
       throw error
