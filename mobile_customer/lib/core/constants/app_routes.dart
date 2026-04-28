@@ -1,7 +1,14 @@
 class AppRoutes {
   static const splash = '/';
+  static const login = '/login';
+  static const signup = '/signup';
+  static const forgotPassword = '/forgot-password';
   static const locationPermission = '/location-permission';
   static const home = '/home';
+  static const profile = '/profile';
+  static const orderHistory = '/order-history';
+  static const paymentMethods = '/payment-methods';
+  static const changePassword = '/change-password';
   static const serviceTypes = '/service-types';
   static const servicePlaceholder = '/service';
   static const packageSelection = '/package-selection';
