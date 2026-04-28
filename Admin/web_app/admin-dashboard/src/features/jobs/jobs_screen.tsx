@@ -11,7 +11,7 @@ export default function JobsScreen() {
   useEffect(() => {
     const loadJobs = async () => {
       try {
-        const data = await adminDatasource.getJobs(page)
+        const data = await adminDatasource.getJobs(null, page)
         setJobs(data)
       } finally {
         setIsLoading(false)
