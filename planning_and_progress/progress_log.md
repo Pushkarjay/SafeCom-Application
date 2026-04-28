@@ -57,6 +57,8 @@
 - Added middleware: JWT validation, role-based access control, CORS, Helmet security, Morgan request logging.
 - Built complete mock CCTV data layer with realistic service contracts (admin users, customers, technicians, jobs, payments, dashboard metrics).
 - Added Zod schema validation for request validation in auth endpoints.
+- Added write endpoints for customers, technicians, jobs, and payments with in-memory persistence.
+- Verified live backend endpoints with `GET /health`, `POST /api/customers`, `POST /api/jobs`, and `PATCH /api/jobs/:id`.
 - Configured TypeScript strict mode, ES2022 target, proper tsconfig with build output.
 - Validated: npm install (114 packages, 0 vulnerabilities), npm run build (clean TypeScript compilation, zero errors).
 - Backend server ready to start on port 5000 with all endpoints functional.
