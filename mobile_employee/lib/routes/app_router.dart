@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/models/job_models.dart';
@@ -9,8 +10,9 @@ import 'package:mobile_employee/features/jobs/job_detail_screen.dart';
 import 'package:mobile_employee/features/jobs/jobs_home_screen.dart';
 import 'package:mobile_employee/features/jobs/work_completion_screen.dart';
 
-final appRouterProvider = GoRouter(
-  initialLocation: AppRoutes.splash,
+final appRouterProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    initialLocation: AppRoutes.splash,
   routes: [
     GoRoute(
       path: AppRoutes.splash,
@@ -52,5 +54,6 @@ final appRouterProvider = GoRouter(
       path: AppRoutes.profile,
       builder: (context, state) => const ProfileScreen(),
     ),
-  ],
-);
+    ],
+  );
+});

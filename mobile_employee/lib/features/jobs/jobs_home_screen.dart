@@ -73,6 +73,7 @@ class JobsHomeScreen extends ConsumerWidget {
               ],
             ),
           );
+        },
       ),
     );
   }
