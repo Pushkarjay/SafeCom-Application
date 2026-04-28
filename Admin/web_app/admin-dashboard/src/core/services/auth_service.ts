@@ -24,8 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true })
     try {
       // Call backend auth endpoint
-      const base = (import.meta.env && import.meta.env.VITE_API_BASE) ? `${import.meta.env.VITE_API_BASE}` : 'http://localhost:4000'
-      const res = await fetch(base + '/auth/login', {
+      const res = await fetch('http://localhost:4000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
