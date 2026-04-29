@@ -1,0 +1,134 @@
+# ============================================================================
+# SECURITY: Secrets & Credentials (NEVER COMMIT THESE)
+# ============================================================================
+.secrets/
+.env
+.env.local
+.env.production
+.env.production.local
+.env.staging
+.env.*.example.local
+
+# Keystores & Keys
+*.jks
+*.keystore
+*.p8
+*.p12
+*.pfx
+*.key
+*.pem
+*safecom*key*.json
+safecom-backend-sa-key.json
+safecom-application-01-*.json
+
+# Service Account Files
+*-service-account*.json
+*-firebase-adminsdk*.json
+
+# API Keys & Secrets
+.env*secret*
+*.secret
+
+# ============================================================================
+# Build & Dependencies
+# ============================================================================
+node_modules/
+dist/
+build/
+*.o
+*.so
+*.dylib
+*.exe
+*.dll
+
+# Flutter
+mobile_customer/build/
+mobile_customer/.dart_tool/
+mobile_customer/.flutter-plugins
+mobile_customer/.flutter-plugins-dependencies
+mobile_customer/.packages
+mobile_customer/pubspec.lock
+
+mobile_employee/build/
+mobile_employee/.dart_tool/
+mobile_employee/.flutter-plugins
+mobile_employee/.flutter-plugins-dependencies
+mobile_employee/.packages
+mobile_employee/pubspec.lock
+
+# React / Admin
+Admin/web_app/admin-dashboard/dist/
+Admin/web_app/admin-dashboard/node_modules/
+Admin/web_app/admin-dashboard/.next/
+Admin/web_app/admin-dashboard/out/
+
+# Backend
+backend_server/dist/
+backend_server/node_modules/
+backend_server/build/
+
+# ============================================================================
+# IDE & Editor
+# ============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.AppleDouble
+.LSOverride
+*.iml
+.gradle
+local.properties
+.classpath
+.project
+.pydevproject
+
+# ============================================================================
+# OS & System Files
+# ============================================================================
+Thumbs.db
+.Thumbs.db
+*.log
+*.bak
+*.tmp
+.cache/
+
+# ============================================================================
+# Development & Testing
+# ============================================================================
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+
+# ============================================================================
+# Platform-Specific
+# ============================================================================
+# iOS
+ios/Pods/
+ios/Podfile.lock
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcworkspace/xcshareddata/
+
+# Android
+android/.gradle/
+android/local.properties
+android/captures/
+android/*.jks
+android/*.keystore
+
+# ============================================================================
+# Temporary & Generated
+# ============================================================================
+*.generated.dart
+*.g.dart
+*.config.js
+*.pb.dart
+
+# ============================================================================
+# Large Files (if needed)
+# ============================================================================
+# *.db
+# *.sqlite
