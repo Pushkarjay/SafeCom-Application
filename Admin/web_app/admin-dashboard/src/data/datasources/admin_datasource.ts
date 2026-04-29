@@ -1,4 +1,4 @@
-import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct } from '../models/admin_models'
+import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate } from '../models/admin_models'
 import { useAuthStore } from '../auth.store'
 import { getApiBaseUrl } from '../../core/config/api'
 
@@ -190,6 +190,216 @@ export class AdminDatasource {
       })
     } catch (e) {
       throw new Error('Failed to update job')
+    }
+  }
+
+  // ====== PACKAGES ======
+  async getCatalogPackages(): Promise<CatalogPackage[]> {
+    try {
+      return await this.fetchJson<CatalogPackage[]>(`${BASE_URL}/catalog/packages`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async createCatalogPackage(data: Partial<CatalogPackage>): Promise<CatalogPackage> {
+    try {
+      return await this.fetchJson<CatalogPackage>(`${BASE_URL}/catalog/packages`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create package')
+    }
+  }
+
+  async updateCatalogPackage(id: string, data: Partial<CatalogPackage>): Promise<CatalogPackage> {
+    try {
+      return await this.fetchJson<CatalogPackage>(`${BASE_URL}/catalog/packages/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update package')
+    }
+  }
+
+  async deleteCatalogPackage(id: string): Promise<void> {
+    try {
+      await this.fetchJson<void>(`${BASE_URL}/catalog/packages/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (e) {
+      throw new Error('Failed to delete package')
+    }
+  }
+
+  // ====== ADD-ONS ======
+  async getCatalogAddons(): Promise<CatalogAddon[]> {
+    try {
+      return await this.fetchJson<CatalogAddon[]>(`${BASE_URL}/catalog/addons`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async createCatalogAddon(data: Partial<CatalogAddon>): Promise<CatalogAddon> {
+    try {
+      return await this.fetchJson<CatalogAddon>(`${BASE_URL}/catalog/addons`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create add-on')
+    }
+  }
+
+  async updateCatalogAddon(id: string, data: Partial<CatalogAddon>): Promise<CatalogAddon> {
+    try {
+      return await this.fetchJson<CatalogAddon>(`${BASE_URL}/catalog/addons/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update add-on')
+    }
+  }
+
+  async deleteCatalogAddon(id: string): Promise<void> {
+    try {
+      await this.fetchJson<void>(`${BASE_URL}/catalog/addons/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (e) {
+      throw new Error('Failed to delete add-on')
+    }
+  }
+
+  // ====== TAXES ======
+  async getCatalogTaxes(): Promise<CatalogTax[]> {
+    try {
+      return await this.fetchJson<CatalogTax[]>(`${BASE_URL}/catalog/taxes`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async createCatalogTax(data: Partial<CatalogTax>): Promise<CatalogTax> {
+    try {
+      return await this.fetchJson<CatalogTax>(`${BASE_URL}/catalog/taxes`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create tax')
+    }
+  }
+
+  async updateCatalogTax(id: string, data: Partial<CatalogTax>): Promise<CatalogTax> {
+    try {
+      return await this.fetchJson<CatalogTax>(`${BASE_URL}/catalog/taxes/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update tax')
+    }
+  }
+
+  async deleteCatalogTax(id: string): Promise<void> {
+    try {
+      await this.fetchJson<void>(`${BASE_URL}/catalog/taxes/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (e) {
+      throw new Error('Failed to delete tax')
+    }
+  }
+
+  // ====== RECOMMENDATIONS ======
+  async getCatalogRecommendations(): Promise<CatalogRecommendation[]> {
+    try {
+      return await this.fetchJson<CatalogRecommendation[]>(`${BASE_URL}/catalog/recommendations`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async createCatalogRecommendation(data: Partial<CatalogRecommendation>): Promise<CatalogRecommendation> {
+    try {
+      return await this.fetchJson<CatalogRecommendation>(`${BASE_URL}/catalog/recommendations`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create recommendation')
+    }
+  }
+
+  async updateCatalogRecommendation(id: string, data: Partial<CatalogRecommendation>): Promise<CatalogRecommendation> {
+    try {
+      return await this.fetchJson<CatalogRecommendation>(`${BASE_URL}/catalog/recommendations/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update recommendation')
+    }
+  }
+
+  async deleteCatalogRecommendation(id: string): Promise<void> {
+    try {
+      await this.fetchJson<void>(`${BASE_URL}/catalog/recommendations/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (e) {
+      throw new Error('Failed to delete recommendation')
+    }
+  }
+
+  // ====== INVOICE TEMPLATES ======
+  async getInvoiceTemplates(): Promise<InvoiceTemplate[]> {
+    try {
+      return await this.fetchJson<InvoiceTemplate[]>(`${BASE_URL}/catalog/invoices`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async createInvoiceTemplate(data: Partial<InvoiceTemplate>): Promise<InvoiceTemplate> {
+    try {
+      return await this.fetchJson<InvoiceTemplate>(`${BASE_URL}/catalog/invoices`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create invoice template')
+    }
+  }
+
+  async updateInvoiceTemplate(id: string, data: Partial<InvoiceTemplate>): Promise<InvoiceTemplate> {
+    try {
+      return await this.fetchJson<InvoiceTemplate>(`${BASE_URL}/catalog/invoices/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update invoice template')
+    }
+  }
+
+  async deleteInvoiceTemplate(id: string): Promise<void> {
+    try {
+      await this.fetchJson<void>(`${BASE_URL}/catalog/invoices/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (e) {
+      throw new Error('Failed to delete invoice template')
     }
   }
 }

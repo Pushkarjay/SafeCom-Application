@@ -71,3 +71,55 @@ export interface CatalogProductRecord {
   status: 'active' | 'inactive'
   updatedAt: string
 }
+
+export interface CatalogPackageRecord {
+  id: string
+  name: string
+  description: string
+  productIds: string[]
+  totalPrice: number
+  discountPercent: number
+  finalPrice: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface CatalogAddonRecord {
+  id: string
+  name: string
+  description: string
+  category: string
+  price: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface CatalogTaxRecord {
+  id: string
+  name: string
+  description: string
+  rate: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface CatalogRecommendationRecord {
+  id: string
+  name: string
+  description: string
+  productIds: string[]
+  priority: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface InvoiceTemplateRecord {
+  id: string
+  name: string
+  description: string
+  terms: string
+  notes: string
+  showTax: boolean
+  status: 'active' | 'inactive'
+  updatedAt: string
+}

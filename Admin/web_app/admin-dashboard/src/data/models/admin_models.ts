@@ -69,3 +69,55 @@ export interface CatalogProduct {
   status: 'active' | 'inactive'
   updatedAt: string
 }
+
+export interface CatalogPackage {
+  id: string
+  name: string
+  description: string
+  productIds: string[]
+  totalPrice: number
+  discountPercent: number
+  finalPrice: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface CatalogAddon {
+  id: string
+  name: string
+  description: string
+  category: string
+  price: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface CatalogTax {
+  id: string
+  name: string
+  description: string
+  rate: number // percentage
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface CatalogRecommendation {
+  id: string
+  name: string
+  description: string
+  productIds: string[]
+  priority: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface InvoiceTemplate {
+  id: string
+  name: string
+  description: string
+  terms: string
+  notes: string
+  showTax: boolean
+  status: 'active' | 'inactive'
+  updatedAt: string
+}

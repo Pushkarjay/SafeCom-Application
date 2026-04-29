@@ -1,117 +1,291 @@
 import { useEffect, useMemo, useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
-import { CatalogProduct } from '@data/models/admin_models'
+import { CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate } from '@data/models/admin_models'
 import './catalog_screen.css'
 
 const categories = ['All', 'Cameras', 'Storage', 'Recording', 'Wiring', 'Accessories']
 const groups = ['All', 'Core', 'Package Base', 'Installation', 'Recommendations']
 
+type TabType = 'products' | 'packages' | 'addons' | 'taxes' | 'recommendations' | 'invoices'
+
 export default function CatalogScreen() {
-  const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState<TabType>('products')
+  const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Products
+  const [products, setProducts] = useState<CatalogProduct[]>([])
+  const [searchProduct, setSearchProduct] = useState('')
   const [category, setCategory] = useState('All')
   const [group, setGroup] = useState('All')
-  const [products, setProducts] = useState<CatalogProduct[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [editingProduct, setEditingProduct] = useState<CatalogProduct | null>(null)
-  const [formState, setFormState] = useState({
-    name: '',
-    category: 'Cameras',
-    group: 'Core',
-    unit: 'unit',
-    price: 0,
-    status: 'active' as CatalogProduct['status']
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false)
+  const [productForm, setProductForm] = useState({
+    name: '', category: 'Cameras', group: 'Core', unit: 'unit', price: 0, status: 'active' as 'active' | 'inactive'
   })
-  const [activeTab, setActiveTab] = useState<'products' | 'packages' | 'addons' | 'taxes' | 'recommendations' | 'invoices'>('products')
 
+  // Packages
+  const [packages, setPackages] = useState<CatalogPackage[]>([])
+  const [editingPackage, setEditingPackage] = useState<CatalogPackage | null>(null)
+  const [isPackageFormOpen, setIsPackageFormOpen] = useState(false)
+  const [packageForm, setPackageForm] = useState({
+    name: '', description: '', productIds: [] as string[], totalPrice: 0, discountPercent: 0, finalPrice: 0, status: 'active' as 'active' | 'inactive'
+  })
+
+  // Add-ons
+  const [addons, setAddons] = useState<CatalogAddon[]>([])
+  const [editingAddon, setEditingAddon] = useState<CatalogAddon | null>(null)
+  const [isAddonFormOpen, setIsAddonFormOpen] = useState(false)
+  const [addonForm, setAddonForm] = useState({
+    name: '', description: '', category: 'Services', price: 0, status: 'active' as 'active' | 'inactive'
+  })
+
+  // Taxes
+  const [taxes, setTaxes] = useState<CatalogTax[]>([])
+  const [editingTax, setEditingTax] = useState<CatalogTax | null>(null)
+  const [isTaxFormOpen, setIsTaxFormOpen] = useState(false)
+  const [taxForm, setTaxForm] = useState({
+    name: '', description: '', rate: 0, status: 'active' as 'active' | 'inactive'
+  })
+
+  // Recommendations
+  const [recommendations, setRecommendations] = useState<CatalogRecommendation[]>([])
+  const [editingRec, setEditingRec] = useState<CatalogRecommendation | null>(null)
+  const [isRecFormOpen, setIsRecFormOpen] = useState(false)
+  const [recForm, setRecForm] = useState({
+    name: '', description: '', productIds: [] as string[], priority: 0, status: 'active' as 'active' | 'inactive'
+  })
+
+  // Invoices
+  const [invoices, setInvoices] = useState<InvoiceTemplate[]>([])
+  const [editingInvoice, setEditingInvoice] = useState<InvoiceTemplate | null>(null)
+  const [isInvoiceFormOpen, setIsInvoiceFormOpen] = useState(false)
+  const [invoiceForm, setInvoiceForm] = useState({
+    name: '', description: '', terms: '', notes: '', showTax: true, status: 'active' as 'active' | 'inactive'
+  })
+
+  // Load data based on active tab
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadData = async () => {
+      setIsLoading(true)
+      setError(null)
       try {
-        const data = await adminDatasource.getCatalogProducts()
-        setProducts(data)
+        if (activeTab === 'products' && products.length === 0) {
+          const data = await adminDatasource.getCatalogProducts()
+          setProducts(data)
+        } else if (activeTab === 'packages' && packages.length === 0) {
+          const data = await adminDatasource.getCatalogPackages()
+          setPackages(data)
+        } else if (activeTab === 'addons' && addons.length === 0) {
+          const data = await adminDatasource.getCatalogAddons()
+          setAddons(data)
+        } else if (activeTab === 'taxes' && taxes.length === 0) {
+          const data = await adminDatasource.getCatalogTaxes()
+          setTaxes(data)
+        } else if (activeTab === 'recommendations' && recommendations.length === 0) {
+          const data = await adminDatasource.getCatalogRecommendations()
+          setRecommendations(data)
+        } else if (activeTab === 'invoices' && invoices.length === 0) {
+          const data = await adminDatasource.getInvoiceTemplates()
+          setInvoices(data)
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load catalog')
+        setError(err instanceof Error ? err.message : 'Failed to load data')
       } finally {
         setIsLoading(false)
       }
     }
+    loadData()
+  }, [activeTab])
 
-    loadProducts()
-  }, [])
-
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return products.filter((product) => {
-      const matchesQuery = !query ||
-        product.name.toLowerCase().includes(query) ||
-        product.id.toLowerCase().includes(query)
-      const matchesCategory = category === 'All' || product.category === category
-      const matchesGroup = group === 'All' || product.group === group
+  const filteredProducts = useMemo(() => {
+    const query = searchProduct.trim().toLowerCase()
+    return products.filter((p) => {
+      const matchesQuery = !query || p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query)
+      const matchesCategory = category === 'All' || p.category === category
+      const matchesGroup = group === 'All' || p.group === group
       return matchesQuery && matchesCategory && matchesGroup
     })
-  }, [search, category, group, products])
+  }, [searchProduct, category, group, products])
 
-  const openCreateForm = () => {
-    setEditingProduct(null)
-    setFormState({
-      name: '',
-      category: 'Cameras',
-      group: 'Core',
-      unit: 'unit',
-      price: 0,
-      status: 'active'
-    })
-    setIsFormOpen(true)
-  }
-
-  const openEditForm = (product: CatalogProduct) => {
-    setEditingProduct(product)
-    setFormState({
-      name: product.name,
-      category: product.category,
-      group: product.group,
-      unit: product.unit,
-      price: product.price,
-      status: product.status
-    })
-    setIsFormOpen(true)
-  }
-
-  const handleSave = async () => {
-    if (!formState.name.trim()) {
-      setError('Product name is required')
-      return
-    }
-
+  // Product CRUD
+  const handleSaveProduct = async () => {
+    if (!productForm.name.trim()) { setError('Product name is required'); return }
     setIsSaving(true)
-    setError(null)
-
     try {
       if (editingProduct) {
-        const updated = await adminDatasource.updateCatalogProduct(editingProduct.id, formState)
-        setProducts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
+        const updated = await adminDatasource.updateCatalogProduct(editingProduct.id, productForm)
+        setProducts((p) => p.map((i) => (i.id === updated.id ? updated : i)))
       } else {
-        const created = await adminDatasource.createCatalogProduct(formState)
-        setProducts((prev) => [created, ...prev])
+        const created = await adminDatasource.createCatalogProduct(productForm)
+        setProducts((p) => [created, ...p])
       }
-      setIsFormOpen(false)
+      setIsProductFormOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save catalog item')
+      setError(err instanceof Error ? err.message : 'Failed to save')
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleDelete = async (product: CatalogProduct) => {
-    if (!window.confirm(`Disable ${product.name}?`)) return
-
+  const handleDeleteProduct = async (id: string) => {
+    if (!window.confirm('Delete this product?')) return
     try {
-      await adminDatasource.deleteCatalogProduct(product.id)
-      setProducts((prev) => prev.filter((item) => item.id !== product.id))
+      await adminDatasource.deleteCatalogProduct(id)
+      setProducts((p) => p.filter((i) => i.id !== id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete catalog item')
+      setError(err instanceof Error ? err.message : 'Failed to delete')
+    }
+  }
+
+  // Package CRUD
+  const handleSavePackage = async () => {
+    if (!packageForm.name.trim()) { setError('Package name is required'); return }
+    setIsSaving(true)
+    try {
+      if (editingPackage) {
+        const updated = await adminDatasource.updateCatalogPackage(editingPackage.id, packageForm)
+        setPackages((p) => p.map((i) => (i.id === updated.id ? updated : i)))
+      } else {
+        const created = await adminDatasource.createCatalogPackage(packageForm)
+        setPackages((p) => [created, ...p])
+      }
+      setIsPackageFormOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeletePackage = async (id: string) => {
+    if (!window.confirm('Delete this package?')) return
+    try {
+      await adminDatasource.deleteCatalogPackage(id)
+      setPackages((p) => p.filter((i) => i.id !== id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete')
+    }
+  }
+
+  // Add-on CRUD
+  const handleSaveAddon = async () => {
+    if (!addonForm.name.trim()) { setError('Add-on name is required'); return }
+    setIsSaving(true)
+    try {
+      if (editingAddon) {
+        const updated = await adminDatasource.updateCatalogAddon(editingAddon.id, addonForm)
+        setAddons((p) => p.map((i) => (i.id === updated.id ? updated : i)))
+      } else {
+        const created = await adminDatasource.createCatalogAddon(addonForm)
+        setAddons((p) => [created, ...p])
+      }
+      setIsAddonFormOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteAddon = async (id: string) => {
+    if (!window.confirm('Delete this add-on?')) return
+    try {
+      await adminDatasource.deleteCatalogAddon(id)
+      setAddons((p) => p.filter((i) => i.id !== id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete')
+    }
+  }
+
+  // Tax CRUD
+  const handleSaveTax = async () => {
+    if (!taxForm.name.trim()) { setError('Tax name is required'); return }
+    setIsSaving(true)
+    try {
+      if (editingTax) {
+        const updated = await adminDatasource.updateCatalogTax(editingTax.id, taxForm)
+        setTaxes((p) => p.map((i) => (i.id === updated.id ? updated : i)))
+      } else {
+        const created = await adminDatasource.createCatalogTax(taxForm)
+        setTaxes((p) => [created, ...p])
+      }
+      setIsTaxFormOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteTax = async (id: string) => {
+    if (!window.confirm('Delete this tax?')) return
+    try {
+      await adminDatasource.deleteCatalogTax(id)
+      setTaxes((p) => p.filter((i) => i.id !== id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete')
+    }
+  }
+
+  // Recommendation CRUD
+  const handleSaveRec = async () => {
+    if (!recForm.name.trim()) { setError('Recommendation name is required'); return }
+    setIsSaving(true)
+    try {
+      if (editingRec) {
+        const updated = await adminDatasource.updateCatalogRecommendation(editingRec.id, recForm)
+        setRecommendations((p) => p.map((i) => (i.id === updated.id ? updated : i)))
+      } else {
+        const created = await adminDatasource.createCatalogRecommendation(recForm)
+        setRecommendations((p) => [created, ...p])
+      }
+      setIsRecFormOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteRec = async (id: string) => {
+    if (!window.confirm('Delete this recommendation?')) return
+    try {
+      await adminDatasource.deleteCatalogRecommendation(id)
+      setRecommendations((p) => p.filter((i) => i.id !== id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete')
+    }
+  }
+
+  // Invoice CRUD
+  const handleSaveInvoice = async () => {
+    if (!invoiceForm.name.trim()) { setError('Invoice name is required'); return }
+    setIsSaving(true)
+    try {
+      if (editingInvoice) {
+        const updated = await adminDatasource.updateInvoiceTemplate(editingInvoice.id, invoiceForm)
+        setInvoices((p) => p.map((i) => (i.id === updated.id ? updated : i)))
+      } else {
+        const created = await adminDatasource.createInvoiceTemplate(invoiceForm)
+        setInvoices((p) => [created, ...p])
+      }
+      setIsInvoiceFormOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteInvoice = async (id: string) => {
+    if (!window.confirm('Delete this invoice template?')) return
+    try {
+      await adminDatasource.deleteInvoiceTemplate(id)
+      setInvoices((p) => p.filter((i) => i.id !== id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete')
     }
   }
 
@@ -120,242 +294,416 @@ export default function CatalogScreen() {
       <div className="catalog-header">
         <div>
           <h1>Accessories & Catalog</h1>
-          <p className="catalog-subtitle">
-            Manage products, pricing, and recommendation items shown in customer flows.
-          </p>
+          <p className="catalog-subtitle">Manage products, pricing, packages, and recommendation items.</p>
         </div>
         <div className="catalog-actions">
-          <button className="primary-btn" onClick={openCreateForm}>+ Add Product</button>
-          <button className="secondary-btn">Import CSV</button>
+          <button className="primary-btn" onClick={() => {
+            if (activeTab === 'products') { setIsProductFormOpen(true) }
+            else if (activeTab === 'packages') { setIsPackageFormOpen(true) }
+            else if (activeTab === 'addons') { setIsAddonFormOpen(true) }
+            else if (activeTab === 'taxes') { setIsTaxFormOpen(true) }
+            else if (activeTab === 'recommendations') { setIsRecFormOpen(true) }
+            else if (activeTab === 'invoices') { setIsInvoiceFormOpen(true) }
+          }}>+ Add Item</button>
         </div>
       </div>
 
       <div className="catalog-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
-          onClick={() => setActiveTab('products')}
-        >
-          Products
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'packages' ? 'active' : ''}`}
-          onClick={() => setActiveTab('packages')}
-        >
-          Packages
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'addons' ? 'active' : ''}`}
-          onClick={() => setActiveTab('addons')}
-        >
-          Add-ons
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'taxes' ? 'active' : ''}`}
-          onClick={() => setActiveTab('taxes')}
-        >
-          Taxes
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'recommendations' ? 'active' : ''}`}
-          onClick={() => setActiveTab('recommendations')}
-        >
-          Recommendations
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'invoices' ? 'active' : ''}`}
-          onClick={() => setActiveTab('invoices')}
-        >
-          Invoice Templates
-        </button>
+        {(['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices'] as TabType[]).map((tab) => (
+          <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
+            {tab === 'products' ? 'Products' : tab === 'packages' ? 'Packages' : tab === 'addons' ? 'Add-ons' : tab === 'taxes' ? 'Taxes' : tab === 'recommendations' ? 'Recommendations' : 'Invoice Templates'}
+          </button>
+        ))}
       </div>
 
-      {error && (
-        <div className="catalog-error">
-          {error}
-        </div>
-      )}
+      {error && <div className="catalog-error">{error}</div>}
 
+      {/* PRODUCTS TAB */}
       {activeTab === 'products' && (
-        <div className="catalog-toolbar">
-        <div className="toolbar-group">
-          <label htmlFor="category">Category</label>
-          <select
-            id="category"
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-          >
-            {categories.map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </select>
-        </div>
-        <div className="toolbar-group">
-          <label htmlFor="group">Group</label>
-          <select
-            id="group"
-            value={group}
-            onChange={(event) => setGroup(event.target.value)}
-          >
-            {groups.map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </select>
-        </div>
-        <div className="toolbar-group search">
-          <label htmlFor="search">Search</label>
-          <input
-            id="search"
-            placeholder="Search product, ID, or keyword"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </div>
-        <div className="toolbar-group">
-          <label htmlFor="status">Status</label>
-          <select id="status" defaultValue="All">
-            <option>All</option>
-            <option>Active</option>
-            <option>Inactive</option>
-          </select>
-        </div>
+        <>
+          <div className="catalog-toolbar">
+            <div className="toolbar-group">
+              <label htmlFor="category">Category</label>
+              <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>
+                {categories.map((c) => (<option key={c} value={c}>{c}</option>))}
+              </select>
+            </div>
+            <div className="toolbar-group">
+              <label htmlFor="group">Group</label>
+              <select id="group" value={group} onChange={(e) => setGroup(e.target.value)}>
+                {groups.map((g) => (<option key={g} value={g}>{g}</option>))}
+              </select>
+            </div>
+            <div className="toolbar-group search">
+              <label htmlFor="search">Search</label>
+              <input id="search" placeholder="Search product, ID, or keyword" value={searchProduct} onChange={(e) => setSearchProduct(e.target.value)} />
+            </div>
+          </div>
+          <div className="catalog-table-wrapper">
+            {isLoading ? <div className="catalog-loading">Loading...</div> : (
+              <table className="catalog-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Group</th>
+                    <th>Unit</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.length === 0 ? (
+                    <tr><td colSpan={7} className="empty-cell">No products found</td></tr>
+                  ) : (
+                    filteredProducts.map((p) => (
+                      <tr key={p.id}>
+                        <td><div className="product-main"><span className="product-name">{p.name}</span><span className="product-id">{p.id}</span></div></td>
+                        <td>{p.category}</td>
+                        <td>{p.group}</td>
+                        <td>{p.unit}</td>
+                        <td>Rs {p.price.toLocaleString()}</td>
+                        <td><span className={`status ${p.status}`}>{p.status}</span></td>
+                        <td>
+                          <button className="icon-btn" onClick={() => { setEditingProduct(p); setProductForm(p); setIsProductFormOpen(true) }}>Edit</button>
+                          <button className="icon-btn danger" onClick={() => handleDeleteProduct(p.id)}>Delete</button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* PACKAGES TAB */}
+      {activeTab === 'packages' && (
+        <div className="catalog-table-wrapper">
+          {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            <table className="catalog-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Total Price</th>
+                  <th>Discount %</th>
+                  <th>Final Price</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {packages.length === 0 ? (
+                  <tr><td colSpan={7} className="empty-cell">No packages yet</td></tr>
+                ) : (
+                  packages.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.name}</td>
+                      <td>{p.description}</td>
+                      <td>Rs {p.totalPrice.toLocaleString()}</td>
+                      <td>{p.discountPercent}%</td>
+                      <td>Rs {p.finalPrice.toLocaleString()}</td>
+                      <td><span className={`status ${p.status}`}>{p.status}</span></td>
+                      <td>
+                        <button className="icon-btn" onClick={() => { setEditingPackage(p); setPackageForm(p); setIsPackageFormOpen(true) }}>Edit</button>
+                        <button className="icon-btn danger" onClick={() => handleDeletePackage(p.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
-      {activeTab !== 'products' && (
-        <div className="catalog-placeholder">
-          <div className="placeholder-card">
-            <h3>Setup {activeTab === 'packages' ? 'Packages' : activeTab === 'addons' ? 'Add-ons' : activeTab === 'taxes' ? 'Taxes' : activeTab === 'recommendations' ? 'Recommendations' : 'Invoice Templates'}</h3>
-            <p>
-              This section will be wired to backend collections in the next phase.
-              You can add, edit, and reorder items once data models are finalized.
-            </p>
-            <div className="placeholder-actions">
-              <button className="primary-btn">Add Item</button>
-              <button className="secondary-btn">View Drafts</button>
+      {/* ADD-ONS TAB */}
+      {activeTab === 'addons' && (
+        <div className="catalog-table-wrapper">
+          {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            <table className="catalog-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {addons.length === 0 ? (
+                  <tr><td colSpan={6} className="empty-cell">No add-ons yet</td></tr>
+                ) : (
+                  addons.map((a) => (
+                    <tr key={a.id}>
+                      <td>{a.name}</td>
+                      <td>{a.description}</td>
+                      <td>{a.category}</td>
+                      <td>Rs {a.price.toLocaleString()}</td>
+                      <td><span className={`status ${a.status}`}>{a.status}</span></td>
+                      <td>
+                        <button className="icon-btn" onClick={() => { setEditingAddon(a); setAddonForm(a); setIsAddonFormOpen(true) }}>Edit</button>
+                        <button className="icon-btn danger" onClick={() => handleDeleteAddon(a.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* TAXES TAB */}
+      {activeTab === 'taxes' && (
+        <div className="catalog-table-wrapper">
+          {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            <table className="catalog-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Rate %</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {taxes.length === 0 ? (
+                  <tr><td colSpan={5} className="empty-cell">No taxes yet</td></tr>
+                ) : (
+                  taxes.map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.name}</td>
+                      <td>{t.description}</td>
+                      <td>{t.rate}%</td>
+                      <td><span className={`status ${t.status}`}>{t.status}</span></td>
+                      <td>
+                        <button className="icon-btn" onClick={() => { setEditingTax(t); setTaxForm(t); setIsTaxFormOpen(true) }}>Edit</button>
+                        <button className="icon-btn danger" onClick={() => handleDeleteTax(t.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* RECOMMENDATIONS TAB */}
+      {activeTab === 'recommendations' && (
+        <div className="catalog-table-wrapper">
+          {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            <table className="catalog-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recommendations.length === 0 ? (
+                  <tr><td colSpan={5} className="empty-cell">No recommendations yet</td></tr>
+                ) : (
+                  recommendations.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.name}</td>
+                      <td>{r.description}</td>
+                      <td>{r.priority}</td>
+                      <td><span className={`status ${r.status}`}>{r.status}</span></td>
+                      <td>
+                        <button className="icon-btn" onClick={() => { setEditingRec(r); setRecForm(r); setIsRecFormOpen(true) }}>Edit</button>
+                        <button className="icon-btn danger" onClick={() => handleDeleteRec(r.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* INVOICES TAB */}
+      {activeTab === 'invoices' && (
+        <div className="catalog-table-wrapper">
+          {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            <table className="catalog-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Show Tax</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.length === 0 ? (
+                  <tr><td colSpan={5} className="empty-cell">No invoice templates yet</td></tr>
+                ) : (
+                  invoices.map((i) => (
+                    <tr key={i.id}>
+                      <td>{i.name}</td>
+                      <td>{i.description}</td>
+                      <td>{i.showTax ? 'Yes' : 'No'}</td>
+                      <td><span className={`status ${i.status}`}>{i.status}</span></td>
+                      <td>
+                        <button className="icon-btn" onClick={() => { setEditingInvoice(i); setInvoiceForm(i); setIsInvoiceFormOpen(true) }}>Edit</button>
+                        <button className="icon-btn danger" onClick={() => handleDeleteInvoice(i.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* PRODUCT FORM MODAL */}
+      {isProductFormOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h2>{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
+              <button className="icon-btn" onClick={() => setIsProductFormOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <label>Name <input value={productForm.name} onChange={(e) => setProductForm({...productForm, name: e.target.value})} /></label>
+              <label>Category <input value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})} /></label>
+              <label>Group <input value={productForm.group} onChange={(e) => setProductForm({...productForm, group: e.target.value})} /></label>
+              <label>Unit <input value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} /></label>
+              <label>Price <input type="number" value={productForm.price} onChange={(e) => setProductForm({...productForm, price: Number(e.target.value)})} /></label>
+              <label>Status <select value={productForm.status} onChange={(e) => setProductForm({...productForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+            </div>
+            <div className="modal-footer">
+              <button className="secondary-btn" onClick={() => setIsProductFormOpen(false)}>Cancel</button>
+              <button className="primary-btn" onClick={handleSaveProduct} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {activeTab === 'products' && (
-        <div className="catalog-table-wrapper">
-        {isLoading ? (
-          <div className="catalog-loading">Loading catalog...</div>
-        ) : null}
-        <table className="catalog-table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Category</th>
-              <th>Group</th>
-              <th>Unit</th>
-              <th>Price</th>
-              <th>Status</th>
-              <th>Last Updated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="empty-cell">
-                  No products found. Try changing filters or add a new item.
-                </td>
-              </tr>
-            ) : (
-              filtered.map((product) => (
-                <tr key={product.id}>
-                  <td>
-                    <div className="product-main">
-                      <span className="product-name">{product.name}</span>
-                      <span className="product-id">{product.id}</span>
-                    </div>
-                  </td>
-                  <td>{product.category}</td>
-                  <td>{product.group}</td>
-                  <td>{product.unit}</td>
-                  <td>Rs {product.price.toLocaleString()}</td>
-                  <td>
-                    <span className={`status ${product.status}`}>
-                      {product.status}
-                    </span>
-                  </td>
-                  <td>{product.updatedAt}</td>
-                  <td>
-                    <button className="icon-btn" title="Edit" onClick={() => openEditForm(product)}>Edit</button>
-                    <button className="icon-btn danger" title="Disable" onClick={() => handleDelete(product)}>Disable</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* PACKAGE FORM MODAL */}
+      {isPackageFormOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h2>{editingPackage ? 'Edit Package' : 'Add Package'}</h2>
+              <button className="icon-btn" onClick={() => setIsPackageFormOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <label>Name <input value={packageForm.name} onChange={(e) => setPackageForm({...packageForm, name: e.target.value})} /></label>
+              <label>Description <textarea value={packageForm.description} onChange={(e) => setPackageForm({...packageForm, description: e.target.value})} /></label>
+              <label>Total Price <input type="number" value={packageForm.totalPrice} onChange={(e) => setPackageForm({...packageForm, totalPrice: Number(e.target.value)})} /></label>
+              <label>Discount % <input type="number" value={packageForm.discountPercent} onChange={(e) => setPackageForm({...packageForm, discountPercent: Number(e.target.value)})} /></label>
+              <label>Final Price <input type="number" value={packageForm.finalPrice} onChange={(e) => setPackageForm({...packageForm, finalPrice: Number(e.target.value)})} /></label>
+              <label>Status <select value={packageForm.status} onChange={(e) => setPackageForm({...packageForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+            </div>
+            <div className="modal-footer">
+              <button className="secondary-btn" onClick={() => setIsPackageFormOpen(false)}>Cancel</button>
+              <button className="primary-btn" onClick={handleSavePackage} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
         </div>
       )}
 
-      {isFormOpen && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
+      {/* ADD-ON FORM MODAL */}
+      {isAddonFormOpen && (
+        <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <h2>{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
-              <button className="icon-btn" onClick={() => setIsFormOpen(false)}>Close</button>
+              <h2>{editingAddon ? 'Edit Add-on' : 'Add Add-on'}</h2>
+              <button className="icon-btn" onClick={() => setIsAddonFormOpen(false)}>×</button>
             </div>
             <div className="modal-body">
-              <div className="form-grid">
-                <label>
-                  Name
-                  <input
-                    value={formState.name}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  Category
-                  <input
-                    value={formState.category}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  Group
-                  <input
-                    value={formState.group}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, group: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  Unit
-                  <input
-                    value={formState.unit}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, unit: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  Price (Rs)
-                  <input
-                    type="number"
-                    min="0"
-                    value={formState.price}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, price: Number(event.target.value) }))}
-                  />
-                </label>
-                <label>
-                  Status
-                  <select
-                    value={formState.status}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, status: event.target.value as CatalogProduct['status'] }))}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </label>
-              </div>
+              <label>Name <input value={addonForm.name} onChange={(e) => setAddonForm({...addonForm, name: e.target.value})} /></label>
+              <label>Description <textarea value={addonForm.description} onChange={(e) => setAddonForm({...addonForm, description: e.target.value})} /></label>
+              <label>Category <input value={addonForm.category} onChange={(e) => setAddonForm({...addonForm, category: e.target.value})} /></label>
+              <label>Price <input type="number" value={addonForm.price} onChange={(e) => setAddonForm({...addonForm, price: Number(e.target.value)})} /></label>
+              <label>Status <select value={addonForm.status} onChange={(e) => setAddonForm({...addonForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
             </div>
             <div className="modal-footer">
-              <button className="secondary-btn" onClick={() => setIsFormOpen(false)} disabled={isSaving}>Cancel</button>
-              <button className="primary-btn" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Product'}
-              </button>
+              <button className="secondary-btn" onClick={() => setIsAddonFormOpen(false)}>Cancel</button>
+              <button className="primary-btn" onClick={handleSaveAddon} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAX FORM MODAL */}
+      {isTaxFormOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h2>{editingTax ? 'Edit Tax' : 'Add Tax'}</h2>
+              <button className="icon-btn" onClick={() => setIsTaxFormOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <label>Name <input value={taxForm.name} onChange={(e) => setTaxForm({...taxForm, name: e.target.value})} /></label>
+              <label>Description <textarea value={taxForm.description} onChange={(e) => setTaxForm({...taxForm, description: e.target.value})} /></label>
+              <label>Rate (%) <input type="number" value={taxForm.rate} onChange={(e) => setTaxForm({...taxForm, rate: Number(e.target.value)})} /></label>
+              <label>Status <select value={taxForm.status} onChange={(e) => setTaxForm({...taxForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+            </div>
+            <div className="modal-footer">
+              <button className="secondary-btn" onClick={() => setIsTaxFormOpen(false)}>Cancel</button>
+              <button className="primary-btn" onClick={handleSaveTax} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RECOMMENDATION FORM MODAL */}
+      {isRecFormOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h2>{editingRec ? 'Edit Recommendation' : 'Add Recommendation'}</h2>
+              <button className="icon-btn" onClick={() => setIsRecFormOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <label>Name <input value={recForm.name} onChange={(e) => setRecForm({...recForm, name: e.target.value})} /></label>
+              <label>Description <textarea value={recForm.description} onChange={(e) => setRecForm({...recForm, description: e.target.value})} /></label>
+              <label>Priority <input type="number" value={recForm.priority} onChange={(e) => setRecForm({...recForm, priority: Number(e.target.value)})} /></label>
+              <label>Status <select value={recForm.status} onChange={(e) => setRecForm({...recForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+            </div>
+            <div className="modal-footer">
+              <button className="secondary-btn" onClick={() => setIsRecFormOpen(false)}>Cancel</button>
+              <button className="primary-btn" onClick={handleSaveRec} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INVOICE FORM MODAL */}
+      {isInvoiceFormOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h2>{editingInvoice ? 'Edit Invoice Template' : 'Add Invoice Template'}</h2>
+              <button className="icon-btn" onClick={() => setIsInvoiceFormOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <label>Name <input value={invoiceForm.name} onChange={(e) => setInvoiceForm({...invoiceForm, name: e.target.value})} /></label>
+              <label>Description <textarea value={invoiceForm.description} onChange={(e) => setInvoiceForm({...invoiceForm, description: e.target.value})} /></label>
+              <label>Terms <textarea value={invoiceForm.terms} onChange={(e) => setInvoiceForm({...invoiceForm, terms: e.target.value})} /></label>
+              <label>Notes <textarea value={invoiceForm.notes} onChange={(e) => setInvoiceForm({...invoiceForm, notes: e.target.value})} /></label>
+              <label><input type="checkbox" checked={invoiceForm.showTax} onChange={(e) => setInvoiceForm({...invoiceForm, showTax: e.target.checked})} /> Show Tax</label>
+              <label>Status <select value={invoiceForm.status} onChange={(e) => setInvoiceForm({...invoiceForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+            </div>
+            <div className="modal-footer">
+              <button className="secondary-btn" onClick={() => setIsInvoiceFormOpen(false)}>Cancel</button>
+              <button className="primary-btn" onClick={handleSaveInvoice} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>
