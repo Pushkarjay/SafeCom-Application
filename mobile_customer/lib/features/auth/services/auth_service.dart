@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:mobile_customer/features/auth/models/customer_model.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://localhost:4000/api';
+  static const String baseUrl = 'https://safecom-backend-177425757120.asia-south1.run.app/api';
   final Dio _dio;
 
   AuthService(this._dio);

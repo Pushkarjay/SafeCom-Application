@@ -8,6 +8,30 @@ import 'package:mobile_customer/features/booking/providers/booking_flow_provider
 class PaymentScreen extends ConsumerWidget {
   const PaymentScreen({super.key});
 
+  void _handleRazorpayPayment(BuildContext context) {
+    // TODO: Integrate Razorpay SDK
+    // For now, simulating successful payment
+    // In production:
+    // 1. Initialize Razorpay with your API key
+    // 2. Open checkout with order details
+    // 3. Handle payment success/failure
+    // 4. Navigate to confirmation screen on success
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Razorpay integration pending. Payment simulation succeeding...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    // Simulating successful payment - in production this would be from Razorpay callback
+    Future.delayed(const Duration(seconds: 2), () {
+      if (context.mounted) {
+        context.go(AppRoutes.confirmation);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeOrder = ref.watch(activeOrderProvider);
@@ -50,6 +74,55 @@ class PaymentScreen extends ConsumerWidget {
               'You pay only Rs 100 now to confirm booking. Remaining amount is payable after service completion.',
             ),
           ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFFEFF6FF),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Payment Method',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.credit_card,
+                      color: Color(0xFF1E40AF),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Razorpay Gateway',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF16A34A),
+                      size: 20,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Secure payment through Razorpay. Supports all major cards, UPI, and wallets.',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -59,7 +132,7 @@ class PaymentScreen extends ConsumerWidget {
           border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
         ),
         child: FilledButton(
-          onPressed: () => context.go(AppRoutes.confirmation),
+          onPressed: () => _handleRazorpayPayment(context),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Text('Pay Rs 100 and Confirm'),

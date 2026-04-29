@@ -7,7 +7,7 @@ class MockApiTransport {
 
   Future<Map<String, dynamic>> get(String path) async {
     // Try real backend first (dev default), fall back to mock contracts.
-    final backendBase = 'http://localhost:4000/api';
+    final backendBase = 'https://safecom-backend-177425757120.asia-south1.run.app/api';
     _dio.options.baseUrl = backendBase;
 
     try {

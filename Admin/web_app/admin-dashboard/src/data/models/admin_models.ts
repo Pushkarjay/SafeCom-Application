@@ -48,8 +48,13 @@ export interface Payment {
   id: string
   jobId: string
   customerId: string
+  customerName: string
   amount: number
-  status: 'pending' | 'completed' | 'failed'
-  paymentMethod: 'card' | 'cash' | 'upi' | 'bank'
-  timestamp: string
+  paidAmount: number
+  remainingAmount: number
+  status: 'pending' | 'partial' | 'completed' | 'failed'
+  paymentMethod: string
+  transactionId: string
+  createdAt: string
+  updatedAt: string
 }

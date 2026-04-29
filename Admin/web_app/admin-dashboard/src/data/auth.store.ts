@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { getApiBaseUrl } from '../core/config/api'
 
 export interface Admin {
   id: string
@@ -23,8 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true })
     try {
-      const baseUrl = 'http://localhost:4000/api'
-      const response = await fetch(`${baseUrl}/auth/login`, {
+      const response = await fetch(`${getApiBaseUrl()}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

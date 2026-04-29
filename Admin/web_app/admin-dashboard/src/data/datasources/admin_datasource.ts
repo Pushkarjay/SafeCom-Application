@@ -1,8 +1,9 @@
 import { DashboardMetrics, Customer, Technician, Job, Payment } from '../models/admin_models'
 import { useAuthStore } from '../auth.store'
+import { getApiBaseUrl } from '../../core/config/api'
 
 const API_DELAY = 100 // small UX delay when mocking; kept low when using real API
-const BASE_URL = 'http://localhost:4000/api'
+const BASE_URL = getApiBaseUrl()
 
 function authHeaders(): Record<string, string> {
   const token = localStorage.getItem('safecom_admin_token')

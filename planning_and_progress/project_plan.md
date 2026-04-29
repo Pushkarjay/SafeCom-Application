@@ -22,3 +22,17 @@ This document outlines the development plan and progress for the SafeCom Service
 - [ ] **Task 2:** Develop the admin dashboard for managing services and bookings.
 - [ ] **Task 3:** Integrate the customer and employee apps with the backend.
 - [ ] **Task 4:** Implement payment gateway integration.
+
+### Sprint 4: Dynamic Catalog, Pricing, and Invoice Controls
+- [ ] **Task 1:** Define Firestore collections for catalog, packages, add-ons, pricing rules, taxes, invoice templates, recommendations, and booking advance.
+- [ ] **Task 2:** Build admin screens for product catalog CRUD, package templates, add-ons, price overrides, GST/tax settings, and recommendation sets.
+- [ ] **Task 3:** Wire customer app to fetch catalog/pricing and render dynamic invoice and recommendations.
+- [ ] **Task 4:** Persist booking drafts and invoices to the database.
+- [ ] **Task 5:** Add audit logging for admin changes.
+
+### Sprint 5: Location, Auth Guards, and Payments
+- [ ] **Task 1:** Add location picker/search and map pin drop for customer and employee apps.
+- [ ] **Task 2:** Fix location change flow and caching.
+- [ ] **Task 3:** Add auth guards so booking requires login and sessions persist across launches.
+- [ ] **Task 4:** Integrate payment gateway end-to-end (order creation, webhook verification, receipt capture).
+- [ ] **Task 5:** Update backend CI/CD with secret management and webhook configs (no secrets in repo).

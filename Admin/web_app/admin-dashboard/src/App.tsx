@@ -9,6 +9,8 @@ import TechniciansScreen from '@features/technicians/technicians_screen'
 import TechnicianDetailScreen from '@features/technicians/technician_detail_screen'
 import JobsScreen from '@features/jobs/jobs_screen'
 import JobDetailScreen from '@features/jobs/job_detail_screen'
+import PaymentsScreen from '@features/payments/payments_screen'
+import CatalogScreen from '@features/catalog/catalog_screen'
 import MainLayout from '@widgets/common/main_layout'
 import './App.css'
 
@@ -34,6 +36,8 @@ function App() {
             <Route path="/technicians/:id" element={<TechnicianDetailScreen />} />
             <Route path="/jobs" element={<JobsScreen />} />
             <Route path="/jobs/:id" element={<JobDetailScreen />} />
+            <Route path="/payments" element={<PaymentsScreen />} />
+            <Route path="/accessories" element={<CatalogScreen />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />

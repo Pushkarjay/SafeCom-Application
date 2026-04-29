@@ -1,8 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { technicians } from '../data/mock-data.js'
-
-export const techniciansRouter = Router()
+import { queryCollection, getDocument, createDocument, updateDocument } from '../services/firestore.js'
 
 const technicianCreateSchema = z.object({
   name: z.string().min(1),
@@ -17,53 +15,92 @@ const technicianCreateSchema = z.object({
 
 const technicianUpdateSchema = technicianCreateSchema.partial()
 
-techniciansRouter.get('/', (_req, res) => {
-  return res.json(technicians)
-})
+export const techniciansRouter = Router()
 
-techniciansRouter.get('/:id', (req, res) => {
-  const technician = technicians.find((item) => item.id === req.params.id)
-
-  if (!technician) {
-    return res.status(404).json({ message: 'Technician not found' })
+// GET /technicians - List all technicians
+techniciansRouter.get('/', async (_req, res) => {
+  try {
+    const technicians = await queryCollection<Record<string, unknown>>('technicians')
+    return res.json(technicians)
+  } catch (error) {
+    console.error('Firestore technicians lookup failed:', error)
+    const { technicians } = await import('../data/mock-data.js')
+    return res.json(technicians)
   }
-
-  return res.json(technician)
 })
 
-techniciansRouter.post('/', (req, res) => {
+// GET /technicians/:id - Get single technician
+techniciansRouter.get('/:id', async (req, res) => {
+  try {
+    const technician = await getDocument<Record<string, unknown>>('technicians', req.params.id)
+    if (!technician) {
+      return res.status(404).json({ message: 'Technician not found' })
+    }
+    return res.json(technician)
+  } catch (error) {
+    console.error('Firestore technician lookup failed:', error)
+    const { technicians } = await import('../data/mock-data.js')
+    const fallback = technicians.find((item) => item.id === req.params.id)
+    if (!fallback) {
+      return res.status(404).json({ message: 'Technician not found' })
+    }
+    return res.json(fallback)
+  }
+})
+
+// POST /technicians - Create new technician
+techniciansRouter.post('/', async (req, res) => {
   const parsed = technicianCreateSchema.safeParse(req.body)
 
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid technician payload', issues: parsed.error.flatten() })
   }
 
-  const nextId = `TECH${String(technicians.length + 1).padStart(3, '0')}`
-  const technician = {
-    id: nextId,
-    totalJobs: parsed.data.totalJobs ?? 0,
-    rating: parsed.data.rating ?? 0,
-    status: parsed.data.status ?? 'available',
-    ...parsed.data
+  try {
+    const docId = await createDocument('technicians', {
+      ...parsed.data,
+      totalJobs: parsed.data.totalJobs ?? 0,
+      rating: parsed.data.rating ?? 0,
+      status: parsed.data.status ?? 'available',
+      createdAt: new Date().toISOString()
+    })
+    return res.status(201).json({ id: docId, ...parsed.data })
+  } catch (error) {
+    console.error('Firestore create technician failed:', error)
+    const { technicians } = await import('../data/mock-data.js')
+    const nextId = `TECH${String(technicians.length + 1).padStart(3, '0')}`
+    const technician = {
+      id: nextId,
+      totalJobs: parsed.data.totalJobs ?? 0,
+      rating: parsed.data.rating ?? 0,
+      status: parsed.data.status ?? 'available',
+      ...parsed.data
+    }
+    technicians.push(technician)
+    return res.status(201).json(technician)
   }
-
-  technicians.push(technician)
-  return res.status(201).json(technician)
 })
 
-techniciansRouter.patch('/:id', (req, res) => {
+// PATCH /technicians/:id - Update technician
+techniciansRouter.patch('/:id', async (req, res) => {
   const parsed = technicianUpdateSchema.safeParse(req.body)
 
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid technician payload', issues: parsed.error.flatten() })
   }
 
-  const index = technicians.findIndex((item) => item.id === req.params.id)
-
-  if (index === -1) {
-    return res.status(404).json({ message: 'Technician not found' })
+  try {
+    await updateDocument('technicians', req.params.id, parsed.data)
+    const updated = await getDocument<Record<string, unknown>>('technicians', req.params.id)
+    return res.json(updated)
+  } catch (error) {
+    console.error('Firestore update technician failed:', error)
+    const { technicians } = await import('../data/mock-data.js')
+    const index = technicians.findIndex((item) => item.id === req.params.id)
+    if (index === -1) {
+      return res.status(404).json({ message: 'Technician not found' })
+    }
+    technicians[index] = { ...technicians[index], ...parsed.data }
+    return res.json(technicians[index])
   }
-
-  technicians[index] = { ...technicians[index], ...parsed.data }
-  return res.json(technicians[index])
 })

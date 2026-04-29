@@ -5,6 +5,7 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/features/booking/booking_confirmation_screen.dart';
 import 'package:mobile_customer/features/booking/payment_screen.dart';
+import 'package:mobile_customer/features/booking/recommendation_screen.dart';
 import 'package:mobile_customer/features/booking/scheduling_screen.dart';
 import 'package:mobile_customer/features/invoice/accessories_estimate_screen.dart';
 import 'package:mobile_customer/features/invoice/installation_customization_screen.dart';
@@ -13,6 +14,11 @@ import 'package:mobile_customer/features/invoice/repair_estimate_screen.dart';
 import 'package:mobile_customer/features/invoice/upgrade_estimate_screen.dart';
 import 'package:mobile_customer/features/home/home_screen.dart';
 import 'package:mobile_customer/features/location/location_permission_screen.dart';
+import 'package:mobile_customer/features/auth/screens/login_screen.dart';
+import 'package:mobile_customer/features/auth/screens/signup_screen.dart';
+import 'package:mobile_customer/features/auth/screens/forgot_password_screen.dart';
+import 'package:mobile_customer/features/profile/screens/profile_screen.dart';
+import 'package:mobile_customer/features/profile/screens/order_history_screen.dart';
 import 'package:mobile_customer/features/services/accessories_screen.dart';
 import 'package:mobile_customer/features/services/amc_plan_screen.dart';
 import 'package:mobile_customer/features/services/maintenance_package_screen.dart';
@@ -33,12 +39,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.signup,
+        builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.locationPermission,
         builder: (context, state) => const LocationPermissionScreen(),
       ),
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.orderHistory,
+        builder: (context, state) => const OrderHistoryScreen(),
       ),
       GoRoute(
         path: AppRoutes.serviceTypes,
@@ -113,6 +139,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.scheduling,
         builder: (context, state) => const SchedulingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.recommendation,
+        builder: (context, state) => const RecommendationScreen(),
       ),
       GoRoute(
         path: AppRoutes.payment,

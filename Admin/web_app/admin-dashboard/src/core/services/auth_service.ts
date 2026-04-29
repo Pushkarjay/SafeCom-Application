@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { getApiBaseUrl } from '../config/api'
 
 export interface Admin {
   id: string
@@ -24,7 +25,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true })
     try {
       // Call backend auth endpoint
-      const res = await fetch('http://localhost:4000/api/auth/login', {
+      const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

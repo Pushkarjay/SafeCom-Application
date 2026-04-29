@@ -48,6 +48,18 @@ export default function MainLayout() {
           >
             📋 Jobs
           </button>
+          <button
+            className={`nav-item ${isActive('/payments') ? 'active' : ''}`}
+            onClick={() => navigate('/payments')}
+          >
+            💳 Payments
+          </button>
+          <button
+            className={`nav-item ${isActive('/accessories') ? 'active' : ''}`}
+            onClick={() => navigate('/accessories')}
+          >
+            🧰 Accessories
+          </button>
         </nav>
 
         <div className="sidebar-footer">

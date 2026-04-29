@@ -1,7 +1,7 @@
 import 'package:mobile_employee/data/models/job_models.dart';
 import 'package:dio/dio.dart';
 
-const _backendBase = 'http://localhost:4000/api';
+const _backendBase = 'https://safecom-backend-177425757120.asia-south1.run.app/api';
 
 class JobsApiDatasource {
   final Dio? _dio;

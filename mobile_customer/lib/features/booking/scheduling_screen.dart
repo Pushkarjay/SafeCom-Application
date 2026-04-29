@@ -118,7 +118,7 @@ class SchedulingScreen extends ConsumerWidget {
           border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
         ),
         child: FilledButton(
-          onPressed: () => context.push(AppRoutes.payment),
+          onPressed: () => context.push(AppRoutes.recommendation),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Text('Continue to Payment'),
