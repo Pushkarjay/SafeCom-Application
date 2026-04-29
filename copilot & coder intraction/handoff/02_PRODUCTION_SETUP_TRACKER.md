@@ -130,7 +130,7 @@ applicationId = "com.example.mobile_employee"
 - Change `com.example.mobile_employee` → `com.safecom.employee`
 - This can be done during Play Store publishing setup
 
-### C.3 Generate Android Release Keystore ⏳
+### C.3 Generate Android Release Keystore ✅ COMPLETED
 **Java location found:** `D:\Program Files\Android\Android Studio\jbr\bin\keytool.exe`
 
 **Run this command:**
@@ -144,19 +144,19 @@ keytool -genkey -v -keystore safecom-release.jks -alias safecom -keyalg RSA -key
 ```
 
 When prompted, enter:
-- **Keystore password:** [STRONG PASSWORD - save in Secret Manager]
-- **Key password:** [same or different - save in Secret Manager]
-- **First and last name:** Safecom Technologies
-- **Organizational unit:** Development
-- **Organization:** Safecom
-- **City:** [your city]
-- **State:** [your state]
+- **Keystore password:** stored locally only
+- **Key password:** stored locally only
+- **First and last name:** Pushkarjay Ajay
+- **Organizational unit:** SafeCom
+- **Organization:** SafeCom
+- **City:** Patna
+- **State:** Bihar
 - **Country code:** IN (for India)
 
-Result: `safecom-release.jks` file created. Move to `./.secrets/` folder (git-ignored).
+Result: `safecom-release.jks` file created and moved to `./.secrets/safecom-release.jks`.
 
-### C.4 Get SHA-1 Fingerprint (Debug & Release) ⏳
-After keystore is created:
+### C.4 Get SHA-1 Fingerprint (Debug & Release)
+**Status:** Release SHA-1 captured. Debug keystore not present locally yet.
 
 ```powershell
 # Add Java to PATH
@@ -168,6 +168,15 @@ keytool -list -v -keystore $env:USERPROFILE\.android\debug.keystore -alias andro
 # Release key SHA-1
 keytool -list -v -keystore safecom-release.jks -alias safecom | Select-String "SHA1"
 ```
+
+**Release SHA-1 captured:**
+```
+0E:C6:E7:76:E9:40:EC:9D:44:66:ED:FD:A9:1E:29:79:1A:8B:93:B7
+```
+
+**Debug keystore:**
+- `C:\Users\<user>\.android\debug.keystore` not found on this machine yet.
+- Run a Flutter debug build or create the keystore later if you need the debug SHA-1.
 
 You'll get fingerprints like:
 ```
@@ -200,10 +209,10 @@ com.safecom.customer  # Customer app
 com.safecom.employee  # Employee app
 ```
 
-### C.6 Add Google Maps Platform Restrictions (OPTIONAL - Do Later)
-**Current status:** Maps API key works for all 38 APIs
+### C.6 Add Google Maps Platform Restrictions (NOT REQUIRED)
+**Current status:** Maps API key remains open for all 38 APIs by choice
 
-**Optional enhancement for production (can be done anytime):**
+**Optional enhancement for production (only if you choose to lock it down later):**
 If you want to restrict the Maps API key by platform later:
 
 1. Open Google Cloud Console → APIs & Services → Credentials
@@ -220,12 +229,12 @@ If you want to restrict the Maps API key by platform later:
    - Geocoding API
    - Places API (if needed)
 
-**Note:** Current unrestricted setup is fine for development. Restrict before production release to prevent unauthorized usage.
+**Note:** Current unrestricted setup is fine for development and future use if you want to keep it open. No action required now.
 
-### C.7 Restrict Service Account Roles (OPTIONAL - Best Practice for Later)
-**Current status:** Service account has 4 roles assigned
+### C.7 Restrict Service Account Roles (NOT REQUIRED)
+**Current status:** Service account has 4 roles assigned and remains as-is by choice
 
-**Optional security hardening (can be done before production):**
+**Optional security hardening (only if you later want least-privilege tightening):**
 The `safecom-backend-sa` currently has broad roles that can be tightened:
 
 ```powershell
@@ -240,7 +249,7 @@ gcloud projects remove-iam-policy-binding safecom-application-01 `
 # - roles/cloudlogging.logWriter (optional, for structured logging)
 ```
 
-**Note:** Current setup is functional. Apply least-privilege restrictions before production release for security best practices.
+**Note:** Current setup is functional. No restriction changes will be made unless you ask for them later.
 
 ---
 
@@ -335,8 +344,8 @@ SafeCom-Application/
 | Service Account JSON | ✅ | Secured at `./.secrets/safecom-backend-sa-key.json` |
 | Maps API Key | ✅ | Created: `xxxxxxxxxxxxxxxxxxxxxxxxxxxxx` (stored in `.env.production`) |
 | Android Package Names | ✅ | `com.example.mobile_customer` & `com.example.mobile_employee` (update to com.safecom.* later) |
-| Android Release Keystore | ⏳ | Generate `safecom-release.jks` and move to `./.secrets/` |
-| SHA-1 Fingerprints | ⏳ | Extract from keystore (debug + release) |
+| Android Release Keystore | ✅ | Created as `safecom-release.jks` |
+| SHA-1 Fingerprints | ✅ | Release SHA-1 captured; debug keystore not present locally |
 | iOS Bundle IDs | ⏳ | Find in `mobile_customer/ios/Runner/Info.plist` & `mobile_employee/ios/Runner/Info.plist` |
 | Firestore Rules | ⏳ | Export with `firebase firestore:rules` |
 
@@ -351,13 +360,13 @@ SafeCom-Application/
 4. ✅ Get Android package names (section C.2) - Found: com.example.mobile_customer & com.example.mobile_employee
 
 ### ⏳ NEXT STEPS TO COMPLETE
-5. ⏳ Generate keystore (section C.3) - Use keytool at `D:\Program Files\Android\Android Studio\jbr\bin`
-6. ⏳ Get SHA-1 fingerprints (section C.4) - Extract from debug & release keystores
+5. ✅ Generate keystore (section C.3) - Created with keytool at `D:\Program Files\Android\Android Studio\jbr\bin`
+6. ✅ Get SHA-1 fingerprints (section C.4) - Release SHA-1 captured
 7. ⏳ Get iOS bundle IDs (section C.5) - Check Runner/Info.plist files
 
-### 📌 OPTIONAL STEPS (Can do before production release)
-8. 📌 Restrict Maps API key (section C.6) - Currently works for all 38 APIs, can restrict later to Maps-only
-9. 📌 Tighten IAM roles (section C.7) - Remove unused service account roles before production
+### 📌 OPTIONAL STEPS (Only if you decide to change them later)
+8. 📌 Restrict Maps API key (section C.6) - Leaving it open for now by choice
+9. 📌 Tighten IAM roles (section C.7) - Leaving current roles as-is by choice
 
 ### 📋 FINAL STEPS
 10. ✅ Create environment templates (section D.2 & D.3) - Done
