@@ -14,6 +14,7 @@ import 'package:mobile_customer/features/invoice/repair_estimate_screen.dart';
 import 'package:mobile_customer/features/invoice/upgrade_estimate_screen.dart';
 import 'package:mobile_customer/features/home/home_screen.dart';
 import 'package:mobile_customer/features/location/location_permission_screen.dart';
+import 'package:mobile_customer/features/location/location_picker_screen.dart';
 import 'package:mobile_customer/features/auth/screens/login_screen.dart';
 import 'package:mobile_customer/features/auth/screens/signup_screen.dart';
 import 'package:mobile_customer/features/auth/screens/forgot_password_screen.dart';
@@ -53,6 +54,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.locationPermission,
         builder: (context, state) => const LocationPermissionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.locationPicker,
+        builder: (context, state) => const LocationPickerScreen(),
       ),
       GoRoute(
         path: AppRoutes.home,

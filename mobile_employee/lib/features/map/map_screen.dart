@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/models/job_models.dart';
+import 'package:mobile_employee/features/map/providers/employee_location_provider.dart';
 
-class MapScreen extends StatefulWidget {
+class MapScreen extends ConsumerStatefulWidget {
   final AssignedJob? job;
   final List<AssignedJob>? jobs;
 
@@ -13,10 +17,10 @@ class MapScreen extends StatefulWidget {
   });
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends ConsumerState<MapScreen> {
   Position? _currentPosition;
   bool _isLoading = true;
   String? _error;
@@ -128,11 +132,18 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locationState = ref.watch(employeeLocationProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.job != null ? 'Job Location' : 'My Location'),
         elevation: 0,
         actions: [
+          IconButton(
+            onPressed: () => context.push(AppRoutes.locationPicker),
+            icon: const Icon(Icons.place_outlined),
+            tooltip: 'Set base location',
+          ),
           IconButton(
             onPressed: _isTracking ? _stopTracking : _startTracking,
             icon: Icon(_isTracking ? Icons.location_off : Icons.location_searching),
@@ -145,7 +156,11 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ],
       ),
-      body: _isLoading ? _buildLoading() : _error != null ? _buildError() : _buildMapContent(),
+      body: _isLoading
+          ? _buildLoading()
+          : _error != null
+              ? _buildError()
+              : _buildMapContent(locationState),
     );
   }
 
@@ -193,9 +208,31 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildMapContent() {
+  Widget _buildMapContent(EmployeeLocationState locationState) {
     return Column(
       children: [
+        if (locationState.latitude != null && locationState.longitude != null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade100),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.location_on, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Base location: ${locationState.location}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
         // Current location card
         Container(
           padding: const EdgeInsets.all(16),

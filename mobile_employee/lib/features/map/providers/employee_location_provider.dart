@@ -1,14 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_customer/core/services/location_service.dart';
+import 'package:mobile_employee/core/services/location_service.dart';
 
-class LocationState {
+class EmployeeLocationState {
   final String location;
   final double? latitude;
   final double? longitude;
   final bool isLoading;
   final String? errorMessage;
 
-  const LocationState({
+  const EmployeeLocationState({
     required this.location,
     this.latitude,
     this.longitude,
@@ -16,14 +16,14 @@ class LocationState {
     this.errorMessage,
   });
 
-  LocationState copyWith({
+  EmployeeLocationState copyWith({
     String? location,
     double? latitude,
     double? longitude,
     bool? isLoading,
     String? errorMessage,
   }) {
-    return LocationState(
+    return EmployeeLocationState(
       location: location ?? this.location,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
@@ -33,18 +33,18 @@ class LocationState {
   }
 }
 
-class LocationNotifier extends StateNotifier<LocationState> {
+class EmployeeLocationNotifier extends StateNotifier<EmployeeLocationState> {
   final LocationService _service;
 
-  LocationNotifier(this._service)
+  EmployeeLocationNotifier(this._service)
       : super(
-          const LocationState(
+          const EmployeeLocationState(
             location: 'Bhubaneswar, Odisha',
             isLoading: false,
           ),
         );
 
-  Future<bool> requestAndFetchLocation() async {
+  Future<void> fetchCurrentLocation() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final position = await _service.fetchCurrentPosition();
@@ -58,30 +58,12 @@ class LocationNotifier extends StateNotifier<LocationState> {
         longitude: position.longitude,
         isLoading: false,
       );
-      return true;
-    } on LocationServiceDisabledException {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Location service is disabled on this device.',
-      );
-      return false;
-    } on LocationPermissionDeniedException {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Location permission was denied.',
-      );
-      return false;
     } catch (_) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Could not fetch location right now.',
+        errorMessage: 'Could not fetch current location.',
       );
-      return false;
     }
-  }
-
-  void setManualLocation(String value) {
-    state = state.copyWith(location: value, errorMessage: null);
   }
 
   void setSelectedLocation({
@@ -98,10 +80,11 @@ class LocationNotifier extends StateNotifier<LocationState> {
   }
 }
 
-final locationServiceProvider = Provider<LocationService>((ref) {
+final employeeLocationServiceProvider = Provider<LocationService>((ref) {
   return LocationService();
 });
 
-final locationProvider = StateNotifierProvider<LocationNotifier, LocationState>(
-  (ref) => LocationNotifier(ref.watch(locationServiceProvider)),
+final employeeLocationProvider =
+    StateNotifierProvider<EmployeeLocationNotifier, EmployeeLocationState>(
+  (ref) => EmployeeLocationNotifier(ref.watch(employeeLocationServiceProvider)),
 );

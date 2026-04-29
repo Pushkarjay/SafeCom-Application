@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { readFileSync } from 'fs'
 import { initializeApp, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
-import { adminUsers, customers, technicians, jobs, payments } from '../src/data/mock-data.js'
+import { adminUsers, customers, technicians, jobs, payments, catalogProducts } from '../src/data/mock-data.js'
 
 function initializeFirestore() {
   const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
@@ -44,7 +44,8 @@ async function main() {
     seedCollection(db, 'customers', customers),
     seedCollection(db, 'technicians', technicians),
     seedCollection(db, 'jobs', jobs),
-    seedCollection(db, 'payments', payments)
+    seedCollection(db, 'payments', payments),
+    seedCollection(db, 'catalog_products', catalogProducts)
   ])
 
   console.log('Firestore seeding completed successfully')

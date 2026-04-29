@@ -1,4 +1,4 @@
-import { DashboardMetrics, Customer, Technician, Job, Payment } from '../models/admin_models'
+import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct } from '../models/admin_models'
 import { useAuthStore } from '../auth.store'
 import { getApiBaseUrl } from '../../core/config/api'
 
@@ -83,6 +83,47 @@ export class AdminDatasource {
     } catch (e) {
       await this.delay(API_DELAY)
       return []
+    }
+  }
+
+  async getCatalogProducts(): Promise<CatalogProduct[]> {
+    try {
+      return await this.fetchJson<CatalogProduct[]>(`${BASE_URL}/catalog/products`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async createCatalogProduct(data: Partial<CatalogProduct>): Promise<CatalogProduct> {
+    try {
+      return await this.fetchJson<CatalogProduct>(`${BASE_URL}/catalog/products`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to create catalog product')
+    }
+  }
+
+  async updateCatalogProduct(id: string, data: Partial<CatalogProduct>): Promise<CatalogProduct> {
+    try {
+      return await this.fetchJson<CatalogProduct>(`${BASE_URL}/catalog/products/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      })
+    } catch (e) {
+      throw new Error('Failed to update catalog product')
+    }
+  }
+
+  async deleteCatalogProduct(id: string): Promise<void> {
+    try {
+      await this.fetchJson<void>(`${BASE_URL}/catalog/products/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (e) {
+      throw new Error('Failed to delete catalog product')
     }
   }
 

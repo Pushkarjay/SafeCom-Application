@@ -12,6 +12,7 @@ import 'package:mobile_employee/features/jobs/work_completion_screen.dart';
 import 'package:mobile_employee/features/photos/photo_capture_screen.dart';
 import 'package:mobile_employee/features/photos/photo_gallery_screen.dart';
 import 'package:mobile_employee/features/map/map_screen.dart';
+import 'package:mobile_employee/features/map/location_picker_screen.dart';
 import 'package:mobile_employee/features/earnings/earnings_screen.dart';
 import 'package:mobile_employee/features/profile/employee_profile_screen.dart';
 
@@ -103,6 +104,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
           return const MapScreen();
         },
+      ),
+      GoRoute(
+        path: AppRoutes.locationPicker,
+        builder: (context, state) => const LocationPickerScreen(),
       ),
       GoRoute(
         path: AppRoutes.earnings,

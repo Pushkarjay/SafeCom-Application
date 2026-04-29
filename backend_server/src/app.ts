@@ -8,6 +8,7 @@ import { customersRouter } from './routes/customers.js'
 import { techniciansRouter } from './routes/technicians.js'
 import { jobsRouter } from './routes/jobs.js'
 import { paymentsRouter } from './routes/payments.js'
+import { catalogRouter } from './routes/catalog.js'
 
 export function createApp() {
   const app = express()
@@ -27,6 +28,7 @@ export function createApp() {
   app.use('/api/technicians', techniciansRouter)
   app.use('/api/jobs', jobsRouter)
   app.use('/api/payments', paymentsRouter)
+  app.use('/api/catalog', catalogRouter)
 
   app.use((_req, res) => {
     res.status(404).json({ message: 'Route not found' })

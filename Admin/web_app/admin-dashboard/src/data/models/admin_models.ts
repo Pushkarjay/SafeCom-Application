@@ -58,3 +58,14 @@ export interface Payment {
   createdAt: string
   updatedAt: string
 }
+
+export interface CatalogProduct {
+  id: string
+  name: string
+  category: string
+  group: string
+  unit: string
+  price: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}

@@ -1,4 +1,4 @@
-import { AuthUser, CustomerRecord, DashboardMetrics, JobRecord, PaymentRecord, TechnicianRecord } from '../types.js'
+import { AuthUser, CatalogProductRecord, CustomerRecord, DashboardMetrics, JobRecord, PaymentRecord, TechnicianRecord } from '../types.js'
 
 export const dashboardMetrics: DashboardMetrics = {
   totalCustomers: 1254,
@@ -142,5 +142,98 @@ export const payments: PaymentRecord[] = [
     status: 'pending',
     paymentMethod: 'upi',
     timestamp: '2024-04-20T10:00:00'
+  }
+]
+
+export const catalogProducts: CatalogProductRecord[] = [
+  {
+    id: 'PROD001',
+    name: 'NVR Setup Box (4 Channel)',
+    category: 'Recording',
+    group: 'Package Base',
+    unit: 'unit',
+    price: 4000,
+    status: 'active',
+    updatedAt: '2026-04-20'
+  },
+  {
+    id: 'PROD002',
+    name: 'NVR Setup Box (8 Channel)',
+    category: 'Recording',
+    group: 'Package Base',
+    unit: 'unit',
+    price: 6500,
+    status: 'active',
+    updatedAt: '2026-04-18'
+  },
+  {
+    id: 'PROD003',
+    name: 'IP Camera 2MP',
+    category: 'Cameras',
+    group: 'Core',
+    unit: 'unit',
+    price: 1800,
+    status: 'active',
+    updatedAt: '2026-04-16'
+  },
+  {
+    id: 'PROD004',
+    name: 'IP Camera 5MP',
+    category: 'Cameras',
+    group: 'Core',
+    unit: 'unit',
+    price: 2800,
+    status: 'active',
+    updatedAt: '2026-04-16'
+  },
+  {
+    id: 'PROD005',
+    name: 'Hard Disk 1TB',
+    category: 'Storage',
+    group: 'Core',
+    unit: 'unit',
+    price: 3200,
+    status: 'active',
+    updatedAt: '2026-04-15'
+  },
+  {
+    id: 'PROD006',
+    name: 'Hard Disk 2TB',
+    category: 'Storage',
+    group: 'Core',
+    unit: 'unit',
+    price: 5200,
+    status: 'active',
+    updatedAt: '2026-04-15'
+  },
+  {
+    id: 'PROD007',
+    name: 'Cable (per meter)',
+    category: 'Wiring',
+    group: 'Installation',
+    unit: 'meter',
+    price: 40,
+    status: 'active',
+    updatedAt: '2026-04-14'
+  },
+  {
+    id: 'PROD008',
+    name: 'Junction Box',
+    category: 'Accessories',
+    group: 'Recommendations',
+    unit: 'unit',
+    price: 150,
+    status: 'active',
+    updatedAt: '2026-04-12'
+  },
+  {
+    id: 'PROD009',
+    name: 'POE Switch',
+    category: 'Accessories',
+    group: 'Recommendations',
+    unit: 'unit',
+    price: 500,
+    status: 'active',
+    updatedAt: '2026-04-12'
   }
 ]

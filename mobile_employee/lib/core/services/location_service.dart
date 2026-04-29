@@ -10,6 +10,19 @@ class LocationPermissionDeniedException implements Exception {
 }
 
 class LocationService {
+  Future<LocationPermission> requestPermission() async {
+    final isEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!isEnabled) {
+      throw const LocationServiceDisabledException();
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    return permission;
+  }
+
   Future<Position> fetchCurrentPosition() async {
     final permission = await requestPermission();
     if (permission == LocationPermission.denied ||
@@ -44,23 +57,5 @@ class LocationService {
       return 'Current Location';
     }
     return chunks.join(', ');
-  }
-
-  Future<LocationPermission> requestPermission() async {
-    final isEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!isEnabled) {
-      throw const LocationServiceDisabledException();
-    }
-
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    return permission;
-  }
-
-  Future<String> fetchCurrentAddress() async {
-    final position = await fetchCurrentPosition();
-    return reverseGeocode(position.latitude, position.longitude);
   }
 }

@@ -25,9 +25,7 @@ class HomeScreen extends ConsumerWidget {
             children: [
               LocationHeader(
                 location: locationState.location,
-                onChange: () => ref
-                    .read(locationProvider.notifier)
-                    .requestAndFetchLocation(),
+                onChange: () => context.push(AppRoutes.locationPicker),
               ),
               if (locationState.errorMessage != null) ...[
                 const SizedBox(height: 8),

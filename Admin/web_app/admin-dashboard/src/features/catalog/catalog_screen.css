@@ -30,6 +30,29 @@
   gap: 10px;
 }
 
+.catalog-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
+}
+
 .primary-btn,
 .secondary-btn {
   padding: 10px 16px;
@@ -91,6 +114,49 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
+}
+
+.catalog-loading {
+  padding: 16px;
+  color: #6b7280;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.catalog-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #fecaca;
+}
+
+.catalog-placeholder {
+  margin-bottom: 20px;
+}
+
+.placeholder-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.placeholder-card h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.placeholder-card p {
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.placeholder-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .catalog-table {
@@ -169,6 +235,73 @@
   color: #6b7280;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 20;
+}
+
+.modal-card {
+  width: min(720px, 100%);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.form-grid input,
+.form-grid select {
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 @media (max-width: 1024px) {
   .catalog-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -204,5 +337,9 @@
 
   .catalog-table {
     font-size: 12px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 }

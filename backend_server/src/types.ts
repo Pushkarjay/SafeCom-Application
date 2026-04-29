@@ -60,3 +60,14 @@ export interface PaymentRecord {
   paymentMethod: 'card' | 'cash' | 'upi' | 'bank'
   timestamp: string
 }
+
+export interface CatalogProductRecord {
+  id: string
+  name: string
+  category: string
+  group: string
+  unit: string
+  price: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}

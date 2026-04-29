@@ -8,6 +8,7 @@ class AppRoutes {
   static const photoCapture = '/photo-capture';
   static const photoGallery = '/photo-gallery';
   static const map = '/map';
+  static const locationPicker = '/location-picker';
   static const earnings = '/earnings';
   static const employeeProfile = '/employee-profile';
 }

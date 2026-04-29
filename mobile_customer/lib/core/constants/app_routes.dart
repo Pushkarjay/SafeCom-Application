@@ -4,6 +4,7 @@ class AppRoutes {
   static const signup = '/signup';
   static const forgotPassword = '/forgot-password';
   static const locationPermission = '/location-permission';
+  static const locationPicker = '/location-picker';
   static const home = '/home';
   static const profile = '/profile';
   static const orderHistory = '/order-history';
