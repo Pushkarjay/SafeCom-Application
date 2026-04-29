@@ -10,7 +10,7 @@ export interface Payment {
   amount: number
   paidAmount: number
   remainingAmount: number
-  status: 'pending' | 'partial' | 'completed'
+  status: 'pending' | 'partial' | 'completed' | 'failed'
   paymentMethod: string
   transactionId: string
   createdAt: string

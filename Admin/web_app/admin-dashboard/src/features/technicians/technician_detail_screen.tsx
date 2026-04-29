@@ -15,7 +15,21 @@ export default function TechnicianDetailScreen() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        if (id) {
+        if (id === 'new') {
+          // Initialize empty technician for new record
+          setTechnician({
+            id: `TECH-${Date.now()}`,
+            name: '',
+            email: '',
+            phone: '',
+            location: '',
+            totalJobs: 0,
+            rating: 0,
+            status: 'available',
+            joiningDate: new Date().toISOString(),
+            skills: []
+          })
+        } else if (id) {
           const allTechnicians = await adminDatasource.getTechnicians(1)
           const found = allTechnicians.find(t => t.id === id)
           if (found) setTechnician(found)
@@ -49,6 +63,7 @@ export default function TechnicianDetailScreen() {
   const totalEarnings = jobs
     .filter(j => j.status === 'completed')
     .reduce((sum, j) => sum + j.amount, 0)
+  const isNewTechnician = id === 'new'
 
   return (
     <div className="detail-screen">
@@ -56,9 +71,11 @@ export default function TechnicianDetailScreen() {
         <div className="header-top">
           <button className="back-button" onClick={() => navigate('/technicians')}>← Back</button>
           <div className="header-actions">
-            <button className="btn btn-secondary" onClick={() => navigate(`/technicians/${id}/edit`)}>
-              Edit Technician
-            </button>
+            {!isNewTechnician && (
+              <button className="btn btn-secondary" onClick={() => navigate(`/technicians/${id}/edit`)}>
+                Edit Technician
+              </button>
+            )}
           </div>
         </div>
 

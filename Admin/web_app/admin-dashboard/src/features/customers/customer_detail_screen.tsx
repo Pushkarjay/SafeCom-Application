@@ -16,7 +16,20 @@ export default function CustomerDetailScreen() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        if (id) {
+        if (id === 'new') {
+          // Initialize empty customer for new record
+          setCustomer({
+            id: `CUST-${Date.now()}`,
+            name: '',
+            email: '',
+            phone: '',
+            address: '',
+            totalOrders: 0,
+            totalSpent: 0,
+            status: 'active',
+            registeredDate: new Date().toISOString()
+          })
+        } else if (id) {
           // Try to get customer from list
           const allCustomers = await adminDatasource.getCustomers(1)
           const found = allCustomers.find(c => c.id === id)
@@ -232,7 +245,7 @@ export default function CustomerDetailScreen() {
                         <td>{payment.jobId}</td>
                         <td className="amount">₹{payment.amount.toLocaleString()}</td>
                         <td>{payment.paymentMethod}</td>
-                        <td>{new Date(payment.timestamp).toLocaleDateString()}</td>
+                        <td>{new Date(payment.createdAt).toLocaleDateString()}</td>
                       </tr>
                     ))}
                   </tbody>
