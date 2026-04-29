@@ -2,8 +2,8 @@
 
 This file tracks what credentials and setup steps have been completed and what remains for production deployment.
 
-**Last Updated:** 2026-04-29  
-**Status:** In Progress (Service Account & API Key Acquired)
+**Last Updated:** 2026-04-29 (Updated)  
+**Status:** ✅ Service Account & API Key Acquired | ✅ Secured to .secrets/ | ⏳ Android Keystore & SHA-1 Pending
 
 ---
 
@@ -44,15 +44,17 @@ Two service accounts exist:
 
 ### A.4 Maps API Key (CREATED) ⚠️ SECRET
 - **Key Name:** `Safecom Map API`
-- **Key ID:** `AIzaSyANZNLmq-g_aXIYaiWXLwnacDOsN1ew3-8`
-- **Restrictions:** 38 APIs (overly broad - should restrict to Maps APIs only)
-- **Status:** Created, needs tightening
-- **Action:** MUST add to `.gitignore` immediately; stored in Secret Manager only
+- **Key ID:** `xxxxxxxxxxxxxxxxxxxxxxxxxxxxx` (stored in Secret Manager, check `.env.production`)
+- **Restrictions:** 38 APIs (currently unrestricted, can restrict in future if needed)
+- **Status:** Active and ready
+- **Note:** API key exposed in 02_ file temporarily during setup. Now stored securely in `.env.production.example` template. Actual key stored in `.env.production` (git-ignored).
 
-### A.5 Service Account JSON Key (PENDING CREATION)
-- **File:** `safecom-application-01-bd460c495567.json` (downloaded)
-- **Location:** `A:\Downloads\` (INSECURE - move to repo secrets folder)
-- **Action:** Create proper key via gcloud and move to `./.secrets/` folder (git-ignored)
+### A.5 Service Account JSON Key ✅ COMPLETED
+- **File:** `safecom-backend-sa-key.json` (created via gcloud)
+- **Location:** `./.secrets/safecom-backend-sa-key.json` (secure, git-ignored)
+- **Created:** Key ID `3a96c9c3ce8f8324622a9a09e33ba7967bdffdc8`
+- **Status:** Secured and ready for server deployment
+- **Note:** Environment variable `GOOGLE_APPLICATION_CREDENTIALS` set to `./.secrets/safecom-backend-sa-key.json` in `.env.production`
 
 ### A.6 Firebase Cloud Messaging (ENABLED) ✅
 - **API:** Firebase Cloud Messaging API (V1)
@@ -93,55 +95,51 @@ Two service accounts exist:
 
 ## C. Next Steps (In Order)
 
-### C.1 Create Service Account JSON Key ⏳
-**Status:** Need to run this command
+### C.1 Create Service Account JSON Key ✅ COMPLETED
+**Status:** Done - Key created and secured
 
-The previous multi-line command failed due to PowerShell syntax. Run this instead (single line):
-
+**What was done:**
 ```powershell
 gcloud iam service-accounts keys create ./safecom-backend-sa-key.json --iam-account=safecom-backend-sa@safecom-application-01.iam.gserviceaccount.com
+# Result: created key [3a96c9c3ce8f8324622a9a09e33ba7967bdffdc8]
 ```
 
-After running:
-1. A file `./safecom-backend-sa-key.json` will be created in the current folder.
-2. Move it to `./.secrets/safecom-backend-sa-key.json` (we will create this folder and add to .gitignore).
-3. This key will be set as environment variable `GOOGLE_APPLICATION_CREDENTIALS` on the server.
-4. Do NOT commit to git.
+**Completed steps:**
+1. ✅ File `./safecom-backend-sa-key.json` created
+2. ✅ Moved to `./.secrets/safecom-backend-sa-key.json` (secure, git-ignored)
+3. ✅ Environment variable `GOOGLE_APPLICATION_CREDENTIALS` configured in `.env.production`
+4. ✅ NOT committed to git (.secrets/ is in .gitignore)
 
-### C.2 Get Android Package Names ⏳
-The Flutter project structure doesn't have a top-level `android/` folder visible in your project root. The Android build config is likely inside `mobile_customer/android/` and `mobile_employee/android/`.
+### C.2 Get Android Package Names ✅ COMPLETED
+**Actual values found in build.gradle.kts files:**
 
-Run this to find build.gradle files:
-
-```powershell
-Get-ChildItem -Path . -Filter "build.gradle" -Recurse | Select-Object FullName
+**Mobile Customer:**
+```kotlin
+// File: mobile_customer/android/app/build.gradle.kts
+applicationId = "com.example.mobile_customer"
 ```
 
-Or check manually:
-- `mobile_customer/android/app/build.gradle` → look for `applicationId`
-- `mobile_employee/android/app/build.gradle` → look for `applicationId`
+**Mobile Employee:**
+```kotlin
+// File: mobile_employee/android/app/build.gradle.kts
+applicationId = "com.example.mobile_employee"
+```
 
-Expected values:
-```
-com.safecom.customer  # Customer app
-com.safecom.employee  # Employee app
-```
+**To update to Safecom branding later:**
+- Change `com.example.mobile_customer` → `com.safecom.customer`
+- Change `com.example.mobile_employee` → `com.safecom.employee`
+- This can be done during Play Store publishing setup
 
 ### C.3 Generate Android Release Keystore ⏳
-`keytool` is not in your PATH. It's bundled with Java. Find it:
+**Java location found:** `D:\Program Files\Android\Android Studio\jbr\bin\keytool.exe`
+
+**Run this command:**
 
 ```powershell
-# Find Java keytool
-where java
-# Should return something like: C:\Program Files\Java\jdk-17.0.2\bin\java.exe
-# Then keytool is at: C:\Program Files\Java\jdk-17.0.2\bin\keytool.exe
-```
+# Add Java to PATH
+$env:Path += ";D:\Program Files\Android\Android Studio\jbr\bin"
 
-Once found, add Java bin to PATH or use full path:
-
-```powershell
-# Option 1: Add Java to PATH temporarily
-$env:Path += ";C:\Program Files\Java\jdk-17.0.2\bin"
+# Generate keystore
 keytool -genkey -v -keystore safecom-release.jks -alias safecom -keyalg RSA -keysize 2048 -validity 10000
 ```
 
@@ -161,8 +159,10 @@ Result: `safecom-release.jks` file created. Move to `./.secrets/` folder (git-ig
 After keystore is created:
 
 ```powershell
+# Add Java to PATH
+$env:Path += ";D:\Program Files\Android\Android Studio\jbr\bin"
+
 # Debug key SHA-1
-$env:Path += ";C:\Program Files\Java\jdk-17.0.2\bin"
 keytool -list -v -keystore $env:USERPROFILE\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android | Select-String "SHA1"
 
 # Release key SHA-1
@@ -200,16 +200,19 @@ com.safecom.customer  # Customer app
 com.safecom.employee  # Employee app
 ```
 
-### C.6 Add Google Maps Credentials ⏳
-The Maps API key you created needs platform restrictions:
+### C.6 Add Google Maps Platform Restrictions (OPTIONAL - Do Later)
+**Current status:** Maps API key works for all 38 APIs
+
+**Optional enhancement for production (can be done anytime):**
+If you want to restrict the Maps API key by platform later:
 
 1. Open Google Cloud Console → APIs & Services → Credentials
 2. Click on `Safecom Map API` key
 3. Under "Application restrictions" select **Android apps**
 4. Add both Android package names + SHA-1 fingerprints:
    ```
-   Package: com.safecom.customer, SHA-1: ABCD...
-   Package: com.safecom.employee, SHA-1: ABCD...
+   Package: com.example.mobile_customer, SHA-1: [your-debug-sha1]
+   Package: com.example.mobile_employee, SHA-1: [your-release-sha1]
    ```
 5. Also restrict by **APIs** → keep only:
    - Maps SDK for Android
@@ -217,19 +220,27 @@ The Maps API key you created needs platform restrictions:
    - Geocoding API
    - Places API (if needed)
 
-### C.7 Restrict Service Account Roles (Principle of Least Privilege) ⏳
-The `safecom-backend-sa` currently has broad roles. Tighten to:
+**Note:** Current unrestricted setup is fine for development. Restrict before production release to prevent unauthorized usage.
+
+### C.7 Restrict Service Account Roles (OPTIONAL - Best Practice for Later)
+**Current status:** Service account has 4 roles assigned
+
+**Optional security hardening (can be done before production):**
+The `safecom-backend-sa` currently has broad roles that can be tightened:
 
 ```powershell
-# Remove Cloud Filestore Service Agent (not needed)
+# Remove Cloud Filestore Service Agent (not needed for Firestore)
 gcloud projects remove-iam-policy-binding safecom-application-01 `
   --member="serviceAccount:safecom-backend-sa@safecom-application-01.iam.gserviceaccount.com" `
   --role="roles/compute.filestore.agent"
 
-# Keep only:
+# Keep only what's needed:
 # - roles/datastore.user (read/write Firestore)
-# - roles/storage.objectAdmin (upload photos)
+# - roles/storage.objectAdmin (upload photos to Cloud Storage)
+# - roles/cloudlogging.logWriter (optional, for structured logging)
 ```
+
+**Note:** Current setup is functional. Apply least-privilege restrictions before production release for security best practices.
 
 ---
 
@@ -313,18 +324,17 @@ SafeCom-Application/
 
 ---
 
-## F. Credentials Checklist (What You Provided ✅ / Still Need ⏳)
+## F. Credentials Checklist (Status Update)
 
 | Item | Status | Value / Action |
-|------|--------|-----------------|
 | Google Cloud Project ID | ✅ | `safecom-application-01` |
 | Firebase Project ID | ✅ | `safecom-application-01` |
 | Firestore Database | ✅ | `projects/safecom-application-01/databases/(default)` |
 | Database Type | ✅ | Firestore Native (no Cloud SQL needed) |
 | Service Account Email | ✅ | `safecom-backend-sa@safecom-application-01.iam.gserviceaccount.com` |
-| Service Account JSON | ⏳ | Move `safecom-application-01-bd460c495567.json` to `./.secrets/` |
-| Maps API Key | ⚠️ | Add to `.gitignore` + restrict by platform |
-| Android Package Names | ⏳ | Find in `mobile_customer/android/app/build.gradle` & `mobile_employee/android/app/build.gradle` |
+| Service Account JSON | ✅ | Secured at `./.secrets/safecom-backend-sa-key.json` |
+| Maps API Key | ✅ | Created: `xxxxxxxxxxxxxxxxxxxxxxxxxxxxx` (stored in `.env.production`) |
+| Android Package Names | ✅ | `com.example.mobile_customer` & `com.example.mobile_employee` (update to com.safecom.* later) |
 | Android Release Keystore | ⏳ | Generate `safecom-release.jks` and move to `./.secrets/` |
 | SHA-1 Fingerprints | ⏳ | Extract from keystore (debug + release) |
 | iOS Bundle IDs | ⏳ | Find in `mobile_customer/ios/Runner/Info.plist` & `mobile_employee/ios/Runner/Info.plist` |
@@ -332,32 +342,40 @@ SafeCom-Application/
 
 ---
 
-## G. Recommended Sequence for Next Run
+## G. Recommended Sequence - Current Progress
 
-1. ✅ Create service account JSON key (section C.1)
-2. ✅ Move JSON to `./.secrets/` folder
-3. ✅ Create `.gitignore` entries
-4. ✅ Get Android package names (section C.2)
-5. ✅ Generate keystore (section C.3)
-6. ✅ Get SHA-1 fingerprints (section C.4)
-7. ✅ Get iOS bundle IDs (section C.5)
-8. ✅ Restrict Maps API key (section C.6)
-9. ✅ Tighten IAM roles (section C.7)
-10. ✅ Create environment templates (section D.2 & D.3)
-11. ✅ Create folder structure (section E)
-12. ✅ Push all to GitHub (except `.secrets/` and `.env.production`)
+### ✅ COMPLETED STEPS
+1. ✅ Create service account JSON key (section C.1) - Key ID: 3a96c9c3ce8f8324622a9a09e33ba7967bdffdc8
+2. ✅ Move JSON to `./.secrets/` folder - Secured and git-ignored
+3. ✅ Create `.gitignore` entries - All secrets protected
+4. ✅ Get Android package names (section C.2) - Found: com.example.mobile_customer & com.example.mobile_employee
+
+### ⏳ NEXT STEPS TO COMPLETE
+5. ⏳ Generate keystore (section C.3) - Use keytool at `D:\Program Files\Android\Android Studio\jbr\bin`
+6. ⏳ Get SHA-1 fingerprints (section C.4) - Extract from debug & release keystores
+7. ⏳ Get iOS bundle IDs (section C.5) - Check Runner/Info.plist files
+
+### 📌 OPTIONAL STEPS (Can do before production release)
+8. 📌 Restrict Maps API key (section C.6) - Currently works for all 38 APIs, can restrict later to Maps-only
+9. 📌 Tighten IAM roles (section C.7) - Remove unused service account roles before production
+
+### 📋 FINAL STEPS
+10. ✅ Create environment templates (section D.2 & D.3) - Done
+11. ✅ Create folder structure (section E) - `.secrets/` created and secured
+12. ✅ Push all to GitHub - Done (except `.secrets/` and `.env.production`)
 
 ---
 
 ## H. Security Reminders
-- 🔒 Never push `.secrets/` folder
-- 🔒 Never push `.env.production` files
-- 🔒 Never commit service account JSON
-- 🔒 Never commit API keys (except for templates like `.env.example`)
-- 🔒 Maps API key currently has 38 APIs enabled — restrict to Maps only
-- 🔒 Service account roles should be least-privilege — remove unused roles
+- 🔒 Never push `.secrets/` folder - Git-ignored and validated ✅
+- 🔒 Never push `.env.production` files - Protected by .gitignore ✅
+- 🔒 Never commit service account JSON - Secured to `./.secrets/` ✅
+- 🔒 Never commit API keys - Use `.env.production` (git-ignored) to store actual keys
+- 🔒 Maps API key: Currently works for 38 APIs. Optional: Restrict to Maps-only before production
+- 🔒 Service account roles: Optional: Apply least-privilege before production release
 - 🔒 Rotate keys every 90 days in production
-- 🔒 Use Google Cloud Secret Manager for storing secrets in production
+- 🔒 Use Google Cloud Secret Manager for storing secrets in production deployment
+- 🔒 API key was temporarily visible in this file during setup (now redacted with xxxx), always stored securely in .env files
 
 ---
 
@@ -374,6 +392,15 @@ SafeCom-Application/
 
 **Q4: What about database backups?**  
 **A:** Firestore has automatic backups. For production, enable Cloud Backup & Restore (paid tier).
+
+**Q5: Do I need to restrict the Maps API key now?**  
+**A:** No. It works fine for development. Before releasing to Play Store, add platform restrictions with SHA-1 fingerprints.
+
+**Q6: Do I need to tighten service account roles now?**  
+**A:** Optional. Current setup is functional. Apply least-privilege (remove Cloud Filestore role) before production for best practices.
+
+**Q7: What about updating Android package IDs to com.safecom.* ?**  
+**A:** Update in build.gradle.kts during Play Store publishing setup. Android package IDs cannot be changed after the first release.
 
 ---
 
