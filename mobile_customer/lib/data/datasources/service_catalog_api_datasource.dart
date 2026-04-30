@@ -1,13 +1,13 @@
-import 'package:mobile_customer/data/datasources/mock_api_transport.dart';
+import 'package:mobile_customer/data/datasources/api_service.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 
 class ServiceCatalogApiDataSource {
-  final MockApiTransport _transport;
+  final ApiService _apiService;
 
-  ServiceCatalogApiDataSource(this._transport);
+  ServiceCatalogApiDataSource(this._apiService);
 
   Future<ServiceCatalogResponse> getCustomerServices() async {
-    final response = await _transport.get('/customer/services');
+    final response = await _apiService.getServices();
     return ServiceCatalogResponse.fromJson(response);
   }
 }

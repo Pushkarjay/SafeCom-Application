@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_customer/features/auth/models/customer_model.dart';
 import 'package:mobile_customer/features/auth/services/auth_service.dart';
 
 final dioProvider = Provider((ref) => Dio());
+
+final sharedPreferencesProvider = Provider<SharedPreferences?>((ref) => null);
 
 final authServiceProvider = Provider((ref) {
   return AuthService(ref.watch(dioProvider));
@@ -44,8 +48,66 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService authService;
+  final SharedPreferences? prefs;
 
-  AuthNotifier(this.authService) : super(AuthState());
+  AuthNotifier(this.authService, this.prefs) : super(AuthState()) {
+    _restoreSession();
+  }
+
+  void _restoreSession() {
+    try {
+      final prefs = this.prefs;
+      if (prefs == null) {
+        return;
+      }
+
+      final tokenStr = prefs.getString('auth_token');
+      final customerStr = prefs.getString('auth_customer');
+
+      if (tokenStr != null && customerStr != null) {
+        final customer = Customer.fromJson(
+          jsonDecode(customerStr) as Map<String, dynamic>,
+        );
+        state = AuthState(
+          customer: customer,
+          token: tokenStr,
+          isAuthenticated: true,
+          isLoading: false,
+        );
+      }
+    } catch (e) {
+      // Silently ignore session restoration errors
+      state = AuthState();
+    }
+  }
+
+  Future<void> _saveSession(String token, Customer customer) async {
+    try {
+      final prefs = this.prefs;
+      if (prefs == null) {
+        return;
+      }
+
+      await prefs.setString('auth_token', token);
+      await prefs.setString('auth_customer', jsonEncode(customer.toJson()));
+    } catch (e) {
+      // Continue even if save fails
+    }
+  }
+
+  Future<void> _clearSession() async {
+    try {
+      final prefs = this.prefs;
+      if (prefs == null) {
+        return;
+      }
+
+      await prefs.remove('auth_token');
+      await prefs.remove('auth_customer');
+    } catch (e) {
+      // Continue even if clear fails
+    }
+  }
 
   Future<void> login({
     required String email,
@@ -57,6 +119,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: email,
         password: password,
       );
+      await _saveSession(token, customer);
+      state = AuthState(
+        customer: customer,
+        token: token,
+        isAuthenticated: true,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        isAuthenticated: false,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> continueWithGoogle() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final (:token, :customer) = await authService.continueWithGoogle();
+      await _saveSession(token, customer);
       state = AuthState(
         customer: customer,
         token: token,
@@ -87,6 +171,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         phone: phone,
         password: password,
       );
+      await _saveSession(token, customer);
       state = AuthState(
         customer: customer,
         token: token,
@@ -111,6 +196,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // Continue even if logout fails
       }
     }
+    await _clearSession();
     state = AuthState();
   }
 
@@ -120,6 +206,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final updated = await authService.updateProfile(state.token!, customer);
+      await _saveSession(state.token!, updated);
       state = state.copyWith(
         customer: updated,
         isLoading: false,
@@ -178,5 +265,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authService = ref.watch(authServiceProvider);
-  return AuthNotifier(authService);
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return AuthNotifier(authService, prefs);
 });

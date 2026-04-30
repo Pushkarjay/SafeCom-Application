@@ -7,8 +7,10 @@ import { dashboardRouter } from './routes/dashboard.js'
 import { customersRouter } from './routes/customers.js'
 import { techniciansRouter } from './routes/technicians.js'
 import { jobsRouter } from './routes/jobs.js'
+import { razorpayRouter } from './routes/razorpay.js'
 import { paymentsRouter } from './routes/payments.js'
 import { catalogRouter } from './routes/catalog.js'
+import { catalogPublicRouter } from './routes/catalogPublic.js'
 import { authenticateToken } from './middleware/auth.js'
 
 export function createApp() {
@@ -31,11 +33,15 @@ export function createApp() {
   // Public auth routes
   app.use('/api/auth', authRouter)
 
+  // Public catalog routes (no authentication required for service catalog and pricing)
+  app.use('/api/catalog-public', catalogPublicRouter)
+
   // Protected routes (require authentication)
   app.use('/api/dashboard', authenticateToken, dashboardRouter)
   app.use('/api/customers', authenticateToken, customersRouter)
   app.use('/api/technicians', authenticateToken, techniciansRouter)
   app.use('/api/jobs', authenticateToken, jobsRouter)
+  app.use('/api/payments/razorpay', razorpayRouter)
   app.use('/api/payments', authenticateToken, paymentsRouter)
   app.use('/api/catalog', authenticateToken, catalogRouter)
 

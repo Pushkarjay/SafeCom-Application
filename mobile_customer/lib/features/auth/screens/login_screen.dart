@@ -202,6 +202,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: authState.isLoading
+                        ? null
+                        : () async {
+                            final router = GoRouter.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
+                            try {
+                              await ref.read(authProvider.notifier).continueWithGoogle();
+                              if (mounted) {
+                                router.go(AppRoutes.home);
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Google sign-in failed: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                    icon: const Icon(Icons.account_circle_outlined),
+                    label: const Text('Continue with Google'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: TextButton(
+                    onPressed: authState.isLoading ? null : () => context.go(AppRoutes.home),
+                    child: const Text('Continue as guest'),
+                  ),
+                ),
 
                 if (authState.error != null) ...[
                   const SizedBox(height: 16),

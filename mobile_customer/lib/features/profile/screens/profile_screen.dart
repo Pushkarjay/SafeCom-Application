@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
+import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -119,10 +121,75 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (customer == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Profile')),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () => context.go('/login'),
-            child: const Text('Login to view profile'),
+        bottomNavigationBar: const CustomerBottomNavigation(selectedIndex: 2),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const CircleAvatar(
+                      radius: 28,
+                      child: Icon(Icons.person_outline, size: 30),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Guest profile',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'You can browse the app without logging in. Sign in only when you are ready to pay or manage bookings.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go(AppRoutes.login),
+                child: const Text('Sign in with email'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final router = GoRouter.of(context);
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    await ref.read(authProvider.notifier).continueWithGoogle();
+                    if (mounted) {
+                      router.go(AppRoutes.profile);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Google sign-in failed: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.account_circle_outlined),
+                label: const Text('Continue with Google'),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => context.go(AppRoutes.home),
+                child: const Text('Continue browsing'),
+              ),
+            ],
           ),
         ),
       );
@@ -139,6 +206,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
         ],
       ),
+      bottomNavigationBar: const CustomerBottomNavigation(selectedIndex: 2),
       body: SingleChildScrollView(
         child: Column(
           children: [

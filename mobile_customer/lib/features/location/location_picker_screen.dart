@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:mobile_customer/core/services/location_service.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 
 class LocationPickerScreen extends ConsumerStatefulWidget {
@@ -167,6 +167,73 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
     }
   }
 
+  Widget _buildWebLocationPanel(BuildContext context, LatLng initialPosition) {
+    return Container(
+      color: const Color(0xFFF8FAFC),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.map_outlined, size: 40, color: Color(0xFF0A84FF)),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Map preview on web',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Chrome does not use the mobile map widget here. Search for an address or keep the current location and continue.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Current area',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: Colors.grey[700],
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _selectedAddress ?? 'Tap search or use the default location below',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _selectedAddress == null ? null : _saveLocation,
+                        child: const Text('Use this location'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Default location: ${initialPosition.latitude.toStringAsFixed(4)}, ${initialPosition.longitude.toStringAsFixed(4)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final initialPosition = _selectedLatLng ?? const LatLng(20.2961, 85.8245);
@@ -214,7 +281,7 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: _results.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (context, index) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final result = _results[index];
                         return ListTile(
@@ -229,35 +296,37 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
             ),
           ),
           Expanded(
-            child: Stack(
-              children: [
-                GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: initialPosition,
-                    zoom: 15,
+            child: kIsWeb
+                ? _buildWebLocationPanel(context, initialPosition)
+                : Stack(
+                    children: [
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: initialPosition,
+                          zoom: 15,
+                        ),
+                        onMapCreated: (controller) => _mapController = controller,
+                        myLocationButtonEnabled: true,
+                        myLocationEnabled: true,
+                        onTap: _handleMapTap,
+                        markers: _selectedLatLng == null
+                            ? {}
+                            : {
+                                Marker(
+                                  markerId: const MarkerId('selected'),
+                                  position: _selectedLatLng!,
+                                  draggable: true,
+                                  onDragEnd: _handleMapTap,
+                                ),
+                              },
+                      ),
+                      if (_isLoading)
+                        const Align(
+                          alignment: Alignment.center,
+                          child: CircularProgressIndicator(),
+                        ),
+                    ],
                   ),
-                  onMapCreated: (controller) => _mapController = controller,
-                  myLocationButtonEnabled: true,
-                  myLocationEnabled: true,
-                  onTap: _handleMapTap,
-                  markers: _selectedLatLng == null
-                      ? {}
-                      : {
-                          Marker(
-                            markerId: const MarkerId('selected'),
-                            position: _selectedLatLng!,
-                            draggable: true,
-                            onDragEnd: _handleMapTap,
-                          ),
-                        },
-                ),
-                if (_isLoading)
-                  const Align(
-                    alignment: Alignment.center,
-                    child: CircularProgressIndicator(),
-                  ),
-              ],
-            ),
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

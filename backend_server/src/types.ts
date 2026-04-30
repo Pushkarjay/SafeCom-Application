@@ -57,7 +57,7 @@ export interface PaymentRecord {
   customerId: string
   amount: number
   status: 'pending' | 'completed' | 'failed'
-  paymentMethod: 'card' | 'cash' | 'upi' | 'bank'
+  paymentMethod: 'card' | 'cash' | 'upi' | 'bank' | 'razorpay'
   timestamp: string
 }
 
@@ -122,4 +122,79 @@ export interface InvoiceTemplateRecord {
   showTax: boolean
   status: 'active' | 'inactive'
   updatedAt: string
+}
+
+// =================================================================
+// Service Catalog & Pricing Data Models
+// =================================================================
+
+export interface User {
+  uid: string;
+  email?: string | null;
+  displayName?: string | null;
+  // other user properties
+}
+
+export interface Service {
+  id: string;
+  title: string;
+  icon: string;
+  enabled: boolean;
+}
+
+export interface InstallationPricing {
+  nvrByPackage: { [key: string]: number };
+  cameraByMp: { [key: string]: number };
+  hddBySize: { [key: string]: number };
+  cableKitPrice: number;
+  connectorPrice: number;
+  wiringPrice: number;
+  installationChargePrice: number;
+}
+
+export interface MaintenancePricing {
+  planVisits: { [key: string]: number };
+  itemTemplates: MaintenanceItemTemplate[];
+}
+
+export interface MaintenanceItemTemplate {
+  key: string;
+  name: string;
+  unitPrice: number;
+  baseQuantity: number;
+  multiplyByVisitCount: boolean;
+  canEditQuantity: boolean;
+}
+
+export interface RepairPricing {
+  issues: RepairIssue[];
+  itemTemplates: RepairItemTemplate[];
+}
+
+export interface RepairIssue {
+  id: string;
+  title: string;
+  visitFee: number;
+  diagnosticFee: number;
+}
+
+export interface RepairItemTemplate {
+  key: string;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  canEditQuantity: boolean;
+}
+
+export interface UpgradeBundle {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+}
+
+export interface Accessory {
+  id: string;
+  name: string;
+  price: number;
 }

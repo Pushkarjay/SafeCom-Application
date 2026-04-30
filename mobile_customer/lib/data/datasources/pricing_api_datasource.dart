@@ -1,33 +1,33 @@
-import 'package:mobile_customer/data/datasources/mock_api_transport.dart';
+import 'package:mobile_customer/data/datasources/api_service.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 
 class PricingApiDataSource {
-  final MockApiTransport _transport;
+  final ApiService _apiService;
 
-  PricingApiDataSource(this._transport);
+  PricingApiDataSource(this._apiService);
 
   Future<InstallationPricingContract> getInstallationPricing() async {
-    final response = await _transport.get('/pricing/installation');
+    final response = await _apiService.getInstallationPricing();
     return InstallationPricingContract.fromJson(response);
   }
 
   Future<MaintenancePricingContract> getMaintenancePricing() async {
-    final response = await _transport.get('/pricing/maintenance');
+    final response = await _apiService.getMaintenancePricing();
     return MaintenancePricingContract.fromJson(response);
   }
 
   Future<RepairPricingContract> getRepairPricing() async {
-    final response = await _transport.get('/pricing/repair');
+    final response = await _apiService.getRepairPricing();
     return RepairPricingContract.fromJson(response);
   }
 
   Future<UpgradeCatalogContract> getUpgradeCatalog() async {
-    final response = await _transport.get('/catalog/upgrade');
+    final response = await _apiService.getUpgradeBundles();
     return UpgradeCatalogContract.fromJson(response);
   }
 
   Future<AccessoryCatalogContract> getAccessoryCatalog() async {
-    final response = await _transport.get('/catalog/accessories');
+    final response = await _apiService.getAccessories();
     return AccessoryCatalogContract.fromJson(response);
   }
 }

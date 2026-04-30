@@ -2,12 +2,14 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { queryCollection, getDocument, createDocument } from '../services/firestore.js'
 
+const paymentMethodSchema = z.enum(['card', 'cash', 'upi', 'bank', 'razorpay'])
+
 const paymentCreateSchema = z.object({
   jobId: z.string().min(1),
   customerId: z.string().min(1),
   amount: z.number().nonnegative(),
   status: z.enum(['pending', 'completed', 'failed']).optional(),
-  paymentMethod: z.enum(['card', 'cash', 'upi', 'bank']),
+  paymentMethod: paymentMethodSchema,
   timestamp: z.string().min(1).optional()
 })
 

@@ -7,6 +7,7 @@ import 'package:mobile_customer/features/home/widgets/location_header.dart';
 import 'package:mobile_customer/features/home/widgets/promo_banner.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/home/widgets/service_grid.dart';
+import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -125,20 +126,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            label: 'Bookings',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-      ),
+      bottomNavigationBar: const CustomerBottomNavigation(selectedIndex: 0),
     );
   }
 }

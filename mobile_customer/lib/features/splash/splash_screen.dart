@@ -1,25 +1,41 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
+import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  Timer? _startupTimer;
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(milliseconds: 1200), () {
+    _startupTimer = Timer(const Duration(milliseconds: 1200), () {
       if (mounted) {
-        context.go(AppRoutes.locationPermission);
+        final authState = ref.read(authProvider);
+        // If user is already authenticated, go to home; otherwise to location permission
+        if (authState.isAuthenticated) {
+          context.go(AppRoutes.home);
+        } else {
+          context.go(AppRoutes.locationPermission);
+        }
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _startupTimer?.cancel();
+    super.dispose();
   }
 
   @override

@@ -188,14 +188,29 @@ class _BookingConfirmationScreenState
                   ),
                   child: Row(
                     children: [
-                      Radio<String>(
-                        value: 'full',
-                        groupValue: _selectedPaymentOption,
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedPaymentOption = value);
-                          }
-                        },
+                      GestureDetector(
+                        onTap: () => setState(() => _selectedPaymentOption = 'full'),
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _selectedPaymentOption == 'full'
+                                  ? const Color(0xFF3B82F6)
+                                  : const Color(0xFFCBD5E1),
+                              width: 2,
+                            ),
+                          ),
+                          child: _selectedPaymentOption == 'full'
+                              ? const Center(
+                                  child: CircleAvatar(
+                                    radius: 5,
+                                    backgroundColor: Color(0xFF3B82F6),
+                                  ),
+                                )
+                              : null,
+                        ),
                       ),
                       Expanded(
                         child: Column(
@@ -257,14 +272,29 @@ class _BookingConfirmationScreenState
                   ),
                   child: Row(
                     children: [
-                      Radio<String>(
-                        value: 'partial',
-                        groupValue: _selectedPaymentOption,
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedPaymentOption = value);
-                          }
-                        },
+                      GestureDetector(
+                        onTap: () => setState(() => _selectedPaymentOption = 'partial'),
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _selectedPaymentOption == 'partial'
+                                  ? const Color(0xFF3B82F6)
+                                  : const Color(0xFFCBD5E1),
+                              width: 2,
+                            ),
+                          ),
+                          child: _selectedPaymentOption == 'partial'
+                              ? const Center(
+                                  child: CircleAvatar(
+                                    radius: 5,
+                                    backgroundColor: Color(0xFF3B82F6),
+                                  ),
+                                )
+                              : null,
+                        ),
                       ),
                       Expanded(
                         child: Column(

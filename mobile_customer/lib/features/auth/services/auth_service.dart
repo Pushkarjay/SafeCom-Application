@@ -19,7 +19,19 @@ class AuthService {
     'status': 'active',
   };
 
+  static const _mockGoogleCustomer = {
+    'id': 'CUST_GOOGLE',
+    'name': 'Google Customer',
+    'email': 'google.user@safecom.com',
+    'phone': '+91 99999 99999',
+    'address': 'Signed in with Google',
+    'totalOrders': 0,
+    'totalSpent': 0,
+    'status': 'active',
+  };
+
   static const _mockToken = 'mock_jwt_token_safecom_2024';
+  static const _mockGoogleToken = 'mock_google_jwt_token_safecom_2024';
 
   /// Login with email and password
   Future<({String token, Customer customer})> login({
@@ -57,6 +69,13 @@ class AuthService {
       }
       rethrow;
     }
+  }
+
+  Future<({String token, Customer customer})> continueWithGoogle() async {
+    return (
+      token: _mockGoogleToken,
+      customer: Customer.fromJson(_mockGoogleCustomer),
+    );
   }
 
   /// Signup a new customer

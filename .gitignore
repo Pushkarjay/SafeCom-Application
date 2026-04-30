@@ -17,11 +17,11 @@
 *.pfx
 *.key
 *.pem
-*safecom*key*.json
-safecom-backend-sa-key.json
-safecom-application-01-*.json
 
 # Service Account Files
+**/service-account-key.json
+**/google-services.json
+**/GoogleService-Info.plist
 *-service-account*.json
 *-firebase-adminsdk*.json
 

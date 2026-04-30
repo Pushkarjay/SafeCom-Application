@@ -1,0 +1,158 @@
+import { Router } from 'express'
+import { z } from 'zod'
+import { createDocument } from '../services/firestore.js'
+import { createCheckoutOrder, verifyCheckoutSignature } from '../services/razorpay.js'
+import { payments } from '../data/mock-data.js'
+
+const createOrderSchema = z.object({
+  amount: z.number().positive(),
+  currency: z.string().trim().min(3).max(3).default('INR'),
+  receipt: z.string().trim().min(1).optional(),
+  customerId: z.string().trim().min(1).optional(),
+  customerName: z.string().trim().min(1).optional(),
+  customerEmail: z.string().email().optional(),
+  customerPhone: z.string().trim().min(1).optional(),
+  jobId: z.string().trim().min(1).optional(),
+  serviceName: z.string().trim().min(1),
+  packageLabel: z.string().trim().min(1),
+  notes: z.record(z.string()).optional()
+})
+
+const verifyPaymentSchema = z.object({
+  orderId: z.string().trim().min(1),
+  paymentId: z.string().trim().min(1),
+  signature: z.string().trim().optional(),
+  amount: z.number().positive(),
+  currency: z.string().trim().min(3).max(3).default('INR'),
+  customerId: z.string().trim().min(1).optional(),
+  customerName: z.string().trim().min(1).optional(),
+  customerEmail: z.string().email().optional(),
+  jobId: z.string().trim().min(1).optional(),
+  serviceName: z.string().trim().min(1),
+  packageLabel: z.string().trim().min(1),
+  notes: z.record(z.string()).optional()
+})
+
+export const razorpayRouter = Router()
+
+razorpayRouter.post('/create-order', async (req, res) => {
+  const parsed = createOrderSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: 'Invalid payment order payload',
+      issues: parsed.error.flatten()
+    })
+  }
+
+  const receipt = parsed.data.receipt ?? `rcpt_${Date.now()}`
+  const notes = {
+    serviceName: parsed.data.serviceName,
+    packageLabel: parsed.data.packageLabel,
+    customerId: parsed.data.customerId ?? '',
+    customerName: parsed.data.customerName ?? '',
+    customerEmail: parsed.data.customerEmail ?? '',
+    customerPhone: parsed.data.customerPhone ?? '',
+    jobId: parsed.data.jobId ?? '',
+    ...(parsed.data.notes ?? {})
+  }
+
+  try {
+    const order = await createCheckoutOrder({
+      amountPaise: Math.round(parsed.data.amount * 100),
+      currency: parsed.data.currency,
+      receipt,
+      notes
+    })
+
+    return res.status(201).json({
+      success: true,
+      provider: order.provider,
+      keyId: order.keyId,
+      orderId: order.orderId,
+      amountPaise: order.amountPaise,
+      currency: order.currency,
+      receipt: order.receipt,
+      notes: order.notes
+    })
+  } catch (error) {
+    console.error('[PAYMENTS] Failed to create Razorpay order:', error)
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to create payment order',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+})
+
+razorpayRouter.post('/verify', async (req, res) => {
+  const parsed = verifyPaymentSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: 'Invalid payment verification payload',
+      issues: parsed.error.flatten()
+    })
+  }
+
+  const verification = verifyCheckoutSignature({
+    orderId: parsed.data.orderId,
+    paymentId: parsed.data.paymentId,
+    signature: parsed.data.signature
+  })
+
+  if (!verification.verified) {
+    return res.status(400).json({
+      success: false,
+      provider: verification.provider,
+      message: verification.message
+    })
+  }
+
+  const paymentRecord = {
+    jobId: parsed.data.jobId ?? '',
+    customerId: parsed.data.customerId ?? '',
+    amount: parsed.data.amount,
+    status: 'completed' as const,
+      paymentMethod: 'razorpay' as const,
+    timestamp: new Date().toISOString(),
+    provider: verification.provider,
+    orderId: verification.orderId,
+    paymentId: verification.paymentId,
+    signature: verification.signature,
+    serviceName: parsed.data.serviceName,
+    packageLabel: parsed.data.packageLabel,
+    currency: parsed.data.currency,
+    customerName: parsed.data.customerName ?? '',
+    customerEmail: parsed.data.customerEmail ?? ''
+  }
+
+  try {
+    const docId = await createDocument('payments', paymentRecord)
+    return res.status(201).json({
+      success: true,
+      provider: verification.provider,
+      verified: true,
+      message: verification.message,
+      payment: {
+        id: docId,
+        ...paymentRecord
+      }
+    })
+  } catch (error) {
+    console.error('[PAYMENTS] Failed to persist verified payment:', error)
+    const nextId = `PAY${String(payments.length + 1).padStart(3, '0')}`
+    const fallbackPayment = {
+      id: nextId,
+      ...paymentRecord
+    }
+    payments.push(fallbackPayment)
+    return res.status(201).json({
+      success: true,
+      provider: verification.provider,
+      verified: true,
+      message: verification.message,
+      payment: fallbackPayment
+    })
+  }
+})

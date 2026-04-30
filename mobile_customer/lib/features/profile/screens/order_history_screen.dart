@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 
 class Order {
   final String id;
@@ -62,6 +63,7 @@ class OrderHistoryScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Order History'),
       ),
+      bottomNavigationBar: const CustomerBottomNavigation(selectedIndex: 1),
       body: orders.isEmpty
           ? Center(
         child: Column(
