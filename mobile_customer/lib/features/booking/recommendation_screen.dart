@@ -13,7 +13,7 @@ class RecommendedAccessory {
   final String imageUrl;
   final bool isOptional;
 
-  RecommendedAccessory({
+  const RecommendedAccessory({
     required this.id,
     required this.name,
     required this.category,
@@ -351,7 +351,6 @@ class RecommendationScreen extends ConsumerWidget {
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              gap: 10,
               children: [
                 FilledButton(
                   onPressed: () => context.go(AppRoutes.payment),
@@ -360,6 +359,7 @@ class RecommendationScreen extends ConsumerWidget {
                     child: Text('Continue with Selection'),
                   ),
                 ),
+                const SizedBox(height: 10),
                 OutlinedButton(
                   onPressed: () {
                     ref.read(selectedAccessoriesProvider.notifier).clear();

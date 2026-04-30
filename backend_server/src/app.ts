@@ -9,26 +9,35 @@ import { techniciansRouter } from './routes/technicians.js'
 import { jobsRouter } from './routes/jobs.js'
 import { paymentsRouter } from './routes/payments.js'
 import { catalogRouter } from './routes/catalog.js'
+import { authenticateToken } from './middleware/auth.js'
 
 export function createApp() {
   const app = express()
 
+  // Security middleware
   app.use(helmet())
-  app.use(cors())
-  app.use(express.json())
+  app.use(cors({
+    origin: (process.env.CORS_ORIGINS || 'http://127.0.0.1:3000').split(',').map(o => o.trim()),
+    credentials: true
+  }))
+  app.use(express.json({ limit: '10mb' }))
   app.use(morgan('dev'))
 
+  // Health check endpoint (public)
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', service: 'safecom-backend', scope: 'CCTV' })
+    res.json({ status: 'ok', service: 'safecom-backend', scope: 'CCTV', timestamp: new Date().toISOString() })
   })
 
+  // Public auth routes
   app.use('/api/auth', authRouter)
-  app.use('/api/dashboard', dashboardRouter)
-  app.use('/api/customers', customersRouter)
-  app.use('/api/technicians', techniciansRouter)
-  app.use('/api/jobs', jobsRouter)
-  app.use('/api/payments', paymentsRouter)
-  app.use('/api/catalog', catalogRouter)
+
+  // Protected routes (require authentication)
+  app.use('/api/dashboard', authenticateToken, dashboardRouter)
+  app.use('/api/customers', authenticateToken, customersRouter)
+  app.use('/api/technicians', authenticateToken, techniciansRouter)
+  app.use('/api/jobs', authenticateToken, jobsRouter)
+  app.use('/api/payments', authenticateToken, paymentsRouter)
+  app.use('/api/catalog', authenticateToken, catalogRouter)
 
   app.use((_req, res) => {
     res.status(404).json({ message: 'Route not found' })
