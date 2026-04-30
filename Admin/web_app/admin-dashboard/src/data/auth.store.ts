@@ -35,14 +35,19 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new Error(text || 'Invalid credentials')
       }
 
-      const payload = await response.json() as { token: string; user: Admin }
-      if (!payload.token || !payload.user) {
-        throw new Error('Invalid auth response')
+      const payload = await response.json()
+      
+      // Handle both old format { token, user } and new format { success, token, user, message }
+      const token = payload.token
+      const user = payload.user
+      
+      if (!token || !user) {
+        throw new Error('Invalid auth response - missing token or user')
       }
 
-      localStorage.setItem('safecom_admin_token', payload.token)
-      localStorage.setItem('safecom_admin', JSON.stringify(payload.user))
-      set({ admin: payload.user, isAuthenticated: true, isLoading: false })
+      localStorage.setItem('safecom_admin_token', token)
+      localStorage.setItem('safecom_admin', JSON.stringify(user))
+      set({ admin: user, isAuthenticated: true, isLoading: false })
     } catch (error) {
       set({ isLoading: false })
       throw error
