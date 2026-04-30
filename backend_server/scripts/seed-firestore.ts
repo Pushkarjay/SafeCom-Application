@@ -2,38 +2,35 @@ import 'dotenv/config'
 import { readFileSync } from 'fs'
 import { initializeApp, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
-import { adminUsers, customers, technicians, jobs, payments, catalogProducts } from '../src/data/mock-data.js'
+import { adminUsers, customers, technicians, jobs, payments, catalogProducts } from '../src/data/mock-data.ts'
 
-function initializeFirestore() {
-  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
 
-  if (!credentialsPath) {
-    throw new Error('GOOGLE_APPLICATION_CREDENTIALS is required for seeding Firestore')
-  }
-
-  const serviceAccount = JSON.parse(readFileSync(credentialsPath, 'utf8'))
-  const app = initializeApp({ credential: cert(serviceAccount) })
-  return getFirestore(app, 'default')
+if (!credentialsPath) {
+  throw new Error('GOOGLE_APPLICATION_CREDENTIALS is required for seeding Firestore')
 }
 
-async function seedCollection(
-  db: FirebaseFirestore.Firestore,
-  collectionName: string,
-  records: Array<{ id: string } & Record<string, unknown>>
-) {
+const serviceAccount = JSON.parse(readFileSync(credentialsPath, 'utf8'))
+const app = initializeApp({ credential: cert(serviceAccount) })
+const db = getFirestore(app, 'default')
+
+type SeedRecord = { id: string } & Record<string, unknown>
+
+async function seedCollection(collectionName: string, data: SeedRecord[]) {
+  const collectionRef = db.collection(collectionName)
   const batch = db.batch()
 
-  for (const record of records) {
-    const { id, ...data } = record
-    batch.set(db.collection(collectionName).doc(id), {
-      ...data,
+  for (const item of data) {
+    const { id, ...record } = item
+    batch.set(collectionRef.doc(id), {
+      ...record,
       id,
       updatedAt: new Date().toISOString()
     })
   }
 
   await batch.commit()
-  console.log(`Seeded ${records.length} documents into ${collectionName}`)
+  console.log(`Seeded ${data.length} documents into ${collectionName}`)
 }
 
 // Data migrated from mobile_customer/lib/data/datasources/mock_api_transport.dart
@@ -102,29 +99,98 @@ const accessoriesData = [
   { id: 'acc_adapter', name: 'Power Adapter', price: 350 }
 ]
 
+const employeesData = [
+  {
+    id: 'TECH001',
+    name: 'John Technician',
+    email: 'john.tech@safecom.com',
+    phone: '+91 98765 43210',
+    location: 'Mumbai, Maharashtra',
+    joinDate: new Date(2024, 0, 15).toISOString(),
+    rating: 4.8,
+    totalJobs: 156,
+    completedJobs: 148,
+    skills: ['CCTV Installation', 'DVR Configuration', 'Wiring', 'Maintenance'],
+    status: 'active',
+    profileImageUrl: 'https://randomuser.me/api/portraits/men/1.jpg',
+  },
+  {
+    id: 'TECH002',
+    name: 'Jane Smith',
+    email: 'jane.smith@safecom.com',
+    phone: '+91 91234 56789',
+    location: 'Delhi, NCR',
+    joinDate: new Date(2023, 5, 20).toISOString(),
+    rating: 4.9,
+    totalJobs: 210,
+    completedJobs: 205,
+    skills: ['Access Control', 'Biometric Systems', 'Alarm Systems'],
+    status: 'active',
+    profileImageUrl: 'https://randomuser.me/api/portraits/women/2.jpg',
+  },
+];
+
+const earningsData = [
+  {
+    id: 'EARN001',
+    employeeId: 'TECH001',
+    jobId: 'JOB001',
+    customer: 'Rahul Sharma',
+    amount: 2500,
+    date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(),
+    status: 'paid',
+  },
+  {
+    id: 'EARN002',
+    employeeId: 'TECH001',
+    jobId: 'JOB002',
+    customer: 'Priya Patel',
+    amount: 1800,
+    date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(),
+    status: 'paid',
+  },
+  {
+    id: 'EARN003',
+    employeeId: 'TECH001',
+    jobId: 'JOB003',
+    customer: 'Amit Kumar',
+    amount: 3200,
+    date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(),
+    status: 'pending',
+  },
+  {
+    id: 'EARN004',
+    employeeId: 'TECH002',
+    jobId: 'JOB004',
+    customer: 'Sneha Gupta',
+    amount: 1500,
+    date: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(),
+    status: 'paid',
+  },
+];
+
 async function main() {
-  const db = initializeFirestore()
-
-  await Promise.all([
-    seedCollection(db, 'admins', adminUsers.map(({ password, ...user }) => ({ ...user, password }))),
-    seedCollection(db, 'customers', customers),
-    seedCollection(db, 'technicians', technicians),
-    seedCollection(db, 'jobs', jobs),
-    seedCollection(db, 'payments', payments),
-    seedCollection(db, 'catalog_products', catalogProducts),
-    // Seed mobile app service catalog and pricing
-    seedCollection(db, 'services', serviceCatalogData),
-    seedCollection(db, 'pricing', installationPricingData),
-    seedCollection(db, 'pricing', maintenancePricingData),
-    seedCollection(db, 'pricing', repairPricingData),
-    seedCollection(db, 'upgrade_catalog', upgradeBundlesData),
-    seedCollection(db, 'accessories_catalog', accessoriesData)
-  ])
-
-  console.log('Firestore seeding completed successfully')
+  console.log('Starting Firestore seeding...');
+  try {
+    await seedCollection('admins', adminUsers.map(({ password, ...user }) => user));
+    await seedCollection('customers', customers);
+    await seedCollection('technicians', technicians);
+    await seedCollection('jobs', jobs);
+    await seedCollection('payments', payments);
+    await seedCollection('catalog_products', catalogProducts);
+    await seedCollection('services', serviceCatalogData);
+    await seedCollection('pricing_installation', installationPricingData);
+    await seedCollection('pricing_maintenance', maintenancePricingData);
+    await seedCollection('pricing_repair', repairPricingData);
+    await seedCollection('upgrade_catalog', upgradeBundlesData);
+    await seedCollection('accessories_catalog', accessoriesData);
+    await seedCollection('employees', employeesData);
+    await seedCollection('earnings', earningsData);
+    console.log('Firestore seeding completed successfully.');
+  } catch (error) {
+    console.error('Error during Firestore seeding:', error);
+    process.exit(1);
+  }
 }
 
-main().catch((error) => {
-  console.error('Firestore seeding failed:', error)
-  process.exitCode = 1
-})
+main();

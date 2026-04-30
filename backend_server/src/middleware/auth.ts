@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from 'express'
 import jwt, { SignOptions } from 'jsonwebtoken'
 import { AuthUser, Role } from '../types.js'
+import { getAuth } from 'firebase-admin/auth'
+import { initFirebase } from '../services/firestore.js'
 
 const jwtSecret = process.env.JWT_SECRET ?? 'safecom-development-secret'
 
@@ -17,7 +19,7 @@ export function createToken(user: AuthUser): string {
  * Main authentication middleware - validates JWT token from Authorization header
  * Supports: Bearer <token>
  */
-export function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization
 
   if (!header?.startsWith('Bearer ')) {
@@ -31,13 +33,28 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
     req.user = user
     return next()
   } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({ message: 'Token has expired' })
+    // Try to verify as Firebase ID token as a fallback
+    try {
+      initFirebase()
+      const decoded = await getAuth().verifyIdToken(token)
+      // Map Firebase decoded token to AuthUser shape
+      const mapped: AuthUser = {
+        id: decoded.uid,
+        email: (decoded.email as string) ?? '',
+        name: (decoded.name as string) ?? ((decoded.email as string) ?? 'user'),
+        role: ((decoded['role'] as Role) ?? 'customer') as Role
+      }
+      req.user = mapped
+      return next()
+    } catch (fbErr) {
+      if (error instanceof jwt.TokenExpiredError) {
+        return res.status(401).json({ message: 'Token has expired' })
+      }
+      if (error instanceof jwt.JsonWebTokenError) {
+        return res.status(401).json({ message: 'Invalid token' })
+      }
+      return res.status(401).json({ message: 'Authentication failed' })
     }
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(401).json({ message: 'Invalid token' })
-    }
-    return res.status(401).json({ message: 'Authentication failed' })
   }
 }
 

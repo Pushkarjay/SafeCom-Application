@@ -140,6 +140,8 @@ export interface Service {
   title: string;
   icon: string;
   enabled: boolean;
+  details: string[];
+  faqs: { question: string; answer: string }[];
 }
 
 export interface InstallationPricing {
@@ -197,4 +199,75 @@ export interface Accessory {
   id: string;
   name: string;
   price: number;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  joinDate: string; // ISO 8601 format
+  rating: number;
+  totalJobs: number;
+  completedJobs: number;
+  skills: string[];
+  status: 'active' | 'inactive' | 'on-leave';
+  profileImageUrl?: string;
+}
+
+export interface Earning {
+  jobId: string;
+  customer: string;
+  amount: number;
+  date: string; // ISO 8601 format
+  status: 'paid' | 'pending';
+}
+
+export interface Payment {
+  id: string;
+  jobId: string;
+  customerId: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  paymentMethod: 'card' | 'cash' | 'upi' | 'bank' | 'razorpay';
+  timestamp: string;
+}
+
+export interface FirestoreUser {
+  uid: string; // Firebase UID
+  email: string;
+  displayName: string;
+  role: Role;
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+export interface FirestoreCustomer {
+  id: string; // Firestore doc ID or custom ID
+  firebaseUid: string; // Link to Firebase user
+  name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  totalOrders: number;
+  totalSpent: number;
+  registeredDate: string; // ISO 8601
+  status: 'active' | 'inactive';
+}
+
+export interface FirestoreEmployee {
+  id: string; // Employee ID or Firestore doc ID
+  firebaseUid: string; // Link to Firebase user
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  joinDate: string; // ISO 8601
+  rating: number;
+  totalJobs: number;
+  completedJobs: number;
+  skills: string[];
+  status: 'active' | 'inactive' | 'on-leave';
+  profileImageUrl?: string;
 }

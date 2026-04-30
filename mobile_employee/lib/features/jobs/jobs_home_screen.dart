@@ -4,13 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/models/job_models.dart';
 import 'package:mobile_employee/data/providers/jobs_providers.dart';
+import 'package:mobile_employee/data/providers/employee_providers.dart';
 
 class JobsHomeScreen extends ConsumerWidget {
   const JobsHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final jobsAsync = ref.watch(assignedJobsProvider);
+    final technicianId = ref.watch(activeEmployeeIdProvider);
+    final jobsAsync = ref.watch(assignedJobsProvider(technicianId));
 
     return Scaffold(
       appBar: AppBar(
@@ -50,7 +52,8 @@ class JobsHomeScreen extends ConsumerWidget {
           }
 
           final pendingJobs = jobs.where((j) => j.status == 'pending').toList();
-          final completedJobs = jobs.where((j) => j.status == 'completed').toList();
+          final completedJobs =
+              jobs.where((j) => j.status == 'completed').toList();
 
           return DefaultTabController(
             length: 2,

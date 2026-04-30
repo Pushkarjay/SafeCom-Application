@@ -12,6 +12,9 @@ import { paymentsRouter } from './routes/payments.js'
 import { catalogRouter } from './routes/catalog.js'
 import { catalogPublicRouter } from './routes/catalogPublic.js'
 import { authenticateToken } from './middleware/auth.js'
+import { verifyFirebaseIdToken } from './middleware/firebaseAuth.js'
+import employeeRoutes from './routes/employees.js'
+import usersRoutes from './routes/users.js'
 
 export function createApp() {
   const app = express()
@@ -36,14 +39,16 @@ export function createApp() {
   // Public catalog routes (no authentication required for service catalog and pricing)
   app.use('/api/catalog-public', catalogPublicRouter)
 
-  // Protected routes (require authentication)
-  app.use('/api/dashboard', authenticateToken, dashboardRouter)
-  app.use('/api/customers', authenticateToken, customersRouter)
-  app.use('/api/technicians', authenticateToken, techniciansRouter)
-  app.use('/api/jobs', authenticateToken, jobsRouter)
+  // Protected routes (require Firebase authentication)
+  app.use('/api/dashboard', verifyFirebaseIdToken, dashboardRouter)
+  app.use('/api/customers', verifyFirebaseIdToken, customersRouter)
+  app.use('/api/technicians', verifyFirebaseIdToken, techniciansRouter)
+  app.use('/api/jobs', verifyFirebaseIdToken, jobsRouter)
   app.use('/api/payments/razorpay', razorpayRouter)
-  app.use('/api/payments', authenticateToken, paymentsRouter)
-  app.use('/api/catalog', authenticateToken, catalogRouter)
+  app.use('/api/payments', verifyFirebaseIdToken, paymentsRouter)
+  app.use('/api/catalog', verifyFirebaseIdToken, catalogRouter)
+  app.use('/api/employees', verifyFirebaseIdToken, employeeRoutes)
+  app.use('/api/users', verifyFirebaseIdToken, usersRoutes)
 
   app.use((_req, res) => {
     res.status(404).json({ message: 'Route not found' })

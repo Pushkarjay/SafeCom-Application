@@ -20,7 +20,7 @@ class PhotoCaptureScreen extends StatefulWidget {
 
 class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
   final ImagePicker _picker = ImagePicker();
-  List<XFile> _capturedPhotos = [];
+  final List<XFile> _capturedPhotos = [];
   bool _isLoading = false;
   String? _error;
 

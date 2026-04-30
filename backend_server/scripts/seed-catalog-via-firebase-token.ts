@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { catalogProducts } from '../src/data/mock-data.js'
+import { catalogProducts } from '../src/data/mock-data.ts'
 
 type FirebaseToolsConfig = {
   tokens?: {

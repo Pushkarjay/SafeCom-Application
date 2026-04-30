@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_employee/data/providers/employee_providers.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _passwordController;
 
@@ -80,14 +82,38 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: () {
-                  if (_phoneController.text.isNotEmpty &&
-                      _passwordController.text.isNotEmpty) {
-                    context.go(AppRoutes.home);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please fill all fields')),
-                    );
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  if (_phoneController.text.isEmpty || _passwordController.text.isEmpty) {
+                    messenger.showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+                    return;
+                  }
+
+                  final raw = _phoneController.text.trim();
+                  final email = raw.contains('@') ? raw : '$raw@safecom.local';
+                  final router = GoRouter.of(context);
+                  final authService = ref.read(authServiceProvider);
+
+                  try {
+                    final cred = await authService.signInWithEmail(email, _passwordController.text.trim());
+                    final user = cred.user;
+
+                    // Link user to backend Firestore after successful login
+                    if (user != null) {
+                      await authService.linkUserToBackend(
+                        firebaseUid: user.uid,
+                        email: email,
+                        displayName: user.displayName ?? email,
+                        phone: raw,
+                        location: 'Unspecified',
+                      );
+                    }
+
+                    // On success, navigate to home
+                    if (!mounted) return;
+                    router.go(AppRoutes.home);
+                  } catch (e) {
+                    messenger.showSnackBar(SnackBar(content: Text('Login failed: $e')));
                   }
                 },
                 style: FilledButton.styleFrom(

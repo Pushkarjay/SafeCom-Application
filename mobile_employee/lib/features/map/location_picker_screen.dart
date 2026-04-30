@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:mobile_employee/core/services/location_service.dart';
 import 'package:mobile_employee/features/map/providers/employee_location_provider.dart';
 
 class LocationPickerScreen extends ConsumerStatefulWidget {
@@ -214,7 +213,7 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: _results.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (context, index) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final result = _results[index];
                         return ListTile(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile_employee/data/models/employee_models.dart';
+import 'package:mobile_employee/data/providers/employee_providers.dart';
 
 class EarningsDashboardScreen extends ConsumerStatefulWidget {
   const EarningsDashboardScreen({super.key});
@@ -11,28 +13,13 @@ class EarningsDashboardScreen extends ConsumerStatefulWidget {
 
 class _EarningsDashboardScreenState extends ConsumerState<EarningsDashboardScreen> {
   String _selectedPeriod = 'this_month';
-  
-  // Mock earnings data
-  final List<_EarningEntry> _earnings = [
-    _EarningEntry(jobId: 'JOB-001', customer: 'Rahul Sharma', amount: 2500, date: DateTime.now().subtract(const Duration(days: 1)), status: 'paid'),
-    _EarningEntry(jobId: 'JOB-002', customer: 'Priya Patel', amount: 1800, date: DateTime.now().subtract(const Duration(days: 2)), status: 'paid'),
-    _EarningEntry(jobId: 'JOB-003', customer: 'Amit Kumar', amount: 3200, date: DateTime.now().subtract(const Duration(days: 3)), status: 'pending'),
-    _EarningEntry(jobId: 'JOB-004', customer: 'Sneha Gupta', amount: 1500, date: DateTime.now().subtract(const Duration(days: 4)), status: 'paid'),
-    _EarningEntry(jobId: 'JOB-005', customer: 'Vikram Singh', amount: 2800, date: DateTime.now().subtract(const Duration(days: 5)), status: 'paid'),
-    _EarningEntry(jobId: 'JOB-006', customer: 'Anjali Reddy', amount: 2100, date: DateTime.now().subtract(const Duration(days: 7)), status: 'paid'),
-    _EarningEntry(jobId: 'JOB-007', customer: 'Raj Malhotra', amount: 4500, date: DateTime.now().subtract(const Duration(days: 8)), status: 'pending'),
-    _EarningEntry(jobId: 'JOB-008', customer: 'Meera Joshi', amount: 1900, date: DateTime.now().subtract(const Duration(days: 10)), status: 'paid'),
-  ];
 
   @override
   Widget build(BuildContext context) {
+    final employeeId = ref.watch(activeEmployeeIdProvider);
+    final earningsAsync = ref.watch(employeeEarningsProvider(employeeId));
     final currencyFormat = NumberFormat.currency(symbol: 'Rs ', decimalDigits: 0);
-    
-    // Calculate totals based on selected period
-    final totalEarnings = _earnings.fold<double>(0, (sum, e) => sum + e.amount);
-    final paidAmount = _earnings.where((e) => e.status == 'paid').fold<double>(0, (sum, e) => sum + e.amount);
-    final pendingAmount = _earnings.where((e) => e.status == 'pending').fold<double>(0, (sum, e) => sum + e.amount);
-    final jobCount = _earnings.length;
+    final dateFormat = DateFormat('MMM dd, yyyy');
 
     return Scaffold(
       appBar: AppBar(
@@ -45,111 +32,137 @@ class _EarningsDashboardScreenState extends ConsumerState<EarningsDashboardScree
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Period selector
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.blue.shade50,
+      body: earningsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Failed to load earnings: $error',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        data: (earnings) {
+          final filteredEarnings = earnings.where(_matchesSelectedPeriod).toList();
+          final totalEarnings = filteredEarnings.fold<double>(0, (sum, entry) => sum + entry.amount);
+          final paidAmount = filteredEarnings
+              .where((entry) => entry.status == 'paid')
+              .fold<double>(0, (sum, entry) => sum + entry.amount);
+          final pendingAmount = filteredEarnings
+              .where((entry) => entry.status == 'pending')
+              .fold<double>(0, (sum, entry) => sum + entry.amount);
+          final jobCount = filteredEarnings.length;
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(employeeEarningsProvider(employeeId));
+              await ref.read(employeeEarningsProvider(employeeId).future);
+            },
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Select Period',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.blue.shade50,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildPeriodChip('today', 'Today'),
-                      const SizedBox(width: 8),
-                      _buildPeriodChip('this_week', 'This Week'),
-                      const SizedBox(width: 8),
-                      _buildPeriodChip('this_month', 'This Month'),
-                      const SizedBox(width: 8),
-                      _buildPeriodChip('last_month', 'Last Month'),
-                      const SizedBox(width: 8),
-                      _buildPeriodChip('all_time', 'All Time'),
+                      Text(
+                        'Select Period',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildPeriodChip('today', 'Today'),
+                            const SizedBox(width: 8),
+                            _buildPeriodChip('this_week', 'This Week'),
+                            const SizedBox(width: 8),
+                            _buildPeriodChip('this_month', 'This Month'),
+                            const SizedBox(width: 8),
+                            _buildPeriodChip('last_month', 'Last Month'),
+                            const SizedBox(width: 8),
+                            _buildPeriodChip('all_time', 'All Time'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // Summary cards
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildSummaryCard(
-                        context,
-                        'Total Earnings',
-                        currencyFormat.format(totalEarnings),
-                        Icons.account_balance_wallet,
-                        Colors.green,
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSummaryCard(
+                              context,
+                              'Total Earnings',
+                              currencyFormat.format(totalEarnings),
+                              Icons.account_balance_wallet,
+                              Colors.green,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSummaryCard(
+                              context,
+                              'Jobs Completed',
+                              jobCount.toString(),
+                              Icons.check_circle,
+                              Colors.blue,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildSummaryCard(
-                        context,
-                        'Jobs Completed',
-                        jobCount.toString(),
-                        Icons.check_circle,
-                        Colors.blue,
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSummaryCard(
+                              context,
+                              'Paid',
+                              currencyFormat.format(paidAmount),
+                              Icons.check,
+                              Colors.teal,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSummaryCard(
+                              context,
+                              'Pending',
+                              currencyFormat.format(pendingAmount),
+                              Icons.pending,
+                              Colors.orange,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildSummaryCard(
-                        context,
-                        'Paid',
-                        currencyFormat.format(paidAmount),
-                        Icons.check,
-                        Colors.teal,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildSummaryCard(
-                        context,
-                        'Pending',
-                        currencyFormat.format(pendingAmount),
-                        Icons.pending,
-                        Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Earnings list
-          Expanded(
-            child: _earnings.isEmpty
-                ? _buildEmptyState(context)
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _earnings.length,
-                    itemBuilder: (context, index) {
-                      return _buildEarningItem(context, _earnings[index], currencyFormat);
-                    },
+                    ],
                   ),
-          ),
-        ],
+                ),
+                Expanded(
+                  child: filteredEarnings.isEmpty
+                      ? _buildEmptyState(context)
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filteredEarnings.length,
+                          itemBuilder: (context, index) {
+                            return _buildEarningItem(context, filteredEarnings[index], currencyFormat, dateFormat);
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -208,9 +221,13 @@ class _EarningsDashboardScreenState extends ConsumerState<EarningsDashboardScree
     );
   }
 
-  Widget _buildEarningItem(BuildContext context, _EarningEntry entry, NumberFormat format) {
+  Widget _buildEarningItem(
+    BuildContext context,
+    EarningEntry entry,
+    NumberFormat format,
+    DateFormat dateFormat,
+  ) {
     final isPaid = entry.status == 'paid';
-    final dateFormat = DateFormat('MMM dd, yyyy');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -290,6 +307,27 @@ class _EarningsDashboardScreenState extends ConsumerState<EarningsDashboardScree
     );
   }
 
+  bool _matchesSelectedPeriod(EarningEntry entry) {
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    final entryDay = DateTime(entry.date.year, entry.date.month, entry.date.day);
+
+    switch (_selectedPeriod) {
+      case 'today':
+        return entryDay == startOfToday;
+      case 'this_week':
+        return entry.date.isAfter(now.subtract(const Duration(days: 7)));
+      case 'this_month':
+        return entry.date.year == now.year && entry.date.month == now.month;
+      case 'last_month':
+        final lastMonth = DateTime(now.year, now.month - 1);
+        return entry.date.year == lastMonth.year && entry.date.month == lastMonth.month;
+      case 'all_time':
+      default:
+        return true;
+    }
+  }
+
   void _showEarningsInfo(BuildContext context) {
     showDialog(
       context: context,
@@ -323,20 +361,4 @@ class _EarningsDashboardScreenState extends ConsumerState<EarningsDashboardScree
       ),
     );
   }
-}
-
-class _EarningEntry {
-  final String jobId;
-  final String customer;
-  final double amount;
-  final DateTime date;
-  final String status;
-
-  _EarningEntry({
-    required this.jobId,
-    required this.customer,
-    required this.amount,
-    required this.date,
-    required this.status,
-  });
 }

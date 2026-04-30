@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
@@ -17,6 +18,22 @@ final dioProvider = Provider<Dio>((ref) {
     requestBody: true,
     responseBody: true,
     error: true,
+  ));
+  
+  // Attach Firebase ID token for authenticated requests
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final token = await user.getIdToken();
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+      } catch (e) {
+        // ignore token attach errors
+      }
+      return handler.next(options);
+    },
   ));
   
   return dio;
