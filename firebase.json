@@ -1,0 +1,9 @@
+﻿{
+  "projects": {
+    "default": "safecom-application-01"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

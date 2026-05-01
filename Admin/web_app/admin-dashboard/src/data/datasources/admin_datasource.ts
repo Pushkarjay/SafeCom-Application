@@ -5,16 +5,31 @@ import { getApiBaseUrl } from '../../core/config/api'
 const API_DELAY = 100 // small UX delay when mocking; kept low when using real API
 const BASE_URL = getApiBaseUrl()
 
-function authHeaders(): Record<string, string> {
+async function authHeaders(): Promise<Record<string, string>> {
   const token = localStorage.getItem('safecom_admin_token')
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  if (token) {
+    return { Authorization: `Bearer ${token}` }
+  }
+  
+  // Try to get fresh token from Firebase
+  try {
+    const idToken = await useAuthStore.getState().getIdToken()
+    if (idToken) {
+      localStorage.setItem('safecom_admin_token', idToken)
+      return { Authorization: `Bearer ${idToken}` }
+    }
+  } catch (error) {
+    console.error('Failed to get Firebase ID token:', error)
+  }
+  
+  return {}
 }
 
 export class AdminDatasource {
   private delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
   private async fetchJson<T>(url: string, opts: RequestInit = {}): Promise<T> {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders() }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...await authHeaders() }
     if (opts.headers) {
       Object.assign(headers, opts.headers as Record<string, string>)
     }
@@ -22,7 +37,7 @@ export class AdminDatasource {
     if (!res.ok) {
       const text = await res.text()
       if (res.status === 401) {
-        useAuthStore.getState().logout()
+        await useAuthStore.getState().logout()
       }
       throw new Error(`API error ${res.status}: ${text}`)
     }

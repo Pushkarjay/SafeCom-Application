@@ -1,59 +1,121 @@
 import { create } from 'zustand'
+import { initializeApp } from 'firebase/app'
+import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, User } from 'firebase/auth'
 import { getApiBaseUrl } from '../config/api'
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyA8XvGtA8sBYMxJGMCfqM5mG9gN8hEiPqI",
+  authDomain: "safecom-application-01.firebaseapp.com",
+  projectId: "safecom-application-01",
+  storageBucket: "safecom-application-01.firebasestorage.app",
+  messagingSenderId: "177425757120",
+  appId: "1:177425757120:web:abcdef123456"
+}
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig)
+export const auth = getAuth(app)
 
 export interface Admin {
   id: string
   email: string
   name: string
   role: 'super_admin' | 'admin'
+  firebaseUid?: string
 }
 
 interface AuthState {
   admin: Admin | null
   isAuthenticated: boolean
   isLoading: boolean
+  firebaseUser: User | null
   login: (email: string, password: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
+  getIdToken: () => Promise<string | null>
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   admin: null,
   isAuthenticated: localStorage.getItem('safecom_admin_token') ? true : false,
   isLoading: false,
+  firebaseUser: null,
   
   login: async (email: string, password: string) => {
     set({ isLoading: true })
     try {
-      // Call backend auth endpoint
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const firebaseUser = userCredential.user
+      
+      // Get Firebase ID token
+      const idToken = await firebaseUser.getIdToken()
+      
+      // Call backend to link/create admin user and get admin info
       const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ 
+          email: firebaseUser.email,
+          firebaseUid: firebaseUser.uid
+        })
       })
 
       if (!res.ok) {
+        await firebaseSignOut(auth)
         const text = await res.text()
         throw new Error(text || 'Authentication failed')
       }
 
       const payload = await res.json()
-      const token = payload.token
-      const user = payload.user
-      if (!token || !user) throw new Error('Invalid response from auth server')
+      const user = payload.user || {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: firebaseUser.displayName || '',
+        role: 'admin' as const,
+        firebaseUid: firebaseUser.uid
+      }
 
-      localStorage.setItem('safecom_admin_token', token)
+      localStorage.setItem('safecom_admin_token', idToken)
       localStorage.setItem('safecom_admin', JSON.stringify(user))
-      set({ admin: user, isAuthenticated: true, isLoading: false })
+      set({ 
+        admin: user, 
+        isAuthenticated: true, 
+        isLoading: false,
+        firebaseUser 
+      })
     } catch (error) {
       set({ isLoading: false })
       throw error
     }
   },
   
-  logout: () => {
-    localStorage.removeItem('safecom_admin_token')
-    localStorage.removeItem('safecom_admin')
-    set({ admin: null, isAuthenticated: false })
+  logout: async () => {
+    try {
+      await firebaseSignOut(auth)
+      localStorage.removeItem('safecom_admin_token')
+      localStorage.removeItem('safecom_admin')
+      set({ admin: null, isAuthenticated: false, firebaseUser: null })
+    } catch (error) {
+      console.error('Logout failed:', error)
+      throw error
+    }
+  },
+  
+  getIdToken: async () => {
+    const { firebaseUser } = get()
+    if (firebaseUser) {
+      try {
+        return await firebaseUser.getIdToken()
+      } catch (error) {
+        console.error('Failed to get ID token:', error)
+        return null
+      }
+    }
+    return null
   }
 }))
 
@@ -68,3 +130,4 @@ if (stored) {
     localStorage.removeItem('safecom_admin_token')
   }
 }
+
