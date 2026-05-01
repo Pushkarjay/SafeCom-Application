@@ -132,3 +132,10 @@ android/*.keystore
 # ============================================================================
 # *.db
 # *.sqlite
+
+# Play upload service account (do NOT commit service account JSON)
+play_upload/service-account.json
+
+# Keystore properties and local signing files
+**/keystore.properties
+
