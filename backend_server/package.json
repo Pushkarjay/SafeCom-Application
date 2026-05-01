@@ -5,6 +5,7 @@
                     "build":  "tsc -p tsconfig.json",
                     "dev":  "tsx watch src/server.ts",
                     "seed":  "tsx scripts/seed-firestore.ts",
+                    "create-admin-user":  "tsx scripts/create-admin-user.ts",
                     "start":  "node dist/server.js"
                 },
     "devDependencies":  {
