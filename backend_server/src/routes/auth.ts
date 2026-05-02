@@ -1,85 +1,76 @@
 import { Router } from 'express'
-import { z } from 'zod'
-import { createToken, authenticateToken } from '../middleware/auth.js'
 import { queryCollection, getDocument } from '../services/firestore.js'
-import type { AuthenticatedRequest } from '../middleware/auth.js'
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(4, 'Password must be at least 4 characters')
-})
+import { authenticateToken } from '../middleware/auth.js'
+import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
 
 export const authRouter = Router()
 
 /**
  * POST /api/auth/login
- * Authenticate user with email and password
- * Returns JWT token and user profile
+ * Authenticate admin user using Firebase ID token
+ * Returns user profile if the Firebase user is authorized as an admin
  */
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   try {
-    // Validate input schema
-    const parsed = loginSchema.safeParse(req.body)
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: 'Invalid login payload',
-        issues: parsed.error.flatten()
+    const uid = req.firebaseUid
+    const email = req.firebaseClaims?.email as string | undefined
+
+    if (!uid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Firebase ID token'
       })
     }
 
-    const { email, password } = parsed.data
-
     try {
-      // Try to fetch from Firestore (admins collection)
+      // Lookup admin record in Firestore by linked Firebase UID
       const adminUsers = await queryCollection<{
         id: string
         email: string
-        password: string
         name: string
         role: string
-      }>('admins', [{ field: 'email', operator: '==', value: email }])
+        firebaseUid: string
+      }>('admins', [{ field: 'firebaseUid', operator: '==', value: uid }])
 
-      const user = adminUsers.find(u => u.password === password)
+      let user = adminUsers[0]
 
-      if (user) {
-        const { password: _password, ...safeUser } = user
-        const token = createToken({
-          ...safeUser,
-          role: safeUser.role as 'admin' | 'customer' | 'employee'
-        })
-        return res.json({
-          success: true,
-          token,
-          user: safeUser,
-          message: 'Logged in successfully'
+      if (!user && email) {
+        const adminByEmail = await queryCollection<{
+          id: string
+          email: string
+          name: string
+          role: string
+          firebaseUid: string
+        }>('admins', [{ field: 'email', operator: '==', value: email }])
+        user = adminByEmail[0]
+      }
+
+      if (!user) {
+        return res.status(403).json({
+          success: false,
+          message: 'Firebase user is not authorized as an admin'
         })
       }
+
+      return res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          firebaseUid: user.firebaseUid
+        },
+        message: 'Logged in successfully'
+      })
     } catch (error) {
-      console.warn('[AUTH] Firestore lookup failed, falling back to mock data:', error)
-    }
-
-    // Fallback to mock data if Firestore is not available
-    const { adminUsers: mockAdmins } = await import('../data/mock-data.js')
-    const fallbackUser = mockAdmins.find(
-      entry => entry.email === email && entry.password === password
-    )
-
-    if (!fallbackUser) {
-      return res.status(401).json({
+      console.error('[AUTH] Firestore admin lookup failed:', error)
+      return res.status(500).json({
         success: false,
-        message: 'Invalid email or password',
-        user: null
+        message: 'Authentication lookup failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
       })
     }
-
-    const { password: _password, ...safeUser } = fallbackUser
-    const token = createToken(safeUser)
-    return res.json({
-      success: true,
-      token,
-      user: safeUser,
-      message: 'Logged in successfully (using mock data)'
-    })
   } catch (error) {
     console.error('[AUTH] Login error:', error)
     return res.status(500).json({

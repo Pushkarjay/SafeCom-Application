@@ -1,4 +1,4 @@
-import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate } from '../models/admin_models'
+import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet } from '../models/admin_models'
 import { useAuthStore } from '../../core/services/auth_service'
 import { getApiBaseUrl } from '../../core/config/api'
 
@@ -103,10 +103,60 @@ export class AdminDatasource {
 
   async getCatalogProducts(): Promise<CatalogProduct[]> {
     try {
-      return await this.fetchJson<CatalogProduct[]>(`${BASE_URL}/catalog/products`)
+      const [products, accessories] = await Promise.all([
+        this.fetchJson<CatalogProduct[]>(`${BASE_URL}/catalog/products`),
+        this.getCatalogAccessories()
+      ])
+      return [...products, ...accessories]
     } catch (e) {
       await this.delay(API_DELAY)
       return []
+    }
+  }
+
+  async getCatalogAccessories(): Promise<CatalogProduct[]> {
+    try {
+      const accessories = await this.fetchJson<Record<string, unknown>[]>(`${BASE_URL}/catalog/accessories`)
+      return accessories.map((item) => ({
+        id: String(item.id || ''),
+        name: String(item.name || ''),
+        category: String(item.category || 'Accessories'),
+        group: String(item.group || 'Accessories'),
+        unit: String(item.unit || 'unit'),
+        price: Number(item.price || 0),
+        status: String(item.status || 'active') as 'active' | 'inactive',
+        updatedAt: String(item.updatedAt || new Date().toISOString())
+      }))
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async getServices(): Promise<Service[]> {
+    try {
+      return await this.fetchJson<Service[]>(`${BASE_URL}/catalog/services`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async getUpgradeBundles(): Promise<UpgradeBundle[]> {
+    try {
+      return await this.fetchJson<UpgradeBundle[]>(`${BASE_URL}/catalog/upgrade`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return []
+    }
+  }
+
+  async getPricingData(): Promise<PricingSet> {
+    try {
+      return await this.fetchJson<PricingSet>(`${BASE_URL}/catalog/pricing`)
+    } catch (e) {
+      await this.delay(API_DELAY)
+      return {}
     }
   }
 

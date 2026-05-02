@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
-import { CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate } from '@data/models/admin_models'
+import { CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet } from '@data/models/admin_models'
 import './catalog_screen.css'
 
 const categories = ['All', 'Cameras', 'Storage', 'Recording', 'Wiring', 'Accessories']
 const groups = ['All', 'Core', 'Package Base', 'Installation', 'Recommendations']
 
-type TabType = 'products' | 'packages' | 'addons' | 'taxes' | 'recommendations' | 'invoices'
+type TabType = 'products' | 'packages' | 'addons' | 'taxes' | 'recommendations' | 'invoices' | 'services' | 'upgrade' | 'pricing'
 
 export default function CatalogScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('products')
@@ -65,6 +65,10 @@ export default function CatalogScreen() {
     name: '', description: '', terms: '', notes: '', showTax: true, status: 'active' as 'active' | 'inactive'
   })
 
+  const [services, setServices] = useState<Service[]>([])
+  const [upgradeBundles, setUpgradeBundles] = useState<UpgradeBundle[]>([])
+  const [pricingData, setPricingData] = useState<PricingSet>({})
+
   // Load data based on active tab
   useEffect(() => {
     const loadData = async () => {
@@ -89,6 +93,15 @@ export default function CatalogScreen() {
         } else if (activeTab === 'invoices' && invoices.length === 0) {
           const data = await adminDatasource.getInvoiceTemplates()
           setInvoices(data)
+        } else if (activeTab === 'services' && services.length === 0) {
+          const data = await adminDatasource.getServices()
+          setServices(data)
+        } else if (activeTab === 'upgrade' && upgradeBundles.length === 0) {
+          const data = await adminDatasource.getUpgradeBundles()
+          setUpgradeBundles(data)
+        } else if (activeTab === 'pricing' && Object.keys(pricingData).length === 0) {
+          const data = await adminDatasource.getPricingData()
+          setPricingData(data)
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data')
@@ -297,21 +310,23 @@ export default function CatalogScreen() {
           <p className="catalog-subtitle">Manage products, pricing, packages, and recommendation items.</p>
         </div>
         <div className="catalog-actions">
-          <button className="primary-btn" onClick={() => {
-            if (activeTab === 'products') { setIsProductFormOpen(true) }
-            else if (activeTab === 'packages') { setIsPackageFormOpen(true) }
-            else if (activeTab === 'addons') { setIsAddonFormOpen(true) }
-            else if (activeTab === 'taxes') { setIsTaxFormOpen(true) }
-            else if (activeTab === 'recommendations') { setIsRecFormOpen(true) }
-            else if (activeTab === 'invoices') { setIsInvoiceFormOpen(true) }
-          }}>+ Add Item</button>
+          {['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices'].includes(activeTab) && (
+            <button className="primary-btn" onClick={() => {
+              if (activeTab === 'products') { setIsProductFormOpen(true) }
+              else if (activeTab === 'packages') { setIsPackageFormOpen(true) }
+              else if (activeTab === 'addons') { setIsAddonFormOpen(true) }
+              else if (activeTab === 'taxes') { setIsTaxFormOpen(true) }
+              else if (activeTab === 'recommendations') { setIsRecFormOpen(true) }
+              else if (activeTab === 'invoices') { setIsInvoiceFormOpen(true) }
+            }}>+ Add Item</button>
+          )}
         </div>
       </div>
 
       <div className="catalog-tabs">
-        {(['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices'] as TabType[]).map((tab) => (
+        {(['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices', 'services', 'upgrade', 'pricing'] as TabType[]).map((tab) => (
           <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-            {tab === 'products' ? 'Products' : tab === 'packages' ? 'Packages' : tab === 'addons' ? 'Add-ons' : tab === 'taxes' ? 'Taxes' : tab === 'recommendations' ? 'Recommendations' : 'Invoice Templates'}
+            {tab === 'products' ? 'Products' : tab === 'packages' ? 'Packages' : tab === 'addons' ? 'Add-ons' : tab === 'taxes' ? 'Taxes' : tab === 'recommendations' ? 'Recommendations' : tab === 'invoices' ? 'Invoice Templates' : tab === 'services' ? 'Services' : tab === 'upgrade' ? 'Upgrade Bundles' : 'Pricing'}
           </button>
         ))}
       </div>
@@ -455,6 +470,83 @@ export default function CatalogScreen() {
                 )}
               </tbody>
             </table>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'services' && (
+        <div className="catalog-table-wrapper">
+          {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            <table className="catalog-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Icon</th>
+                  <th>Enabled</th>
+                </tr>
+              </thead>
+              <tbody>
+                {services.length === 0 ? (
+                  <tr><td colSpan={4} className="empty-cell">No services found</td></tr>
+                ) : (
+                  services.map((service) => (
+                    <tr key={service.id}>
+                      <td>{service.id}</td>
+                      <td>{service.title}</td>
+                      <td>{service.icon}</td>
+                      <td>{service.enabled ? 'Yes' : 'No'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'upgrade' && (
+        <div className="catalog-table-wrapper">
+          {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            <table className="catalog-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upgradeBundles.length === 0 ? (
+                  <tr><td colSpan={4} className="empty-cell">No upgrade bundles found</td></tr>
+                ) : (
+                  upgradeBundles.map((bundle) => (
+                    <tr key={bundle.id}>
+                      <td>{bundle.id}</td>
+                      <td>{bundle.name}</td>
+                      <td>{bundle.description}</td>
+                      <td>Rs {bundle.price.toLocaleString()}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'pricing' && (
+        <div className="catalog-pricing-wrapper">
+          {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            <div className="pricing-sections">
+              {['installation', 'maintenance', 'repair'].map((section) => (
+                <div key={section} className="pricing-card">
+                  <h3>{section.charAt(0).toUpperCase() + section.slice(1)} Pricing</h3>
+                  <pre>{JSON.stringify(pricingData[section as keyof PricingSet] || { message: 'Not available' }, null, 2)}</pre>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

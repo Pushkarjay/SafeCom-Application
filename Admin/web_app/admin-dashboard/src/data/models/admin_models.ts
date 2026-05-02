@@ -70,6 +70,26 @@ export interface CatalogProduct {
   updatedAt: string
 }
 
+export interface Service {
+  id: string
+  title: string
+  icon: string
+  enabled: boolean
+}
+
+export interface UpgradeBundle {
+  id: string
+  name: string
+  description: string
+  price: number
+}
+
+export interface PricingSet {
+  installation?: Record<string, unknown>
+  maintenance?: Record<string, unknown>
+  repair?: Record<string, unknown>
+}
+
 export interface CatalogPackage {
   id: string
   name: string

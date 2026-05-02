@@ -191,6 +191,52 @@ catalogRouter.delete('/products/:id', async (req, res) => {
   }
 })
 
+// GET /catalog/accessories - List all accessory catalog items
+catalogRouter.get('/accessories', async (_req, res) => {
+  try {
+    const accessories = await queryCollection<Record<string, unknown>>('accessories_catalog', [])
+    return res.json(accessories)
+  } catch (error) {
+    console.error('Firestore accessories lookup failed:', error)
+    return res.json([])
+  }
+})
+
+// GET /catalog/services - List all service categories
+catalogRouter.get('/services', async (_req, res) => {
+  try {
+    const services = await queryCollection<Record<string, unknown>>('services', [])
+    return res.json(services)
+  } catch (error) {
+    console.error('Firestore services lookup failed:', error)
+    return res.json([])
+  }
+})
+
+// GET /catalog/upgrade - List all upgrade bundle items
+catalogRouter.get('/upgrade', async (_req, res) => {
+  try {
+    const bundles = await queryCollection<Record<string, unknown>>('upgrade_catalog', [])
+    return res.json(bundles)
+  } catch (error) {
+    console.error('Firestore upgrade bundles lookup failed:', error)
+    return res.json([])
+  }
+})
+
+// GET /catalog/pricing - Read all pricing documents
+catalogRouter.get('/pricing', async (_req, res) => {
+  try {
+    const installation = await getDocument<Record<string, unknown>>('pricing_installation', 'installation')
+    const maintenance = await getDocument<Record<string, unknown>>('pricing_maintenance', 'maintenance')
+    const repair = await getDocument<Record<string, unknown>>('pricing_repair', 'repair')
+    return res.json({ installation, maintenance, repair })
+  } catch (error) {
+    console.error('Firestore pricing lookup failed:', error)
+    return res.json({ installation: null, maintenance: null, repair: null })
+  }
+})
+
 // ===== PACKAGES =====
 // GET /catalog/packages
 catalogRouter.get('/packages', async (req, res) => {
