@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '@data/auth.store'
+import { useAuthStore } from '@core/services/auth_service'
 import './main_layout.css'
 
 export default function MainLayout() {
@@ -8,8 +8,8 @@ export default function MainLayout() {
   const admin = useAuthStore((state) => state.admin)
   const logout = useAuthStore((state) => state.logout)
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/login')
   }
 

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../core/config/api_config.dart';
 
 class MockApiTransport {
   final Dio _dio;
@@ -7,7 +8,7 @@ class MockApiTransport {
 
   Future<Map<String, dynamic>> get(String path) async {
     // Try real backend first (dev default), fall back to mock contracts.
-    final backendBase = 'https://safecom-backend-177425757120.asia-south1.run.app/api';
+    final backendBase = ApiConfig.baseUrl;
     _dio.options.baseUrl = backendBase;
 
     try {

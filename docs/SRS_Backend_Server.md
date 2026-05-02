@@ -6,7 +6,7 @@
 Define backend capabilities supporting customer, employee, and admin applications.
 
 ### 1.2 Scope
-API gateway, auth, catalog, pricing, booking lifecycle, scheduling, notifications, and payment orchestration.
+API gateway, auth, catalog, pricing, booking lifecycle, scheduling, notifications, payment orchestration, serviceability/location, audit logging, and observability.
 
 ## 2. Core Services
 - Identity and access management
@@ -17,11 +17,15 @@ API gateway, auth, catalog, pricing, booking lifecycle, scheduling, notification
 - Payment and transaction service
 - Notification service
 - Reporting and analytics
+- Serviceability and location validation
+- Audit logging and compliance
+- System health and metrics
 
 ## 3. Functional Requirements
 ### 3.1 API
 - REST APIs with versioning and consistent error formats.
 - Token-based authentication and role checks.
+- Idempotent booking/payment endpoints and reconciliation-safe webhooks.
 
 ### 3.2 Pricing/Invoice Engine
 - Compute itemized invoice based on selected package and modifiers.
@@ -32,12 +36,22 @@ API gateway, auth, catalog, pricing, booking lifecycle, scheduling, notification
 - Reserve slot.
 - Collect advance payment.
 - Confirm booking and emit events.
+- Status lifecycle updates with offline sync support.
+- Issue reporting (parts shortage, reschedule, customer not available, technical issue).
 
 ### 3.4 Assignment
 - Auto/manual assignment based on area, skill, and availability.
+- Reassignment and escalation flows.
 
 ### 3.5 Observability
 - Structured logs, traces, health endpoints, and metrics.
+
+### 3.6 Serviceability & Location
+- Coverage rules and serviceability checks for customer locations.
+- Area mapping for workforce assignment.
+
+### 3.7 Audit Logging
+- Audit log entries for admin actions affecting catalog, pricing, bookings, refunds, and assignments.
 
 ## 4. Non-Functional Requirements
 - Horizontal scalability.
@@ -46,5 +60,5 @@ API gateway, auth, catalog, pricing, booking lifecycle, scheduling, notification
 
 ## 5. Suggested Stack (TBD)
 - Node.js/NestJS or Django/FastAPI
-- PostgreSQL + Redis
+- PostgreSQL + Redis (or Firestore if using a document-first model; finalize one source of truth)
 - Queue/Event bus for async workflows

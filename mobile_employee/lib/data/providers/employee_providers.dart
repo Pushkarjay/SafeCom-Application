@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mobile_employee/data/datasources/api_service.dart';
 import 'package:mobile_employee/data/datasources/employee_datasource.dart';
 import 'package:mobile_employee/data/datasources/earnings_datasource.dart';
@@ -12,6 +13,9 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 final activeEmployeeIdProvider = Provider<String>((ref) {
+  if (kIsWeb) {
+    return 'TECH001';
+  }
   final user = FirebaseAuth.instance.currentUser;
   return user?.uid ?? 'TECH001';
 });

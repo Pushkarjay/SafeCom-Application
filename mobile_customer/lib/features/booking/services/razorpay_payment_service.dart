@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_customer/data/providers/data_providers.dart';
+import 'package:mobile_customer/data/datasources/api_service.dart';
+import '../../../core/config/api_config.dart';
 
 class RazorpayCheckoutOrder {
   final String provider;
@@ -60,7 +61,7 @@ class RazorpayVerificationResult {
 }
 
 class RazorpayPaymentService {
-  static const String baseUrl = 'https://safecom-backend-177425757120.asia-south1.run.app/api';
+  static const String baseUrl = ApiConfig.baseUrl;
   static const String _fallbackKeyId = String.fromEnvironment(
     'RAZORPAY_KEY_ID',
     defaultValue: 'rzp_test_SjLf9CH3nOALie',

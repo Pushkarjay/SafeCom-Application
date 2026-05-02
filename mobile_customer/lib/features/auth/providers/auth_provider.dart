@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_customer/features/auth/models/customer_model.dart';
 import 'package:mobile_customer/features/auth/services/auth_service.dart';
-
-final dioProvider = Provider((ref) => Dio());
+import 'package:mobile_customer/data/datasources/api_service.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences?>((ref) => null);
 

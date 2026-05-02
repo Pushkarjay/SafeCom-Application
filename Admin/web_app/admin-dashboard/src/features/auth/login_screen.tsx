@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@data/auth.store'
+import { useAuthStore } from '@core/services/auth_service'
 import './login_screen.css'
 
 export default function LoginScreen() {
@@ -66,9 +66,7 @@ export default function LoginScreen() {
           </button>
 
           <div className="demo-credentials">
-            <p>Demo Credentials:</p>
-            <p>Email: admin@safecom.com</p>
-            <p>Password: admin123</p>
+            <p>Sign in with your Firebase admin account.</p>
           </div>
         </form>
       </div>

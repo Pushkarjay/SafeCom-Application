@@ -2,9 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../core/config/api_config.dart';
+
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
-    baseUrl: 'http://localhost:3000/api', // TODO: Use env variable
+    baseUrl: ApiConfig.baseUrl,
     connectTimeout: const Duration(milliseconds: 5000),
     receiveTimeout: const Duration(milliseconds: 3000),
     headers: {'Content-Type': 'application/json'},

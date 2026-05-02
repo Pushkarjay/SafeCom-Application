@@ -12,7 +12,7 @@ const createOrderSchema = z.object({
   customerName: z.string().trim().min(1).optional(),
   customerEmail: z.string().email().optional(),
   customerPhone: z.string().trim().min(1).optional(),
-  jobId: z.string().trim().min(1).optional(),
+  jobId: z.string().trim().min(1).optional().nullable(),
   serviceName: z.string().trim().min(1),
   packageLabel: z.string().trim().min(1),
   notes: z.record(z.string()).optional()
@@ -27,7 +27,7 @@ const verifyPaymentSchema = z.object({
   customerId: z.string().trim().min(1).optional(),
   customerName: z.string().trim().min(1).optional(),
   customerEmail: z.string().email().optional(),
-  jobId: z.string().trim().min(1).optional(),
+  jobId: z.string().trim().min(1).optional().nullable(),
   serviceName: z.string().trim().min(1),
   packageLabel: z.string().trim().min(1),
   notes: z.record(z.string()).optional()

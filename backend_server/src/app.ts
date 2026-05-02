@@ -21,8 +21,16 @@ export function createApp() {
 
   // Security middleware
   app.use(helmet())
+  const corsOrigins = (process.env.CORS_ORIGINS || 'http://127.0.0.1:3000').split(',').map(o => o.trim())
+  const localhostRegex = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/
   app.use(cors({
-    origin: (process.env.CORS_ORIGINS || 'http://127.0.0.1:3000').split(',').map(o => o.trim()),
+    origin: (origin, callback) => {
+      if (!origin || corsOrigins.includes(origin) || localhostRegex.test(origin)) {
+        callback(null, true)
+        return
+      }
+      callback(new Error('Not allowed by CORS'))
+    },
     credentials: true
   }))
   app.use(express.json({ limit: '10mb' }))

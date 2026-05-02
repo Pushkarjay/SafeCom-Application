@@ -8,6 +8,7 @@
 .env.production.local
 .env.staging
 .env.*.example.local
+**/cloudrun.env
 
 # Keystores & Keys
 *.jks

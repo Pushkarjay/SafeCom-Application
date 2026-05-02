@@ -1,5 +1,5 @@
 import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate } from '../models/admin_models'
-import { useAuthStore } from '../auth.store'
+import { useAuthStore } from '../../core/services/auth_service'
 import { getApiBaseUrl } from '../../core/config/api'
 
 const API_DELAY = 100 // small UX delay when mocking; kept low when using real API

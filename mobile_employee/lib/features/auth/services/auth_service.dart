@@ -1,32 +1,43 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import '../../../core/config/api_config.dart';
 
 class AuthService {
-  static const String baseUrl = 'https://safecom-backend-177425757120.asia-south1.run.app/api';
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  static const String baseUrl = ApiConfig.baseUrl;
+  final FirebaseAuth? _auth = kIsWeb ? null : FirebaseAuth.instance;
   final Dio _dio;
 
   AuthService(this._dio);
 
-  Stream<User?> authStateChanges() => _auth.authStateChanges();
+  Stream<User?> authStateChanges() =>
+      _auth == null ? const Stream<User?>.empty() : _auth.authStateChanges();
 
-  User? currentUser() => _auth.currentUser;
+  User? currentUser() => _auth?.currentUser;
 
   Future<String?> getIdToken() async {
+    if (_auth == null) return null;
     final user = _auth.currentUser;
     if (user == null) return null;
     return await user.getIdToken();
   }
 
   Future<UserCredential> signInWithEmail(String email, String password) async {
+    if (_auth == null) {
+      throw Exception('Firebase auth not available on web for employee app');
+    }
     return await _auth.signInWithEmailAndPassword(email: email, password: password);
   }
 
   Future<UserCredential> signUpWithEmail(String email, String password) async {
+    if (_auth == null) {
+      throw Exception('Firebase auth not available on web for employee app');
+    }
     return await _auth.createUserWithEmailAndPassword(email: email, password: password);
   }
 
   Future<void> signOut() async {
+    if (_auth == null) return;
     await _auth.signOut();
   }
 

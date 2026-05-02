@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { useAuthStore } from '@data/auth.store'
+import { useAuthStore } from '@core/services/auth_service'
 import LoginScreen from '@features/auth/login_screen'
 import DashboardScreen from '@features/dashboard/dashboard_screen'
 import CustomersScreen from '@features/customers/customers_screen'

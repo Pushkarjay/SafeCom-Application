@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:mobile_customer/features/auth/models/customer_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mobile_customer/features/auth/models/customer_model.dart';
+import '../../../core/config/api_config.dart';
 
 class AuthService {
-  static const String baseUrl = 'https://safecom-backend-177425757120.asia-south1.run.app/api';
+  static const String baseUrl = ApiConfig.baseUrl;
   final Dio _dio;
 
   AuthService(this._dio);
@@ -20,19 +22,7 @@ class AuthService {
     'status': 'active',
   };
 
-  static const _mockGoogleCustomer = {
-    'id': 'CUST_GOOGLE',
-    'name': 'Google Customer',
-    'email': 'google.user@safecom.com',
-    'phone': '+91 99999 99999',
-    'address': 'Signed in with Google',
-    'totalOrders': 0,
-    'totalSpent': 0,
-    'status': 'active',
-  };
-
   static const _mockToken = 'mock_jwt_token_safecom_2024';
-  static const _mockGoogleToken = 'mock_google_jwt_token_safecom_2024';
 
   /// Login with email and password
   Future<({String token, Customer customer})> login({
@@ -103,10 +93,44 @@ class AuthService {
   }
 
   Future<({String token, Customer customer})> continueWithGoogle() async {
-    return (
-      token: _mockGoogleToken,
-      customer: Customer.fromJson(_mockGoogleCustomer),
-    );
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        throw Exception('Google sign-in canceled');
+      }
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) {
+        throw Exception('Google sign-in failed');
+      }
+      final idToken = await user.getIdToken();
+      final customer = Customer(
+        id: user.uid,
+        name: user.displayName ?? user.email?.split('@').first ?? 'Customer',
+        email: user.email ?? '',
+        phone: user.phoneNumber ?? '',
+        totalOrders: 0,
+        totalSpent: 0.0,
+        registeredDate: user.metadata.creationTime,
+        status: 'active',
+      );
+
+      await linkUserToBackend(
+        firebaseUid: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName ?? customer.name ?? 'Customer',
+        phone: user.phoneNumber ?? '',
+      );
+
+      return (token: idToken ?? _mockToken, customer: customer);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// Signup a new customer
@@ -243,17 +267,20 @@ class AuthService {
   /// Request password reset
   Future<void> requestPasswordReset(String email) async {
     try {
-      await _dio.post(
-        '$baseUrl/auth/request-reset',
-        data: {'email': email},
-        options: Options(
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        ),
-      );
-    } catch (e) {
-      // Simulate OTP sent
-      rethrow;
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+    } catch (_) {
+      try {
+        await _dio.post(
+          '$baseUrl/auth/request-reset',
+          data: {'email': email},
+          options: Options(
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+          ),
+        );
+      } catch (e) {
+        rethrow;
+      }
     }
   }
 
