@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { initializeApp } from 'firebase/app'
-import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, User } from 'firebase/auth'
+import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, User } from 'firebase/auth'
 import { getApiBaseUrl } from '../config/api'
 
 // Firebase configuration
@@ -106,15 +106,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   getIdToken: async () => {
-    const { firebaseUser } = get()
+    let { firebaseUser } = get()
+    if (!firebaseUser) {
+      const currentUser = auth.currentUser
+      if (currentUser) {
+        firebaseUser = currentUser
+        set({ firebaseUser: currentUser, isAuthenticated: true })
+      }
+    }
+
     if (firebaseUser) {
       try {
-        return await firebaseUser.getIdToken()
+        return await firebaseUser.getIdToken(true)
       } catch (error) {
         console.error('Failed to get ID token:', error)
         return null
       }
     }
+
     return null
   }
 }))
@@ -130,4 +139,13 @@ if (stored) {
     localStorage.removeItem('safecom_admin_token')
   }
 }
+
+// Keep auth state synchronized with Firebase persistence
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    useAuthStore.setState({ firebaseUser: user, isAuthenticated: true })
+  } else {
+    useAuthStore.setState({ firebaseUser: null, isAuthenticated: false })
+  }
+})
 
