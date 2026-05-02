@@ -92,15 +92,12 @@ npm run lint
 
 ## Demo Credentials
 
-Use these credentials to access the admin dashboard:
+Use these credentials to access the admin dashboard in development:
 
 - **Email**: admin@safecom.com
 - **Password**: admin123
-- **Email**: Pushkar_admin@safecom.com
-- **Password**: @Pushkar1
-- **Email**: Shakti_admin@safecom.com
-- **Password**: @Shakti1
 
+> Security note: Do not check real admin credentials into the repository. Production admin passwords must be managed securely through Firebase Console or environment variables.
 ## API Integration
 
 The dashboard currently uses mock API responses from `src/data/datasources/admin_datasource.ts`. To integrate with a real backend:

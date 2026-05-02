@@ -28,6 +28,33 @@ interface AdminUserData {
   displayName: string
 }
 
+function parseAdminUsersFromEnv(): AdminUserData[] {
+  const json = process.env.ADMIN_USERS_JSON?.trim()
+  if (json) {
+    try {
+      const parsed = JSON.parse(json)
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => ({
+          email: String(item.email),
+          password: String(item.password),
+          displayName: String(item.displayName ?? item.email)
+        }))
+      }
+    } catch (error) {
+      console.error('❌ Failed to parse ADMIN_USERS_JSON:', error)
+      process.exit(1)
+    }
+  }
+
+  return [
+    {
+      email: 'admin@safecom.local',
+      password: 'AdminTest@123',
+      displayName: 'SafeCom Admin'
+    }
+  ]
+}
+
 async function createAdminUser(adminData: AdminUserData): Promise<void> {
   console.log(`\n🔧 Creating admin user: ${adminData.email}\n`)
 
@@ -98,7 +125,6 @@ async function createAdminUser(adminData: AdminUserData): Promise<void> {
       console.log('📊 Created Admin User Summary:')
       console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`)
       console.log(`Email:        ${adminData.email}`)
-      console.log(`Password:     ${adminData.password}`)
       console.log(`Display Name: ${adminData.displayName}`)
       console.log(`Firebase UID: ${userRecord.uid}`)
       console.log(`Role:         super_admin`)
@@ -114,21 +140,8 @@ async function createAdminUser(adminData: AdminUserData): Promise<void> {
   }
 }
 
-// Default admin users for testing
-const adminUsers: AdminUserData[] = [
-  {
-    email: 'Pushkar_admin@safecom.com',
-    password: '@Pushkar1',
-    displayName: 'Pushkar Admin'
-  },
-  {
-    email: 'Shakti_admin@safecom.com',
-    password: '@Shakti1',
-    displayName: 'Shakti Admin'
-  }
-]
-
 async function main() {
+  const adminUsers = parseAdminUsersFromEnv()
   for (const admin of adminUsers) {
     await createAdminUser(admin)
   }

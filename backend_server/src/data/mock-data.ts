@@ -16,20 +16,6 @@ export const adminUsers: Array<AuthUser & { password: string }> = [
     name: 'SafeCom Admin',
     role: 'admin',
     password: 'admin123'
-  },
-  {
-    id: 'ADMIN002',
-    email: 'Pushkar_admin@safecom.com',
-    name: 'Pushkar Admin',
-    role: 'admin',
-    password: '@Pushkar1'
-  },
-  {
-    id: 'ADMIN003',
-    email: 'Shakti_admin@safecom.com',
-    name: 'Shakti Admin',
-    role: 'admin',
-    password: '@Shakti1'
   }
 ]
 
