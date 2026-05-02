@@ -24,3 +24,7 @@ npm run dev
 ## Default Demo Login
 - Email: admin@safecom.com
 - Password: admin123
+- Email: Pushkar_admin@safecom.com
+- Password: @Pushkar1
+- Email: Shakti_admin@safecom.com
+- Password: @Shakti1

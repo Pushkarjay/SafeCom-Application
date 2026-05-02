@@ -96,6 +96,10 @@ Use these credentials to access the admin dashboard:
 
 - **Email**: admin@safecom.com
 - **Password**: admin123
+- **Email**: Pushkar_admin@safecom.com
+- **Password**: @Pushkar1
+- **Email**: Shakti_admin@safecom.com
+- **Password**: @Shakti1
 
 ## API Integration
 

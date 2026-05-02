@@ -32,30 +32,50 @@ async function createAdminUser(adminData: AdminUserData): Promise<void> {
   console.log(`\n🔧 Creating admin user: ${adminData.email}\n`)
 
   try {
-    // Step 1: Create Firebase Auth user
-    console.log('📝 Step 1: Creating Firebase Auth user...')
-    const userRecord = await auth.createUser({
-      email: adminData.email,
-      password: adminData.password,
-      displayName: adminData.displayName,
-      emailVerified: true
-    })
-    console.log(`✅ Firebase user created: ${userRecord.uid}`)
+    let userRecord
 
-    // Step 2: Create user document in Firestore
-    console.log('\n📝 Step 2: Creating Firestore user document...')
+    try {
+      userRecord = await auth.getUserByEmail(adminData.email)
+      console.log(`🔁 Admin user already exists: ${userRecord.uid}`)
+      await auth.updateUser(userRecord.uid, {
+        password: adminData.password,
+        displayName: adminData.displayName,
+        emailVerified: true
+      })
+      console.log(`✅ Updated existing Firebase user password and display name`)
+    } catch (err: unknown) {
+      if (err instanceof Error && (err as any).code === 'auth/user-not-found') {
+        console.log('📝 Step 1: Creating Firebase Auth user...')
+        userRecord = await auth.createUser({
+          email: adminData.email,
+          password: adminData.password,
+          displayName: adminData.displayName,
+          emailVerified: true
+        })
+        console.log(`✅ Firebase user created: ${userRecord.uid}`)
+      } else {
+        throw err
+      }
+    }
+
+    if (!userRecord) {
+      throw new Error('Unable to resolve Firebase user record')
+    }
+
+    const now = new Date()
+
+    console.log('\n📝 Step 2: Creating/updating Firestore user document...')
     await db.collection('users').doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: adminData.email,
       displayName: adminData.displayName,
       role: 'admin',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    })
-    console.log(`✅ Firestore user document created`)
+      createdAt: now,
+      updatedAt: now
+    }, { merge: true })
+    console.log(`✅ Firestore user document created/updated`)
 
-    // Step 3: Create admin profile document
-    console.log('\n📝 Step 3: Creating admin profile document...')
+    console.log('\n📝 Step 3: Creating/updating admin profile document...')
     await db.collection('admins').doc(userRecord.uid).set({
       id: userRecord.uid,
       firebaseUid: userRecord.uid,
@@ -64,12 +84,11 @@ async function createAdminUser(adminData: AdminUserData): Promise<void> {
       role: 'super_admin',
       permissions: ['all'],
       status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    })
-    console.log(`✅ Admin profile document created`)
+      createdAt: now,
+      updatedAt: now
+    }, { merge: true })
+    console.log(`✅ Admin profile document created/updated`)
 
-    // Step 4: Verify creation
     console.log('\n📝 Step 4: Verifying creation...')
     const userDoc = await db.collection('users').doc(userRecord.uid).get()
     const adminDoc = await db.collection('admins').doc(userRecord.uid).get()
@@ -95,15 +114,27 @@ async function createAdminUser(adminData: AdminUserData): Promise<void> {
   }
 }
 
-// Default admin user for testing
-const testAdminUser: AdminUserData = {
-  email: 'admin@safecom.local',
-  password: 'AdminTest@123',
-  displayName: 'SafeCom Admin'
+// Default admin users for testing
+const adminUsers: AdminUserData[] = [
+  {
+    email: 'Pushkar_admin@safecom.com',
+    password: '@Pushkar1',
+    displayName: 'Pushkar Admin'
+  },
+  {
+    email: 'Shakti_admin@safecom.com',
+    password: '@Shakti1',
+    displayName: 'Shakti Admin'
+  }
+]
+
+async function main() {
+  for (const admin of adminUsers) {
+    await createAdminUser(admin)
+  }
 }
 
-// Run the script
-createAdminUser(testAdminUser)
+main()
   .then(() => {
     console.log('Process completed. Exiting...\n')
     process.exit(0)
