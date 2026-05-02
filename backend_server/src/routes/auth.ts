@@ -85,13 +85,16 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
  * GET /api/auth/me
  * Get current authenticated user profile (requires authentication)
  */
-authRouter.get('/me', authenticateToken, (req: AuthenticatedRequest, res) => {
-  if (!req.user) {
+authRouter.get('/me', authenticateToken, (req: FirebaseAuthenticatedRequest, res) => {
+  if (!req.firebaseUid) {
     return res.status(401).json({ message: 'Not authenticated' })
   }
   return res.json({
     success: true,
-    user: req.user,
+    user: {
+      uid: req.firebaseUid,
+      claims: req.firebaseClaims
+    },
     message: 'Current user profile'
   })
 })
@@ -100,7 +103,7 @@ authRouter.get('/me', authenticateToken, (req: AuthenticatedRequest, res) => {
  * POST /api/auth/logout
  * Client-side logout (token invalidation happens on client)
  */
-authRouter.post('/logout', (req: AuthenticatedRequest, res) => {
+authRouter.post('/logout', (req: FirebaseAuthenticatedRequest, res) => {
   return res.json({
     success: true,
     message: 'Logged out successfully. Client should remove the token.'
