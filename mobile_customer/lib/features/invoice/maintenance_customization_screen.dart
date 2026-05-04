@@ -94,6 +94,11 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
                         serviceName: state.selectedType,
                         packageLabel: '${state.selectedPackage} Plan',
                         estimatedTotal: state.totalAmount,
+                        items: state.items.map((i) => ActiveOrderLineItem(
+                          name: i.name,
+                          quantity: i.quantity,
+                          unitPrice: i.unitPrice,
+                        )).toList(),
                       ),
                     );
                 context.push(AppRoutes.scheduling);

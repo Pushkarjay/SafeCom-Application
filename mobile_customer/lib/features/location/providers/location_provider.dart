@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_customer/core/services/location_service.dart';
+import 'package:mobile_customer/data/datasources/api_service.dart';
 
 class LocationState {
   final String location;
@@ -7,6 +8,8 @@ class LocationState {
   final double? longitude;
   final bool isLoading;
   final String? errorMessage;
+  final bool isServiceable;
+  final String? serviceabilityMessage;
 
   const LocationState({
     required this.location,
@@ -14,6 +17,8 @@ class LocationState {
     this.longitude,
     required this.isLoading,
     this.errorMessage,
+    this.isServiceable = true,
+    this.serviceabilityMessage,
   });
 
   LocationState copyWith({
@@ -22,6 +27,8 @@ class LocationState {
     double? longitude,
     bool? isLoading,
     String? errorMessage,
+    bool? isServiceable,
+    String? serviceabilityMessage,
   }) {
     return LocationState(
       location: location ?? this.location,
@@ -29,14 +36,17 @@ class LocationState {
       longitude: longitude ?? this.longitude,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
+      isServiceable: isServiceable ?? this.isServiceable,
+      serviceabilityMessage: serviceabilityMessage ?? this.serviceabilityMessage,
     );
   }
 }
 
 class LocationNotifier extends StateNotifier<LocationState> {
   final LocationService _service;
+  final ApiService _apiService;
 
-  LocationNotifier(this._service)
+  LocationNotifier(this._service, this._apiService)
       : super(
           const LocationState(
             location: 'Patna, Bihar',
@@ -60,6 +70,7 @@ class LocationNotifier extends StateNotifier<LocationState> {
         longitude: position.longitude,
         isLoading: false,
       );
+      await checkServiceability(position.latitude, position.longitude);
       return true;
     } on LocationServiceDisabledException {
       state = state.copyWith(
@@ -82,21 +93,37 @@ class LocationNotifier extends StateNotifier<LocationState> {
     }
   }
 
+  Future<void> checkServiceability(double lat, double lng) async {
+     try {
+        final res = await _apiService.checkServiceability(lat: lat, lng: lng);
+        state = state.copyWith(
+           isServiceable: res['isServiceable'] ?? false,
+           serviceabilityMessage: res['message'],
+        );
+     } catch (e) {
+        state = state.copyWith(
+           isServiceable: true, // Fail open if API fails
+           serviceabilityMessage: 'Could not verify coverage area.',
+        );
+     }
+  }
+
   void setManualLocation(String value) {
     state = state.copyWith(location: value, errorMessage: null);
   }
 
-  void setSelectedLocation({
+  Future<void> setSelectedLocation({
     required String address,
     required double latitude,
     required double longitude,
-  }) {
+  }) async {
     state = state.copyWith(
       location: address,
       latitude: latitude,
       longitude: longitude,
       errorMessage: null,
     );
+    await checkServiceability(latitude, longitude);
   }
 }
 
@@ -105,5 +132,8 @@ final locationServiceProvider = Provider<LocationService>((ref) {
 });
 
 final locationProvider = StateNotifierProvider<LocationNotifier, LocationState>(
-  (ref) => LocationNotifier(ref.watch(locationServiceProvider)),
+  (ref) => LocationNotifier(
+     ref.watch(locationServiceProvider),
+     ref.watch(apiServiceProvider),
+  ),
 );

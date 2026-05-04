@@ -14,14 +14,11 @@ class JobsApiDatasource {
 
   Future<List<AssignedJob>> getAssignedJobs(String technicianId) async {
     try {
-      final response = await _apiService.get('/jobs');
+      final response = await _apiService.get('/jobs?employeeId=$technicianId');
 
       if (response.statusCode == 200 && response.data is List) {
         final List data = response.data as List;
-        final matchingJobs = data.where((json) {
-          final assignedTechnician = json['assignedTo']?['employeeId']?.toString() ?? json['technicianId']?.toString();
-          return assignedTechnician == technicianId || assignedTechnician == null || assignedTechnician.isEmpty;
-        });
+        final matchingJobs = data;
 
         return matchingJobs.map<AssignedJob>((json) {
           final map = <String, dynamic>{
@@ -45,7 +42,6 @@ class JobsApiDatasource {
         throw Exception('Failed to load jobs: Invalid response format');
       }
     } catch (e) {
-      // Re-throw the exception to be handled by the caller
       throw Exception('Failed to fetch assigned jobs: $e');
     }
   }

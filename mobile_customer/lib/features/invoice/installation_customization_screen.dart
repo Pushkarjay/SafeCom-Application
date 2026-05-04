@@ -17,7 +17,48 @@ class InstallationCustomizationScreen extends ConsumerWidget {
     final flow = ref.watch(installationFlowProvider);
     final flowNotifier = ref.read(installationFlowProvider.notifier);
     final locationState = ref.watch(locationProvider);
-    const packageOptions = [4, 8, 16, 32];
+    final category = flow.selectedCategory;
+    final group = flow.selectedGroup;
+
+    if (category == null || group == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Customize Invoice')),
+        body: const Center(child: Text('Invalid Category or Package Selected.')),
+      );
+    }
+
+    // Build variant option sections based on mapped products
+    final variantSections = <Widget>[];
+    for (final mappedProduct in group.mappedProducts) {
+      final product = mappedProduct.product;
+      for (final variant in product.variants) {
+        final currentSelection = flow.items
+            .firstWhere((item) => item.key == mappedProduct.productId,
+                orElse: () => flow.items.first)
+            .selectedVariants[variant.variantId];
+
+        variantSections.add(
+          _OptionSection(
+            title: '${product.productName} - ${variant.name}',
+            child: Wrap(
+              spacing: 8,
+              children: variant.options.map((option) {
+                return ChoiceChip(
+                  label: Text(option),
+                  selected: currentSelection == option || (currentSelection == null && variant.options.first == option),
+                  onSelected: (selected) {
+                    if (selected) {
+                      flowNotifier.updateVariant(mappedProduct.productId, variant.variantId, option);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        );
+        variantSections.add(const SizedBox(height: 10));
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Customize Invoice')),
@@ -35,69 +76,13 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                '${flow.selectedServiceType} Setup',
+                '${category.name} - ${group.name}',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
               ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final package in packageOptions)
-                    ChoiceChip(
-                      label: Text('$package Cameras'),
-                      selected: flow.selectedPackage == package,
-                      onSelected: (_) => flowNotifier.selectPackage(package),
-                    ),
-                ],
-              ),
               const SizedBox(height: 14),
-              _OptionSection(
-                title: 'Camera Resolution',
-                child: Wrap(
-                  spacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('2MP'),
-                      selected: flow.selectedCameraMp == CameraMp.twoMp,
-                      onSelected: (_) => flowNotifier.selectCameraMp(CameraMp.twoMp),
-                    ),
-                    ChoiceChip(
-                      label: const Text('5MP'),
-                      selected: flow.selectedCameraMp == CameraMp.fiveMp,
-                      onSelected: (_) => flowNotifier.selectCameraMp(CameraMp.fiveMp),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              _OptionSection(
-                title: 'Hard Disk Size',
-                child: Wrap(
-                  spacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('1TB'),
-                      selected: flow.selectedHardDiskSize == HardDiskSize.oneTb,
-                      onSelected: (_) =>
-                          flowNotifier.selectHardDiskSize(HardDiskSize.oneTb),
-                    ),
-                    ChoiceChip(
-                      label: const Text('2TB'),
-                      selected: flow.selectedHardDiskSize == HardDiskSize.twoTb,
-                      onSelected: (_) =>
-                          flowNotifier.selectHardDiskSize(HardDiskSize.twoTb),
-                    ),
-                    ChoiceChip(
-                      label: const Text('3TB'),
-                      selected: flow.selectedHardDiskSize == HardDiskSize.threeTb,
-                      onSelected: (_) =>
-                          flowNotifier.selectHardDiskSize(HardDiskSize.threeTb),
-                    ),
-                  ],
-                ),
-              ),
+              ...variantSections,
               const SizedBox(height: 16),
               Text(
                 'Price Breakdown',
@@ -110,7 +95,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                 rows: flow.items
                     .map(
                       (item) => InvoiceTableRowData(
-                        product: item.name,
+                        product: _buildItemName(item),
                         unitPrice: item.unitPrice,
                         quantityWidget: QuantityStepper(
                           quantity: item.quantity,
@@ -161,9 +146,14 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               onPressed: () {
                 ref.read(activeOrderProvider.notifier).setSummary(
                       ActiveOrderSummary(
-                        serviceName: flow.selectedServiceType,
-                        packageLabel: '${flow.selectedPackage} Cameras',
+                        serviceName: category.name,
+                        packageLabel: group.name,
                         estimatedTotal: flow.totalAmount,
+                        items: flow.items.map((i) => ActiveOrderLineItem(
+                          name: _buildItemName(i),
+                          quantity: i.quantity,
+                          unitPrice: i.unitPrice,
+                        )).toList(),
                       ),
                     );
                 context.push(AppRoutes.scheduling);
@@ -174,6 +164,12 @@ class InstallationCustomizationScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _buildItemName(InvoiceLineItem item) {
+    if (item.selectedVariants.isEmpty) return item.name;
+    final variantStr = item.selectedVariants.values.join(', ');
+    return '${item.name} ($variantStr)';
   }
 
   String _currency(double value) => 'Rs ${value.toStringAsFixed(0)}';

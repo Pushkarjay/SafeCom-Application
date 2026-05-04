@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
+import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 
@@ -12,6 +13,7 @@ class SchedulingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final booking = ref.watch(bookingFlowProvider);
     final activeOrder = ref.watch(activeOrderProvider);
+    final authState = ref.watch(authProvider);
     final notifier = ref.read(bookingFlowProvider.notifier);
 
     final dateOptions = List.generate(
@@ -27,6 +29,61 @@ class SchedulingScreen extends ConsumerWidget {
       '04:00 PM - 06:00 PM',
     ];
 
+    void handleContinue() {
+      if (!authState.isAuthenticated || authState.customer == null) {
+        // Prompt user to login before continuing
+        showModalBottomSheet(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          builder: (ctx) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.lock_outline, size: 48, color: Color(0xFF0A84FF)),
+                const SizedBox(height: 16),
+                const Text(
+                  'Sign In Required',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Please sign in or create an account to proceed with your booking.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.push(AppRoutes.login);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A84FF),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ),
+        );
+        return;
+      }
+
+      context.push(AppRoutes.recommendation);
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Schedule Service')),
       body: ListView(
@@ -35,74 +92,135 @@ class SchedulingScreen extends ConsumerWidget {
           if (activeOrder != null)
             Container(
               width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
               ),
-              child: Text(
-                '${activeOrder.serviceName} (${activeOrder.packageLabel})',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Selected Service',
+                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${activeOrder.serviceName} (${activeOrder.packageLabel})',
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ],
               ),
             ),
-          Text(
+          const Text(
             'Select Date',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final date in dateOptions)
-                ChoiceChip(
-                  label: Text(_dateLabel(date)),
-                  selected: _isSameDate(booking.selectedDate, date),
-                  onSelected: (_) => notifier.selectDate(date),
-                ),
-            ],
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: dateOptions.map((date) {
+                final isSelected = _isSameDate(booking.selectedDate, date);
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: InkWell(
+                    onTap: () => notifier.selectDate(date),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Ink(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF0A84FF) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFF0A84FF) : const Color(0xFFE2E8F0),
+                        ),
+                        boxShadow: isSelected
+                            ? [BoxShadow(color: const Color(0xFF0A84FF).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))]
+                            : null,
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            _dayName(date),
+                            style: TextStyle(
+                              color: isSelected ? Colors.white.withOpacity(0.9) : const Color(0xFF64748B),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${date.day}',
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : const Color(0xFF0F172A),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-          const SizedBox(height: 18),
-          Text(
+          const SizedBox(height: 32),
+          const Text(
             'Select Time Slot',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           for (final slot in timeSlots)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 12),
               child: InkWell(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 onTap: () => notifier.selectTimeSlot(slot),
                 child: Ink(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: booking.selectedTimeSlot == slot
-                          ? const Color(0xFF0A84FF)
-                          : const Color(0xFFE2E8F0),
+                      color: booking.selectedTimeSlot == slot ? const Color(0xFF0A84FF) : const Color(0xFFE2E8F0),
+                      width: booking.selectedTimeSlot == slot ? 2 : 1,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Expanded(child: Text(slot)),
                       Icon(
-                        booking.selectedTimeSlot == slot
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
-                        color: booking.selectedTimeSlot == slot
-                            ? const Color(0xFF0A84FF)
-                            : const Color(0xFF94A3B8),
+                        Icons.access_time_rounded,
+                        color: booking.selectedTimeSlot == slot ? const Color(0xFF0A84FF) : const Color(0xFF94A3B8),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          slot,
+                          style: TextStyle(
+                            fontWeight: booking.selectedTimeSlot == slot ? FontWeight.w700 : FontWeight.w500,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: booking.selectedTimeSlot == slot ? const Color(0xFF0A84FF) : const Color(0xFFCBD5E1),
+                            width: booking.selectedTimeSlot == slot ? 6 : 2,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -112,16 +230,23 @@ class SchedulingScreen extends ConsumerWidget {
         ],
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration: const BoxDecoration(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4)),
+          ],
         ),
-        child: FilledButton(
-          onPressed: () => context.push(AppRoutes.recommendation),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text('Continue to Payment'),
+        child: SafeArea(
+          child: ElevatedButton(
+            onPressed: handleContinue,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0A84FF),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+            ),
+            child: const Text('Continue', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ),
       ),
@@ -132,8 +257,8 @@ class SchedulingScreen extends ConsumerWidget {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  String _dateLabel(DateTime value) {
+  String _dayName(DateTime value) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return '${days[value.weekday - 1]}, ${value.day}/${value.month}';
+    return days[value.weekday - 1];
   }
 }

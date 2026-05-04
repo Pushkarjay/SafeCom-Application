@@ -201,6 +201,19 @@ function defaultHomeLayout(): SduiComponent[] {
       },
       visibility: { requireServiceable: false },
     },
+    {
+      id: 'home_spacer_5',
+      type: 'spacer',
+      data: { height: 12 },
+    },
+    {
+      id: 'home_announcements',
+      type: 'announcements_list',
+      data: {
+        title: 'Latest Updates',
+        maxItems: 3,
+      },
+    },
   ]
 }
 

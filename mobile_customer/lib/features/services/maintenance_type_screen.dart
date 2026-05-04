@@ -7,13 +7,24 @@ import 'package:mobile_customer/features/services/providers/maintenance_flow_pro
 class MaintenanceTypeScreen extends ConsumerWidget {
   const MaintenanceTypeScreen({super.key});
 
+  static const _iconMap = <String, IconData>{
+    'settings_suggest_outlined': Icons.settings_suggest_outlined,
+    'troubleshoot': Icons.troubleshoot,
+    'tune': Icons.tune,
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const types = [
-      'Preventive Maintenance',
-      'Fault Diagnosis',
-      'Performance Tuning',
-    ];
+    final state = ref.watch(maintenanceFlowProvider);
+
+    if (state.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Select Maintenance Type')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final types = state.maintenanceTypes;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Select Maintenance Type')),
@@ -26,7 +37,7 @@ class MaintenanceTypeScreen extends ConsumerWidget {
           return InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
-              ref.read(maintenanceFlowProvider.notifier).selectType(type);
+              ref.read(maintenanceFlowProvider.notifier).selectType(type.name);
               context.push(AppRoutes.maintenancePackageSelection);
             },
             child: Ink(
@@ -37,15 +48,17 @@ class MaintenanceTypeScreen extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundColor: Color(0xFFEFF6FF),
-                    child: Icon(Icons.settings_suggest_outlined,
-                        color: Color(0xFF0A84FF)),
+                  CircleAvatar(
+                    backgroundColor: const Color(0xFFEFF6FF),
+                    child: Icon(
+                      _iconMap[type.icon] ?? Icons.settings_suggest_outlined,
+                      color: const Color(0xFF0A84FF),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      type,
+                      type.name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),

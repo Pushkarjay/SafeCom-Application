@@ -264,90 +264,151 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final activeOrder = ref.watch(activeOrderProvider);
     final booking = ref.watch(bookingFlowProvider);
     const bookingAmount = 100.0;
+    
+    final taxAmount = (activeOrder?.estimatedTotal ?? 0) * 0.18; // 18% GST estimate
+    final grandTotal = (activeOrder?.estimatedTotal ?? 0) + taxAmount;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Payment')),
+      appBar: AppBar(title: const Text('Invoice & Payment')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _SummaryTile(
-            title: 'Service',
-            value: activeOrder == null
-                ? 'Service details unavailable'
-                : '${activeOrder.serviceName} (${activeOrder.packageLabel})',
-          ),
-          _SummaryTile(
-            title: 'Schedule',
-            value: '${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year} • ${booking.selectedTimeSlot}',
-          ),
-          _SummaryTile(
-            title: 'Total Estimate',
-            value: _currency(activeOrder?.estimatedTotal ?? 0),
-          ),
-          _SummaryTile(
-            title: 'Booking Amount',
-            value: _currency(bookingAmount),
-            isHighlight: true,
-          ),
-          const SizedBox(height: 14),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: const Color(0xFFF8FAFC),
-            ),
-            child: const Text(
-              'You pay only Rs 100 now to confirm booking. Remaining amount is payable after service completion.',
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: const Color(0xFFEFF6FF),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Payment Method',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  'Order Summary',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 16),
+                _SummaryRow(
+                  label: 'Service',
+                  value: activeOrder == null
+                      ? 'Service details unavailable'
+                      : '${activeOrder.serviceName} (${activeOrder.packageLabel})',
+                ),
+                _SummaryRow(
+                  label: 'Schedule',
+                  value: '${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year} • ${booking.selectedTimeSlot}',
+                ),
+                
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Divider(),
+                ),
+                
+                if (activeOrder != null && activeOrder.items.isNotEmpty) ...[
+                  Text(
+                    'Invoice Breakdown',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  ...activeOrder.items.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text('${item.quantity}x', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(_currency(item.amount), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  )),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(),
+                  ),
+                ],
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Subtotal', style: TextStyle(color: Colors.grey)),
+                    Text(_currency(activeOrder?.estimatedTotal ?? 0), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(
-                      Icons.credit_card,
-                      color: Color(0xFF1E40AF),
-                      size: 20,
+                    const Text('Estimated GST (18%)', style: TextStyle(color: Colors.grey)),
+                    Text('+ ${_currency(taxAmount)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Estimated Grand Total', style: TextStyle(fontWeight: FontWeight.w700)),
+                      Text(_currency(grandTotal), style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Amount to Pay Now',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _checkoutOrder?.provider == 'mock' ? 'Razorpay Test Checkout' : 'Razorpay Live Checkout',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                    const Icon(
-                      Icons.check_circle,
-                      color: Color(0xFF16A34A),
-                      size: 20,
+                    Text(
+                      _currency(bookingAmount),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFF16A34A)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'The backend creates the order and verifies the payment signature before confirming the booking.',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: const Color(0xFF64748B),
-                      ),
+                const Text(
+                  'A minimum booking charge of Rs 100 is required to confirm the technician visit. The remaining balance will be payable after the service is successfully completed.',
+                  style: TextStyle(color: Color(0xFF3B82F6), fontSize: 13),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: Colors.green, size: 20),
+              const SizedBox(width: 8),
+              Text('Secure Checkout via Razorpay', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+            ],
           ),
         ],
       ),
@@ -357,17 +418,20 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           color: Colors.white,
           border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
         ),
-        child: FilledButton(
-          onPressed: _isProcessing ? null : _openRazorpayCheckout,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+        child: SafeArea(
+          child: FilledButton(
+            onPressed: _isProcessing ? null : _openRazorpayCheckout,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             child: _isProcessing
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
-                : const Text('Pay Rs 100 and Confirm'),
+                : const Text('Pay Rs 100 & Confirm Booking', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ),
       ),
@@ -377,43 +441,25 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   String _currency(double value) => 'Rs ${value.toStringAsFixed(0)}';
 }
 
-class _SummaryTile extends StatelessWidget {
-  final String title;
+class _SummaryRow extends StatelessWidget {
+  final String label;
   final String value;
-  final bool isHighlight;
 
-  const _SummaryTile({
-    required this.title,
-    required this.value,
-    this.isHighlight = false,
-  });
+  const _SummaryRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+          SizedBox(
+            width: 100,
+            child: Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
           ),
           Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: isHighlight ? const Color(0xFF16A34A) : null,
-                  ),
-            ),
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),

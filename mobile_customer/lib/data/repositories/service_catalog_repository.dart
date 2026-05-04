@@ -1,4 +1,5 @@
 import 'package:mobile_customer/data/datasources/service_catalog_api_datasource.dart';
+import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/models/service_catalog_item.dart';
 
 class ServiceCatalogRepository {

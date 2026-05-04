@@ -10,19 +10,9 @@ class AuthService {
 
   AuthService(this._dio);
 
-  /// Mock customer data for fallback
-  static const _mockCustomer = {
-    'id': 'CUST001',
-    'name': 'Demo Customer',
-    'email': 'demo@safecom.com',
-    'phone': '+91 98765 43210',
-    'address': 'Demo Address, Bangalore',
-    'totalOrders': 5,
-    'totalSpent': 15000,
-    'status': 'active',
-  };
 
-  static const _mockToken = 'mock_jwt_token_safecom_2024';
+
+
 
   /// Login with email and password
   Future<({String token, Customer customer})> login({
@@ -55,7 +45,7 @@ class AuthService {
         );
       }
 
-      return (token: idToken ?? _mockToken, customer: customer);
+      return (token: idToken ?? (throw Exception('No Firebase ID token')), customer: customer);
     } catch (fbErr) {
       // If Firebase auth fails, fallback to backend auth (existing behavior)
       try {
@@ -80,13 +70,6 @@ class AuthService {
 
         throw Exception('Login failed');
       } catch (e) {
-        // Fallback: accept known credentials or use mock
-        if (email == 'demo@safecom.com' && password == 'demo123') {
-          return (
-            token: _mockToken,
-            customer: Customer.fromJson(_mockCustomer),
-          );
-        }
         rethrow;
       }
     }
@@ -127,7 +110,7 @@ class AuthService {
         phone: user.phoneNumber ?? '',
       );
 
-      return (token: idToken ?? _mockToken, customer: customer);
+      return (token: idToken ?? (throw Exception('No Firebase ID token')), customer: customer);
     } catch (e) {
       rethrow;
     }
@@ -170,7 +153,7 @@ class AuthService {
         );
       }
 
-      return (token: idToken ?? _mockToken, customer: customer);
+      return (token: idToken ?? (throw Exception('No Firebase ID token')), customer: customer);
     } catch (fbErr) {
       // Fallback to backend signup
       try {
@@ -200,17 +183,7 @@ class AuthService {
 
         throw Exception('Signup failed');
       } catch (e) {
-        final newCustomer = Customer(
-          id: 'CUST_NEW',
-          name: name,
-          email: email,
-          phone: phone,
-          totalOrders: 0,
-          totalSpent: 0.0,
-          status: 'active',
-          registeredDate: DateTime.now(),
-        );
-        return (token: _mockToken, customer: newCustomer);
+        rethrow;
       }
     }
   }
@@ -301,8 +274,7 @@ class AuthService {
 
       return response.statusCode == 200;
     } catch (e) {
-      // Mock: accept any 6-digit OTP
-      return otp.length == 6 && int.tryParse(otp) != null;
+      rethrow;
     }
   }
 
@@ -344,8 +316,7 @@ class AuthService {
 
       throw Exception('Failed to fetch profile');
     } catch (e) {
-      // Fallback to mock
-      return Customer.fromJson(_mockCustomer);
+      rethrow;
     }
   }
 
@@ -393,3 +364,4 @@ class AuthService {
     }
   }
 }
+

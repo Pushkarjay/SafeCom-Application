@@ -9,7 +9,13 @@ import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+    } catch (_) {
+      // Continue without Firebase when platform config is unavailable.
+    }
+  }
   final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(

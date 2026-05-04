@@ -34,11 +34,13 @@ class RepairInvoiceItem {
 }
 
 class RepairFlowState {
+  final bool isLoading;
   final List<RepairIssueType> issues;
   final RepairIssueType selectedIssue;
   final List<RepairInvoiceItem> items;
 
   const RepairFlowState({
+    required this.isLoading,
     required this.issues,
     required this.selectedIssue,
     required this.items,
@@ -47,11 +49,13 @@ class RepairFlowState {
   double get totalAmount => items.fold(0, (sum, item) => sum + item.amount);
 
   RepairFlowState copyWith({
+    bool? isLoading,
     List<RepairIssueType>? issues,
     RepairIssueType? selectedIssue,
     List<RepairInvoiceItem>? items,
   }) {
     return RepairFlowState(
+      isLoading: isLoading ?? this.isLoading,
       issues: issues ?? this.issues,
       selectedIssue: selectedIssue ?? this.selectedIssue,
       items: items ?? this.items,
@@ -66,6 +70,7 @@ class RepairFlowNotifier extends StateNotifier<RepairFlowState> {
   RepairFlowNotifier(this._repository)
       : super(
           RepairFlowState(
+            isLoading: true,
             issues: _fallbackContract.issues,
             selectedIssue: _fallbackContract.issues.first,
             items: _buildItems(
@@ -84,6 +89,24 @@ class RepairFlowNotifier extends StateNotifier<RepairFlowState> {
         title: 'No Video Output',
         visitFee: 299,
         diagnosticFee: 399,
+      ),
+      RepairIssueType(
+        id: 'night_vision',
+        title: 'Night Vision Not Working',
+        visitFee: 299,
+        diagnosticFee: 349,
+      ),
+      RepairIssueType(
+        id: 'blurry_image',
+        title: 'Blurry / Distorted Image',
+        visitFee: 299,
+        diagnosticFee: 349,
+      ),
+      RepairIssueType(
+        id: 'other',
+        title: 'Other Issue',
+        visitFee: 349,
+        diagnosticFee: 499,
       ),
     ],
     itemTemplates: [
@@ -141,18 +164,24 @@ class RepairFlowNotifier extends StateNotifier<RepairFlowState> {
   }
 
   Future<void> _loadContract() async {
-    final contract = await _repository.getRepairPricing();
-    _contract = contract;
-    if (contract.issues.isEmpty) {
-      return;
-    }
+    try {
+      final contract = await _repository.getRepairPricing();
+      _contract = contract;
+      if (contract.issues.isEmpty) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
 
-    final issue = contract.issues.first;
-    state = state.copyWith(
-      issues: contract.issues,
-      selectedIssue: issue,
-      items: _buildItems(issue, contract.itemTemplates),
-    );
+      final issue = contract.issues.first;
+      state = state.copyWith(
+        isLoading: false,
+        issues: contract.issues,
+        selectedIssue: issue,
+        items: _buildItems(issue, contract.itemTemplates),
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   void selectIssue(RepairIssueType issue) {

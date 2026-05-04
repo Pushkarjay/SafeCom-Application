@@ -26,6 +26,7 @@ class SduiComponentRegistry {
     'info_card': buildInfoCard,
     'spacer': buildSpacer,
     'divider': buildDivider,
+    'announcements_list': buildAnnouncementsList,
   };
 
   /// Register a custom component builder at runtime.

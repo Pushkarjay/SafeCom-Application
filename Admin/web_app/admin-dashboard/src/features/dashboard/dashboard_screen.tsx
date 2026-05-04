@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { DashboardMetrics } from '@data/models/admin_models'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import './dashboard_screen.css'
 
 export default function DashboardScreen() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showReports, setShowReports] = useState(false)
   const firebaseUser = useAuthStore((state) => state.firebaseUser)
 
   useEffect(() => {
@@ -31,6 +33,21 @@ export default function DashboardScreen() {
 
   if (!metrics) {
     return <div className="dashboard-error">Failed to load metrics</div>
+  }
+
+  const getChartData = () => {
+    if (!metrics?.recentBookings) return []
+    const grouped = metrics.recentBookings.reduce((acc, booking) => {
+      const date = new Date(booking.createdAt).toLocaleDateString()
+      if (!acc[date]) acc[date] = 0
+      acc[date] += booking.amount
+      return acc
+    }, {} as Record<string, number>)
+
+    return Object.keys(grouped).slice(0, 7).map(date => ({
+      date,
+      revenue: grouped[date]
+    })).reverse()
   }
 
   return (
@@ -92,19 +109,33 @@ export default function DashboardScreen() {
           <h2>Quick Actions</h2>
           <div className="actions-grid">
             <button className="action-button">
-              <span>➕</span> Add Customer
-            </button>
-            <button className="action-button">
               <span>➕</span> Add Technician
             </button>
             <button className="action-button">
               <span>➕</span> Create Job
             </button>
-            <button className="action-button">
-              <span>📊</span> View Reports
+            <button className="action-button" onClick={() => setShowReports(!showReports)}>
+              <span>📊</span> {showReports ? 'Hide Reports' : 'View Reports'}
             </button>
           </div>
         </div>
+
+        {showReports && (
+          <div className="dashboard-section">
+            <h2>Revenue Trend</h2>
+            <div style={{ width: '100%', height: 300, backgroundColor: 'white', padding: 16, borderRadius: 8 }}>
+              <ResponsiveContainer>
+                <LineChart data={getChartData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         <div className="dashboard-section">
           <h2>System Status</h2>

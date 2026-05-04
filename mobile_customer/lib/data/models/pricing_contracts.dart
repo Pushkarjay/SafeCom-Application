@@ -92,57 +92,165 @@ class RecommendationEntry {
 }
 
 class InstallationPricingContract {
-  final Map<int, double> nvrByPackage;
-  final Map<String, double> cameraByMp;
-  final Map<String, double> hddBySize;
-  final double cableKitPrice;
-  final double connectorPrice;
-  final double wiringPrice;
-  final double installationChargePrice;
+  final String name;
+  final List<InstallationCategory> categories;
 
   const InstallationPricingContract({
-    required this.nvrByPackage,
-    required this.cameraByMp,
-    required this.hddBySize,
-    required this.cableKitPrice,
-    required this.connectorPrice,
-    required this.wiringPrice,
-    required this.installationChargePrice,
+    required this.name,
+    required this.categories,
   });
 
   factory InstallationPricingContract.fromJson(Map<String, dynamic> json) {
-    Map<int, double> parseNumericMap(Map<String, dynamic>? source) {
-      final map = <int, double>{};
-      for (final entry in (source ?? {}).entries) {
-        final key = int.tryParse(entry.key);
-        final value = (entry.value as num?)?.toDouble();
-        if (key != null && value != null) {
-          map[key] = value;
-        }
-      }
-      return map;
-    }
-
-    Map<String, double> parseStringMap(Map<String, dynamic>? source) {
-      final map = <String, double>{};
-      for (final entry in (source ?? {}).entries) {
-        final value = (entry.value as num?)?.toDouble();
-        if (value != null) {
-          map[entry.key] = value;
-        }
-      }
-      return map;
-    }
-
+    final categoriesJson = (json['categories'] as List<dynamic>? ?? []);
     return InstallationPricingContract(
-      nvrByPackage: parseNumericMap(json['nvrByPackage'] as Map<String, dynamic>?),
-      cameraByMp: parseStringMap(json['cameraByMp'] as Map<String, dynamic>?),
-      hddBySize: parseStringMap(json['hddBySize'] as Map<String, dynamic>?),
-      cableKitPrice: (json['cableKitPrice'] as num?)?.toDouble() ?? 0,
-      connectorPrice: (json['connectorPrice'] as num?)?.toDouble() ?? 0,
-      wiringPrice: (json['wiringPrice'] as num?)?.toDouble() ?? 0,
-      installationChargePrice:
-          (json['installationChargePrice'] as num?)?.toDouble() ?? 0,
+      name: (json['name'] ?? '').toString(),
+      categories: categoriesJson
+          .map((entry) => InstallationCategory.fromJson(entry as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class InstallationCategory {
+  final String id;
+  final String name;
+  final String description;
+  final String imageUrl;
+  final List<InstallationGroup> groups;
+
+  const InstallationCategory({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.imageUrl,
+    required this.groups,
+  });
+
+  factory InstallationCategory.fromJson(Map<String, dynamic> json) {
+    final groupsJson = (json['groups'] as List<dynamic>? ?? []);
+    return InstallationCategory(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? '').toString(),
+      groups: groupsJson
+          .map((entry) => InstallationGroup.fromJson(entry as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class InstallationGroup {
+  final String id;
+  final String name;
+  final String description;
+  final List<MappedProduct> mappedProducts;
+
+  const InstallationGroup({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.mappedProducts,
+  });
+
+  factory InstallationGroup.fromJson(Map<String, dynamic> json) {
+    final mappedJson = (json['mappedProducts'] as List<dynamic>? ?? []);
+    return InstallationGroup(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      mappedProducts: mappedJson
+          .map((entry) => MappedProduct.fromJson(entry as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class MappedProduct {
+  final String productId;
+  final int defaultQty;
+  final int minQty;
+  final int maxQty;
+  final MasterProduct product;
+
+  const MappedProduct({
+    required this.productId,
+    required this.defaultQty,
+    required this.minQty,
+    required this.maxQty,
+    required this.product,
+  });
+
+  factory MappedProduct.fromJson(Map<String, dynamic> json) {
+    return MappedProduct(
+      productId: (json['productId'] ?? '').toString(),
+      defaultQty: json['defaultQty'] as int? ?? 1,
+      minQty: json['minQty'] as int? ?? 0,
+      maxQty: json['maxQty'] as int? ?? 999,
+      product: MasterProduct.fromJson(json['product'] as Map<String, dynamic>? ?? {}),
+    );
+  }
+}
+
+class MasterProduct {
+  final String id;
+  final String productName;
+  final String description;
+  final double basePrice;
+  final String category;
+  final String? group;
+  final List<ProductVariant> variants;
+
+  const MasterProduct({
+    required this.id,
+    required this.productName,
+    required this.description,
+    required this.basePrice,
+    required this.category,
+    this.group,
+    required this.variants,
+  });
+
+  factory MasterProduct.fromJson(Map<String, dynamic> json) {
+    final variantsJson = (json['variants'] as List<dynamic>? ?? []);
+    return MasterProduct(
+      id: (json['id'] ?? '').toString(),
+      productName: (json['productName'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      basePrice: (json['basePrice'] as num?)?.toDouble() ?? 0,
+      category: (json['category'] ?? '').toString(),
+      group: json['group']?.toString(),
+      variants: variantsJson
+          .map((entry) => ProductVariant.fromJson(entry as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class ProductVariant {
+  final String variantId;
+  final String name;
+  final List<String> options;
+  final bool allowMultiple;
+  final bool required;
+
+  const ProductVariant({
+    required this.variantId,
+    required this.name,
+    required this.options,
+    required this.allowMultiple,
+    required this.required,
+  });
+
+  factory ProductVariant.fromJson(Map<String, dynamic> json) {
+    return ProductVariant(
+      variantId: (json['variantId'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      options: (json['options'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      allowMultiple: json['allowMultiple'] as bool? ?? false,
+      required: json['required'] as bool? ?? false,
     );
   }
 }
@@ -345,8 +453,54 @@ class AccessoryItem {
   factory AccessoryItem.fromJson(Map<String, dynamic> json) {
     return AccessoryItem(
       id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? json['productName'] ?? '').toString(),
+      price: (json['price'] ?? json['basePrice'] as num?)?.toDouble() ?? 0,
+    );
+  }
+}
+
+class AmcPricingContract {
+  final List<AmcPlan> plans;
+
+  const AmcPricingContract({required this.plans});
+
+  factory AmcPricingContract.fromJson(Map<String, dynamic> json) {
+    final plansJson = (json['plans'] as List<dynamic>? ?? []);
+    return AmcPricingContract(
+      plans: plansJson
+          .map((entry) => AmcPlan.fromJson(entry as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class AmcPlan {
+  final String id;
+  final String name;
+  final String subtitle;
+  final double price;
+  final List<String> features;
+  final int order;
+
+  const AmcPlan({
+    required this.id,
+    required this.name,
+    required this.subtitle,
+    required this.price,
+    required this.features,
+    required this.order,
+  });
+
+  factory AmcPlan.fromJson(Map<String, dynamic> json) {
+    return AmcPlan(
+      id: (json['id'] ?? '').toString(),
       name: (json['name'] ?? '').toString(),
+      subtitle: (json['subtitle'] ?? '').toString(),
       price: (json['price'] as num?)?.toDouble() ?? 0,
+      features: (json['features'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      order: (json['order'] as num?)?.toInt() ?? 0,
     );
   }
 }

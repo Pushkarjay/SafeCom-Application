@@ -3,17 +3,21 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/models/job_models.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_employee/data/datasources/jobs_datasource.dart';
+import 'package:mobile_employee/data/providers/jobs_providers.dart';
+import 'package:mobile_employee/data/providers/employee_providers.dart';
 
-class JobDetailScreen extends StatefulWidget {
+class JobDetailScreen extends ConsumerStatefulWidget {
   final AssignedJob job;
 
   const JobDetailScreen({super.key, required this.job});
 
   @override
-  State<JobDetailScreen> createState() => _JobDetailScreenState();
+  ConsumerState<JobDetailScreen> createState() => _JobDetailScreenState();
 }
 
-class _JobDetailScreenState extends State<JobDetailScreen> {
+class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   late TextEditingController _notesController;
   late TextEditingController _amountController;
   late TextEditingController _collectedController;
@@ -147,7 +151,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (_notesController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -156,18 +160,40 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         );
                         return;
                       }
-                      context.push(
-                        AppRoutes.workCompletion,
-                        extra: WorkCompletion(
-                          jobId: widget.job.id,
-                          completionNotes: _notesController.text,
-                          photoPaths: [],
-                          actualAmount:
+
+                      try {
+                        // Submit to backend
+                        await ref.read(jobsApiDatasourceProvider).submitWorkCompletion(
+                              widget.job.id,
+                              _notesController.text,
                               double.tryParse(_amountController.text) ?? 0,
-                          collectedAmount:
                               double.tryParse(_collectedController.text) ?? 0,
-                        ),
-                      );
+                            );
+
+                        if (context.mounted) {
+                          // Refresh jobs list
+                          ref.refresh(assignedJobsProvider(ref.read(activeEmployeeIdProvider)));
+
+                          context.push(
+                            AppRoutes.workCompletion,
+                            extra: WorkCompletion(
+                              jobId: widget.job.id,
+                              completionNotes: _notesController.text,
+                              photoPaths: [],
+                              actualAmount:
+                                  double.tryParse(_amountController.text) ?? 0,
+                              collectedAmount:
+                                  double.tryParse(_collectedController.text) ?? 0,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to submit: $e')),
+                          );
+                        }
+                      }
                     },
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),

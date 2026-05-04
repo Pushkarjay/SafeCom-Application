@@ -123,6 +123,26 @@ class ApiService {
       throw Exception('Failed to fetch accessories: $e');
     }
   }
+
+  // Get AMC config
+  Future<Map<String, dynamic>> getAmcPricing() async {
+    try {
+      final response = await _dio.get('/catalog-public/pricing/amc');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to fetch AMC pricing: $e');
+    }
+  }
+
+  // Get all master products
+  Future<Map<String, dynamic>> getAllProducts() async {
+    try {
+      final response = await _dio.get('/catalog-public/products');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to fetch all products: $e');
+    }
+  }
   // Get SDUI screen layout
   Future<Map<String, dynamic>> getScreenLayout(
     String screen, {
@@ -139,6 +159,33 @@ class ApiService {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       throw Exception('Failed to fetch screen layout: $e');
+    }
+  }
+
+  // Check serviceability
+  Future<Map<String, dynamic>> checkServiceability({
+    required double lat,
+    required double lng,
+  }) async {
+    try {
+      final response = await _dio.post('/serviceability/check', data: {
+        'latitude': lat,
+        'longitude': lng,
+      });
+      final resData = response.data as Map<String, dynamic>;
+      if (resData.containsKey('data')) {
+         return resData['data'] as Map<String, dynamic>;
+      }
+      return resData;
+    } catch (e) {
+      if (e is DioException && e.response?.data != null) {
+         final resData = e.response!.data as Map<String, dynamic>;
+         if (resData.containsKey('data')) {
+            return resData['data'] as Map<String, dynamic>;
+         }
+         return resData;
+      }
+      throw Exception('Failed to check serviceability: $e');
     }
   }
 }

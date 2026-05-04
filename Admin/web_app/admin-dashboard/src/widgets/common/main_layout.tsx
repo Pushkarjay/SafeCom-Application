@@ -13,7 +13,7 @@ export default function MainLayout() {
     navigate('/login')
   }
 
-  const isActive = (path: string) => location.pathname === path
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`)
 
   return (
     <div className="main-layout">
@@ -54,12 +54,64 @@ export default function MainLayout() {
           >
             💳 Payments
           </button>
-          <button
-            className={`nav-item ${isActive('/accessories') ? 'active' : ''}`}
-            onClick={() => navigate('/accessories')}
-          >
-            🧰 Accessories
-          </button>
+
+          <div className="sidebar-section">
+            <p className="sidebar-section-title" style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginTop: '16px', marginBottom: '8px', paddingLeft: '16px' }}>CATALOG & SERVICES</p>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/products' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/products')}
+            >
+              📦 Products
+            </button>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/installation' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/installation')}
+            >
+              🛠️ Installation
+            </button>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/accessories' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/accessories')}
+            >
+              🧰 Accessories
+            </button>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/maintenance' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/maintenance')}
+            >
+              🧹 Maintenance
+            </button>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/repair' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/repair')}
+            >
+              📷 Camera Repair
+            </button>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/amc' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/amc')}
+            >
+              📋 AMC Plans
+            </button>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/upgrade' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/upgrade')}
+            >
+              ⭐ Upgrade
+            </button>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/recommendations' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/recommendations')}
+            >
+              💡 Recommendations
+            </button>
+            <button
+              className={`nav-item ${location.pathname === '/catalog/services' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/services')}
+            >
+              ⚡ Services
+            </button>
+          </div>
         </nav>
 
         <div className="sidebar-footer">

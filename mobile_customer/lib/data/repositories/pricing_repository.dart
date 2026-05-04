@@ -18,6 +18,10 @@ class PricingRepository {
     return _dataSource.getRepairPricing();
   }
 
+  Future<AmcPricingContract> getAmcPricing() {
+    return _dataSource.getAmcPricing();
+  }
+
   Future<UpgradeCatalogContract> getUpgradeCatalog() {
     return _dataSource.getUpgradeCatalog();
   }

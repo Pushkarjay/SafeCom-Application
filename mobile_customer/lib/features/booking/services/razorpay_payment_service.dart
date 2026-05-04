@@ -24,7 +24,7 @@ class RazorpayCheckoutOrder {
 
   factory RazorpayCheckoutOrder.fromJson(Map<String, dynamic> json) {
     return RazorpayCheckoutOrder(
-      provider: json['provider'] as String? ?? 'mock',
+      provider: json['provider'] as String? ?? 'razorpay',
       keyId: json['keyId'] as String? ?? RazorpayPaymentService._fallbackKeyId,
       orderId: json['orderId'] as String? ?? '',
       amountPaise: (json['amountPaise'] as num?)?.toInt() ?? 0,
@@ -50,7 +50,7 @@ class RazorpayVerificationResult {
 
   factory RazorpayVerificationResult.fromJson(Map<String, dynamic> json) {
     return RazorpayVerificationResult(
-      provider: json['provider'] as String? ?? 'mock',
+      provider: json['provider'] as String? ?? 'razorpay',
       verified: json['verified'] as bool? ?? false,
       message: json['message'] as String? ?? '',
       payment: json['payment'] == null
@@ -96,40 +96,18 @@ class RazorpayPaymentService {
       'notes': notes ?? <String, String>{},
     };
 
-    try {
-      final response = await _dio.post(
-        '$baseUrl/payments/razorpay/create-order',
-        data: payload,
-        options: Options(
-          sendTimeout: const Duration(seconds: 8),
-          receiveTimeout: const Duration(seconds: 8),
-        ),
-      );
+    final response = await _dio.post(
+      '$baseUrl/payments/razorpay/create-order',
+      data: payload,
+      options: Options(
+        sendTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 8),
+      ),
+    );
 
-      return RazorpayCheckoutOrder.fromJson(
-        Map<String, dynamic>.from(response.data as Map),
-      );
-    } catch (e) {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      return RazorpayCheckoutOrder(
-        provider: 'mock',
-        keyId: _fallbackKeyId,
-        orderId: 'order_mock_$now',
-        amountPaise: (amountRupees * 100).round(),
-        currency: 'INR',
-        receipt: 'safecom_$now',
-        notes: {
-          'serviceName': serviceName,
-          'packageLabel': packageLabel,
-          'customerId': customerId ?? '',
-          'customerName': customerName ?? '',
-          'customerEmail': customerEmail ?? '',
-          'customerPhone': customerPhone ?? '',
-          'jobId': jobId ?? '',
-          ...(notes ?? <String, String>{}),
-        },
-      );
-    }
+    return RazorpayCheckoutOrder.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   Future<RazorpayVerificationResult> verifyPayment({
@@ -158,38 +136,18 @@ class RazorpayPaymentService {
       'packageLabel': packageLabel,
     };
 
-    try {
-      final response = await _dio.post(
-        '$baseUrl/payments/razorpay/verify',
-        data: payload,
-        options: Options(
-          sendTimeout: const Duration(seconds: 8),
-          receiveTimeout: const Duration(seconds: 8),
-        ),
-      );
+    final response = await _dio.post(
+      '$baseUrl/payments/razorpay/verify',
+      data: payload,
+      options: Options(
+        sendTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 8),
+      ),
+    );
 
-      return RazorpayVerificationResult.fromJson(
-        Map<String, dynamic>.from(response.data as Map),
-      );
-    } catch (e) {
-      return RazorpayVerificationResult(
-        provider: 'mock',
-        verified: true,
-        message: 'Payment accepted locally because backend verification is unavailable.',
-        payment: {
-          'orderId': orderId,
-          'paymentId': paymentId,
-          'signature': signature,
-          'amount': amountRupees,
-          'serviceName': serviceName,
-          'packageLabel': packageLabel,
-          'customerId': customerId ?? '',
-          'customerName': customerName ?? '',
-          'customerEmail': customerEmail ?? '',
-          'jobId': jobId ?? '',
-        },
-      );
-    }
+    return RazorpayVerificationResult.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 }
 

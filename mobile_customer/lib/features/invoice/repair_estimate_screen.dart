@@ -94,6 +94,11 @@ class RepairEstimateScreen extends ConsumerWidget {
                         serviceName: 'Camera Repair',
                         packageLabel: state.selectedIssue.title,
                         estimatedTotal: state.totalAmount,
+                        items: state.items.map((i) => ActiveOrderLineItem(
+                          name: i.name,
+                          quantity: i.quantity,
+                          unitPrice: i.unitPrice,
+                        )).toList(),
                       ),
                     );
                 context.push(AppRoutes.scheduling);

@@ -12,7 +12,14 @@ class MaintenancePackageScreen extends ConsumerWidget {
     final state = ref.watch(maintenanceFlowProvider);
     final notifier = ref.read(maintenanceFlowProvider.notifier);
 
-    const packages = ['Basic', 'Standard', 'Comprehensive'];
+    if (state.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Select Maintenance Package')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final packages = state.availablePackages;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Select Maintenance Package')),
@@ -23,11 +30,7 @@ class MaintenancePackageScreen extends ConsumerWidget {
         itemBuilder: (context, index) {
           final package = packages[index];
           final selected = state.selectedPackage == package;
-          final estimate = package == 'Basic'
-              ? 3299
-              : package == 'Standard'
-                  ? 5899
-                  : 9999;
+          final visitCount = state.planVisits[package] ?? 1;
 
           return InkWell(
             borderRadius: BorderRadius.circular(16),
@@ -46,18 +49,30 @@ class MaintenancePackageScreen extends ConsumerWidget {
                   width: selected ? 1.5 : 1,
                 ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      '$package Plan',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$package Plan',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                      Text(
+                        '$visitCount visit${visitCount > 1 ? 's' : ''}/year',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                            ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
                   Text(
-                    'Rs $estimate',
+                    'Estimated: Rs ${_estimateTotal(state, package).toStringAsFixed(0)}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: const Color(0xFF0A84FF),
                           fontWeight: FontWeight.w800,
@@ -70,5 +85,17 @@ class MaintenancePackageScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  double _estimateTotal(MaintenanceFlowState state, String packageName) {
+    final visitCount = state.planVisits[packageName] ?? 1;
+    var total = 0.0;
+    for (final template in state.itemTemplatesRaw) {
+      final qty = template.multiplyByVisitCount
+          ? template.baseQuantity * visitCount
+          : template.baseQuantity;
+      total += template.unitPrice * qty;
+    }
+    return total;
   }
 }

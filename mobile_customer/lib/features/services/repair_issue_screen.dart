@@ -12,6 +12,13 @@ class RepairIssueScreen extends ConsumerWidget {
     final state = ref.watch(repairFlowProvider);
     final notifier = ref.read(repairFlowProvider.notifier);
 
+    if (state.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Select Repair Issue')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Select Repair Issue')),
       body: ListView.separated(
@@ -58,6 +65,9 @@ class RepairIssueScreen extends ConsumerWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Visit + diagnostics starts at Rs ${(issue.visitFee + issue.diagnosticFee).toStringAsFixed(0)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF64748B),
+                              ),
                         ),
                       ],
                     ),

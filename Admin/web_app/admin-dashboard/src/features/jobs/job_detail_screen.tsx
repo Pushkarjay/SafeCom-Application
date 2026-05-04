@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { Job } from '@data/models/admin_models'
+import InvoiceGeneratorModal from './InvoiceGeneratorModal'
 import '../styles/detail_screen.css'
 
 export default function JobDetailScreen() {
@@ -10,6 +11,7 @@ export default function JobDetailScreen() {
   const [job, setJob] = useState<Job | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [showInvoiceGenerator, setShowInvoiceGenerator] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -71,6 +73,9 @@ export default function JobDetailScreen() {
         <div className="header-top">
           <button className="back-button" onClick={() => navigate('/jobs')}>← Back</button>
           <div className="header-actions">
+            <button className="btn btn-primary" onClick={() => setShowInvoiceGenerator(true)} style={{ marginRight: '8px' }}>
+              Generate Invoice
+            </button>
             {!isCompleted && (
               <button className="btn btn-secondary" onClick={() => navigate(`/jobs/${id}/edit`)}>
                 Edit Job
@@ -78,6 +83,10 @@ export default function JobDetailScreen() {
             )}
           </div>
         </div>
+
+        {showInvoiceGenerator && (
+          <InvoiceGeneratorModal job={job} onClose={() => setShowInvoiceGenerator(false)} />
+        )}
 
         <div className="job-card">
           <div className="card-section">

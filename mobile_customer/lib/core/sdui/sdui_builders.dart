@@ -280,6 +280,107 @@ Widget buildDivider(SduiComponent component, BuildContext context) {
 }
 
 // ============================================
+// ANNOUNCEMENTS LIST
+// ============================================
+
+Widget buildAnnouncementsList(SduiComponent component, BuildContext context) {
+  final title = component.data['title'] as String? ?? 'Announcements';
+
+  // For now, show static announcements — in production these would come
+  // from a Firestore collection fetched via a provider.
+  final announcements = [
+    _Announcement(
+      title: 'Free Installation Consultation',
+      body: 'Book a free site survey with our experts this weekend.',
+      icon: Icons.engineering_outlined,
+      color: const Color(0xFF8B5CF6),
+    ),
+    _Announcement(
+      title: 'Expanded Service Areas',
+      body: 'We now serve Danapur, Hajipur, and Bihta regions.',
+      icon: Icons.map_outlined,
+      color: const Color(0xFF10B981),
+    ),
+    _Announcement(
+      title: 'Referral Program Live',
+      body: 'Refer a friend and earn Rs 500 in service credits.',
+      icon: Icons.card_giftcard_outlined,
+      color: const Color(0xFFF59E0B),
+    ),
+  ];
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        title,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+      ),
+      const SizedBox(height: 12),
+      ...announcements.map((a) => Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFF1F5F9)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: a.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(a.icon, color: a.color, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        a.title,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        a.body,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )),
+    ],
+  );
+}
+
+class _Announcement {
+  final String title;
+  final String body;
+  final IconData icon;
+  final Color color;
+
+  const _Announcement({
+    required this.title,
+    required this.body,
+    required this.icon,
+    required this.color,
+  });
+}
+
+// ============================================
 // HELPERS
 // ============================================
 

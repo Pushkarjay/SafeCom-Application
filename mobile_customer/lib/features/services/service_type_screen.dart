@@ -9,20 +9,36 @@ class ServiceTypeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const serviceTypes = ['IP Camera', 'DVR Camera', 'Wi-Fi Camera'];
+    final flowState = ref.watch(installationFlowProvider);
+
+    if (flowState.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Select Installation Type')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final categories = flowState.config?.categories ?? [];
+
+    if (categories.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Select Installation Type')),
+        body: const Center(child: Text('No installation services available at the moment.')),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Select Installation Type')),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: serviceTypes.length,
+        itemCount: categories.length,
         separatorBuilder: (_, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          final type = serviceTypes[index];
+          final category = categories[index];
           return InkWell(
             borderRadius: BorderRadius.circular(18),
             onTap: () {
-              ref.read(installationFlowProvider.notifier).selectServiceType(type);
+              ref.read(installationFlowProvider.notifier).selectCategory(category.id);
               context.push(AppRoutes.packageSelection);
             },
             child: Ink(
@@ -56,15 +72,17 @@ class ServiceTypeScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          type,
+                          category.name,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Continue with package selection and live invoice customization.',
+                          category.description.isNotEmpty ? category.description : 'Continue with package selection and live invoice customization.',
                           style: Theme.of(context).textTheme.bodySmall,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),

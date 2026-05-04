@@ -151,19 +151,51 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
     });
   }
 
-  void _saveLocation() {
+  Future<void> _saveLocation() async {
     final selected = _selectedLatLng;
     final address = _selectedAddress;
     if (selected == null || address == null) return;
 
-    ref.read(locationProvider.notifier).setSelectedLocation(
+    setState(() {
+      _isLoading = true;
+    });
+
+    await ref.read(locationProvider.notifier).setSelectedLocation(
           address: address,
           latitude: selected.latitude,
           longitude: selected.longitude,
         );
 
     if (mounted) {
-      Navigator.of(context).pop();
+      setState(() {
+        _isLoading = false;
+      });
+
+      final locationState = ref.read(locationProvider);
+      if (!locationState.isServiceable) {
+         showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+               title: const Text('Out of Service Area'),
+               content: Text(locationState.serviceabilityMessage ?? 'We do not currently serve this area.'),
+               actions: [
+                  TextButton(
+                     onPressed: () {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pop(context); // Close location picker
+                     },
+                     child: const Text('Continue Anyway'),
+                  ),
+                  FilledButton(
+                     onPressed: () => Navigator.pop(context),
+                     child: const Text('Change Location'),
+                  ),
+               ],
+            ),
+         );
+      } else {
+         Navigator.of(context).pop();
+      }
     }
   }
 

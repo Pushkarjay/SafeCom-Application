@@ -21,6 +21,11 @@ class PricingApiDataSource {
     return RepairPricingContract.fromJson(response);
   }
 
+  Future<AmcPricingContract> getAmcPricing() async {
+    final response = await _apiService.getAmcPricing();
+    return AmcPricingContract.fromJson(response);
+  }
+
   Future<UpgradeCatalogContract> getUpgradeCatalog() async {
     final response = await _apiService.getUpgradeBundles();
     return UpgradeCatalogContract.fromJson(response);
