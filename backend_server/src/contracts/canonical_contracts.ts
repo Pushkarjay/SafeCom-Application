@@ -347,3 +347,119 @@ export interface BookingNotification {
   }
   timestamp: string
 }
+
+// ============================================
+// MASTER PRODUCT CATALOG CONTRACT
+// ============================================
+
+/**
+ * Variant option for a product (e.g., "2MP", "1TB", "White")
+ * Used to customize products in service packages
+ */
+export interface ProductVariant {
+  /** Unique ID for this variant option */
+  variantId: string
+  
+  /** Display name (e.g., "Resolution", "Storage", "Color") */
+  name: string
+  
+  /** List of available options for this variant */
+  options: string[]
+  
+  /** Whether customer can select multiple options */
+  allowMultiple: boolean
+  
+  /** Whether this variant is required */
+  required: boolean
+}
+
+/**
+ * Pricing structure for product (base + bulk discounts)
+ */
+export interface ProductPricingTier {
+  /** Minimum quantity for this tier */
+  minQuantity: number
+  
+  /** Price per unit at this tier */
+  unitPrice: number
+}
+
+/**
+ * Master product in service catalog
+ * Shared across all service types (installation, maintenance, AMC, repair, etc.)
+ */
+export interface MasterProduct {
+  /** Unique product ID in master catalog */
+  productId: string
+  
+  /** Display name */
+  productName: string
+  
+  /** Detailed product description */
+  description?: string
+  
+  /** Product category (installation, maintenance, amc, repair, upgrade, accessories) */
+  category: string
+  
+  /** Product group/type (e.g., "CCTV", "Access Control", "Networking") */
+  group?: string
+  
+  /** Base unit price (for single quantity) */
+  basePrice: number
+  
+  /** Pricing tiers for bulk orders */
+  pricingTiers?: ProductPricingTier[]
+  
+  /** Available variants (colors, sizes, specs) */
+  variants?: ProductVariant[]
+  
+  /** Current stock level */
+  stock?: number
+  
+  /** Whether product is available for purchase */
+  isAvailable: boolean
+  
+  /** Whether product is recommended/featured */
+  isFeatured?: boolean
+  
+  /** Product image URL */
+  imageUrl?: string
+  
+  /** Tax applicable (usually 18% GST for services) */
+  taxRate: number
+  
+  /** Creation timestamp */
+  createdAt: string
+  
+  /** Last update timestamp */
+  updatedAt: string
+}
+
+/**
+ * Response envelope for product list queries
+ */
+export interface ProductListResponse {
+  products: MasterProduct[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+/**
+ * Request to create/update a product
+ */
+export interface CreateUpdateProductRequest {
+  productName: string
+  description?: string
+  category: string
+  group?: string
+  basePrice: number
+  pricingTiers?: ProductPricingTier[]
+  variants?: ProductVariant[]
+  stock?: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  imageUrl?: string
+  taxRate?: number // defaults to 18
+}

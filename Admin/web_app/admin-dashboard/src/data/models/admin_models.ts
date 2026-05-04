@@ -166,3 +166,53 @@ export interface InvoiceTemplate {
   status: 'active' | 'inactive'
   updatedAt: string
 }
+
+// ============================================
+// MASTER PRODUCT CATALOG INTERFACES
+// ============================================
+
+export interface ProductVariant {
+  variantId: string
+  name: string
+  options: string[]
+  allowMultiple: boolean
+  required: boolean
+}
+
+export interface ProductPricingTier {
+  minQuantity: number
+  unitPrice: number
+}
+
+export interface MasterProduct {
+  productId: string
+  productName: string
+  description?: string
+  category: string
+  group?: string
+  basePrice: number
+  pricingTiers?: ProductPricingTier[]
+  variants?: ProductVariant[]
+  stock?: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  imageUrl?: string
+  taxRate: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateUpdateProductRequest {
+  productName: string
+  description?: string
+  category: string
+  group?: string
+  basePrice: number
+  pricingTiers?: ProductPricingTier[]
+  variants?: ProductVariant[]
+  stock?: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  imageUrl?: string
+  taxRate?: number
+}

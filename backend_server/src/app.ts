@@ -13,6 +13,7 @@ import { razorpayRouter } from './routes/razorpay.js'
 import { paymentsRouter } from './routes/payments.js'
 import { catalogRouter } from './routes/catalog.js'
 import { catalogPublicRouter } from './routes/catalogPublic.js'
+import { productsRouter } from './routes/products.js'
 import { authenticateToken } from './middleware/auth.js'
 import { verifyFirebaseIdToken } from './middleware/firebaseAuth.js'
 import employeeRoutes from './routes/employees.js'
@@ -51,6 +52,9 @@ export function createApp() {
 
   // Public serviceability check (for map validation)
   app.use('/api/serviceability', serviceabilityRouter)
+
+  // Catalog routes - Products (partially protected)
+  app.use('/api/catalog/products', productsRouter)
 
   // Protected routes (require Firebase authentication)
   app.use('/api/dashboard', verifyFirebaseIdToken, dashboardRouter)
