@@ -2,7 +2,6 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { createDocument } from '../services/firestore.js'
 import { createCheckoutOrder, verifyCheckoutSignature } from '../services/razorpay.js'
-import { payments } from '../data/mock-data.js'
 
 const createOrderSchema = z.object({
   amount: z.number().positive(),
@@ -141,18 +140,11 @@ razorpayRouter.post('/verify', async (req, res) => {
     })
   } catch (error) {
     console.error('[PAYMENTS] Failed to persist verified payment:', error)
-    const nextId = `PAY${String(payments.length + 1).padStart(3, '0')}`
-    const fallbackPayment = {
-      id: nextId,
-      ...paymentRecord
-    }
-    payments.push(fallbackPayment)
-    return res.status(201).json({
-      success: true,
+    return res.status(500).json({
+      success: false,
       provider: verification.provider,
-      verified: true,
-      message: verification.message,
-      payment: fallbackPayment
+      verified: false,
+      message: 'Payment verified but failed to persist'
     })
   }
 })

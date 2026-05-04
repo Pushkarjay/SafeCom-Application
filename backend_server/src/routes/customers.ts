@@ -23,8 +23,7 @@ customersRouter.get('/', async (_req, res) => {
     return res.json(customers)
   } catch (error) {
     console.error('Firestore customers lookup failed:', error)
-    const { customers } = await import('../data/mock-data.js')
-    return res.json(customers)
+    return res.status(500).json({ message: 'Failed to fetch customers' })
   }
 })
 
@@ -38,12 +37,7 @@ customersRouter.get('/:id', async (req, res) => {
     return res.json(customer)
   } catch (error) {
     console.error('Firestore customer lookup failed:', error)
-    const { customers } = await import('../data/mock-data.js')
-    const fallback = customers.find((item) => item.id === req.params.id)
-    if (!fallback) {
-      return res.status(404).json({ message: 'Customer not found' })
-    }
-    return res.json(fallback)
+    return res.status(500).json({ message: 'Failed to fetch customer' })
   }
 })
 
@@ -66,17 +60,7 @@ customersRouter.post('/', async (req, res) => {
     return res.status(201).json({ id: docId, ...parsed.data })
   } catch (error) {
     console.error('Firestore create customer failed:', error)
-    const { customers } = await import('../data/mock-data.js')
-    const nextId = `CUST${String(customers.length + 1).padStart(3, '0')}`
-    const customer = {
-      id: nextId,
-      status: parsed.data.status ?? 'active',
-      totalOrders: parsed.data.totalOrders ?? 0,
-      totalSpent: parsed.data.totalSpent ?? 0,
-      ...parsed.data
-    }
-    customers.push(customer)
-    return res.status(201).json(customer)
+    return res.status(500).json({ message: 'Failed to create customer' })
   }
 })
 
@@ -94,12 +78,6 @@ customersRouter.patch('/:id', async (req, res) => {
     return res.json(updated)
   } catch (error) {
     console.error('Firestore update customer failed:', error)
-    const { customers } = await import('../data/mock-data.js')
-    const index = customers.findIndex((item) => item.id === req.params.id)
-    if (index === -1) {
-      return res.status(404).json({ message: 'Customer not found' })
-    }
-    customers[index] = { ...customers[index], ...parsed.data }
-    return res.json(customers[index])
+    return res.status(500).json({ message: 'Failed to update customer' })
   }
 })

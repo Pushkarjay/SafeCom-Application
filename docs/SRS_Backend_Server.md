@@ -94,3 +94,8 @@ API gateway, auth, catalog, pricing, booking lifecycle, scheduling, notification
 ### 6.6 Admin-Driven Configuration
 - Admin CRUD should update mappings, constraints, recommendation ordering, and service module structures.
 - System should avoid schema sprawl from uncontrolled collection creation where possible; prefer controlled service configuration entities.
+
+### 6.7 Phase 3g Data Cleanup (2026-05-04)
+- Remove legacy catalog endpoints and mock-data fallbacks from production routes.
+- Normalize recommendation records to canonical placement + service targeting fields.
+- Enforce Firestore-only reads/writes for jobs, payments, customers, technicians, and catalog entities.

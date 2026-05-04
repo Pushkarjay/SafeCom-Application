@@ -82,6 +82,7 @@ Includes both web-first admin panel and lightweight admin mobile app for on-the-
 ### 5.6 Recommendations and Priority Ordering
 - Recommendation items are selected from master products.
 - Admin controls ordering/priority for customer checkout recommendation display.
+- Recommendations support placement targeting (checkout/cart/service/general) and optional service-type filters.
 
 ### 5.7 Dashboard and Operations Data
 - Dashboard must reflect real backend state (service health, database connectivity, payment gateway status).

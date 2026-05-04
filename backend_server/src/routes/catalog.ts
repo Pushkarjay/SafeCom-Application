@@ -47,17 +47,6 @@ const taxCreateSchema = z.object({
 
 const taxUpdateSchema = taxCreateSchema.partial()
 
-// Recommendation Schemas
-const recommendationCreateSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  productIds: z.array(z.string()).optional(),
-  priority: z.number().nonnegative().optional(),
-  status: z.enum(['active', 'inactive']).optional()
-})
-
-const recommendationUpdateSchema = recommendationCreateSchema.partial()
-
 // Invoice Template Schemas
 const invoiceTemplateCreateSchema = z.object({
   name: z.string().min(1),
@@ -91,8 +80,7 @@ catalogRouter.get('/products', async (req, res) => {
     return res.json(products)
   } catch (error) {
     console.error('Firestore catalog lookup failed:', error)
-    const { catalogProducts } = await import('../data/mock-data.js')
-    return res.json(catalogProducts)
+    return res.status(500).json({ message: 'Failed to fetch catalog products' })
   }
 })
 
@@ -106,12 +94,7 @@ catalogRouter.get('/products/:id', async (req, res) => {
     return res.json(product)
   } catch (error) {
     console.error('Firestore catalog lookup failed:', error)
-    const { catalogProducts } = await import('../data/mock-data.js')
-    const fallback = catalogProducts.find((item) => item.id === req.params.id)
-    if (!fallback) {
-      return res.status(404).json({ message: 'Catalog product not found' })
-    }
-    return res.json(fallback)
+    return res.status(500).json({ message: 'Failed to fetch catalog product' })
   }
 })
 
@@ -134,16 +117,7 @@ catalogRouter.post('/products', async (req, res) => {
     return res.status(201).json({ id: docId, ...parsed.data, status: parsed.data.status ?? 'active' })
   } catch (error) {
     console.error('Firestore create catalog product failed:', error)
-    const { catalogProducts } = await import('../data/mock-data.js')
-    const nextId = `PROD${String(catalogProducts.length + 1).padStart(3, '0')}`
-    const product = {
-      id: nextId,
-      status: parsed.data.status ?? 'active',
-      updatedAt: new Date().toISOString(),
-      ...parsed.data
-    }
-    catalogProducts.push(product)
-    return res.status(201).json(product)
+    return res.status(500).json({ message: 'Failed to create catalog product' })
   }
 })
 
@@ -164,13 +138,7 @@ catalogRouter.patch('/products/:id', async (req, res) => {
     return res.json(updated)
   } catch (error) {
     console.error('Firestore update catalog product failed:', error)
-    const { catalogProducts } = await import('../data/mock-data.js')
-    const index = catalogProducts.findIndex((item) => item.id === req.params.id)
-    if (index === -1) {
-      return res.status(404).json({ message: 'Catalog product not found' })
-    }
-    catalogProducts[index] = { ...catalogProducts[index], ...parsed.data }
-    return res.json(catalogProducts[index])
+    return res.status(500).json({ message: 'Failed to update catalog product' })
   }
 })
 
@@ -181,13 +149,7 @@ catalogRouter.delete('/products/:id', async (req, res) => {
     return res.status(204).send()
   } catch (error) {
     console.error('Firestore delete catalog product failed:', error)
-    const { catalogProducts } = await import('../data/mock-data.js')
-    const index = catalogProducts.findIndex((item) => item.id === req.params.id)
-    if (index === -1) {
-      return res.status(404).json({ message: 'Catalog product not found' })
-    }
-    catalogProducts.splice(index, 1)
-    return res.status(204).send()
+    return res.status(500).json({ message: 'Failed to delete catalog product' })
   }
 })
 
@@ -369,8 +331,7 @@ catalogRouter.get('/taxes', async (req, res) => {
     return res.json(taxes)
   } catch (error) {
     console.error('Firestore catalog taxes lookup failed:', error)
-    const { catalogTaxes } = await import('../data/mock-data.js')
-    return res.json(catalogTaxes)
+    return res.status(500).json({ message: 'Failed to fetch taxes' })
   }
 })
 
@@ -424,69 +385,6 @@ catalogRouter.delete('/taxes/:id', async (req, res) => {
   }
 })
 
-// ===== RECOMMENDATIONS =====
-// GET /catalog/recommendations
-catalogRouter.get('/recommendations', async (req, res) => {
-  try {
-    const recommendations = await queryCollection<Record<string, unknown>>('catalog_recommendations', [])
-    return res.json(recommendations)
-  } catch (error) {
-    console.error('Firestore catalog recommendations lookup failed:', error)
-    const { catalogRecommendations } = await import('../data/mock-data.js')
-    return res.json(catalogRecommendations)
-  }
-})
-
-// POST /catalog/recommendations
-catalogRouter.post('/recommendations', async (req, res) => {
-  const parsed = recommendationCreateSchema.safeParse(req.body)
-  if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid recommendation payload', issues: parsed.error.flatten() })
-  }
-  try {
-    const now = new Date().toISOString()
-    const docId = await createDocument('catalog_recommendations', {
-      ...parsed.data,
-      status: parsed.data.status ?? 'active',
-      priority: parsed.data.priority ?? 0,
-      updatedAt: now
-    })
-    return res.status(201).json({ id: docId, ...parsed.data, updatedAt: now })
-  } catch (error) {
-    console.error('Firestore create recommendation failed:', error)
-    return res.status(500).json({ message: 'Failed to create recommendation' })
-  }
-})
-
-// PATCH /catalog/recommendations/:id
-catalogRouter.patch('/recommendations/:id', async (req, res) => {
-  const parsed = recommendationUpdateSchema.safeParse(req.body)
-  if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid recommendation payload', issues: parsed.error.flatten() })
-  }
-  try {
-    await updateDocument('catalog_recommendations', req.params.id, {
-      ...parsed.data,
-      updatedAt: new Date().toISOString()
-    })
-    const updated = await getDocument<Record<string, unknown>>('catalog_recommendations', req.params.id)
-    return res.json(updated)
-  } catch (error) {
-    console.error('Firestore update recommendation failed:', error)
-    return res.status(500).json({ message: 'Failed to update recommendation' })
-  }
-})
-
-// DELETE /catalog/recommendations/:id
-catalogRouter.delete('/recommendations/:id', async (req, res) => {
-  try {
-    await deleteDocument('catalog_recommendations', req.params.id)
-    return res.status(204).send()
-  } catch (error) {
-    console.error('Firestore delete recommendation failed:', error)
-    return res.status(500).json({ message: 'Failed to delete recommendation' })
-  }
-})
 
 // ===== INVOICE TEMPLATES =====
 // GET /catalog/invoices
@@ -496,8 +394,7 @@ catalogRouter.get('/invoices', async (req, res) => {
     return res.json(invoices)
   } catch (error) {
     console.error('Firestore catalog invoices lookup failed:', error)
-    const { catalogInvoices } = await import('../data/mock-data.js')
-    return res.json(catalogInvoices)
+    return res.status(500).json({ message: 'Failed to fetch invoices' })
   }
 })
 

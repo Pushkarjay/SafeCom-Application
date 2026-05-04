@@ -22,8 +22,7 @@ paymentsRouter.get('/', async (_req, res) => {
     return res.json(payments)
   } catch (error) {
     console.error('Firestore payments lookup failed:', error)
-    const { payments } = await import('../data/mock-data.js')
-    return res.json(payments)
+    return res.status(500).json({ message: 'Failed to fetch payments' })
   }
 })
 
@@ -37,12 +36,7 @@ paymentsRouter.get('/:id', async (req, res) => {
     return res.json(payment)
   } catch (error) {
     console.error('Firestore payment lookup failed:', error)
-    const { payments } = await import('../data/mock-data.js')
-    const fallback = payments.find((item) => item.id === req.params.id)
-    if (!fallback) {
-      return res.status(404).json({ message: 'Payment not found' })
-    }
-    return res.json(fallback)
+    return res.status(500).json({ message: 'Failed to fetch payment' })
   }
 })
 
@@ -63,15 +57,6 @@ paymentsRouter.post('/', async (req, res) => {
     return res.status(201).json({ id: docId, ...parsed.data })
   } catch (error) {
     console.error('Firestore create payment failed:', error)
-    const { payments } = await import('../data/mock-data.js')
-    const nextId = `PAY${String(payments.length + 1).padStart(3, '0')}`
-    const payment = {
-      id: nextId,
-      status: parsed.data.status ?? 'pending',
-      timestamp: parsed.data.timestamp ?? new Date().toISOString(),
-      ...parsed.data
-    }
-    payments.push(payment)
-    return res.status(201).json(payment)
+    return res.status(500).json({ message: 'Failed to create payment' })
   }
 })

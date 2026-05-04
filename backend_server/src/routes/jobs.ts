@@ -24,8 +24,7 @@ jobsRouter.get('/', async (_req, res) => {
     return res.json(jobs)
   } catch (error) {
     console.error('Firestore jobs lookup failed:', error)
-    const { jobs } = await import('../data/mock-data.js')
-    return res.json(jobs)
+    return res.status(500).json({ message: 'Failed to fetch jobs' })
   }
 })
 
@@ -39,12 +38,7 @@ jobsRouter.get('/:id', async (req, res) => {
     return res.json(job)
   } catch (error) {
     console.error('Firestore job lookup failed:', error)
-    const { jobs } = await import('../data/mock-data.js')
-    const fallback = jobs.find((item) => item.id === req.params.id)
-    if (!fallback) {
-      return res.status(404).json({ message: 'Job not found' })
-    }
-    return res.json(fallback)
+    return res.status(500).json({ message: 'Failed to fetch job' })
   }
 })
 
@@ -67,17 +61,7 @@ jobsRouter.post('/', async (req, res) => {
     return res.status(201).json({ id: docId, ...parsed.data })
   } catch (error) {
     console.error('Firestore create job failed:', error)
-    const { jobs } = await import('../data/mock-data.js')
-    const nextId = `JOB${String(jobs.length + 1).padStart(3, '0')}`
-    const job = {
-      id: nextId,
-      technicianId: parsed.data.technicianId ?? null,
-      status: parsed.data.status ?? 'pending',
-      completedDate: parsed.data.completedDate ?? null,
-      ...parsed.data
-    }
-    jobs.push(job)
-    return res.status(201).json(job)
+    return res.status(500).json({ message: 'Failed to create job' })
   }
 })
 
@@ -95,21 +79,6 @@ jobsRouter.patch('/:id', async (req, res) => {
     return res.json(updated)
   } catch (error) {
     console.error('Firestore update job failed:', error)
-    const { jobs } = await import('../data/mock-data.js')
-    const index = jobs.findIndex((item) => item.id === req.params.id)
-    if (index === -1) {
-      return res.status(404).json({ message: 'Job not found' })
-    }
-    const current = jobs[index]
-    const next = {
-      ...current,
-      ...parsed.data,
-      technicianId: parsed.data.technicianId === undefined ? current.technicianId : parsed.data.technicianId,
-      completedDate: parsed.data.status === 'completed'
-        ? (parsed.data.completedDate ?? current.completedDate ?? new Date().toISOString().slice(0, 10))
-        : (parsed.data.completedDate ?? current.completedDate)
-    }
-    jobs[index] = next
-    return res.json(next)
+    return res.status(500).json({ message: 'Failed to update job' })
   }
 })

@@ -24,8 +24,7 @@ techniciansRouter.get('/', async (_req, res) => {
     return res.json(technicians)
   } catch (error) {
     console.error('Firestore technicians lookup failed:', error)
-    const { technicians } = await import('../data/mock-data.js')
-    return res.json(technicians)
+    return res.status(500).json({ message: 'Failed to fetch technicians' })
   }
 })
 
@@ -39,12 +38,7 @@ techniciansRouter.get('/:id', async (req, res) => {
     return res.json(technician)
   } catch (error) {
     console.error('Firestore technician lookup failed:', error)
-    const { technicians } = await import('../data/mock-data.js')
-    const fallback = technicians.find((item) => item.id === req.params.id)
-    if (!fallback) {
-      return res.status(404).json({ message: 'Technician not found' })
-    }
-    return res.json(fallback)
+    return res.status(500).json({ message: 'Failed to fetch technician' })
   }
 })
 
@@ -67,17 +61,7 @@ techniciansRouter.post('/', async (req, res) => {
     return res.status(201).json({ id: docId, ...parsed.data })
   } catch (error) {
     console.error('Firestore create technician failed:', error)
-    const { technicians } = await import('../data/mock-data.js')
-    const nextId = `TECH${String(technicians.length + 1).padStart(3, '0')}`
-    const technician = {
-      id: nextId,
-      totalJobs: parsed.data.totalJobs ?? 0,
-      rating: parsed.data.rating ?? 0,
-      status: parsed.data.status ?? 'available',
-      ...parsed.data
-    }
-    technicians.push(technician)
-    return res.status(201).json(technician)
+    return res.status(500).json({ message: 'Failed to create technician' })
   }
 })
 
@@ -95,12 +79,6 @@ techniciansRouter.patch('/:id', async (req, res) => {
     return res.json(updated)
   } catch (error) {
     console.error('Firestore update technician failed:', error)
-    const { technicians } = await import('../data/mock-data.js')
-    const index = technicians.findIndex((item) => item.id === req.params.id)
-    if (index === -1) {
-      return res.status(404).json({ message: 'Technician not found' })
-    }
-    technicians[index] = { ...technicians[index], ...parsed.data }
-    return res.json(technicians[index])
+    return res.status(500).json({ message: 'Failed to update technician' })
   }
 })
