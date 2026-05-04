@@ -285,3 +285,34 @@ export interface CatalogAccessory {
   createdAt: string
   updatedAt: string
 }
+
+// ============================================
+// MAINTENANCE PLAN INTERFACES
+// ============================================
+
+export interface MaintenancePlanItem {
+  serviceId: string
+  serviceName: string
+  quantity: number
+  unitPrice: number
+  lineTotal: number
+}
+
+export interface MaintenancePlan {
+  planId: string
+  planName: string
+  description?: string
+  category: string
+  planItems: MaintenancePlanItem[]
+  basePrice: number
+  frequency: 'weekly' | 'monthly' | 'quarterly' | 'semi-annual' | 'annual'
+  durationMonths: number
+  renewalPrice?: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  imageUrl?: string
+  taxRate: number
+  displayPriority: number
+  createdAt: string
+  updatedAt: string
+}

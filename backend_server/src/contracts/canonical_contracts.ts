@@ -699,3 +699,70 @@ export interface CreateUpdateAccessoryRequest {
   taxRate?: number
   displayPriority?: number
 }
+
+// ============================================
+// MAINTENANCE PLAN INTERFACES
+// ============================================
+
+/**
+ * Maintenance plan item (service within plan)
+ */
+export interface MaintenancePlanItem {
+  serviceId: string
+  serviceName: string
+  quantity: number
+  unitPrice: number
+  lineTotal: number
+}
+
+/**
+ * Maintenance plan - recurring service bundle
+ */
+export interface MaintenancePlan {
+  planId: string
+  planName: string
+  description?: string
+  category: string
+  planItems: MaintenancePlanItem[]
+  basePrice: number
+  frequency: 'weekly' | 'monthly' | 'quarterly' | 'semi-annual' | 'annual'
+  durationMonths: number
+  renewalPrice?: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  imageUrl?: string
+  taxRate: number
+  displayPriority: number
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Maintenance plan list response
+ */
+export interface MaintenancePlanListResponse {
+  plans: MaintenancePlan[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+/**
+ * Request to create/update maintenance plan
+ */
+export interface CreateUpdateMaintenancePlanRequest {
+  planName: string
+  description?: string
+  category: string
+  planItems: MaintenancePlanItem[]
+  basePrice: number
+  frequency: 'weekly' | 'monthly' | 'quarterly' | 'semi-annual' | 'annual'
+  durationMonths: number
+  renewalPrice?: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  imageUrl?: string
+  taxRate?: number
+  displayPriority?: number
+}
