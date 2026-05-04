@@ -369,7 +369,8 @@ catalogRouter.get('/taxes', async (req, res) => {
     return res.json(taxes)
   } catch (error) {
     console.error('Firestore catalog taxes lookup failed:', error)
-    return res.json([])
+    const { catalogTaxes } = await import('../data/mock-data.js')
+    return res.json(catalogTaxes)
   }
 })
 
@@ -431,7 +432,8 @@ catalogRouter.get('/recommendations', async (req, res) => {
     return res.json(recommendations)
   } catch (error) {
     console.error('Firestore catalog recommendations lookup failed:', error)
-    return res.json([])
+    const { catalogRecommendations } = await import('../data/mock-data.js')
+    return res.json(catalogRecommendations)
   }
 })
 
@@ -494,7 +496,8 @@ catalogRouter.get('/invoices', async (req, res) => {
     return res.json(invoices)
   } catch (error) {
     console.error('Firestore catalog invoices lookup failed:', error)
-    return res.json([])
+    const { catalogInvoices } = await import('../data/mock-data.js')
+    return res.json(catalogInvoices)
   }
 })
 

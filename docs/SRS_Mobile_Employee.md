@@ -48,3 +48,24 @@ The app enables assigned workers to receive jobs, update status, track routes, v
 ## 5. Integrations
 - Backend APIs for jobs, status, media, and attendance.
 - Push notifications for new/updated assignments.
+
+## 6. Addendum: 2026-05-04 Corrections and Sync Requirements
+
+### 6.1 Job Sync Contract
+- Customer booking creation must automatically surface as a pending job in employee app.
+- Employee app must not depend on hardcoded job lists in production flows.
+
+### 6.2 Notification Requirement
+- New booking/job assignment must trigger a push notification for eligible employees.
+- Notification payload must include booking ID, service type, location summary, and slot details.
+
+### 6.3 Navigation Requirement
+- Job location action must deep-link to Google Maps with destination pin coordinates.
+- Employee app should show map-related context before handoff where needed (address + landmark + coordinates).
+
+### 6.4 Invoice Visibility Requirement
+- Employee job detail must display full bill context:
+	- All booked products
+	- Add-ons/accessories
+	- Quantities and totals
+- Invoice data must be sourced from the same backend invoice payload used by customer/admin.

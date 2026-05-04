@@ -7,6 +7,8 @@ import { dashboardRouter } from './routes/dashboard.js'
 import { customersRouter } from './routes/customers.js'
 import { techniciansRouter } from './routes/technicians.js'
 import { jobsRouter } from './routes/jobs.js'
+import { bookingsRouter } from './routes/bookings.js'
+import { serviceabilityRouter } from './routes/serviceability.js'
 import { razorpayRouter } from './routes/razorpay.js'
 import { paymentsRouter } from './routes/payments.js'
 import { catalogRouter } from './routes/catalog.js'
@@ -47,11 +49,15 @@ export function createApp() {
   // Public catalog routes (no authentication required for service catalog and pricing)
   app.use('/api/catalog-public', catalogPublicRouter)
 
+  // Public serviceability check (for map validation)
+  app.use('/api/serviceability', serviceabilityRouter)
+
   // Protected routes (require Firebase authentication)
   app.use('/api/dashboard', verifyFirebaseIdToken, dashboardRouter)
   app.use('/api/customers', verifyFirebaseIdToken, customersRouter)
   app.use('/api/technicians', verifyFirebaseIdToken, techniciansRouter)
   app.use('/api/jobs', verifyFirebaseIdToken, jobsRouter)
+  app.use('/api/bookings', verifyFirebaseIdToken, bookingsRouter)
   app.use('/api/payments/razorpay', razorpayRouter)
   app.use('/api/payments', verifyFirebaseIdToken, paymentsRouter)
   app.use('/api/catalog', verifyFirebaseIdToken, catalogRouter)

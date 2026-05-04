@@ -9,6 +9,7 @@ class AppRoutes {
   static const profile = '/profile';
   static const orderHistory = '/order-history';
   static const paymentMethods = '/payment-methods';
+  static const productsDiscovery = '/products-discovery';
   static const changePassword = '/change-password';
   static const serviceTypes = '/service-types';
   static const servicePlaceholder = '/service';

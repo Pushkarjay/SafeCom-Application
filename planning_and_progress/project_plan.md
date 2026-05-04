@@ -36,3 +36,17 @@ This document outlines the development plan and progress for the SafeCom Service
 - [ ] **Task 3:** Add auth guards so booking requires login and sessions persist across launches.
 - [ ] **Task 4:** Integrate payment gateway end-to-end (order creation, webhook verification, receipt capture).
 - [ ] **Task 5:** Update backend CI/CD with secret management and webhook configs (no secrets in repo).
+
+### Sprint 6: Unified Data Model and Real-Time Cross-App Sync (2026-05-04 Change Request)
+- [ ] **Task 1:** Remove hardcoded mock data from customer, employee, and admin surfaces where backend/seeded data exists.
+- [ ] **Task 2:** Introduce a master product model as the single source of truth and convert service modules to reference mappings.
+- [ ] **Task 3:** Build admin control-plane CRUD for service hierarchy (installation/accessories/maintenance/repair/amc/upgrade/recommendations).
+- [ ] **Task 4:** Implement booking-to-job sync so customer bookings auto-appear in employee jobs and admin jobs.
+- [ ] **Task 5:** Implement full invoice sync (line items, quantities, totals) across customer, employee, and admin views.
+
+### Sprint 7: Map Reliability and Serviceability Enforcement (2026-05-04 Change Request)
+- [ ] **Task 1:** Complete map stack integration (permissions, geolocation, map render, search, reverse geocode, pin-drop).
+- [ ] **Task 2:** Set default fallback location to Patna, Bihar when permission is denied/unavailable.
+- [ ] **Task 3:** Add dynamic serviceability checks and out-of-service-area messaging based on backend rules.
+- [ ] **Task 4:** Add employee deep link navigation to customer map pin in Google Maps.
+- [ ] **Task 5:** Validate mobile responsiveness for both gesture and 3-button navigation modes.

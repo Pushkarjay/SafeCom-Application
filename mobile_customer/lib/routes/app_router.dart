@@ -25,6 +25,7 @@ import 'package:mobile_customer/features/services/amc_plan_screen.dart';
 import 'package:mobile_customer/features/services/maintenance_package_screen.dart';
 import 'package:mobile_customer/features/services/maintenance_type_screen.dart';
 import 'package:mobile_customer/features/services/package_selection_screen.dart';
+import 'package:mobile_customer/features/services/products_discovery_screen.dart';
 import 'package:mobile_customer/features/services/repair_issue_screen.dart';
 import 'package:mobile_customer/features/services/service_placeholder_screen.dart';
 import 'package:mobile_customer/features/services/service_type_screen.dart';
@@ -70,6 +71,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.orderHistory,
         builder: (context, state) => const OrderHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.productsDiscovery,
+        builder: (context, state) => const ProductsDiscoveryScreen(),
       ),
       GoRoute(
         path: AppRoutes.serviceTypes,

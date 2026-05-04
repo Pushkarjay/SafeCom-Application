@@ -5,12 +5,13 @@ import { getApiBaseUrl } from '../config/api'
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyA8XvGtA8sBYMxJGMCfqM5mG9gN8hEiPqI",
+  apiKey: "AIzaSyBj0tlpnSNzxvTwC4JwAEiC7M7bk9H44zQ",
   authDomain: "safecom-application-01.firebaseapp.com",
   projectId: "safecom-application-01",
   storageBucket: "safecom-application-01.firebasestorage.app",
   messagingSenderId: "177425757120",
-  appId: "1:177425757120:web:abcdef123456"
+  appId: "1:177425757120:web:f6056611315ea5232d0e25",
+  measurementId: "G-71MXD20LDV"
 }
 
 // Initialize Firebase
@@ -89,6 +90,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
     } catch (error) {
       set({ isLoading: false })
+      try {
+        await get().logout()
+      } catch (_logoutError) {
+        console.warn('Failed to clear stale auth state after login error:', _logoutError)
+      }
       throw error
     }
   },
@@ -140,11 +146,35 @@ if (stored) {
   }
 }
 
+// Immediately sync current Firebase user if already logged in
+if (auth.currentUser) {
+  console.log('🔐 Found existing Firebase user:', auth.currentUser.email)
+  useAuthStore.setState({ firebaseUser: auth.currentUser, isAuthenticated: true })
+  
+  // Get a fresh token immediately to ensure it's not expired
+  auth.currentUser.getIdToken(true).then(token => {
+    console.log('✅ Refreshed token on app startup')
+    localStorage.setItem('safecom_admin_token', token)
+  }).catch(err => {
+    console.error('❌ Failed to refresh token on startup:', err)
+  })
+}
+
 // Keep auth state synchronized with Firebase persistence
 onAuthStateChanged(auth, (user) => {
   if (user) {
+    console.log('🔐 Firebase user state changed:', user.email)
     useAuthStore.setState({ firebaseUser: user, isAuthenticated: true })
+    
+    // Get fresh token when user is restored from persistence
+    user.getIdToken(true).then(token => {
+      console.log('✅ Refreshed token after Firebase restoration')
+      localStorage.setItem('safecom_admin_token', token)
+    }).catch(err => {
+      console.error('❌ Failed to refresh token:', err)
+    })
   } else {
+    console.log('🔐 Firebase user logged out')
     useAuthStore.setState({ firebaseUser: null, isAuthenticated: false })
   }
 })

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
+import { useAuthStore } from '@core/services/auth_service'
 import { CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet } from '@data/models/admin_models'
 import './catalog_screen.css'
 
@@ -13,6 +14,7 @@ export default function CatalogScreen() {
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const firebaseUser = useAuthStore((state) => state.firebaseUser)
 
   // Products
   const [products, setProducts] = useState<CatalogProduct[]>([])
@@ -72,34 +74,37 @@ export default function CatalogScreen() {
   // Load data based on active tab
   useEffect(() => {
     const loadData = async () => {
+      if (!firebaseUser) {
+        return
+      }
       setIsLoading(true)
       setError(null)
       try {
-        if (activeTab === 'products' && products.length === 0) {
+        if (activeTab === 'products') {
           const data = await adminDatasource.getCatalogProducts()
           setProducts(data)
-        } else if (activeTab === 'packages' && packages.length === 0) {
+        } else if (activeTab === 'packages') {
           const data = await adminDatasource.getCatalogPackages()
           setPackages(data)
-        } else if (activeTab === 'addons' && addons.length === 0) {
+        } else if (activeTab === 'addons') {
           const data = await adminDatasource.getCatalogAddons()
           setAddons(data)
-        } else if (activeTab === 'taxes' && taxes.length === 0) {
+        } else if (activeTab === 'taxes') {
           const data = await adminDatasource.getCatalogTaxes()
           setTaxes(data)
-        } else if (activeTab === 'recommendations' && recommendations.length === 0) {
+        } else if (activeTab === 'recommendations') {
           const data = await adminDatasource.getCatalogRecommendations()
           setRecommendations(data)
-        } else if (activeTab === 'invoices' && invoices.length === 0) {
+        } else if (activeTab === 'invoices') {
           const data = await adminDatasource.getInvoiceTemplates()
           setInvoices(data)
-        } else if (activeTab === 'services' && services.length === 0) {
+        } else if (activeTab === 'services') {
           const data = await adminDatasource.getServices()
           setServices(data)
-        } else if (activeTab === 'upgrade' && upgradeBundles.length === 0) {
+        } else if (activeTab === 'upgrade') {
           const data = await adminDatasource.getUpgradeBundles()
           setUpgradeBundles(data)
-        } else if (activeTab === 'pricing' && Object.keys(pricingData).length === 0) {
+        } else if (activeTab === 'pricing') {
           const data = await adminDatasource.getPricingData()
           setPricingData(data)
         }
@@ -110,7 +115,7 @@ export default function CatalogScreen() {
       }
     }
     loadData()
-  }, [activeTab])
+  }, [activeTab, firebaseUser?.uid])
 
   const filteredProducts = useMemo(() => {
     const query = searchProduct.trim().toLowerCase()

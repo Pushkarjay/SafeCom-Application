@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
+import { useAuthStore } from '@core/services/auth_service'
 import { Customer } from '@data/models/admin_models'
 import './customers_screen.css'
 
@@ -9,9 +10,13 @@ export default function CustomersScreen() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const firebaseUser = useAuthStore((state) => state.firebaseUser)
 
   useEffect(() => {
     const loadCustomers = async () => {
+      if (!firebaseUser) {
+        return
+      }
       try {
         const data = await adminDatasource.getCustomers(page)
         setCustomers(data)
@@ -21,7 +26,7 @@ export default function CustomersScreen() {
     }
 
     loadCustomers()
-  }, [page])
+  }, [page, firebaseUser?.uid])
 
   return (
     <div className="customers-screen">

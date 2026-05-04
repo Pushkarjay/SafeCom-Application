@@ -46,3 +46,49 @@ Includes both web-first admin panel and lightweight admin mobile app for on-the-
 ## 4. Integrations
 - Backend APIs for catalog, pricing, booking, users, and reports.
 - SMS/push/payment providers.
+
+## 5. Addendum: 2026-05-04 Admin Control-Plane Redesign
+
+### 5.1 Core Rule
+- Admin panel is the primary control-plane; operational updates should be manageable from admin UI without direct database edits.
+
+### 5.2 Accessories and Catalog Final Navigation
+- Products (Master Product collection)
+- Installation
+- Accessories
+- Maintenance
+- Camera Repair
+- AMC Plans
+- Upgrade
+- Recommendations
+- Services (dynamic service definition)
+
+### 5.3 Deprioritized/Removed Items (Current Scope)
+- Taxes (deferred)
+- Static invoice template editor in catalog area (moved to centralized invoice generator module)
+- Redundant static package/add-on/texture style sections not tied to dynamic backend model
+
+### 5.4 Product Master Principle
+- All products are stored in one master product collection.
+- Service modules do not duplicate products; they reference product IDs via mappings.
+
+### 5.5 Installation Builder Requirements
+- Admin can create/edit/delete categories and groups (e.g., IP camera -> 4/8/16/32 setup).
+- Group/base price must be computed from mapped product lines, not manually typed fixed values.
+- Admin can configure min/max quantity constraints per line item.
+- Rule-based transitions are supported (example: quantity overflow from 4-camera setup can trigger shift to 8-camera setup).
+- Admin view includes live breakdown table and invoice preview.
+
+### 5.6 Recommendations and Priority Ordering
+- Recommendation items are selected from master products.
+- Admin controls ordering/priority for customer checkout recommendation display.
+
+### 5.7 Dashboard and Operations Data
+- Dashboard must reflect real backend state (service health, database connectivity, payment gateway status).
+- KPI cards (revenue, completion, etc.) must be backend-backed and not hardcoded.
+- Customer creation from admin is non-primary because customer accounts are app-originated.
+
+### 5.8 Invoice Generator Module
+- Provide centralized invoice generation/view in top-level admin operations.
+- Invoice variants can include installation/service/delivery forms as needed.
+- All invoices must align with canonical booking invoice payload.

@@ -16,3 +16,9 @@
 - Payment order creation and webhook verification endpoints.
 - GST/tax breakdown in invoice calculation.
 - CI/CD secret management and webhook configuration.
+
+- Master product model and mapping/reference collections for service modules.
+- Data cleanup migration for duplicate/legacy catalog-pricing collections.
+- Canonical booking and invoice contracts consumed by customer/employee/admin.
+- Booking-created event and employee assignment notification pipeline.
+- Serviceability API for map selection and out-of-service feedback.

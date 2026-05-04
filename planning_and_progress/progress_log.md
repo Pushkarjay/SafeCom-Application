@@ -83,3 +83,33 @@
 - Add location-based job assignment logic.
 - Implement push notifications for job updates.
 - Production deployment and real database setup.
+
+## 2026-05-04 (Unified Correction and Canonical Contracts Implementation)
+- Conducted comprehensive audit of customer app map flow; identified Google Maps API key not configured (CRITICAL).
+- Updated default location from Bhubaneswar to Patna, Bihar (25.5941°N, 85.1376°E).
+- Removed hardcoded promo banner ("Get 10% OFF on your first installation") and announcements.
+- Created products discovery screen with search/filter/sort scaffolding.
+- Wired `/products-discovery` route to app router.
+- Defined canonical contracts for all platforms:
+  - CanonicalInvoice with complete line item tracking
+  - CanonicalBooking with service config and lifecycle
+  - CanonicalJob for employee consumption
+  - ServiceabilityCheckResponse for location validation
+  - BookingNotification for push notifications
+- Implemented backend booking creation endpoint (`POST /api/bookings`):
+  - Automatic job creation from booking
+  - Invoice generation from line items
+  - Booking-to-job mapping
+  - Notification trigger placeholder
+- Implemented serviceability check endpoint (`POST /api/serviceability/check`):
+  - Haversine-based distance calculation
+  - Configurable service areas (default: Patna)
+  - Out-of-service messaging
+- Updated all SRS documents with addendum sections (5 files).
+- Updated planning/progress docs across all components.
+- Created comprehensive integration guide for employee app.
+- Created execution roadmap with 5-phase plan and timeline.
+- Created audit trail and status reports.
+
+**Phase 1 Completion:** ✅ All foundational contracts and backend sync infrastructure complete.
+**Ready for Phase 2:** Employee app integration with models, notifications, and map deep-link navigation.

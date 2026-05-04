@@ -3,6 +3,8 @@
 ## 1) Data Model
 - Users/roles/permissions
 - Service categories and sub-services
+- Master products (single source of truth)
+- Service mappings (service -> category/group -> product references)
 - Packages (4/8/16/32 camera defaults)
 - Products, add-ons, and mandatory/optional flags
 - Pricing rules and overrides
@@ -57,6 +59,11 @@
 - Coverage validation for booking
 - Area mapping for workforce assignment
 
+### Sync Contracts
+- Canonical booking payload for all clients
+- Canonical invoice payload for all clients
+- Booking-created notification/event for employee assignment
+
 ### Admin & Audit
 - Audit log write/read
 - Reports/exports endpoints
@@ -71,6 +78,8 @@
 - Assignment -> status lifecycle -> invoice/payment reconciliation
 - Webhook idempotency and retry safety
 - Offline status queue sync
+- Customer booking -> employee pending job + notification
+- Customer/employee/admin invoice line-item parity
 
 ## 4) Security & Compliance
 - HTTPS-only

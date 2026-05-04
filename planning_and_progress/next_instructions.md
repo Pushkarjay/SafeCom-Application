@@ -1,39 +1,38 @@
 # Next Instructions
 
 ## Current Priority
-**Integrate Admin Dashboard with Backend API** — Replace mock datasources with real backend API calls.
+**Map + Data Integrity First** — eliminate hardcoded behavior and establish dynamic, synced flow across customer, employee, admin, and database.
 
 ## Immediate Steps
-1. Start backend server: `npm run dev` in backend_server directory (port 5000).
-2. Start admin dashboard: `npm run dev` in Admin/web_app/admin-dashboard (port 3000).
-3. Verify both services are running without errors.
-4. Replace admin_datasource.ts mock methods to call backend API:
-   - Update base URL to `http://localhost:5000/api`
-   - Wire `getDashboardMetrics()` to `GET /api/dashboard/metrics`
-   - Wire `getCustomers()` to `GET /api/customers?page=...&limit=...`
-   - Wire `getTechnicians()` to `GET /api/technicians?page=...&limit=...`
-   - Wire `getJobs()` to `GET /api/jobs?status=...&page=...&limit=...`
-   - Wire `getPayments()` to `GET /api/payments?page=...&limit=...`
-5. Wire login endpoint to backend: `POST /auth/login` returns JWT token.
-6. Store JWT token in Zustand auth.store after successful login.
-7. Add authorization header to all API calls in admin_datasource.
-8. Test full login → dashboard flow with real backend responses.
-9. Commit changes with message: "feat: connect admin dashboard to backend API endpoints".
-10. Push to GitHub.
+1. Customer app: fix map stack end-to-end.
+   - Prompt permission correctly.
+   - Use Patna, Bihar as fallback default.
+   - Ensure map tiles render in change-location flow.
+   - Enable search, geolocation, and pin-drop.
+   - Add backend serviceability check and out-of-service UI message.
+2. Backend: define canonical booking + invoice contracts.
+   - Full line-item invoice payload with product IDs, quantity, unit price, and totals.
+   - Booking status lifecycle and assignment-ready events.
+3. Employee app: connect job feed to real bookings.
+   - Pending/completed lists from backend.
+   - Map navigation handoff to Google Maps pin.
+   - Full invoice visibility in job details.
+4. Admin panel: replace remaining mock cards/metrics/buttons with backend-backed actions.
+   - System status checks (server/database/payment gateway).
+   - Remove unnecessary add customer flow; keep technician/job operations.
+5. Database cleanup and restructuring.
+   - Remove duplicate/irrelevant catalog-pricing collections.
+   - Introduce master product collection.
+   - Convert service structures to mapping/reference model.
 
 ## Validation
-- Admin dashboard logs in successfully with backend auth.
-- Dashboard metrics load from backend API with correct data.
-- Customer/technician/jobs lists display backend data with pagination.
-- No CORS errors in browser console.
-- No 401 errors (token should be included in requests).
-
-## After This Phase
-- Connect mobile apps (customer/employee) to backend API.
-- Set up real database (currently using mock data).
-- Add Firebase/GCD integration (deferred for now).
+- No static banner/announcement content unless sourced from backend collection.
+- New or updated product in admin is reflected in customer and invoice flows.
+- Booking created in customer appears in employee and admin without manual sync.
+- Invoice lines match across customer, employee, and admin surfaces.
+- No map mock screen remains in customer or employee map interactions.
 
 ## Scope Reminder
-- CCTV-only services: Installation, Maintenance, AMC, Repair, Upgrade, Accessories.
-- No Firebase or GCD integration for current sprint.
-- All data currently mocked — ready for real database when needed.
+- CCTV-only service universe remains active.
+- Admin panel is the operational control-plane; direct DB edits should not be required for routine changes.
+- Seed data is allowed; hardcoded business values in UI are not.

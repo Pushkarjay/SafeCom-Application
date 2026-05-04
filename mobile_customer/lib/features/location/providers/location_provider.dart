@@ -39,7 +39,9 @@ class LocationNotifier extends StateNotifier<LocationState> {
   LocationNotifier(this._service)
       : super(
           const LocationState(
-            location: 'Bhubaneswar, Odisha',
+            location: 'Patna, Bihar',
+            latitude: 25.5941,
+            longitude: 85.1376,
             isLoading: false,
           ),
         );

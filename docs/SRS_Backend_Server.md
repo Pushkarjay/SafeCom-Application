@@ -62,3 +62,35 @@ API gateway, auth, catalog, pricing, booking lifecycle, scheduling, notification
 - Node.js/NestJS or Django/FastAPI
 - PostgreSQL + Redis (or Firestore if using a document-first model; finalize one source of truth)
 - Queue/Event bus for async workflows
+
+## 6. Addendum: 2026-05-04 Data Integrity and Sync Requirements
+
+### 6.1 Data Source Rule
+- UI-facing hardcoded business data must be removed in favor of backend-seeded or admin-managed datasets.
+
+### 6.2 Database Restructure Direction
+- Keep identity-centric collections/entities (customers, employees, admins, users).
+- Remove duplicate/legacy pricing-catalog collections that conflict with target model.
+- Introduce/maintain a master product model containing all sellable products.
+- Service structures (installation/accessories/maintenance/repair/amc/upgrade/recommendations) should use mapping/reference entities that point to master products.
+
+### 6.3 Booking to Job Sync
+- Booking creation must publish assignment-ready payloads.
+- Employee and admin job boards consume canonical backend job/booking representations.
+
+### 6.4 Canonical Invoice Contract
+- Invoice payload must include:
+	- Booking reference
+	- Service/module reference
+	- Itemized product lines
+	- Quantity and pricing breakdown
+	- Totals and payment status fields
+- Same contract must be reused by customer, employee, and admin clients.
+
+### 6.5 Location and Serviceability
+- Coverage/serviceability checks must be API-driven for selected coordinates.
+- Support explicit out-of-service responses for customer map/location flow.
+
+### 6.6 Admin-Driven Configuration
+- Admin CRUD should update mappings, constraints, recommendation ordering, and service module structures.
+- System should avoid schema sprawl from uncontrolled collection creation where possible; prefer controlled service configuration entities.

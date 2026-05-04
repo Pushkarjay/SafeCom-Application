@@ -161,3 +161,44 @@ This screen allows the user to build their order dynamically.
 ### 6. GitHub Reference
 - Existing work can be reviewed for context but is not a strict guideline for the new implementation:
 [https://github.com/Pushkarjay/SafeCom-App](https://github.com/Pushkarjay/SafeCom-App)
+
+### 7. Addendum: 2026-05-04 Corrections and Enhancements
+
+#### 7.1 UI Responsiveness and Navigation Modes
+- All key screens must render correctly in both gesture mode and 3-button navigation mode.
+- Overlaps and clipped controls are not acceptable in booking, map, profile, and invoice-related screens.
+- Layouts must avoid fixed-height assumptions and respect safe areas.
+
+#### 7.2 Location and Map Reliability (Top Priority)
+- Remove any static/mock location behavior from customer flows.
+- Request runtime location permission before map-dependent actions.
+- Fallback default location must be Patna, Bihar when location is unavailable.
+- Change-location flow must support:
+    - Visible and interactive map
+    - Search suggestions/results
+    - Current location action
+    - Pin drop and confirmation
+- Out-of-service-area message must be shown when selected location is outside backend-defined coverage.
+
+#### 7.3 Home Content Control
+- Static promotional banner and announcements must be replaced with backend-driven configuration.
+- Replace fixed first-offer banner with dynamic content block that can expose a "View All Products" discovery route.
+
+#### 7.4 Product Discovery and Dynamic Catalog
+- "View All Products" must aggregate all sellable items from backend and support search/filter/sort.
+- Product attributes (resolution, storage, etc.) must not be hardcoded in UI.
+- Product availability and pricing must come from backend data model.
+
+#### 7.5 Booking and Invoice
+- Booking must be linked to authenticated user profile and persisted in backend.
+- Invoice must include complete line items, add-ons, quantities, and totals.
+- Same invoice dataset must be consumable by employee and admin surfaces.
+
+#### 7.6 Profile Experience
+- Profile screen must prioritize operational user data:
+    - Name
+    - Phone number
+    - Photo
+    - Saved addresses
+    - Booking history
+- Non-critical fields should not dominate primary profile layout.

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
+import { useAuthStore } from '@core/services/auth_service'
 import './payments_screen.css'
 
 export interface Payment {
@@ -21,9 +22,13 @@ export default function PaymentsScreen() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'partial' | 'completed'>('all')
+  const firebaseUser = useAuthStore((state) => state.firebaseUser)
 
   useEffect(() => {
     const loadPayments = async () => {
+      if (!firebaseUser) {
+        return
+      }
       try {
         const data = await adminDatasource.getPayments()
         setPayments(data)
@@ -33,7 +38,7 @@ export default function PaymentsScreen() {
     }
 
     loadPayments()
-  }, [])
+  }, [firebaseUser?.uid])
 
   const filteredPayments = filter === 'all' 
     ? payments 

@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
+import { useAuthStore } from '@core/services/auth_service'
 import { DashboardMetrics } from '@data/models/admin_models'
 import './dashboard_screen.css'
 
 export default function DashboardScreen() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const firebaseUser = useAuthStore((state) => state.firebaseUser)
 
   useEffect(() => {
     const loadMetrics = async () => {
+      if (!firebaseUser) {
+        return
+      }
       try {
         const data = await adminDatasource.getDashboardMetrics()
         setMetrics(data)
@@ -18,7 +23,7 @@ export default function DashboardScreen() {
     }
 
     loadMetrics()
-  }, [])
+  }, [firebaseUser?.uid])
 
   if (isLoading) {
     return <div className="dashboard-loading">Loading dashboard...</div>

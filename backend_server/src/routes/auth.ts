@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { queryCollection, getDocument } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument } from '../services/firestore.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
 
@@ -43,6 +43,29 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
           firebaseUid: string
         }>('admins', [{ field: 'email', operator: '==', value: email }])
         user = adminByEmail[0]
+      }
+
+      if (!user && email?.toLowerCase().endsWith('@safecom.com')) {
+        console.log('[AUTH] No admin profile found for safecom.com user, creating admin record', { uid, email })
+        const now = new Date()
+        const newAdmin = {
+          firebaseUid: uid,
+          email,
+          name: String(email.split('@')[0] ?? email),
+          role: 'super_admin',
+          permissions: ['all'],
+          status: 'active',
+          createdAt: now,
+          updatedAt: now
+        }
+        await createDocument('admins', newAdmin)
+        user = {
+          id: uid,
+          firebaseUid: uid,
+          email,
+          name: newAdmin.name,
+          role: 'super_admin'
+        }
       }
 
       if (!user) {

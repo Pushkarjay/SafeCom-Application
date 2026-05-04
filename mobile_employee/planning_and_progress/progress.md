@@ -39,3 +39,9 @@
 - Add notification system for new job assignments.
 - Implement offline capability for job data.
 
+## Update 2026-05-04 (Correction Baseline Captured)
+- Confirmed employee app must consume real booking/job APIs instead of mock job records.
+- Confirmed new booking notification requirement.
+- Confirmed map action should open Google Maps with exact booking pin.
+- Confirmed invoice visibility requirement with complete booked items and quantities.
+

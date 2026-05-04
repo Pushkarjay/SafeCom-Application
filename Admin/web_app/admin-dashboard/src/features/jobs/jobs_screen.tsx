@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
+import { useAuthStore } from '@core/services/auth_service'
 import { Job } from '@data/models/admin_models'
 import './jobs_screen.css'
 
@@ -9,9 +10,13 @@ export default function JobsScreen() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const firebaseUser = useAuthStore((state) => state.firebaseUser)
 
   useEffect(() => {
     const loadJobs = async () => {
+      if (!firebaseUser) {
+        return
+      }
       try {
         const data = await adminDatasource.getJobs(null, page)
         setJobs(data)
@@ -21,7 +26,7 @@ export default function JobsScreen() {
     }
 
     loadJobs()
-  }, [page])
+  }, [page, firebaseUser?.uid])
 
   const getStatusColor = (status: Job['status']) => {
     switch (status) {

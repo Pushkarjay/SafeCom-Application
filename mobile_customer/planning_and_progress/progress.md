@@ -94,3 +94,13 @@
 - Wired new GoRouter routes with typed extras for both estimate screens.
 - Set active order summary from estimate screens so checkout remains service-agnostic and consistent.
 - Verified project health with `flutter analyze` (no issues).
+
+## Update 2026-05-04 (Correction Baseline Captured)
+- Captured critical bugs and enhancement directives for customer app.
+- Marked map flow as top priority due to non-functional location/search/pin-drop behavior.
+- Confirmed fallback location requirement: Patna, Bihar.
+- Confirmed requirement to remove static offer/announcement display and load dynamic backend content.
+- Confirmed global products discovery requirement (search/filter/sort) for all products.
+- Confirmed profile redesign requirement for practical customer details and booking history visibility.
+- Confirmed full invoice parity requirement with employee and admin surfaces.
+- Confirmed responsive layout fixes required for gesture and 3-button navigation modes.

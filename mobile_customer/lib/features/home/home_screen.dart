@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/home/providers/home_providers.dart';
 import 'package:mobile_customer/features/home/widgets/location_header.dart';
-import 'package:mobile_customer/features/home/widgets/promo_banner.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/home/widgets/service_grid.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
@@ -104,75 +103,62 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              const PromoBanner(),
-              const SizedBox(height: 18),
-              Text(
-                'Announcements',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+              GestureDetector(
+                onTap: () => context.push(AppRoutes.productsDiscovery),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0A84FF), Color(0xFF1E40AF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Browse All Products',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Explore our complete catalog with search & filters',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Colors.white70,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.arrow_forward_rounded,
+                          color: Colors.white),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 10),
-              _AnnouncementCard(
-                title: 'New CCTV packages launched',
-                subtitle: 'Now available with faster installation slots.',
-              ),
-              const SizedBox(height: 10),
-              _AnnouncementCard(
-                title: 'Support 24x7',
-                subtitle: 'Chat and call support coming in next update.',
-              ),
+              // TODO: Replace with dynamic backend-driven banners
+              // const PromoBanner(),
             ],
           ),
         ),
       ),
       bottomNavigationBar: const CustomerBottomNavigation(selectedIndex: 0),
-    );
-  }
-}
-
-class _AnnouncementCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _AnnouncementCard({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: Color(0xFFEFF6FF),
-            child: Icon(Icons.campaign_outlined, color: Color(0xFF0A84FF)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

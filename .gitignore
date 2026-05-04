@@ -30,6 +30,10 @@
 .env*secret*
 *.secret
 
+# Platform-Specific Secrets
+mobile_customer/android/app/src/main/res/values/strings.xml
+mobile_customer/ios/Runner/Info.plist
+
 # ============================================================================
 # Build & Dependencies
 # ============================================================================

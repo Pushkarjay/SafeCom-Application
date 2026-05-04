@@ -6,22 +6,26 @@ const API_DELAY = 100 // small UX delay when mocking; kept low when using real A
 const BASE_URL = getApiBaseUrl()
 
 async function authHeaders(): Promise<Record<string, string>> {
-  const token = localStorage.getItem('safecom_admin_token')
-  if (token) {
-    return { Authorization: `Bearer ${token}` }
-  }
-  
-  // Try to get fresh token from Firebase
+  // Always try to get a fresh Firebase ID token first.
   try {
     const idToken = await useAuthStore.getState().getIdToken()
     if (idToken) {
+      console.log('🔐 Using fresh Firebase ID token')
       localStorage.setItem('safecom_admin_token', idToken)
       return { Authorization: `Bearer ${idToken}` }
     }
   } catch (error) {
-    console.error('Failed to get Firebase ID token:', error)
+    console.error('❌ Failed to get Firebase ID token:', error)
   }
-  
+
+  // Fallback to stored token only when Firebase token lookup fails.
+  const token = localStorage.getItem('safecom_admin_token')
+  if (token) {
+    console.log('🔐 Using stored token from localStorage')
+    return { Authorization: `Bearer ${token}` }
+  }
+
+  console.warn('⚠️ No token available for API requests')
   return {}
 }
 
@@ -36,11 +40,15 @@ export class AdminDatasource {
     const res = await fetch(url, { ...opts, headers })
     if (!res.ok) {
       const text = await res.text()
+      const errorMsg = `API error ${res.status}: ${text}`
+      console.error(`❌ ${url}: ${errorMsg}`)
       if (res.status === 401) {
+        console.error('🔐 Token invalid, logging out...')
         await useAuthStore.getState().logout()
       }
-      throw new Error(`API error ${res.status}: ${text}`)
+      throw new Error(errorMsg)
     }
+    console.log(`✅ ${url}: success`)
     return res.json()
   }
 
@@ -63,8 +71,20 @@ export class AdminDatasource {
 
   async getCustomers(page: number = 1, limit: number = 10): Promise<Customer[]> {
     try {
-      return await this.fetchJson<Customer[]>(`${BASE_URL}/customers?page=${page}&limit=${limit}`)
+      const customers = await this.fetchJson<Record<string, unknown>[]>(`${BASE_URL}/customers?page=${page}&limit=${limit}`)
+      return customers.map((item) => ({
+        id: String(item.id || ''),
+        name: String(item.name || ''),
+        email: String(item.email || ''),
+        phone: String(item.phone || ''),
+        address: String(item.address || ''),
+        registeredDate: String(item.registeredDate || item.createdAt || new Date().toISOString()),
+        totalOrders: Number(item.totalOrders || 0),
+        totalSpent: Number(item.totalSpent || 0),
+        status: String(item.status || 'active') as 'active' | 'inactive'
+      }))
     } catch (e) {
+      console.error('❌ getCustomers error:', e)
       await this.delay(API_DELAY)
       return []
     }
@@ -72,8 +92,21 @@ export class AdminDatasource {
 
   async getTechnicians(page: number = 1, limit: number = 10): Promise<Technician[]> {
     try {
-      return await this.fetchJson<Technician[]>(`${BASE_URL}/technicians?page=${page}&limit=${limit}`)
+      const technicians = await this.fetchJson<Record<string, unknown>[]>(`${BASE_URL}/technicians?page=${page}&limit=${limit}`)
+      return technicians.map((item) => ({
+        id: String(item.id || ''),
+        name: String(item.name || ''),
+        email: String(item.email || ''),
+        phone: String(item.phone || ''),
+        skills: Array.isArray(item.skills) ? item.skills.map(String) : [],
+        location: String(item.location || ''),
+        totalJobs: Number(item.totalJobs || 0),
+        rating: Number(item.rating || 0),
+        status: String(item.status || 'available') as 'available' | 'on-job' | 'inactive',
+        joiningDate: String(item.joiningDate || item.createdAt || new Date().toISOString())
+      }))
     } catch (e) {
+      console.error('❌ getTechnicians error:', e)
       await this.delay(API_DELAY)
       return []
     }
@@ -85,8 +118,20 @@ export class AdminDatasource {
       if (status) url.searchParams.set('status', status)
       url.searchParams.set('page', String(page))
       url.searchParams.set('limit', String(limit))
-      return await this.fetchJson<Job[]>(url.toString())
+      const jobs = await this.fetchJson<Record<string, unknown>[]>(url.toString())
+      return jobs.map((item) => ({
+        id: String(item.id || ''),
+        customerId: String(item.customerId || ''),
+        technicianId: item.technicianId ? String(item.technicianId) : null,
+        serviceType: String(item.serviceType || 'installation') as Job['serviceType'],
+        status: String(item.status || 'pending') as Job['status'],
+        amount: Number(item.amount || 0),
+        scheduledDate: String(item.scheduledDate || new Date().toISOString()),
+        completedDate: item.completedDate ? String(item.completedDate) : null,
+        notes: String(item.notes || '')
+      }))
     } catch (e) {
+      console.error('❌ getJobs error:', e)
       await this.delay(API_DELAY)
       return []
     }
@@ -94,8 +139,30 @@ export class AdminDatasource {
 
   async getPayments(page: number = 1, limit: number = 10): Promise<Payment[]> {
     try {
-      return await this.fetchJson<Payment[]>(`${BASE_URL}/payments?page=${page}&limit=${limit}`)
+      const payments = await this.fetchJson<Record<string, unknown>[]>(`${BASE_URL}/payments?page=${page}&limit=${limit}`)
+      return payments.map((item) => {
+        const amount = Number(item.amount || item.paidAmount || 0)
+        const paidAmount = Number(item.paidAmount || amount)
+        const remainingAmount = Number(item.remainingAmount || Math.max(0, amount - paidAmount))
+        const timestamp = String(item.timestamp || item.createdAt || new Date().toISOString())
+
+        return {
+          id: String(item.id || ''),
+          customerId: String(item.customerId || ''),
+          customerName: String(item.customerName || item.customerId || ''),
+          jobId: String(item.jobId || ''),
+          amount,
+          paidAmount,
+          remainingAmount,
+          status: String(item.status || 'pending') as 'pending' | 'partial' | 'completed' | 'failed',
+          paymentMethod: String(item.paymentMethod || 'cash'),
+          transactionId: String(item.transactionId || item.id || ''),
+          createdAt: String(item.createdAt || timestamp),
+          updatedAt: String(item.updatedAt || timestamp)
+        }
+      })
     } catch (e) {
+      console.error('❌ getPayments error:', e)
       await this.delay(API_DELAY)
       return []
     }
@@ -109,6 +176,7 @@ export class AdminDatasource {
       ])
       return [...products, ...accessories]
     } catch (e) {
+      console.error('❌ getCatalogProducts error:', e)
       await this.delay(API_DELAY)
       return []
     }
@@ -128,6 +196,7 @@ export class AdminDatasource {
         updatedAt: String(item.updatedAt || new Date().toISOString())
       }))
     } catch (e) {
+      console.error('❌ getCatalogAccessories error:', e)
       await this.delay(API_DELAY)
       return []
     }
@@ -347,6 +416,7 @@ export class AdminDatasource {
     try {
       return await this.fetchJson<CatalogTax[]>(`${BASE_URL}/catalog/taxes`)
     } catch (e) {
+      console.error('❌ getCatalogTaxes error:', e)
       await this.delay(API_DELAY)
       return []
     }
