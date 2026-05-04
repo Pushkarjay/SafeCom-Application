@@ -216,3 +216,44 @@ export interface CreateUpdateProductRequest {
   imageUrl?: string
   taxRate?: number
 }
+
+// ============================================
+// SERVICE CATALOG INTERFACES
+// ============================================
+
+export interface ServiceAddon {
+  addonId: string
+  name: string
+  description: string
+  additionalCost: number
+  isOptional: boolean
+}
+
+export interface DiscountRule {
+  ruleId: string
+  name: string
+  type: 'percentage' | 'fixed'
+  value: number
+  minimumQuantity?: number
+}
+
+export interface CatalogService {
+  serviceId: string
+  serviceName: string
+  description?: string
+  category: string
+  productIds: string[]
+  addons?: ServiceAddon[]
+  discountRules?: DiscountRule[]
+  basePrice: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  duration?: string
+  isRecurring: boolean
+  renewalFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  serviceConfig?: Record<string, unknown>
+  taxRate: number
+  displayPriority: number
+  createdAt: string
+  updatedAt: string
+}

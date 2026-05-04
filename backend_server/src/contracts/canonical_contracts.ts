@@ -463,3 +463,140 @@ export interface CreateUpdateProductRequest {
   imageUrl?: string
   taxRate?: number // defaults to 18
 }
+
+// ============================================
+// SERVICE PACKAGE CATALOG CONTRACT
+// ============================================
+
+/**
+ * Service addon (additional service beyond base products)
+ * E.g., "24/7 monitoring", "Cloud storage upgrade", "Priority support"
+ */
+export interface ServiceAddon {
+  /** Unique addon ID */
+  addonId: string
+  
+  /** Display name */
+  name: string
+  
+  /** Description of addon */
+  description: string
+  
+  /** Additional cost for this addon */
+  additionalCost: number
+  
+  /** Whether addon is optional or included */
+  isOptional: boolean
+}
+
+/**
+ * Discount rule for service package (e.g., 10% off for annual contract)
+ */
+export interface DiscountRule {
+  /** Unique rule ID */
+  ruleId: string
+  
+  /** Rule name (e.g., "Annual Discount", "Bulk Purchase") */
+  name: string
+  
+  /** Discount type: percentage or fixed amount */
+  type: 'percentage' | 'fixed'
+  
+  /** Discount value (e.g., 10 for 10%, or 5000 for ₹5000 off) */
+  value: number
+  
+  /** Minimum quantity/amount required */
+  minimumQuantity?: number
+}
+
+/**
+ * Service package in service catalog
+ * Combines multiple products with addons and pricing
+ */
+export interface CatalogService {
+  /** Unique service ID */
+  serviceId: string
+  
+  /** Display name */
+  serviceName: string
+  
+  /** Detailed description */
+  description?: string
+  
+  /** Service category (installation, maintenance, amc, etc.) */
+  category: string
+  
+  /** List of product IDs included in this service */
+  productIds: string[]
+  
+  /** Optional addons available for this service */
+  addons?: ServiceAddon[]
+  
+  /** Discount rules applicable */
+  discountRules?: DiscountRule[]
+  
+  /** Base price for the service package */
+  basePrice: number
+  
+  /** Whether service is currently available */
+  isAvailable: boolean
+  
+  /** Whether service is featured/recommended */
+  isFeatured?: boolean
+  
+  /** Service duration (e.g., "4 weeks", "1 year") */
+  duration?: string
+  
+  /** Whether service is recurring/subscription */
+  isRecurring: boolean
+  
+  /** Renewal frequency if recurring (e.g., "monthly", "quarterly") */
+  renewalFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  
+  /** Number of instances (e.g., "4 Cameras + 1 Recorder") */
+  serviceConfig?: Record<string, unknown>
+  
+  /** Tax rate for this service */
+  taxRate: number
+  
+  /** Display priority (for ordering in UI) */
+  displayPriority: number
+  
+  /** Creation timestamp */
+  createdAt: string
+  
+  /** Last update timestamp */
+  updatedAt: string
+}
+
+/**
+ * Service list response
+ */
+export interface ServiceListResponse {
+  services: CatalogService[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+/**
+ * Request to create/update service
+ */
+export interface CreateUpdateServiceRequest {
+  serviceName: string
+  description?: string
+  category: string
+  productIds: string[]
+  addons?: ServiceAddon[]
+  discountRules?: DiscountRule[]
+  basePrice: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  duration?: string
+  isRecurring: boolean
+  renewalFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  serviceConfig?: Record<string, unknown>
+  taxRate?: number
+  displayPriority?: number
+}
