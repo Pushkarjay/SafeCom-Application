@@ -56,6 +56,24 @@ class ApiService {
     }
   }
 
+  // Get recommendations
+  Future<Map<String, dynamic>> getRecommendations({
+    String placement = 'checkout',
+    String? serviceType,
+  }) async {
+    try {
+      final params = <String, dynamic>{
+        'placement': placement,
+        if (serviceType != null && serviceType.isNotEmpty) 'serviceType': serviceType,
+        'available': 'true'
+      };
+      final response = await _dio.get('/catalog/recommendations', queryParameters: params);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to fetch recommendations: $e');
+    }
+  }
+
   // Get installation pricing
   Future<Map<String, dynamic>> getInstallationPricing() async {
     try {

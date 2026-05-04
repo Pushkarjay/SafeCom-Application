@@ -19,4 +19,14 @@ class ServiceCatalogRepository {
         )
         .toList(growable: false);
   }
+
+  Future<RecommendationCatalogResponse> getRecommendations({
+    String placement = 'checkout',
+    String? serviceType,
+  }) {
+    return _dataSource.getRecommendations(
+      placement: placement,
+      serviceType: serviceType,
+    );
+  }
 }

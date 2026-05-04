@@ -36,6 +36,61 @@ class ServiceCatalogEntry {
   }
 }
 
+class RecommendationCatalogResponse {
+  final List<RecommendationEntry> recommendations;
+
+  const RecommendationCatalogResponse({required this.recommendations});
+
+  factory RecommendationCatalogResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] as Map<String, dynamic>? ?? {};
+    final items = data['recommendations'] as List<dynamic>? ?? [];
+    return RecommendationCatalogResponse(
+      recommendations: items
+          .map((entry) => RecommendationEntry.fromJson(entry as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class RecommendationEntry {
+  final String recommendationId;
+  final String name;
+  final String description;
+  final List<String> productIds;
+  final String placement;
+  final List<String> serviceTypes;
+  final bool isAvailable;
+  final int displayPriority;
+
+  const RecommendationEntry({
+    required this.recommendationId,
+    required this.name,
+    required this.description,
+    required this.productIds,
+    required this.placement,
+    required this.serviceTypes,
+    required this.isAvailable,
+    required this.displayPriority,
+  });
+
+  factory RecommendationEntry.fromJson(Map<String, dynamic> json) {
+    return RecommendationEntry(
+      recommendationId: (json['recommendationId'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      productIds: (json['productIds'] as List<dynamic>? ?? [])
+          .map((item) => item.toString())
+          .toList(growable: false),
+      placement: (json['placement'] ?? '').toString(),
+      serviceTypes: (json['serviceTypes'] as List<dynamic>? ?? [])
+          .map((item) => item.toString())
+          .toList(growable: false),
+      isAvailable: json['isAvailable'] as bool? ?? true,
+      displayPriority: (json['displayPriority'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 class InstallationPricingContract {
   final Map<int, double> nvrByPackage;
   final Map<String, double> cameraByMp;

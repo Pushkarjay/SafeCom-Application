@@ -10,4 +10,15 @@ class ServiceCatalogApiDataSource {
     final response = await _apiService.getServices();
     return ServiceCatalogResponse.fromJson(response);
   }
+
+  Future<RecommendationCatalogResponse> getRecommendations({
+    String placement = 'checkout',
+    String? serviceType,
+  }) async {
+    final response = await _apiService.getRecommendations(
+      placement: placement,
+      serviceType: serviceType,
+    );
+    return RecommendationCatalogResponse.fromJson(response);
+  }
 }
