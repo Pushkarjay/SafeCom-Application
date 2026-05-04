@@ -6,7 +6,7 @@ import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 export const getServices = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const servicesSnapshot = await db.collection('services').get();
+    const servicesSnapshot = await db.collection('catalog_services').get();
     const services = servicesSnapshot.docs.map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() }));
     res.json({ services });
   } catch (error) {
@@ -19,7 +19,7 @@ export const getServices = async (req: Request, res: Response) => {
 export const getInstallationPricing = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const doc = await db.collection('pricing').doc('installation').get();
+    const doc = await db.collection('catalog_pricing').doc('installation').get();
     if (!doc.exists) {
       return res.status(404).json({ error: 'Installation pricing not found' });
     }
@@ -34,7 +34,7 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
 export const getMaintenancePricing = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const doc = await db.collection('pricing').doc('maintenance').get();
+    const doc = await db.collection('catalog_pricing').doc('maintenance').get();
     if (!doc.exists) {
       return res.status(404).json({ error: 'Maintenance pricing not found' });
     }
@@ -49,7 +49,7 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
 export const getRepairPricing = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const doc = await db.collection('pricing').doc('repair').get();
+    const doc = await db.collection('catalog_pricing').doc('repair').get();
     if (!doc.exists) {
       return res.status(404).json({ error: 'Repair pricing not found' });
     }
@@ -64,7 +64,7 @@ export const getRepairPricing = async (req: Request, res: Response) => {
 export const getUpgradeBundles = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const snapshot = await db.collection('upgrade_catalog').get();
+    const snapshot = await db.collection('catalog_upgrade_bundles').get();
     const bundles = snapshot.docs.map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() }));
     res.json({ bundles });
   } catch (error) {
@@ -77,7 +77,7 @@ export const getUpgradeBundles = async (req: Request, res: Response) => {
 export const getAccessories = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const snapshot = await db.collection('accessories_catalog').get();
+    const snapshot = await db.collection('catalog_accessories').get();
     const items = snapshot.docs.map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() }));
     res.json({ items });
   } catch (error) {
