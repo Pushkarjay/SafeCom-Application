@@ -1,3 +1,25 @@
+export interface SystemHealth {
+  firestore: 'healthy' | 'degraded' | 'down'
+  auth: 'healthy' | 'degraded' | 'down'
+  lastCheck: string
+}
+
+export interface TopTechnician {
+  id: string
+  name: string
+  jobsCompleted: number
+  rating: number
+}
+
+export interface RecentBooking {
+  bookingId: string
+  customerId: string
+  serviceType: string
+  amount: number
+  status: string
+  createdAt: string
+}
+
 export interface DashboardMetrics {
   totalCustomers: number
   activeTechnicians: number
@@ -5,6 +27,9 @@ export interface DashboardMetrics {
   totalRevenue: number
   completionRate: number
   avgResponseTime: number
+  systemHealth?: SystemHealth
+  topPerformingTechnicians?: TopTechnician[]
+  recentBookings?: RecentBooking[]
 }
 
 export interface Customer {

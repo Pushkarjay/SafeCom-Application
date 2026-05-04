@@ -148,6 +148,142 @@
   animation: pulse 2s infinite;
 }
 
+.status-indicator.warning {
+  background-color: #ff9500;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.error {
+  background-color: var(--error-color);
+  animation: pulse 1s infinite;
+}
+
+.status-timestamp {
+  background-color: transparent;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.technician-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.technician-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: var(--secondary-color);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.technician-info {
+  flex: 1;
+}
+
+.technician-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.technician-stats {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.bookings-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 1.5fr;
+  gap: 0;
+  background-color: var(--secondary-color);
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 1.5fr;
+  gap: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+
+.table-row:hover {
+  background-color: var(--secondary-color);
+}
+
+.col-service {
+  font-weight: 500;
+}
+
+.col-amount {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.col-status {
+  display: flex;
+  gap: 8px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.pending {
+  background-color: rgba(255, 149, 0, 0.2);
+  color: #ff9500;
+}
+
+.status-badge.completed {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.status-badge.assigned {
+  background-color: rgba(10, 132, 255, 0.2);
+  color: var(--primary-color);
+}
+
+.status-badge.default {
+  background-color: rgba(107, 114, 128, 0.2);
+  color: var(--text-secondary);
+}
+
+.col-date {
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
