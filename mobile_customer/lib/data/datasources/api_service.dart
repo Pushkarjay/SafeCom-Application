@@ -123,6 +123,24 @@ class ApiService {
       throw Exception('Failed to fetch accessories: $e');
     }
   }
+  // Get SDUI screen layout
+  Future<Map<String, dynamic>> getScreenLayout(
+    String screen, {
+    double? lat,
+    double? lng,
+  }) async {
+    try {
+      final params = <String, dynamic>{
+        'screen': screen,
+        if (lat != null) 'lat': lat.toString(),
+        if (lng != null) 'lng': lng.toString(),
+      };
+      final response = await _dio.get('/sdui/layout', queryParameters: params);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to fetch screen layout: $e');
+    }
+  }
 }
 
 final apiServiceProvider = Provider<ApiService>((ref) {
