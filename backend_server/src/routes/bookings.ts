@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { queryCollection, getDocument, createDocument, updateDocument } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument, updateDocument, getDb } from '../services/firestore.js'
+import { sendPushNotification } from '../services/notificationService.js'
 import type { 
   CreateBookingRequest, 
   CanonicalInvoice, 
@@ -124,11 +125,29 @@ async function createCorrespondingJob(
  */
 async function notifyEligibleEmployees(booking: CanonicalBooking): Promise<void> {
   try {
-    // TODO: Implement notification service
-    // 1. Query employees matching service area
-    // 2. Filter by skill/availability
-    // 3. Send push notifications
-    console.log(`[NOTIFICATION TODO] Send booking notification for booking ${booking.bookingId}`)
+    const db = getDb()
+    const snapshot = await db.collection('employees').get()
+    const tokens = snapshot.docs
+      .flatMap((doc) => (doc.data().deviceTokens as string[] | undefined) ?? [])
+      .filter((token) => Boolean(token))
+
+    if (tokens.length === 0) {
+      console.log('[NOTIFICATION] No employee device tokens found')
+      return
+    }
+
+    await sendPushNotification({
+      tokens,
+      title: 'New booking assigned',
+      body: `Service: ${booking.serviceType} • ${booking.scheduledDate}`,
+      data: {
+        type: 'new_booking',
+        bookingId: booking.bookingId,
+        serviceType: booking.serviceType,
+        scheduledDate: booking.scheduledDate,
+        scheduledTimeSlot: booking.scheduledTimeSlot
+      }
+    })
   } catch (error) {
     console.error('Failed to send notifications:', error)
   }

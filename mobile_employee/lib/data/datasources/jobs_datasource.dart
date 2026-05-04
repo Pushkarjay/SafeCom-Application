@@ -20,7 +20,7 @@ class JobsApiDatasource {
         final List data = response.data as List;
         final matchingJobs = data.where((json) {
           final assignedTechnician = json['assignedTo']?['employeeId']?.toString() ?? json['technicianId']?.toString();
-          return assignedTechnician == technicianId;
+          return assignedTechnician == technicianId || assignedTechnician == null || assignedTechnician.isEmpty;
         });
 
         return matchingJobs.map<AssignedJob>((json) {

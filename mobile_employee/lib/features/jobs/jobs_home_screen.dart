@@ -20,6 +20,12 @@ class JobsHomeScreen extends ConsumerWidget {
         elevation: 0,
         actions: [
           IconButton(
+            onPressed: () {
+              ref.refresh(assignedJobsProvider(technicianId));
+            },
+            icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
             onPressed: () => context.push(AppRoutes.profile),
             icon: const Icon(Icons.person_outline),
           ),

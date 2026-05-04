@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/config/api_config.dart';
@@ -75,6 +76,21 @@ class AuthService {
           receiveTimeout: const Duration(seconds: 10),
         ),
       );
+
+      final deviceToken = await FirebaseMessaging.instance.getToken();
+      if (deviceToken != null && deviceToken.isNotEmpty) {
+        await _dio.post(
+          '$baseUrl/employees/device-token',
+          data: { 'token': deviceToken },
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $idToken',
+            },
+            sendTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 10),
+          ),
+        );
+      }
     } catch (e) {
       // Log but don't fail - user is already authenticated
       // ignore: avoid_print
