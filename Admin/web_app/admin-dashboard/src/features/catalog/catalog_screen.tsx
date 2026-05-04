@@ -56,7 +56,13 @@ export default function CatalogScreen() {
   const [editingRec, setEditingRec] = useState<CatalogRecommendation | null>(null)
   const [isRecFormOpen, setIsRecFormOpen] = useState(false)
   const [recForm, setRecForm] = useState({
-    name: '', description: '', productIds: [] as string[], priority: 0, status: 'active' as 'active' | 'inactive'
+    name: '',
+    description: '',
+    productIds: [] as string[],
+    placement: 'checkout' as CatalogRecommendation['placement'],
+    serviceTypes: [] as CatalogRecommendation['serviceTypes'],
+    isAvailable: true,
+    displayPriority: 0
   })
 
   // Invoices
@@ -250,13 +256,15 @@ export default function CatalogScreen() {
   // Recommendation CRUD
   const handleSaveRec = async () => {
     if (!recForm.name.trim()) { setError('Recommendation name is required'); return }
+    if (recForm.productIds.length === 0) { setError('Select at least one product'); return }
     setIsSaving(true)
     try {
+      const payload = normalizeRecForm()
       if (editingRec) {
-        const updated = await adminDatasource.updateCatalogRecommendation(editingRec.id, recForm)
-        setRecommendations((p) => p.map((i) => (i.id === updated.id ? updated : i)))
+        const updated = await adminDatasource.updateCatalogRecommendation(editingRec.recommendationId, payload)
+        setRecommendations((p) => p.map((i) => (i.recommendationId === updated.recommendationId ? updated : i)))
       } else {
-        const created = await adminDatasource.createCatalogRecommendation(recForm)
+        const created = await adminDatasource.createCatalogRecommendation(payload)
         setRecommendations((p) => [created, ...p])
       }
       setIsRecFormOpen(false)
@@ -271,9 +279,20 @@ export default function CatalogScreen() {
     if (!window.confirm('Delete this recommendation?')) return
     try {
       await adminDatasource.deleteCatalogRecommendation(id)
-      setRecommendations((p) => p.filter((i) => i.id !== id))
+      setRecommendations((p) => p.filter((i) => i.recommendationId !== id))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
+    }
+  }
+
+  const normalizeRecForm = () => {
+    if (recForm.serviceTypes && recForm.serviceTypes.length > 0) {
+      return recForm
+    }
+
+    return {
+      ...recForm,
+      serviceTypes: undefined
     }
   }
 
@@ -602,6 +621,7 @@ export default function CatalogScreen() {
                 <tr>
                   <th>Name</th>
                   <th>Description</th>
+                  <th>Placement</th>
                   <th>Priority</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -609,17 +629,26 @@ export default function CatalogScreen() {
               </thead>
               <tbody>
                 {recommendations.length === 0 ? (
-                  <tr><td colSpan={5} className="empty-cell">No recommendations yet</td></tr>
+                  <tr><td colSpan={6} className="empty-cell">No recommendations yet</td></tr>
                 ) : (
                   recommendations.map((r) => (
-                    <tr key={r.id}>
+                    <tr key={r.recommendationId}>
                       <td>{r.name}</td>
                       <td>{r.description}</td>
-                      <td>{r.priority}</td>
-                      <td><span className={`status ${r.status}`}>{r.status}</span></td>
+                      <td>{r.placement}</td>
+                      <td>{r.displayPriority}</td>
+                      <td><span className={`status ${r.isAvailable ? 'active' : 'inactive'}`}>{r.isAvailable ? 'active' : 'inactive'}</span></td>
                       <td>
-                        <button className="icon-btn" onClick={() => { setEditingRec(r); setRecForm(r); setIsRecFormOpen(true) }}>Edit</button>
-                        <button className="icon-btn danger" onClick={() => handleDeleteRec(r.id)}>Delete</button>
+                        <button className="icon-btn" onClick={() => { setEditingRec(r); setRecForm({
+                          name: r.name,
+                          description: r.description || '',
+                          productIds: r.productIds,
+                          placement: r.placement,
+                          serviceTypes: r.serviceTypes || [],
+                          isAvailable: r.isAvailable,
+                          displayPriority: r.displayPriority
+                        }); setIsRecFormOpen(true) }}>Edit</button>
+                        <button className="icon-btn danger" onClick={() => handleDeleteRec(r.recommendationId)}>Delete</button>
                       </td>
                     </tr>
                   ))
@@ -771,8 +800,38 @@ export default function CatalogScreen() {
             <div className="modal-body">
               <label>Name <input value={recForm.name} onChange={(e) => setRecForm({...recForm, name: e.target.value})} /></label>
               <label>Description <textarea value={recForm.description} onChange={(e) => setRecForm({...recForm, description: e.target.value})} /></label>
-              <label>Priority <input type="number" value={recForm.priority} onChange={(e) => setRecForm({...recForm, priority: Number(e.target.value)})} /></label>
-              <label>Status <select value={recForm.status} onChange={(e) => setRecForm({...recForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+              <label>Placement
+                <select value={recForm.placement} onChange={(e) => setRecForm({...recForm, placement: e.target.value as CatalogRecommendation['placement']})}>
+                  <option value="checkout">Checkout</option>
+                  <option value="cart">Cart</option>
+                  <option value="service">Service</option>
+                  <option value="general">General</option>
+                </select>
+              </label>
+              <label>Service Types
+                <select multiple value={recForm.serviceTypes || []} onChange={(e) => {
+                  const values = Array.from(e.target.selectedOptions).map((opt) => opt.value)
+                  setRecForm({ ...recForm, serviceTypes: values as CatalogRecommendation['serviceTypes'] })
+                }}>
+                  <option value="installation">Installation</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="amc">AMC</option>
+                  <option value="repair">Repair</option>
+                  <option value="upgrade">Upgrade</option>
+                  <option value="accessories">Accessories</option>
+                </select>
+              </label>
+              <label>Product IDs (comma-separated)
+                <input
+                  value={recForm.productIds.join(', ')}
+                  onChange={(e) => setRecForm({
+                    ...recForm,
+                    productIds: e.target.value.split(',').map((v) => v.trim()).filter(Boolean)
+                  })}
+                />
+              </label>
+              <label>Display Priority <input type="number" value={recForm.displayPriority} onChange={(e) => setRecForm({...recForm, displayPriority: Number(e.target.value)})} /></label>
+              <label>Status <select value={recForm.isAvailable ? 'active' : 'inactive'} onChange={(e) => setRecForm({...recForm, isAvailable: e.target.value === 'active'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setIsRecFormOpen(false)}>Cancel</button>

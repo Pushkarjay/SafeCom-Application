@@ -146,13 +146,18 @@ export interface CatalogTax {
   updatedAt: string
 }
 
+export type RecommendationPlacement = 'checkout' | 'cart' | 'service' | 'general'
+
 export interface CatalogRecommendation {
-  id: string
+  recommendationId: string
   name: string
-  description: string
+  description?: string
   productIds: string[]
-  priority: number
-  status: 'active' | 'inactive'
+  placement: RecommendationPlacement
+  serviceTypes?: Array<'installation' | 'maintenance' | 'amc' | 'repair' | 'upgrade' | 'accessories'>
+  isAvailable: boolean
+  displayPriority: number
+  createdAt: string
   updatedAt: string
 }
 

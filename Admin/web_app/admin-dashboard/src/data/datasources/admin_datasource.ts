@@ -457,7 +457,10 @@ export class AdminDatasource {
   // ====== RECOMMENDATIONS ======
   async getCatalogRecommendations(): Promise<CatalogRecommendation[]> {
     try {
-      return await this.fetchJson<CatalogRecommendation[]>(`${BASE_URL}/catalog/recommendations`)
+      const payload = await this.fetchJson<{ success: boolean; data: { recommendations: CatalogRecommendation[] } }>(
+        `${BASE_URL}/catalog/recommendations`
+      )
+      return payload.data?.recommendations || []
     } catch (e) {
       await this.delay(API_DELAY)
       return []
@@ -466,10 +469,14 @@ export class AdminDatasource {
 
   async createCatalogRecommendation(data: Partial<CatalogRecommendation>): Promise<CatalogRecommendation> {
     try {
-      return await this.fetchJson<CatalogRecommendation>(`${BASE_URL}/catalog/recommendations`, {
-        method: 'POST',
-        body: JSON.stringify(data)
-      })
+      const payload = await this.fetchJson<{ success: boolean; data: CatalogRecommendation }>(
+        `${BASE_URL}/catalog/recommendations`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data)
+        }
+      )
+      return payload.data
     } catch (e) {
       throw new Error('Failed to create recommendation')
     }
@@ -477,10 +484,14 @@ export class AdminDatasource {
 
   async updateCatalogRecommendation(id: string, data: Partial<CatalogRecommendation>): Promise<CatalogRecommendation> {
     try {
-      return await this.fetchJson<CatalogRecommendation>(`${BASE_URL}/catalog/recommendations/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data)
-      })
+      const payload = await this.fetchJson<{ success: boolean; data: CatalogRecommendation }>(
+        `${BASE_URL}/catalog/recommendations/${id}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(data)
+        }
+      )
+      return payload.data
     } catch (e) {
       throw new Error('Failed to update recommendation')
     }

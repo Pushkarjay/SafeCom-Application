@@ -701,6 +701,62 @@ export interface CreateUpdateAccessoryRequest {
 }
 
 // ============================================
+// RECOMMENDATIONS CONTRACT
+// ============================================
+
+export type RecommendationPlacement = 'checkout' | 'cart' | 'service' | 'general'
+
+export interface CatalogRecommendationRule {
+  /** Unique recommendation ID */
+  recommendationId: string
+
+  /** Display name */
+  name: string
+
+  /** Optional description */
+  description?: string
+
+  /** Products to recommend */
+  productIds: string[]
+
+  /** Where this recommendation appears */
+  placement: RecommendationPlacement
+
+  /** Optional service-type targeting */
+  serviceTypes?: Array<'installation' | 'maintenance' | 'amc' | 'repair' | 'upgrade' | 'accessories'>
+
+  /** Whether recommendation is active */
+  isAvailable: boolean
+
+  /** Display priority for ordering */
+  displayPriority: number
+
+  /** Creation timestamp */
+  createdAt: string
+
+  /** Last update timestamp */
+  updatedAt: string
+}
+
+export interface RecommendationListResponse {
+  recommendations: CatalogRecommendationRule[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+export interface CreateUpdateRecommendationRequest {
+  name: string
+  description?: string
+  productIds: string[]
+  placement: RecommendationPlacement
+  serviceTypes?: Array<'installation' | 'maintenance' | 'amc' | 'repair' | 'upgrade' | 'accessories'>
+  isAvailable: boolean
+  displayPriority?: number
+}
+
+// ============================================
 // MAINTENANCE PLAN INTERFACES
 // ============================================
 
