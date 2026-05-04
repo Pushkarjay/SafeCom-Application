@@ -194,17 +194,3 @@ export default function DashboardScreen() {
     </div>
   )
 }
-
-// Helper function to get status badge class
-function getStatusBadgeClass(status: string): string {
-  switch (status.toLowerCase()) {
-    case 'completed':
-      return 'completed'
-    case 'pending':
-      return 'pending'
-    case 'assigned':
-      return 'assigned'
-    default:
-      return 'default'
-  }
-}

@@ -184,7 +184,7 @@ bookingsRouter.post('/', async (req, res) => {
     }
     
     // Persist booking
-    await createDocument('bookings', booking)
+    await createDocument('bookings', booking as unknown as Record<string, unknown>)
     
     // Create corresponding job
     const jobId = await createCorrespondingJob(bookingId, booking)

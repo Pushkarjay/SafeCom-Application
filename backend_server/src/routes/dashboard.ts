@@ -1,7 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express'
-import { db } from '../services/firestore.js'
-import { verifyFirebaseIdToken } from '../middleware/auth.js'
+import { getDb } from '../services/firestore.js'
+import { authenticateToken, AuthenticatedRequest } from '../middleware/auth.js'
+import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 
+const db = getDb()
 export const dashboardRouter = Router()
 
 // ============================================
@@ -54,7 +56,7 @@ async function getTotalRevenue(): Promise<number> {
       .get()
 
     let total = 0
-    snapshot.forEach((doc) => {
+    snapshot.forEach((doc: QueryDocumentSnapshot) => {
       const invoice = doc.data().invoice
       if (invoice?.grandTotal) {
         total += invoice.grandTotal
@@ -99,7 +101,7 @@ async function getAverageResponseTime(): Promise<number> {
     let totalTime = 0
     let count = 0
 
-    snapshot.forEach((doc) => {
+    snapshot.forEach((doc: QueryDocumentSnapshot) => {
       const createdAt = doc.data().createdAt
       const completedAt = doc.data().completedAt
 
@@ -129,7 +131,7 @@ async function getTopPerformingTechnicians(): Promise<
       .limit(5)
       .get()
 
-    return snapshot.docs.map((doc) => ({
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({
       id: doc.id,
       name: doc.data().name || 'Unknown',
       jobsCompleted: doc.data().jobsCompleted || 0,
@@ -158,7 +160,7 @@ async function getRecentBookings(): Promise<
       .limit(10)
       .get()
 
-    return snapshot.docs.map((doc) => ({
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({
       bookingId: doc.id,
       customerId: doc.data().customerId,
       serviceType: doc.data().serviceType || 'unknown',
@@ -221,8 +223,8 @@ async function checkSystemHealth(): Promise<{
  */
 dashboardRouter.get(
   '/metrics',
-  verifyFirebaseIdToken,
-  async (req: Request, res: Response, next: NextFunction) => {
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const startTime = Date.now()
 
@@ -280,8 +282,8 @@ dashboardRouter.get(
  */
 dashboardRouter.get(
   '/system-health',
-  verifyFirebaseIdToken,
-  async (req: Request, res: Response, next: NextFunction) => {
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const health = await checkSystemHealth()
 
