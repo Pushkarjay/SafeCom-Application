@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/models/job_models.dart';
 
@@ -79,6 +80,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _navigateToSite,
+              icon: const Icon(Icons.location_on),
+              label: const Text('Navigate to Site'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
             const SizedBox(height: 16),
             if (widget.job.notes != null)
               _buildInfoCard(
@@ -88,6 +99,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   Text(widget.job.notes!),
                 ],
               ),
+            const SizedBox(height: 16),
+            if (widget.job.invoice != null)
+              _buildInvoiceCard(context, widget.job.invoice!),
             const SizedBox(height: 16),
             if (widget.job.status == 'pending')
               Column(
@@ -212,7 +226,132 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
+  Widget _buildInvoiceCard(BuildContext context, CanonicalInvoice invoice) {
+    return Card(
+      color: Colors.blue.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Invoice Details',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            _buildInvoiceRow('Invoice ID', invoice.invoiceId),
+            _buildInvoiceRow('Payment Status', invoice.paymentStatus),
+            const SizedBox(height: 12),
+            const Divider(),
+            const SizedBox(height: 12),
+            Text(
+              'Line Items',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            ...invoice.lineItems.map((item) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.productName,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          'Qty: ${item.quantity} × Rs ${item.unitPrice.toStringAsFixed(0)}',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    'Rs ${item.lineTotal.toStringAsFixed(0)}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            )),
+            const SizedBox(height: 12),
+            const Divider(),
+            const SizedBox(height: 12),
+            _buildInvoiceRow('Subtotal', 'Rs ${invoice.subtotal.toStringAsFixed(0)}'),
+            if (invoice.totalTax > 0)
+              _buildInvoiceRow('Tax (18%)', 'Rs ${invoice.totalTax.toStringAsFixed(0)}'),
+            _buildInvoiceRow(
+              'Total',
+              'Rs ${invoice.grandTotal.toStringAsFixed(0)}',
+              isBold: true,
+            ),
+            if (invoice.paymentStatus != 'completed')
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  _buildInvoiceRow('Advance Paid', 'Rs ${invoice.advanceAmount.toStringAsFixed(0)}'),
+                  _buildInvoiceRow('Remaining', 'Rs ${invoice.remainingAmount.toStringAsFixed(0)}'),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInvoiceRow(String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+              fontSize: isBold ? 16 : 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDate(DateTime dateTime) {
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _navigateToSite() async {
+    final latitude = widget.job.latitude;
+    final longitude = widget.job.longitude;
+    final locationName = widget.job.location;
+
+    // Google Maps URI scheme
+    final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+
+    try {
+      if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
+        await launchUrl(
+          Uri.parse(googleMapsUrl),
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open Google Maps')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error opening maps: $e')),
+      );
+    }
   }
 }

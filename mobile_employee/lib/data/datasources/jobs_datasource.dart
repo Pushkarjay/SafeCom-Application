@@ -19,24 +19,25 @@ class JobsApiDatasource {
       if (response.statusCode == 200 && response.data is List) {
         final List data = response.data as List;
         final matchingJobs = data.where((json) {
-          final assignedTechnician = json['technicianId']?.toString();
+          final assignedTechnician = json['assignedTo']?['employeeId']?.toString() ?? json['technicianId']?.toString();
           return assignedTechnician == technicianId;
         });
 
         return matchingJobs.map<AssignedJob>((json) {
           final map = <String, dynamic>{
-            'id': json['id'] ?? '',
+            'id': json['jobId'] ?? json['id'] ?? '',
             'customer_id': json['customerId'] ?? '',
-            'customer_name': json['customerName'] ?? json['customerId'] ?? '',
-            'customer_phone': json['customerPhone'] ?? '',
+            'customerName': json['customer']?['name'] ?? json['customerId'] ?? '',
+            'customerPhone': json['customer']?['phone'] ?? '',
             'service_type': json['serviceType'] ?? '',
-            'location': json['location'] ?? '',
-            'latitude': (json['latitude'] as num?)?.toDouble() ?? 0.0,
-            'longitude': (json['longitude'] as num?)?.toDouble() ?? 0.0,
-            'scheduled_date_time': _parseScheduledDate(json['scheduledDate']),
+            'location': json['location']?['address'] ?? json['location'] ?? '',
+            'latitude': (json['location']?['latitude'] as num?)?.toDouble() ?? (json['latitude'] as num?)?.toDouble() ?? 0.0,
+            'longitude': (json['location']?['longitude'] as num?)?.toDouble() ?? (json['longitude'] as num?)?.toDouble() ?? 0.0,
+            'scheduled_date_time': _parseScheduledDate(json['scheduledDate'] ?? json['scheduled_date_time']),
             'status': json['status'] ?? 'pending',
-            'estimated_amount': (json['amount'] as num?)?.toDouble() ?? 0.0,
-            'notes': json['notes'] ?? ''
+            'estimated_amount': (json['invoice']?['grandTotal'] as num?)?.toDouble() ?? (json['amount'] as num?)?.toDouble() ?? 0.0,
+            'notes': json['notes'] ?? '',
+            if (json['invoice'] != null) 'invoice': json['invoice'],
           };
           return AssignedJob.fromJson(map);
         }).toList();
