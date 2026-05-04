@@ -156,7 +156,7 @@ catalogRouter.delete('/products/:id', async (req, res) => {
 // GET /catalog/accessories - List all accessory catalog items
 catalogRouter.get('/accessories', async (_req, res) => {
   try {
-    const accessories = await queryCollection<Record<string, unknown>>('accessories_catalog', [])
+    const accessories = await queryCollection<Record<string, unknown>>('catalog_accessories', [])
     return res.json(accessories)
   } catch (error) {
     console.error('Firestore accessories lookup failed:', error)
@@ -167,7 +167,7 @@ catalogRouter.get('/accessories', async (_req, res) => {
 // GET /catalog/services - List all service categories
 catalogRouter.get('/services', async (_req, res) => {
   try {
-    const services = await queryCollection<Record<string, unknown>>('services', [])
+    const services = await queryCollection<Record<string, unknown>>('catalog_services', [])
     return res.json(services)
   } catch (error) {
     console.error('Firestore services lookup failed:', error)
@@ -178,7 +178,7 @@ catalogRouter.get('/services', async (_req, res) => {
 // GET /catalog/upgrade - List all upgrade bundle items
 catalogRouter.get('/upgrade', async (_req, res) => {
   try {
-    const bundles = await queryCollection<Record<string, unknown>>('upgrade_catalog', [])
+    const bundles = await queryCollection<Record<string, unknown>>('catalog_upgrade_bundles', [])
     return res.json(bundles)
   } catch (error) {
     console.error('Firestore upgrade bundles lookup failed:', error)
@@ -189,9 +189,9 @@ catalogRouter.get('/upgrade', async (_req, res) => {
 // GET /catalog/pricing - Read all pricing documents
 catalogRouter.get('/pricing', async (_req, res) => {
   try {
-    const installation = await getDocument<Record<string, unknown>>('pricing_installation', 'installation')
-    const maintenance = await getDocument<Record<string, unknown>>('pricing_maintenance', 'maintenance')
-    const repair = await getDocument<Record<string, unknown>>('pricing_repair', 'repair')
+    const installation = await getDocument<Record<string, unknown>>('catalog_pricing', 'installation')
+    const maintenance = await getDocument<Record<string, unknown>>('catalog_pricing', 'maintenance')
+    const repair = await getDocument<Record<string, unknown>>('catalog_pricing', 'repair')
     return res.json({ installation, maintenance, repair })
   } catch (error) {
     console.error('Firestore pricing lookup failed:', error)

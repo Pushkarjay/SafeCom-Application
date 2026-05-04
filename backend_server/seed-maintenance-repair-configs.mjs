@@ -160,40 +160,40 @@ async function seed() {
   let count = 0
 
   // Seed maintenance config
-  await db.collection('service_configs').doc('maintenance').set({
+  await db.collection('catalog_pricing').doc('maintenance').set({
     ...maintenanceConfig,
     name: 'Maintenance Config',
     updatedAt: now,
   })
   count++
-  console.log('  ✅ service_configs/maintenance')
+  console.log('  ✅ catalog_pricing/maintenance')
 
   // Seed repair config
-  await db.collection('service_configs').doc('repair').set({
+  await db.collection('catalog_pricing').doc('repair').set({
     ...repairConfig,
     name: 'Repair Config',
     updatedAt: now,
   })
   count++
-  console.log('  ✅ service_configs/repair')
+  console.log('  ✅ catalog_pricing/repair')
 
   // Seed AMC config
-  await db.collection('service_configs').doc('amc').set({
+  await db.collection('catalog_pricing').doc('amc').set({
     ...amcConfig,
     name: 'AMC Config',
     updatedAt: now,
   })
   count++
-  console.log('  ✅ service_configs/amc')
+  console.log('  ✅ catalog_pricing/amc')
 
   // Seed upgrade config
-  await db.collection('service_configs').doc('upgrade').set({
+  await db.collection('catalog_pricing').doc('upgrade').set({
     ...upgradeConfig,
     name: 'Upgrade Config',
     updatedAt: now,
   })
   count++
-  console.log('  ✅ service_configs/upgrade')
+  console.log('  ✅ catalog_pricing/upgrade')
 
   console.log(`\n🎉 Seed complete! Added ${count} service config documents.`)
 }

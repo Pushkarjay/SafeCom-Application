@@ -26,7 +26,7 @@ const getServiceConfig = async (serviceId: string, req: Request, res: Response) 
     const db = getDb();
     
     // Get the base config
-    const configDoc = await db.collection('service_configs').doc(serviceId).get();
+    const configDoc = await db.collection('catalog_pricing').doc(serviceId).get();
     if (!configDoc.exists) {
       return res.status(404).json({ error: `${serviceId} configuration not found` });
     }
@@ -35,7 +35,7 @@ const getServiceConfig = async (serviceId: string, req: Request, res: Response) 
     
     // For installation, we also need categories and groups
     if (serviceId === 'installation') {
-      const categoriesSnap = await db.collection('service_configs').doc(serviceId).collection('categories').get();
+      const categoriesSnap = await db.collection('catalog_pricing').doc(serviceId).collection('categories').get();
       const categories = [];
       
       for (const catDoc of categoriesSnap.docs) {
@@ -43,12 +43,12 @@ const getServiceConfig = async (serviceId: string, req: Request, res: Response) 
         
         const groupsSnap = await catDoc.ref.collection('groups').get();
         for (const groupDoc of groupsSnap.docs) {
-          const groupData = { id: groupDoc.id, ...groupDoc.data(), mappedProducts: [] as any[] };
+          const groupData: any = { id: groupDoc.id, ...groupDoc.data(), mappedProducts: [] as any[] };
           
           // resolve product mappings
           if (groupData.mappings && Array.isArray(groupData.mappings)) {
              for (const mapping of groupData.mappings) {
-                const prodDoc = await db.collection('master_products').doc(mapping.productId).get();
+                const prodDoc = await db.collection('catalog_products').doc(mapping.productId).get();
                 if (prodDoc.exists) {
                    groupData.mappedProducts.push({
                       ...mapping,
@@ -84,7 +84,7 @@ export const getUpgradeBundles = (req: Request, res: Response) => getServiceConf
 export const getAccessories = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const snapshot = await db.collection('master_products')
+    const snapshot = await db.collection('catalog_products')
       .where('category', '==', 'accessories')
       .where('isAvailable', '==', true)
       .get();
@@ -101,7 +101,7 @@ export const getAccessories = async (req: Request, res: Response) => {
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const snapshot = await db.collection('master_products').where('isAvailable', '==', true).get();
+    const snapshot = await db.collection('catalog_products').where('isAvailable', '==', true).get();
     const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json({ products });
   } catch (error) {

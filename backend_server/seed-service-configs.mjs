@@ -116,14 +116,14 @@ async function seed() {
   let count = 0
 
   // Seed installation categories and groups
-  const installationRef = db.collection('service_configs').doc('installation')
+  const installationRef = db.collection('catalog_pricing').doc('installation')
   await installationRef.set({ name: "Installation Config", updatedAt: now })
   
   for (const cat of installationCategories) {
     const catRef = installationRef.collection('categories').doc(cat.categoryId)
     await catRef.set({ ...cat, updatedAt: now })
     count++
-    console.log(`  ✅ service_configs/installation/categories/${cat.categoryId}`)
+    console.log(`  ✅ catalog_pricing/installation/categories/${cat.categoryId}`)
 
     const groups = installationGroups[cat.categoryId]
     if (groups) {
@@ -138,9 +138,9 @@ async function seed() {
 
   // Seed Recommendations
   for (const rec of recommendations) {
-    await db.collection('recommendations').doc(rec.recId).set({ ...rec, updatedAt: now })
+    await db.collection('catalog_recommendations').doc(rec.recId).set({ ...rec, updatedAt: now })
     count++
-    console.log(`  ✅ recommendations/${rec.recId}`)
+    console.log(`  ✅ catalog_recommendations/${rec.recId}`)
   }
 
   console.log(`\n🎉 Seed complete! Added ${count} service config documents.`)

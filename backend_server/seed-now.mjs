@@ -87,29 +87,29 @@ async function seedData() {
     // Seed accessories
     console.log('🧷 Seeding accessories...');
     for (const acc of accessories) {
-      await db.collection('accessories_catalog').doc(acc.id).set({ ...acc, updatedAt: new Date().toISOString() });
+      await db.collection('catalog_accessories').doc(acc.id).set({ ...acc, updatedAt: new Date().toISOString() });
     }
     console.log(`✅ Seeded ${accessories.length} accessories\n`);
 
     // Seed services
     console.log('🛠 Seeding services...');
     for (const svc of services) {
-      await db.collection('services').doc(svc.id).set(svc);
+      await db.collection('catalog_services').doc(svc.id).set(svc);
     }
     console.log(`✅ Seeded ${services.length} services\n`);
 
     // Seed upgrade bundles
     console.log('⬆️ Seeding upgrade bundles...');
     for (const bundle of upgradeBundles) {
-      await db.collection('upgrade_catalog').doc(bundle.id).set({ ...bundle, updatedAt: new Date().toISOString() });
+      await db.collection('catalog_upgrade_bundles').doc(bundle.id).set({ ...bundle, updatedAt: new Date().toISOString() });
     }
     console.log(`✅ Seeded ${upgradeBundles.length} upgrade bundles\n`);
 
     // Seed pricing
     console.log('💰 Seeding pricing...');
-    await db.collection('pricing_installation').doc('installation').set(pricing.installation);
-    await db.collection('pricing_maintenance').doc('maintenance').set(pricing.maintenance);
-    await db.collection('pricing_repair').doc('repair').set(pricing.repair);
+    await db.collection('catalog_pricing').doc('installation').set(pricing.installation);
+    await db.collection('catalog_pricing').doc('maintenance').set(pricing.maintenance);
+    await db.collection('catalog_pricing').doc('repair').set(pricing.repair);
     console.log('✅ Seeded pricing data\n');
 
     console.log('🎉 All data seeded successfully!\n');
