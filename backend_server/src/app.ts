@@ -15,6 +15,7 @@ import { catalogRouter } from './routes/catalog.js'
 import { catalogPublicRouter } from './routes/catalogPublic.js'
 import { productsRouter } from './routes/products.js'
 import { servicesRouter } from './routes/services.js'
+import { accessoriesRouter } from './routes/accessories.js'
 import { authenticateToken } from './middleware/auth.js'
 import { verifyFirebaseIdToken } from './middleware/firebaseAuth.js'
 import employeeRoutes from './routes/employees.js'
@@ -59,6 +60,9 @@ export function createApp() {
 
   // Catalog routes - Services (partially protected)
   app.use('/api/catalog/services', servicesRouter)
+
+  // Catalog routes - Accessories (partially protected)
+  app.use('/api/catalog/accessories', accessoriesRouter)
 
   // Protected routes (require Firebase authentication)
   app.use('/api/dashboard', verifyFirebaseIdToken, dashboardRouter)

@@ -257,3 +257,31 @@ export interface CatalogService {
   createdAt: string
   updatedAt: string
 }
+
+// ============================================
+// ACCESSORIES INTERFACES
+// ============================================
+
+export interface AccessoryCompatibility {
+  compatibleProductIds?: string[]
+  compatibleServiceIds?: string[]
+  notes?: string
+}
+
+export interface CatalogAccessory {
+  accessoryId: string
+  name: string
+  description?: string
+  type: 'installation' | 'upgrades' | 'warranty' | 'support' | 'other'
+  category: string
+  price: number
+  stock: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  imageUrl?: string
+  compatibility?: AccessoryCompatibility
+  taxRate: number
+  displayPriority: number
+  createdAt: string
+  updatedAt: string
+}

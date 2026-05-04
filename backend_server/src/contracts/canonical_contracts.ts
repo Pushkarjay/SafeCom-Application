@@ -600,3 +600,102 @@ export interface CreateUpdateServiceRequest {
   taxRate?: number
   displayPriority?: number
 }
+
+// ============================================
+// ACCESSORIES CATALOG CONTRACT
+// ============================================
+
+/**
+ * Accessory compatibility info
+ * E.g., which products/services this accessory works with
+ */
+export interface AccessoryCompatibility {
+  /** Compatible product IDs */
+  compatibleProductIds?: string[]
+  
+  /** Compatible service IDs */
+  compatibleServiceIds?: string[]
+  
+  /** Free text compatibility notes */
+  notes?: string
+}
+
+/**
+ * Accessory in catalog
+ * Add-on items like cables, connectors, adapters, installation kits
+ */
+export interface CatalogAccessory {
+  /** Unique accessory ID */
+  accessoryId: string
+  
+  /** Display name */
+  name: string
+  
+  /** Detailed description */
+  description?: string
+  
+  /** Accessory type (installation, upgrades, warranty, support, other) */
+  type: 'installation' | 'upgrades' | 'warranty' | 'support' | 'other'
+  
+  /** Category/group */
+  category: string
+  
+  /** Unit price */
+  price: number
+  
+  /** Stock level */
+  stock: number
+  
+  /** Whether item is available */
+  isAvailable: boolean
+  
+  /** Whether item is featured */
+  isFeatured?: boolean
+  
+  /** Accessory image URL */
+  imageUrl?: string
+  
+  /** Compatibility information */
+  compatibility?: AccessoryCompatibility
+  
+  /** Tax rate (usually 18% GST) */
+  taxRate: number
+  
+  /** Display priority */
+  displayPriority: number
+  
+  /** Creation timestamp */
+  createdAt: string
+  
+  /** Last update timestamp */
+  updatedAt: string
+}
+
+/**
+ * Accessory list response
+ */
+export interface AccessoryListResponse {
+  accessories: CatalogAccessory[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+/**
+ * Request to create/update accessory
+ */
+export interface CreateUpdateAccessoryRequest {
+  name: string
+  description?: string
+  type: 'installation' | 'upgrades' | 'warranty' | 'support' | 'other'
+  category: string
+  price: number
+  stock: number
+  isAvailable: boolean
+  isFeatured?: boolean
+  imageUrl?: string
+  compatibility?: AccessoryCompatibility
+  taxRate?: number
+  displayPriority?: number
+}
