@@ -28,7 +28,7 @@ export function initFirebase(): Firestore {
       firebaseApp = initializeApp();
     }
 
-    firestoreDb = getFirestore(firebaseApp, 'default');
+    firestoreDb = getFirestore(firebaseApp, '(default)');
     console.log('Firebase Admin initialized successfully');
     return firestoreDb;
   } catch (error) {
@@ -42,9 +42,9 @@ export function initFirebase(): Firestore {
  */
 export function getDb(): Firestore {
   if (!firestoreDb) {
-    return initFirebase();
+    initFirebase();
   }
-  return firestoreDb;
+  return firestoreDb!;
 }
 
 /**

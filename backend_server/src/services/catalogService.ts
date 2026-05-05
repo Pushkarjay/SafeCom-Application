@@ -38,6 +38,13 @@ const getServiceConfig = async (serviceId: string, req: Request, res: Response) 
       const categoriesSnap = await db.collection('catalog_pricing').doc(serviceId).collection('categories').get();
       const categories = [];
       
+      // Fetch all products once to avoid N+1 queries
+      const allProductsSnap = await db.collection('catalog_products').get();
+      const productsMap = new Map();
+      allProductsSnap.docs.forEach(doc => {
+        productsMap.set(doc.id, doc.data());
+      });
+
       for (const catDoc of categoriesSnap.docs) {
         const catData = { id: catDoc.id, ...catDoc.data(), groups: [] as any[] };
         
@@ -48,11 +55,19 @@ const getServiceConfig = async (serviceId: string, req: Request, res: Response) 
           // resolve product mappings
           if (groupData.mappings && Array.isArray(groupData.mappings)) {
              for (const mapping of groupData.mappings) {
-                const prodDoc = await db.collection('catalog_products').doc(mapping.productId).get();
-                if (prodDoc.exists) {
+                const pData = productsMap.get(mapping.productId);
+                if (pData) {
                    groupData.mappedProducts.push({
                       ...mapping,
-                      product: { id: prodDoc.id, ...prodDoc.data() }
+                      product: { 
+                        productId: mapping.productId, 
+                        productName: pData?.name || '',
+                        description: pData?.description || '',
+                        category: pData?.category || '',
+                        group: pData?.group || '',
+                        basePrice: pData?.price || 0,
+                        isAvailable: pData?.status === 'active'
+                      }
                    });
                 }
              }
@@ -86,10 +101,21 @@ export const getAccessories = async (req: Request, res: Response) => {
     const db = getDb();
     const snapshot = await db.collection('catalog_products')
       .where('category', '==', 'accessories')
-      .where('isAvailable', '==', true)
+      .where('status', '==', 'active')
       .get();
       
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        productId: doc.id,
+        productName: data.name || '',
+        description: data.description || '',
+        category: data.category || '',
+        group: data.group || '',
+        basePrice: data.price || 0,
+        isAvailable: data.status === 'active'
+      };
+    });
     res.json({ items });
   } catch (error) {
     console.error('Error fetching accessories:', error);
@@ -101,8 +127,19 @@ export const getAccessories = async (req: Request, res: Response) => {
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const snapshot = await db.collection('catalog_products').where('isAvailable', '==', true).get();
-    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await db.collection('catalog_products').where('status', '==', 'active').get();
+    const products = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        productId: doc.id,
+        productName: data.name || '',
+        description: data.description || '',
+        category: data.category || '',
+        group: data.group || '',
+        basePrice: data.price || 0,
+        isAvailable: data.status === 'active'
+      };
+    });
     res.json({ products });
   } catch (error) {
     console.error('Error fetching all products:', error);

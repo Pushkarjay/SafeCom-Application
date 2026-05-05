@@ -7,7 +7,8 @@ const serviceAccount = JSON.parse(
   readFileSync('./service-account-key.json', 'utf8')
 )
 initializeApp({ credential: cert(serviceAccount) })
-const db = getFirestore()
+import { getApp } from 'firebase-admin/app'
+const db = getFirestore(getApp(), 'default')
 
 // ============================================
 // MAINTENANCE CONFIG DATA
