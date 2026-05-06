@@ -67,6 +67,7 @@ Admin/web_app/admin-dashboard/dist/
 Admin/web_app/admin-dashboard/node_modules/
 Admin/web_app/admin-dashboard/.next/
 Admin/web_app/admin-dashboard/out/
+Admin/web_app/admin-dashboard/.firebase/
 
 # Backend
 backend_server/dist/
@@ -100,6 +101,7 @@ Thumbs.db
 *.bak
 *.tmp
 .cache/
+.firebase/
 
 # ============================================================================
 # Development & Testing
@@ -138,6 +140,12 @@ android/*.keystore
 # ============================================================================
 # *.db
 # *.sqlite
+
+# Build artifacts
+release-apks/
+
+# Android app assets (generated/local)
+mobile_customer/android/app/src/main/assets/
 
 # Play upload service account (do NOT commit service account JSON)
 play_upload/service-account.json
