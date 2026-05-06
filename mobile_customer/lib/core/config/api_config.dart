@@ -5,7 +5,7 @@ class ApiConfig {
   // Base URL for the backend API - configurable via dart-define or environment
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://safecom-backend-177425757120.us-central1.run.app/api',
+    defaultValue: 'https://safecom-backend-177425757120.asia-south1.run.app/api',
   );
   
   // Timeout for API requests in milliseconds
