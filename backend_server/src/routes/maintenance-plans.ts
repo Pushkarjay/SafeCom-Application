@@ -96,6 +96,41 @@ maintenancePlansRouter.get('/', async (req: Request, res: Response) => {
   }
 })
 
+// GET /api/catalog/maintenance-plans/frequency/:frequency - Filter by frequency
+maintenancePlansRouter.get('/frequency/:frequency', async (req: Request, res: Response) => {
+  try {
+    const { frequency } = req.params
+    const db = getDb()
+
+    const query = db
+      .collection('catalog_maintenance_plans')
+      .where('frequency', '==', frequency)
+      .orderBy('displayPriority', 'asc')
+
+    const snapshot = await query.get()
+    const plans: MaintenancePlan[] = []
+
+    snapshot.forEach((doc: QueryDocumentSnapshot) => {
+      const data = doc.data() as unknown as Record<string, unknown>
+      plans.push({
+        planId: doc.id,
+        ...data
+      } as MaintenancePlan)
+    })
+
+    res.json({
+      success: true,
+      data: { plans }
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch maintenance plans by frequency',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+})
+
 // GET /api/catalog/maintenance-plans/:id - Get single maintenance plan
 maintenancePlansRouter.get('/:id', async (req: Request, res: Response) => {
   try {

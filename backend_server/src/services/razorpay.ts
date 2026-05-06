@@ -41,11 +41,20 @@ function buildMockOrderId(): string {
 }
 
 export function getRazorpayConfig() {
+  const isMockMode = !(razorpayKeyId && razorpayKeySecret);
+  const provider = isMockMode ? 'mock' : 'razorpay';
+  
+  // Warn if running in mock mode in production
+  if (isMockMode && process.env.NODE_ENV === 'production') {
+    console.warn('[RAZORPAY] WARNING: Running in mock mode in production environment!');
+    console.warn('[RAZORPAY] Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables for live payments.');
+  }
+  
   return {
     keyId: razorpayKeyId,
     hasSecret: razorpayKeySecret.length > 0,
-    provider: razorpayKeyId && razorpayKeySecret ? 'razorpay' : 'mock'
-  } as const
+    provider: provider as 'razorpay' | 'mock'
+  } as const;
 }
 
 export async function createCheckoutOrder(input: RazorpayOrderInput): Promise<RazorpayCheckoutOrder> {

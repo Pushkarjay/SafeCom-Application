@@ -32,12 +32,12 @@ class LocationState {
   }) {
     return LocationState(
       location: location ?? this.location,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
+      latitude: latitude, // Allow null to clear
+      longitude: longitude, // Allow null to clear
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage, // Allow null to clear
       isServiceable: isServiceable ?? this.isServiceable,
-      serviceabilityMessage: serviceabilityMessage ?? this.serviceabilityMessage,
+      serviceabilityMessage: serviceabilityMessage, // Allow null to clear
     );
   }
 }

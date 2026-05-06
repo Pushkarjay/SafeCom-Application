@@ -31,15 +31,23 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
     super.dispose();
   }
 
-  Future<void> _sendOtp() async {
+   Future<void> _sendOtp() async {
     final phone = _phoneController.text.trim();
-    if (phone.isEmpty || phone.length < 10) {
+    if (phone.isEmpty) {
+      setState(() => _error = 'Enter a phone number');
+      return;
+    }
+    
+    // Remove all non-digit characters except leading +
+    final digitsOnly = phone.replaceAll(RegExp(r'[^\d+]'), '');
+    // Ensure it starts with + if it has digits
+    final formatted = digitsOnly.startsWith('+') ? digitsOnly : '+$digitsOnly';
+    
+    // Validate length (assuming Indian numbers: +91 followed by 10 digits = 12 chars min)
+    if (formatted.length < 12) {
       setState(() => _error = 'Enter a valid phone number');
       return;
     }
-
-    // Format: +91XXXXXXXXXX
-    final formatted = phone.startsWith('+') ? phone : '+91$phone';
 
     setState(() {
       _isLoading = true;
@@ -173,14 +181,17 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
                 const SizedBox(height: 32),
                 if (!_otpSent) ...[
                   // Phone input
-                  _buildTextField(
-                    controller: _phoneController,
-                    hint: '+91 98765 43210',
-                    label: 'Phone Number',
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    prefixIcon: Icons.phone_outlined,
-                  ),
+                   _buildTextField(
+                     controller: _phoneController,
+                     hint: '+91 98765 43210',
+                     label: 'Phone Number',
+                     keyboardType: TextInputType.phone,
+                     inputFormatters: [
+                       FilteringTextInputFormatter.allow(RegExp(r'[0-9\+]')),
+                       LengthLimitingTextInputFormatter(15), // Allow for + and up to 14 digits
+                     ],
+                     prefixIcon: Icons.phone_outlined,
+                   ),
                   const SizedBox(height: 24),
                   _buildPrimaryButton(
                     label: 'Send OTP',

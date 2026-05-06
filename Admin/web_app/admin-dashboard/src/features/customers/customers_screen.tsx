@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { Customer } from '@data/models/admin_models'
+import { getApiBaseUrl } from '@core/config/api'
 import './customers_screen.css'
 
 export default function CustomersScreen() {
@@ -76,7 +77,8 @@ export default function CustomersScreen() {
       // NOTE: requires DELETE /customers/:id endpoint in backend
       const toDelete = Array.from(selectedIds)
       for (const id of toDelete) {
-        await fetch(`${import.meta.env.VITE_API_URL || 'https://safecom-backend-177425757120.us-central1.run.app/api'}/customers/${id}`, { method: 'DELETE' })
+        const token = await useAuthStore.getState().getIdToken()
+        await fetch(`${getApiBaseUrl()}/customers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       }
       setCustomers(customers.filter(c => !selectedIds.has(c.id)))
       setSelectedIds(new Set())

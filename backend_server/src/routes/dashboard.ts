@@ -24,7 +24,7 @@ async function getActiveTechnicians(): Promise<number> {
   try {
     const snapshot = await db
       .collection('employees')
-      .where('status', '==', 'available')
+      .where('status', '==', 'active')
       .count()
       .get()
     return snapshot.data().count

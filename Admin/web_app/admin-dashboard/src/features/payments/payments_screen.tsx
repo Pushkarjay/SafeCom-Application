@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
+import { getApiBaseUrl } from '@core/config/api'
 import './payments_screen.css'
 
 export interface Payment {
@@ -89,7 +90,8 @@ export default function PaymentsScreen() {
     try {
       const toDelete = Array.from(selectedIds)
       for (const id of toDelete) {
-        await fetch(`${import.meta.env.VITE_API_URL || 'https://safecom-backend-177425757120.us-central1.run.app/api'}/payments/${id}`, { method: 'DELETE' })
+        const token = await useAuthStore.getState().getIdToken()
+        await fetch(`${getApiBaseUrl()}/payments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       }
       setPayments(payments.filter(p => !selectedIds.has(p.id)))
       setSelectedIds(new Set())

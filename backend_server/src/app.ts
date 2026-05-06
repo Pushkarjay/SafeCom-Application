@@ -88,7 +88,7 @@ export function createApp() {
   app.use('/api/technicians', verifyFirebaseIdToken, techniciansRouter)
   app.use('/api/jobs', verifyFirebaseIdToken, jobsRouter)
   app.use('/api/bookings', verifyFirebaseIdToken, bookingsRouter)
-  app.use('/api/payments/razorpay', razorpayRouter)
+  app.use('/api/payments/razorpay', verifyFirebaseIdToken, razorpayRouter)
   app.use('/api/payments', verifyFirebaseIdToken, paymentsRouter)
   app.use('/api/catalog', verifyFirebaseIdToken, catalogRouter)
   app.use('/api/employees', verifyFirebaseIdToken, employeeRoutes)

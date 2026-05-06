@@ -1,7 +1,9 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { queryCollection, getDocument, createDocument, updateDocument, getCollection } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument, updateDocument, getCollection, getDb } from '../services/firestore.js'
 import { sendPushNotification } from '../services/notificationService.js'
+import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
+import { Query, QueryDocumentSnapshot } from 'firebase-admin/firestore'
 import type { 
   CanonicalJob, 
   ApiResponse,
@@ -13,15 +15,31 @@ export const jobsRouter = Router()
 /**
  * GET /jobs - List jobs for technician or all (admin)
  */
-jobsRouter.get('/', async (req, res) => {
+jobsRouter.get('/', async (req: FirebaseAuthenticatedRequest, res) => {
   try {
     const technicianId = (req.query.employeeId || req.query.technicianId) as string | undefined
     
-    let jobs = await queryCollection<CanonicalJob>('jobs')
+    const db = getDb()
+    let query: Query = db.collection('jobs')
     
     if (technicianId) {
-      jobs = jobs.filter(j => j.assignedTo?.employeeId === technicianId)
+      // Filter by assigned technician ID
+      query = query.where('assignedTo.employeeId', '==', technicianId)
     }
+    
+    // Order by creation date descending
+    query = query.orderBy('createdAt', 'desc')
+    
+    const snapshot = await query.get()
+    const jobs: CanonicalJob[] = []
+    
+    snapshot.forEach((doc: QueryDocumentSnapshot) => {
+      const data = doc.data() as unknown as Record<string, unknown>
+      jobs.push({
+        jobId: doc.id,
+        ...data
+      } as CanonicalJob)
+    })
     
     return res.json({
       success: true,
@@ -33,7 +51,7 @@ jobsRouter.get('/', async (req, res) => {
         totalPages: 1
       },
       timestamp: new Date().toISOString()
-    } as ApiListResponse<CanonicalJob>)
+    })
   } catch (error) {
     console.error('Firestore jobs lookup failed:', error)
     return res.status(500).json({
@@ -43,7 +61,7 @@ jobsRouter.get('/', async (req, res) => {
         message: 'Failed to fetch jobs'
       },
       timestamp: new Date().toISOString()
-    } as ApiResponse<never>)
+    })
   }
 })
 

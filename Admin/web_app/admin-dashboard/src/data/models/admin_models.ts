@@ -113,6 +113,7 @@ export interface PricingSet {
   installation?: Record<string, unknown>
   maintenance?: Record<string, unknown>
   repair?: Record<string, unknown>
+  amc?: Record<string, unknown>
 }
 
 export interface CatalogPackage {

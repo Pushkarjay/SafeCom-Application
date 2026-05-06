@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { queryCollection, getDocument, createDocument, updateDocument } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument, updateDocument, getDb } from '../services/firestore.js'
+import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
+import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 
 const technicianCreateSchema = z.object({
   name: z.string().min(1),
@@ -18,9 +20,20 @@ const technicianUpdateSchema = technicianCreateSchema.partial()
 export const techniciansRouter = Router()
 
 // GET /technicians - List all technicians
-techniciansRouter.get('/', async (_req, res) => {
+techniciansRouter.get('/', verifyFirebaseIdToken, async (_req, res) => {
   try {
-    const technicians = await queryCollection<Record<string, unknown>>('technicians')
+    const db = getDb()
+    const snapshot = await db.collection('technicians').get()
+    const technicians: Record<string, unknown>[] = []
+
+    snapshot.forEach((doc: QueryDocumentSnapshot) => {
+      const data = doc.data() as unknown as Record<string, unknown>
+      technicians.push({
+        id: doc.id,
+        ...data
+      })
+    })
+
     return res.json(technicians)
   } catch (error) {
     console.error('Firestore technicians lookup failed:', error)
@@ -29,13 +42,20 @@ techniciansRouter.get('/', async (_req, res) => {
 })
 
 // GET /technicians/:id - Get single technician
-techniciansRouter.get('/:id', async (req, res) => {
+techniciansRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
   try {
-    const technician = await getDocument<Record<string, unknown>>('technicians', req.params.id)
-    if (!technician) {
+    const db = getDb()
+    const doc = await db.collection('technicians').doc(req.params.id as string).get()
+    
+    if (!doc.exists) {
       return res.status(404).json({ message: 'Technician not found' })
     }
-    return res.json(technician)
+    
+    const data = doc.data() as unknown as Record<string, unknown>
+    return res.json({
+      id: doc.id,
+      ...data
+    })
   } catch (error) {
     console.error('Firestore technician lookup failed:', error)
     return res.status(500).json({ message: 'Failed to fetch technician' })

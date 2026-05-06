@@ -71,8 +71,8 @@ final bookingsProvider = FutureProvider<List<BookingModel>>((ref) async {
         .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-  } on DioException {
-    // Caller handles empty-state / error-state in the UI
-    return [];
+  } on DioException catch (e) {
+    // Re-throw the error so the UI can handle it appropriately
+    rethrow;
   }
 });

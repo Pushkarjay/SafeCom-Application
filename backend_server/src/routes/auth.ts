@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { queryCollection, getDocument, createDocument, updateDocument } from '../services/firestore.js'
-import { authenticateToken } from '../middleware/auth.js'
+import { authenticateToken, AuthenticatedRequest } from '../middleware/auth.js'
 import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
 
 export const authRouter = Router()
@@ -39,47 +39,23 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
 
       let user = adminUsers[0]
 
-      if (!user && email) {
-        console.log(`[AUTH][${requestId}] No admin found by UID, querying by email: ${email}`)
-        const adminByEmail = await queryCollection<{
-          id: string
-          email: string
-          name: string
-          role: string
-          firebaseUid: string
-        }>('admins', [{ field: 'email', operator: '==', value: email }])
-        user = adminByEmail[0]
-        
-        if (user && !user.firebaseUid) {
-          console.log(`[AUTH][${requestId}] Found admin by email, linking firebaseUid: ${uid}`)
-          await updateDocument('admins', user.id, { firebaseUid: uid })
-          user.firebaseUid = uid
-        }
-      }
-
-      if (!user && email?.toLowerCase().endsWith('@safecom.com')) {
-        console.log(`[AUTH][${requestId}] No admin profile found for safecom.com user, creating admin record`)
-        const now = new Date()
-        const newAdmin = {
-          firebaseUid: uid,
-          email,
-          name: String(email.split('@')[0] ?? email),
-          role: 'admin', // Changed from 'super_admin' to match Role type
-          permissions: ['all'],
-          status: 'active',
-          createdAt: now,
-          updatedAt: now
-        }
-        const newDocId = await createDocument('admins', newAdmin)
-        console.log(`[AUTH][${requestId}] Created new admin record with ID: ${newDocId}`)
-        user = {
-          id: newDocId,
-          firebaseUid: uid,
-          email,
-          name: newAdmin.name,
-          role: 'admin'
-        }
-      }
+       if (!user && email) {
+         console.log(`[AUTH][${requestId}] No admin found by UID, querying by email: ${email}`)
+         const adminByEmail = await queryCollection<{
+           id: string
+           email: string
+           name: string
+           role: string
+           firebaseUid: string
+         }>('admins', [{ field: 'email', operator: '==', value: email }])
+         user = adminByEmail[0]
+         
+         if (user && !user.firebaseUid) {
+           console.log(`[AUTH][${requestId}] Found admin by email, linking firebaseUid: ${uid}`)
+           await updateDocument('admins', user.id, { firebaseUid: uid })
+           user.firebaseUid = uid
+         }
+       }
 
       if (!user) {
         console.warn(`[AUTH][${requestId}] Access denied: User ${email || uid} is not authorized as admin`)
@@ -101,40 +77,37 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
         },
         message: 'Logged in successfully'
       })
-    } catch (error) {
-      const errorDetails = error instanceof Error ? { message: error.message, stack: error.stack } : { message: String(error) }
-      console.error(`[AUTH][${requestId}] Firestore operation failed:`, errorDetails)
-      return res.status(500).json({
-        success: false,
-        message: 'Authentication lookup failed',
-        error: errorDetails.message
-      })
-    }
-  } catch (error) {
-    const errorDetails = error instanceof Error ? { message: error.message, stack: error.stack } : { message: String(error) }
-    console.error(`[AUTH][${requestId}] Login service crash:`, errorDetails)
-    return res.status(500).json({
-      success: false,
-      message: 'Authentication service error',
-      error: errorDetails.message
-    })
-  }
+     } catch (error) {
+       const errorDetails = error instanceof Error ? { message: error.message } : { message: String(error) }
+       console.error(`[AUTH][${requestId}] Firestore operation failed:`, errorDetails)
+       return res.status(500).json({
+         success: false,
+         message: 'Authentication lookup failed',
+         error: errorDetails.message
+       })
+     }
+   } catch (error) {
+     const errorDetails = error instanceof Error ? { message: error.message } : { message: String(error) }
+     console.error(`[AUTH][${requestId}] Login service crash:`, errorDetails)
+     return res.status(500).json({
+       success: false,
+       message: 'Authentication service error',
+       error: errorDetails.message
+     })
+   }
 })
 
 /**
  * GET /api/auth/me
  * Get current authenticated user profile (requires authentication)
  */
-authRouter.get('/me', authenticateToken, (req: FirebaseAuthenticatedRequest, res) => {
-  if (!req.firebaseUid) {
+authRouter.get('/me', authenticateToken, (req: AuthenticatedRequest, res) => {
+  if (!req.user) {
     return res.status(401).json({ message: 'Not authenticated' })
   }
   return res.json({
     success: true,
-    user: {
-      uid: req.firebaseUid,
-      claims: req.firebaseClaims
-    },
+    user: req.user,
     message: 'Current user profile'
   })
 })

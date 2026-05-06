@@ -25,7 +25,7 @@ class RazorpayCheckoutOrder {
   factory RazorpayCheckoutOrder.fromJson(Map<String, dynamic> json) {
     return RazorpayCheckoutOrder(
       provider: json['provider'] as String? ?? 'razorpay',
-      keyId: json['keyId'] as String? ?? RazorpayPaymentService._fallbackKeyId,
+      keyId: json['keyId'] as String? ?? RazorpayPaymentService.getRazorpayConfig().keyId,
       orderId: json['orderId'] as String? ?? '',
       amountPaise: (json['amountPaise'] as num?)?.toInt() ?? 0,
       currency: json['currency'] as String? ?? 'INR',
@@ -60,16 +60,47 @@ class RazorpayVerificationResult {
   }
 }
 
+class RazorpayConfig {
+  final String keyId;
+  final bool hasSecret;
+  final String provider; // 'razorpay' or 'mock'
+  
+  const RazorpayConfig({
+    required this.keyId,
+    required this.hasSecret,
+    required this.provider,
+  });
+}
+
 class RazorpayPaymentService {
   static const String baseUrl = ApiConfig.baseUrl;
-  static const String _fallbackKeyId = String.fromEnvironment(
-    'RAZORPAY_KEY_ID',
-    defaultValue: '',
-  );
 
   final Dio _dio;
 
   RazorpayPaymentService(this._dio);
+
+  static RazorpayConfig getRazorpayConfig() {
+    final keyId = String.fromEnvironment('RAZORPAY_KEY_ID', defaultValue: '');
+    final keySecret = String.fromEnvironment('RAZORPAY_KEY_SECRET', defaultValue: '');
+    final isMockMode = !(keyId.isNotEmpty && keySecret.isNotEmpty);
+    final provider = isMockMode ? 'mock' : 'razorpay';
+    
+    // Warn if running in mock mode in production-like environments
+    if (isMockMode) {
+      // In a real app, you might check for production flavors or build types
+      // For now, we'll just log a warning if the key is explicitly empty
+      if (keyId.isEmpty && keySecret.isEmpty) {
+        // Silent in dev, but could be noisy in prod - adjust as needed
+        // print('Razorpay: Running in mock mode - no API keys configured');
+      }
+    }
+    
+    return RazorpayConfig(
+      keyId: keyId,
+      hasSecret: keySecret.isNotEmpty,
+      provider: provider,
+    );
+  }
 
   Future<RazorpayCheckoutOrder> createOrder({
     required double amountRupees,
@@ -82,6 +113,13 @@ class RazorpayPaymentService {
     String? jobId,
     Map<String, String>? notes,
   }) async {
+    final config = RazorpayPaymentService.getRazorpayConfig();
+    
+    // Validate configuration for live mode
+    if (config.provider == 'razorpay' && config.keyId.isEmpty) {
+      throw Exception('Razorpay keyId is missing. Please set RAZORPAY_KEY_ID environment variable.');
+    }
+
     final payload = <String, dynamic>{
       'amount': amountRupees,
       'currency': 'INR',
@@ -122,6 +160,13 @@ class RazorpayPaymentService {
     required String serviceName,
     required String packageLabel,
   }) async {
+    final config = RazorpayPaymentService.getRazorpayConfig();
+    
+    // Validate configuration for live mode
+    if (config.provider == 'razorpay' && config.keyId.isEmpty) {
+      throw Exception('Razorpay keyId is missing. Please set RAZORPAY_KEY_ID environment variable.');
+    }
+
     final payload = <String, dynamic>{
       'orderId': orderId,
       'paymentId': paymentId,

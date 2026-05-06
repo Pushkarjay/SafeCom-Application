@@ -1,4 +1,4 @@
-import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet, InstallationConfig } from '../models/admin_models'
+import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet, InstallationConfig, CatalogService } from '../models/admin_models'
 import { useAuthStore } from '../../core/services/auth_service'
 import { getApiBaseUrl } from '../../core/config/api'
 
@@ -152,7 +152,7 @@ export class AdminDatasource {
     const accessoriesPayload = await this.fetchJson<{ success: boolean; data: { accessories: Record<string, unknown>[] } }>(`${BASE_URL}/catalog/accessories`)
     const items = accessoriesPayload?.data?.accessories ?? []
     return items.map((item) => ({
-      id: String(item.accessoryId || item.id || ''),
+      id: String(item.id || item.productId || item.accessoryId || ''),
       name: String(item.name || ''),
       category: String(item.category || 'Accessories'),
       group: String(item.group || 'Accessories'),
@@ -161,6 +161,67 @@ export class AdminDatasource {
       status: (item.isAvailable !== false ? 'active' : 'inactive') as 'active' | 'inactive',
       updatedAt: String(item.updatedAt || new Date().toISOString())
     }))
+  }
+
+  async createCatalogProduct(data: Partial<CatalogProduct>): Promise<CatalogProduct> {
+    const payload = await this.fetchJson<{ success: boolean; data: CatalogProduct }>(`${BASE_URL}/catalog/products`, {
+      method: 'POST',
+      body: JSON.stringify({
+        productName: data.name,
+        category: data.category,
+        group: data.group,
+        basePrice: data.price,
+        isAvailable: data.status !== 'inactive'
+      })
+    })
+    return { ...data, id: payload.data.id || Math.random().toString(36).substr(2, 9) } as CatalogProduct
+  }
+
+  async updateCatalogProduct(id: string, data: Partial<CatalogProduct>): Promise<CatalogProduct> {
+    await this.fetchJson(`${BASE_URL}/catalog/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        productName: data.name,
+        category: data.category,
+        group: data.group,
+        basePrice: data.price,
+        isAvailable: data.status !== 'inactive'
+      })
+    })
+    return { ...data, id } as CatalogProduct
+  }
+
+  async deleteCatalogProduct(id: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/products/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async getCatalogServices(): Promise<CatalogService[]> {
+    const payload = await this.fetchJson<{ success: boolean; data: { services: CatalogService[] } }>(`${BASE_URL}/catalog/services`)
+    return payload.data?.services || []
+  }
+
+  async createCatalogService(data: Partial<CatalogService>): Promise<CatalogService> {
+    const payload = await this.fetchJson<{ success: boolean; data: CatalogService }>(`${BASE_URL}/catalog/services`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+    return payload.data
+  }
+
+  async updateCatalogService(id: string, data: Partial<CatalogService>): Promise<CatalogService> {
+    const payload = await this.fetchJson<{ success: boolean; data: CatalogService }>(`${BASE_URL}/catalog/services/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+    return payload.data
+  }
+
+  async deleteCatalogService(id: string): Promise<void> {
+    await this.fetchJson<void>(`${BASE_URL}/catalog/services/${id}`, {
+      method: 'DELETE'
+    })
   }
 
   async getServices(): Promise<Service[]> {
@@ -174,12 +235,19 @@ export class AdminDatasource {
   }
 
   async getPricingData(): Promise<PricingSet> {
-    const [installation, maintenance, repair] = await Promise.all([
+    const results = await Promise.allSettled([
       this.fetchJson<Record<string, unknown>>(`${BASE_URL}/catalog-public/pricing/installation`),
       this.fetchJson<Record<string, unknown>>(`${BASE_URL}/catalog-public/pricing/maintenance`),
-      this.fetchJson<Record<string, unknown>>(`${BASE_URL}/catalog-public/pricing/repair`)
+      this.fetchJson<Record<string, unknown>>(`${BASE_URL}/catalog-public/pricing/repair`),
+      this.fetchJson<Record<string, unknown>>(`${BASE_URL}/catalog-public/pricing/amc`)
     ])
-    return { installation, maintenance, repair }
+    
+    return {
+      installation: results[0].status === 'fulfilled' ? results[0].value : { message: 'Not available' },
+      maintenance: results[1].status === 'fulfilled' ? results[1].value : { message: 'Not available' },
+      repair: results[2].status === 'fulfilled' ? results[2].value : { message: 'Not available' },
+      amc: results[3].status === 'fulfilled' ? results[3].value : { message: 'Not available' }
+    }
   }
 
   /**
@@ -263,25 +331,6 @@ export class AdminDatasource {
     })
   }
 
-  async createCatalogProduct(data: Partial<CatalogProduct>): Promise<CatalogProduct> {
-    return await this.fetchJson<CatalogProduct>(`${BASE_URL}/catalog/products`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    })
-  }
-
-  async updateCatalogProduct(id: string, data: Partial<CatalogProduct>): Promise<CatalogProduct> {
-    return await this.fetchJson<CatalogProduct>(`${BASE_URL}/catalog/products/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data)
-    })
-  }
-
-  async deleteCatalogProduct(id: string): Promise<void> {
-    await this.fetchJson<void>(`${BASE_URL}/catalog/products/${id}`, {
-      method: 'DELETE'
-    })
-  }
 
   async createCustomer(data: Partial<Customer>): Promise<Customer> {
     return await this.fetchJson<Customer>(`${BASE_URL}/customers`, {

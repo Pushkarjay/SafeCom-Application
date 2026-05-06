@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { Job } from '@data/models/admin_models'
+import { getApiBaseUrl } from '@core/config/api'
 import './jobs_screen.css'
 
 export default function JobsScreen() {
@@ -76,7 +77,8 @@ export default function JobsScreen() {
     try {
       const toDelete = Array.from(selectedIds)
       for (const id of toDelete) {
-        await fetch(`${import.meta.env.VITE_API_URL || 'https://safecom-backend-177425757120.us-central1.run.app/api'}/jobs/${id}`, { method: 'DELETE' })
+        const token = await useAuthStore.getState().getIdToken()
+        await fetch(`${getApiBaseUrl()}/jobs/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       }
       setJobs(jobs.filter(j => !selectedIds.has(j.id)))
       setSelectedIds(new Set())

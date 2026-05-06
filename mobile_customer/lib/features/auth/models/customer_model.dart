@@ -70,12 +70,12 @@ class Customer {
       name: name ?? this.name,
       email: email ?? this.email,
       phone: phone ?? this.phone,
-      profileImage: profileImage ?? this.profileImage,
-      address: address ?? this.address,
-      registeredDate: registeredDate ?? this.registeredDate,
+      profileImage: profileImage, // Allow null to clear
+      address: address, // Allow null to clear
+      registeredDate: registeredDate, // Allow null to clear
       totalOrders: totalOrders ?? this.totalOrders,
       totalSpent: totalSpent ?? this.totalSpent,
-      status: status ?? this.status,
+      status: status, // Allow null to clear
     );
   }
 }

@@ -144,6 +144,8 @@ export default function InstallationBuilderScreen() {
   const [newName, setNewName] = useState('')
   const [saving, setSaving] = useState(false)
   const [selectedForClubbing, setSelectedForClubbing] = useState<Record<string, Set<string>>>({})
+  const [sortField, setSortField] = useState<'productName' | 'price' | 'defaultQty' | 'key'>('key')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   const loadData = useCallback(async () => {
     if (!firebaseUser) return
@@ -176,6 +178,25 @@ export default function InstallationBuilderScreen() {
       set.has(productKey) ? set.delete(productKey) : set.add(productKey)
       return { ...prev, [setupId]: set }
     })
+  }
+
+  const toggleSelectAll = (setupId: string, products: ProductSlot[]) => {
+    setSelectedForClubbing(prev => {
+      const current = prev[setupId] || new Set()
+      if (current.size === products.length && products.length > 0) {
+        return { ...prev, [setupId]: new Set() }
+      }
+      return { ...prev, [setupId]: new Set(products.map(p => p.key)) }
+    })
+  }
+
+  const handleSort = (field: 'productName' | 'price' | 'defaultQty' | 'key') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
   }
 
   // ─── CRUD Handlers ───────────────────────────────────────
@@ -238,6 +259,22 @@ export default function InstallationBuilderScreen() {
     setSaving(true)
     try {
       await adminDatasource.installationDeleteProduct(categoryKey, setupKey, productKey)
+      await loadData()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
+    finally { setSaving(false) }
+  }
+
+  const bulkDeleteProducts = async (categoryKey: string, setupKey: string) => {
+    const setupId = `${categoryKey}::${setupKey}`
+    const selected = Array.from(selectedForClubbing[setupId] || [])
+    if (selected.length === 0) return
+    if (!confirm(`Remove ${selected.length} products from this setup?`)) return
+    setSaving(true)
+    try {
+      for (const productKey of selected) {
+        await adminDatasource.installationDeleteProduct(categoryKey, setupKey, productKey)
+      }
+      setSelectedForClubbing(prev => ({ ...prev, [setupId]: new Set() }))
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
@@ -394,6 +431,9 @@ export default function InstallationBuilderScreen() {
                                   {(selectedForClubbing[sKey]?.size || 0) >= 2 && (
                                     <button className="secondary-btn" onClick={() => handleClubSelected(cat.key, setup.key)}>🔗 Club Selected</button>
                                   )}
+                                  {(selectedForClubbing[sKey]?.size || 0) > 0 && (
+                                    <button className="secondary-btn danger" onClick={() => bulkDeleteProducts(cat.key, setup.key)}>🗑️ Delete Selected</button>
+                                  )}
                                 </div>
 
                                 {setup.products.length === 0 ? (
@@ -402,10 +442,16 @@ export default function InstallationBuilderScreen() {
                                   <table className="catalog-table ib-product-table">
                                     <thead>
                                       <tr>
-                                        <th style={{ width: '40px' }}></th>
-                                        <th>Product</th>
-                                        <th className="num">Price</th>
-                                        <th className="num">Def Qty</th>
+                                        <th style={{ width: '40px' }}>
+                                          <input 
+                                            type="checkbox" 
+                                            checked={setup.products.length > 0 && (selectedForClubbing[sKey]?.size || 0) === setup.products.length} 
+                                            onChange={() => toggleSelectAll(sKey, setup.products)} 
+                                          />
+                                        </th>
+                                        <th style={{ cursor: 'pointer' }} onClick={() => handleSort('productName')}>Product {sortField === 'productName' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                                        <th className="num" style={{ cursor: 'pointer' }} onClick={() => handleSort('price')}>Price {sortField === 'price' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                                        <th className="num" style={{ cursor: 'pointer' }} onClick={() => handleSort('defaultQty')}>Def Qty {sortField === 'defaultQty' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
                                         <th className="num">Min</th>
                                         <th className="num">Max</th>
                                         <th className="num">Amount</th>
@@ -413,7 +459,18 @@ export default function InstallationBuilderScreen() {
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {setup.products.map((slot) => {
+                                      {[...setup.products].sort((a, b) => {
+                                        const optA = a.options[0] || {}
+                                        const optB = b.options[0] || {}
+                                        let aVal = sortField === 'productName' ? (optA.productName || optA.productId || a.key) : optA[sortField as keyof ProductOption] || a.key
+                                        let bVal = sortField === 'productName' ? (optB.productName || optB.productId || b.key) : optB[sortField as keyof ProductOption] || b.key
+                                        
+                                        if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+                                        if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+                                        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+                                        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+                                        return 0
+                                      }).map((slot) => {
                                         if (!slot.isClubbed) {
                                           // Regular product row
                                           const opt = slot.options[0]
@@ -446,7 +503,9 @@ export default function InstallationBuilderScreen() {
                                         const clubOpen = expandedClubs.has(clubId)
                                         return [
                                           <tr key={slot.key} className="ib-product-row ib-clubbed-header-row">
-                                            <td></td>
+                                            <td>
+                                              <input type="checkbox" checked={selectedForClubbing[sKey]?.has(slot.key) || false} onChange={() => toggleSelection(sKey, slot.key)} />
+                                            </td>
                                             <td>
                                               <button className="ib-club-toggle" onClick={() => toggle(expandedClubs, clubId, setExpandedClubs)} type="button">
                                                 <span className={`ib-chevron ${clubOpen ? 'open' : ''}`}>▶</span>

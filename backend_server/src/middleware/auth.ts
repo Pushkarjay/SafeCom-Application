@@ -2,12 +2,57 @@ import { NextFunction, Request, Response } from 'express'
 import jwt, { SignOptions } from 'jsonwebtoken'
 import { AuthUser, Role } from '../types.js'
 import { getAuth } from 'firebase-admin/auth'
-import { initFirebase } from '../services/firestore.js'
+import { initFirebase, queryCollection } from '../services/firestore.js'
 
-const jwtSecret = process.env.JWT_SECRET ?? 'safecom-development-secret'
+const jwtSecret = process.env.JWT_SECRET ?? process.env.JWT_SECRET_KEY ?? 'safecom-development-secret'
 
 export interface AuthenticatedRequest extends Request {
   user?: AuthUser
+}
+
+async function resolveRoleFromFirebase(decoded: Record<string, unknown>): Promise<Role> {
+  const claimRole = decoded['role'] as Role | undefined
+  if (claimRole) {
+    return claimRole
+  }
+
+  const uid = decoded.uid as string | undefined
+  const email = decoded.email as string | undefined
+
+  // Quick-match SafeCom admin emails before Firestore lookup
+  if (email && (email.endsWith('_admin@safecom.com') || email === 'admin@safecom.com')) {
+    return 'admin'
+  }
+
+  try {
+    if (uid) {
+      const adminsByUid = await queryCollection<{ id: string }>(
+        'admins',
+        [{ field: 'firebaseUid', operator: '==', value: uid }],
+        undefined,
+        1
+      )
+      if (adminsByUid.length > 0) {
+        return 'admin'
+      }
+    }
+
+    if (email) {
+      const adminsByEmail = await queryCollection<{ id: string }>(
+        'admins',
+        [{ field: 'email', operator: '==', value: email }],
+        undefined,
+        1
+      )
+      if (adminsByEmail.length > 0) {
+        return 'admin'
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to resolve role from Firestore:', error)
+  }
+
+  return 'customer'
 }
 
 export function createToken(user: AuthUser): string {
@@ -37,12 +82,13 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
     try {
       initFirebase()
       const decoded = await getAuth().verifyIdToken(token)
+      const role = await resolveRoleFromFirebase(decoded as Record<string, unknown>)
       // Map Firebase decoded token to AuthUser shape
       const mapped: AuthUser = {
         id: decoded.uid,
         email: (decoded.email as string) ?? '',
         name: (decoded.name as string) ?? ((decoded.email as string) ?? 'user'),
-        role: ((decoded['role'] as Role) ?? 'customer') as Role
+        role
       }
       req.user = mapped
       return next()
@@ -81,7 +127,7 @@ export function requireRole(allowedRoles: Role[]) {
 /**
  * Optional authentication - sets user if token exists, but doesn't fail if missing
  */
-export function optionalAuthenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function optionalAuthenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization
 
   if (!header?.startsWith('Bearer ')) {
@@ -91,10 +137,26 @@ export function optionalAuthenticateToken(req: AuthenticatedRequest, res: Respon
   const token = header.slice(7)
 
   try {
+    // Try JWT verification first
     const user = jwt.verify(token, jwtSecret) as AuthUser
     req.user = user
   } catch {
-    // Silently ignore token errors for optional auth
+    // If JWT fails, try Firebase ID token as fallback
+    try {
+      initFirebase()
+      const decoded = await getAuth().verifyIdToken(token)
+      const role = await resolveRoleFromFirebase(decoded as Record<string, unknown>)
+      // Map Firebase decoded token to AuthUser shape
+      const mapped: AuthUser = {
+        id: decoded.uid,
+        email: (decoded.email as string) ?? '',
+        name: (decoded.name as string) ?? ((decoded.email as string) ?? 'user'),
+        role
+      }
+      req.user = mapped
+    } catch {
+      // Silently ignore token errors for optional auth
+    }
   }
 
   return next()

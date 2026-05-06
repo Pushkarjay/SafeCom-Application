@@ -61,55 +61,55 @@ export default function MainLayout() {
               className={`nav-item ${location.pathname === '/catalog/products' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/products')}
             >
-              📦 Products
+              Products
             </button>
             <button
               className={`nav-item ${location.pathname === '/catalog/installation' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/installation')}
             >
-              🛠️ Installation
+              Installation
             </button>
             <button
               className={`nav-item ${location.pathname === '/catalog/accessories' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/accessories')}
             >
-              🧰 Accessories
+              Accessories
             </button>
             <button
               className={`nav-item ${location.pathname === '/catalog/maintenance' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/maintenance')}
             >
-              🧹 Maintenance
+              Maintenance
             </button>
             <button
               className={`nav-item ${location.pathname === '/catalog/repair' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/repair')}
             >
-              📷 Camera Repair
+              Camera Repair
             </button>
             <button
               className={`nav-item ${location.pathname === '/catalog/amc' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/amc')}
             >
-              📋 AMC Plans
+              AMC Plans
             </button>
             <button
               className={`nav-item ${location.pathname === '/catalog/upgrade' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/upgrade')}
             >
-              ⭐ Upgrade
+              Upgrade
             </button>
             <button
               className={`nav-item ${location.pathname === '/catalog/recommendations' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/recommendations')}
             >
-              💡 Recommendations
+              Recommendations
             </button>
             <button
               className={`nav-item ${location.pathname === '/catalog/services' ? 'active' : ''}`}
               onClick={() => navigate('/catalog/services')}
             >
-              ⚡ Services
+              Services
             </button>
           </div>
         </nav>

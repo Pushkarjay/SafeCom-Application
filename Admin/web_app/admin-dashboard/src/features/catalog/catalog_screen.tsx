@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
-import { CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet } from '@data/models/admin_models'
+import { CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, UpgradeBundle, PricingSet, CatalogService } from '@data/models/admin_models'
 import './catalog_screen.css'
+import { useParams } from 'react-router-dom'
 
 const categories = ['All', 'IP Camera', 'DVR Camera', 'DVR', 'NVR', 'Storage', 'Power', 'Network', 'Cable', 'Connector', 'Accessory', 'Service']
 const groups = ['All', 'Cameras', 'Recording', 'Storage', 'Wiring', 'Accessories', 'Services', 'Core', 'Package Base', 'Installation', 'Recommendations']
 
 type TabType = 'products' | 'packages' | 'addons' | 'taxes' | 'recommendations' | 'invoices' | 'services' | 'upgrade' | 'pricing'
-
-import { useParams } from 'react-router-dom'
 
 export default function CatalogScreen() {
   const { tab } = useParams()
@@ -19,136 +18,108 @@ export default function CatalogScreen() {
   const [isLoading, setIsLoading] = useState(false)
   const firebaseUser = useAuthStore((state) => state.firebaseUser)
 
-  // Products
+  // Data States
   const [products, setProducts] = useState<CatalogProduct[]>([])
-  const [searchProduct, setSearchProduct] = useState('')
-  const [category, setCategory] = useState('All')
-  const [group, setGroup] = useState('All')
-  const [sortField, setSortField] = useState<keyof CatalogProduct>('name')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
-  const [editingProduct, setEditingProduct] = useState<CatalogProduct | null>(null)
-  const [isProductFormOpen, setIsProductFormOpen] = useState(false)
-  const [productForm, setProductForm] = useState({
-    name: '', category: 'Cameras', group: 'Core', unit: 'unit', price: 0, status: 'active' as 'active' | 'inactive'
-  })
-
-  // Packages
   const [packages, setPackages] = useState<CatalogPackage[]>([])
-  const [editingPackage, setEditingPackage] = useState<CatalogPackage | null>(null)
-  const [isPackageFormOpen, setIsPackageFormOpen] = useState(false)
-  const [packageForm, setPackageForm] = useState({
-    name: '', description: '', productIds: [] as string[], totalPrice: 0, discountPercent: 0, finalPrice: 0, status: 'active' as 'active' | 'inactive'
-  })
-
-  // Add-ons
   const [addons, setAddons] = useState<CatalogAddon[]>([])
-  const [editingAddon, setEditingAddon] = useState<CatalogAddon | null>(null)
-  const [isAddonFormOpen, setIsAddonFormOpen] = useState(false)
-  const [addonForm, setAddonForm] = useState({
-    name: '', description: '', category: 'Services', price: 0, status: 'active' as 'active' | 'inactive'
-  })
-
-  // Taxes
   const [taxes, setTaxes] = useState<CatalogTax[]>([])
-  const [editingTax, setEditingTax] = useState<CatalogTax | null>(null)
-  const [isTaxFormOpen, setIsTaxFormOpen] = useState(false)
-  const [taxForm, setTaxForm] = useState({
-    name: '', description: '', rate: 0, status: 'active' as 'active' | 'inactive'
-  })
-
-  // Recommendations
   const [recommendations, setRecommendations] = useState<CatalogRecommendation[]>([])
-  const [editingRec, setEditingRec] = useState<CatalogRecommendation | null>(null)
-  const [isRecFormOpen, setIsRecFormOpen] = useState(false)
-  const [recForm, setRecForm] = useState({
-    name: '',
-    description: '',
-    productIds: [] as string[],
-    placement: 'checkout' as CatalogRecommendation['placement'],
-    serviceTypes: [] as CatalogRecommendation['serviceTypes'],
-    isAvailable: true,
-    displayPriority: 0
-  })
-
-  // Invoices
   const [invoices, setInvoices] = useState<InvoiceTemplate[]>([])
-  const [editingInvoice, setEditingInvoice] = useState<InvoiceTemplate | null>(null)
-  const [isInvoiceFormOpen, setIsInvoiceFormOpen] = useState(false)
-  const [invoiceForm, setInvoiceForm] = useState({
-    name: '', description: '', terms: '', notes: '', showTax: true, status: 'active' as 'active' | 'inactive'
-  })
-
-  const [services, setServices] = useState<Service[]>([])
+  const [catalogServices, setCatalogServices] = useState<CatalogService[]>([])
   const [upgradeBundles, setUpgradeBundles] = useState<UpgradeBundle[]>([])
   const [pricingData, setPricingData] = useState<PricingSet>({})
 
-  // Load data based on active tab
+  // UI States
+  const [searchProduct, setSearchProduct] = useState('')
+  const [category, setCategory] = useState('All')
+  const [group, setGroup] = useState('All')
   const [pricingSection, setPricingSection] = useState<string | null>(null)
-  
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [sortConfig, setSortConfig] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: 'name', direction: 'asc' })
+
+  // Form States
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<CatalogProduct | null>(null)
+  const [productForm, setProductForm] = useState({ name: '', category: 'Cameras', group: 'Core', unit: 'unit', price: 0, status: 'active' as 'active' | 'inactive' })
+
+  const [isPackageFormOpen, setIsPackageFormOpen] = useState(false)
+  const [editingPackage, setEditingPackage] = useState<CatalogPackage | null>(null)
+  const [packageForm, setPackageForm] = useState({ name: '', description: '', productIds: [] as string[], totalPrice: 0, discountPercent: 0, finalPrice: 0, status: 'active' as 'active' | 'inactive' })
+
+  const [isAddonFormOpen, setIsAddonFormOpen] = useState(false)
+  const [editingAddon, setEditingAddon] = useState<CatalogAddon | null>(null)
+  const [addonForm, setAddonForm] = useState({ name: '', description: '', category: 'Services', price: 0, status: 'active' as 'active' | 'inactive' })
+
+  const [isTaxFormOpen, setIsTaxFormOpen] = useState(false)
+  const [editingTax, setEditingTax] = useState<CatalogTax | null>(null)
+  const [taxForm, setTaxForm] = useState({ name: '', description: '', rate: 0, status: 'active' as 'active' | 'inactive' })
+
+  const [isRecFormOpen, setIsRecFormOpen] = useState(false)
+  const [editingRec, setEditingRec] = useState<CatalogRecommendation | null>(null)
+  const [recForm, setRecForm] = useState<Partial<CatalogRecommendation> & { name: string, productIds: string[], placement: CatalogRecommendation['placement'], isAvailable: boolean, displayPriority: number }>({ name: '', description: '', productIds: [] as string[], placement: 'checkout' as CatalogRecommendation['placement'], serviceTypes: [] as CatalogRecommendation['serviceTypes'], isAvailable: true, displayPriority: 0 })
+
+  const [isInvoiceFormOpen, setIsInvoiceFormOpen] = useState(false)
+  const [editingInvoice, setEditingInvoice] = useState<InvoiceTemplate | null>(null)
+  const [invoiceForm, setInvoiceForm] = useState({ name: '', description: '', terms: '', notes: '', showTax: true, status: 'active' as 'active' | 'inactive' })
+
+  const [isServiceFormOpen, setIsServiceFormOpen] = useState(false)
+  const [editingCatalogService, setEditingCatalogService] = useState<CatalogService | null>(null)
+  const [serviceForm, setServiceForm] = useState<Partial<CatalogService>>({ serviceName: '', description: '', category: 'installation', basePrice: 0, isAvailable: true, productIds: [] })
+
+  // Route Handling
   useEffect(() => {
     if (tab) {
       const normalized = tab.toLowerCase()
-      if (['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices', 'services', 'upgrade', 'pricing', 'accessories'].includes(normalized)) {
-        if (normalized === 'accessories') {
-          setActiveTab('products')
-          setCategory('All')
-          setGroup('Accessories')
-        } else {
-          setActiveTab(normalized as TabType)
-          setPricingSection(null)
-        }
-      } else if (['maintenance', 'repair', 'amc'].includes(normalized)) {
-        setActiveTab('pricing')
-        setPricingSection(normalized)
+      const validTabs = ['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices', 'services', 'upgrade', 'pricing', 'accessories', 'maintenance', 'repair', 'amc']
+      if (validTabs.includes(normalized)) {
+        if (normalized === 'accessories') { setActiveTab('products'); setCategory('All'); setGroup('Accessories'); }
+        else if (['maintenance', 'repair', 'amc'].includes(normalized)) { setActiveTab('pricing'); setPricingSection(normalized); }
+        else { setActiveTab(normalized as TabType); setPricingSection(null); }
       }
     }
   }, [tab])
 
+  // Data Loading
   useEffect(() => {
-    const loadData = async () => {
-      if (!firebaseUser) {
-        return
-      }
+    const fetchData = async () => {
+      if (!firebaseUser) return
       setIsLoading(true)
       setError(null)
+      setSelectedItems(new Set())
       try {
-        if (activeTab === 'products') {
-          const data = await adminDatasource.getCatalogProducts()
-          setProducts(data)
-        } else if (activeTab === 'packages') {
-          const data = await adminDatasource.getCatalogPackages()
-          setPackages(data)
-        } else if (activeTab === 'addons') {
-          const data = await adminDatasource.getCatalogAddons()
-          setAddons(data)
-        } else if (activeTab === 'taxes') {
-          const data = await adminDatasource.getCatalogTaxes()
-          setTaxes(data)
-        } else if (activeTab === 'recommendations') {
-          const data = await adminDatasource.getCatalogRecommendations()
-          setRecommendations(data)
-        } else if (activeTab === 'invoices') {
-          const data = await adminDatasource.getInvoiceTemplates()
-          setInvoices(data)
-        } else if (activeTab === 'services') {
-          const data = await adminDatasource.getServices()
-          setServices(data)
-        } else if (activeTab === 'upgrade') {
-          const data = await adminDatasource.getUpgradeBundles()
-          setUpgradeBundles(data)
-        } else if (activeTab === 'pricing') {
-          const data = await adminDatasource.getPricingData()
-          setPricingData(data)
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data')
-      } finally {
-        setIsLoading(false)
-      }
+        if (activeTab === 'products') setProducts(group === 'Accessories' ? await adminDatasource.getCatalogAccessories() : await adminDatasource.getCatalogProducts())
+        else if (activeTab === 'packages') setPackages(await adminDatasource.getCatalogPackages())
+        else if (activeTab === 'addons') setAddons(await adminDatasource.getCatalogAddons())
+        else if (activeTab === 'taxes') setTaxes(await adminDatasource.getCatalogTaxes())
+        else if (activeTab === 'recommendations') setRecommendations(await adminDatasource.getCatalogRecommendations())
+        else if (activeTab === 'invoices') setInvoices(await adminDatasource.getInvoiceTemplates())
+        else if (activeTab === 'services') setCatalogServices(await adminDatasource.getCatalogServices())
+        else if (activeTab === 'upgrade') setUpgradeBundles(await adminDatasource.getUpgradeBundles())
+        else if (activeTab === 'pricing') setPricingData(await adminDatasource.getPricingData())
+      } catch (err) { setError(err instanceof Error ? err.message : 'Failed to load data') }
+      finally { setIsLoading(false) }
     }
-    loadData()
-  }, [activeTab, firebaseUser?.uid])
+    fetchData()
+  }, [activeTab, category, group, firebaseUser])
+
+  // Sorting & Selection Helpers
+  const handleSort = (field: string) => {
+    setSortConfig((prev) => ({ field, direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc' }))
+  }
+
+  const toggleSelection = (id: string) => {
+    setSelectedItems((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = (items: any[], idField: string) => {
+    if (selectedItems.size === items.length && items.length > 0) setSelectedItems(new Set())
+    else setSelectedItems(new Set(items.map((i) => i[idField])))
+  }
 
   const filteredProducts = useMemo(() => {
     const query = searchProduct.trim().toLowerCase()
@@ -158,21 +129,19 @@ export default function CatalogScreen() {
       const matchesGroup = group === 'All' || p.group === group
       return matchesQuery && matchesCategory && matchesGroup
     })
-    
     result.sort((a, b) => {
-      let aVal = a[sortField]
-      let bVal = b[sortField]
+      let aVal = (a as any)[sortConfig.field] || ''
+      let bVal = (b as any)[sortConfig.field] || ''
       if (typeof aVal === 'string') aVal = aVal.toLowerCase()
       if (typeof bVal === 'string') bVal = bVal.toLowerCase()
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1
       return 0
     })
-
     return result
-  }, [searchProduct, category, group, products, sortField, sortDirection])
+  }, [searchProduct, category, group, products, sortConfig])
 
-  // Product CRUD
+  // CRUD Handlers
   const handleSaveProduct = async () => {
     if (!productForm.name.trim()) { setError('Product name is required'); return }
     setIsSaving(true)
@@ -185,69 +154,10 @@ export default function CatalogScreen() {
         setProducts((p) => [created, ...p])
       }
       setIsProductFormOpen(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save')
-    } finally {
-      setIsSaving(false)
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
+    finally { setIsSaving(false) }
   }
 
-  const handleDeleteProduct = async (id: string) => {
-    if (!window.confirm('Delete this product?')) return
-    try {
-      await adminDatasource.deleteCatalogProduct(id)
-      setProducts((p) => p.filter((i) => i.id !== id))
-      setSelectedProducts(prev => { const next = new Set(prev); next.delete(id); return next; })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete')
-    }
-  }
-
-  const handleBulkDelete = async () => {
-    if (selectedProducts.size === 0) return
-    if (!window.confirm(`Delete ${selectedProducts.size} selected products?`)) return
-    setIsSaving(true)
-    try {
-      // Optimistic or sequential delete for now. Proper bulk endpoint would be better, but sequential works for UI.
-      const toDelete = Array.from(selectedProducts)
-      for (const id of toDelete) {
-        await adminDatasource.deleteCatalogProduct(id)
-      }
-      setProducts((p) => p.filter((i) => !selectedProducts.has(i.id)))
-      setSelectedProducts(new Set())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete some products')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleSort = (field: keyof CatalogProduct) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
-
-  const toggleSelectAll = () => {
-    if (selectedProducts.size === filteredProducts.length && filteredProducts.length > 0) {
-      setSelectedProducts(new Set())
-    } else {
-      setSelectedProducts(new Set(filteredProducts.map(p => p.id)))
-    }
-  }
-
-  const toggleSelect = (id: string) => {
-    setSelectedProducts(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  // Package CRUD
   const handleSavePackage = async () => {
     if (!packageForm.name.trim()) { setError('Package name is required'); return }
     setIsSaving(true)
@@ -260,24 +170,10 @@ export default function CatalogScreen() {
         setPackages((p) => [created, ...p])
       }
       setIsPackageFormOpen(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save')
-    } finally {
-      setIsSaving(false)
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
+    finally { setIsSaving(false) }
   }
 
-  const handleDeletePackage = async (id: string) => {
-    if (!window.confirm('Delete this package?')) return
-    try {
-      await adminDatasource.deleteCatalogPackage(id)
-      setPackages((p) => p.filter((i) => i.id !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete')
-    }
-  }
-
-  // Add-on CRUD
   const handleSaveAddon = async () => {
     if (!addonForm.name.trim()) { setError('Add-on name is required'); return }
     setIsSaving(true)
@@ -290,24 +186,10 @@ export default function CatalogScreen() {
         setAddons((p) => [created, ...p])
       }
       setIsAddonFormOpen(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save')
-    } finally {
-      setIsSaving(false)
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
+    finally { setIsSaving(false) }
   }
 
-  const handleDeleteAddon = async (id: string) => {
-    if (!window.confirm('Delete this add-on?')) return
-    try {
-      await adminDatasource.deleteCatalogAddon(id)
-      setAddons((p) => p.filter((i) => i.id !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete')
-    }
-  }
-
-  // Tax CRUD
   const handleSaveTax = async () => {
     if (!taxForm.name.trim()) { setError('Tax name is required'); return }
     setIsSaving(true)
@@ -320,69 +202,28 @@ export default function CatalogScreen() {
         setTaxes((p) => [created, ...p])
       }
       setIsTaxFormOpen(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save')
-    } finally {
-      setIsSaving(false)
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
+    finally { setIsSaving(false) }
   }
 
-  const handleDeleteTax = async (id: string) => {
-    if (!window.confirm('Delete this tax?')) return
-    try {
-      await adminDatasource.deleteCatalogTax(id)
-      setTaxes((p) => p.filter((i) => i.id !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete')
-    }
-  }
-
-  // Recommendation CRUD
   const handleSaveRec = async () => {
-    if (!recForm.name.trim()) { setError('Recommendation name is required'); return }
-    if (recForm.productIds.length === 0) { setError('Select at least one product'); return }
+    if (!recForm.name.trim()) { setError('Name is required'); return }
     setIsSaving(true)
     try {
-      const payload = normalizeRecForm()
       if (editingRec) {
-        const updated = await adminDatasource.updateCatalogRecommendation(editingRec.recommendationId, payload)
+        const updated = await adminDatasource.updateCatalogRecommendation(editingRec.recommendationId, recForm)
         setRecommendations((p) => p.map((i) => (i.recommendationId === updated.recommendationId ? updated : i)))
       } else {
-        const created = await adminDatasource.createCatalogRecommendation(payload)
+        const created = await adminDatasource.createCatalogRecommendation(recForm)
         setRecommendations((p) => [created, ...p])
       }
       setIsRecFormOpen(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save')
-    } finally {
-      setIsSaving(false)
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
+    finally { setIsSaving(false) }
   }
 
-  const handleDeleteRec = async (id: string) => {
-    if (!window.confirm('Delete this recommendation?')) return
-    try {
-      await adminDatasource.deleteCatalogRecommendation(id)
-      setRecommendations((p) => p.filter((i) => i.recommendationId !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete')
-    }
-  }
-
-  const normalizeRecForm = () => {
-    if (recForm.serviceTypes && recForm.serviceTypes.length > 0) {
-      return recForm
-    }
-
-    return {
-      ...recForm,
-      serviceTypes: undefined
-    }
-  }
-
-  // Invoice CRUD
   const handleSaveInvoice = async () => {
-    if (!invoiceForm.name.trim()) { setError('Invoice name is required'); return }
+    if (!invoiceForm.name.trim()) { setError('Name is required'); return }
     setIsSaving(true)
     try {
       if (editingInvoice) {
@@ -393,557 +234,561 @@ export default function CatalogScreen() {
         setInvoices((p) => [created, ...p])
       }
       setIsInvoiceFormOpen(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save')
-    } finally {
-      setIsSaving(false)
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
+    finally { setIsSaving(false) }
   }
 
-  const handleDeleteInvoice = async (id: string) => {
-    if (!window.confirm('Delete this invoice template?')) return
+  const handleSaveService = async () => {
+    if (!serviceForm.serviceName?.trim()) { setError('Service name is required'); return }
+    setIsSaving(true)
     try {
-      await adminDatasource.deleteInvoiceTemplate(id)
-      setInvoices((p) => p.filter((i) => i.id !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete')
-    }
+      if (editingCatalogService) {
+        const updated = await adminDatasource.updateCatalogService(editingCatalogService.serviceId, serviceForm)
+        setCatalogServices((p) => p.map((i) => (i.serviceId === updated.serviceId ? updated : i)))
+      } else {
+        const created = await adminDatasource.createCatalogService(serviceForm)
+        setCatalogServices((p) => [created, ...p])
+      }
+      setIsServiceFormOpen(false)
+    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed') }
+    finally { setIsSaving(false) }
+  }
+
+  const handleDeleteItem = async (id: string, activeTab: TabType) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) return
+    try {
+      if (activeTab === 'products') await adminDatasource.deleteCatalogProduct(id)
+      else if (activeTab === 'packages') await adminDatasource.deleteCatalogPackage(id)
+      else if (activeTab === 'addons') await adminDatasource.deleteCatalogAddon(id)
+      else if (activeTab === 'taxes') await adminDatasource.deleteCatalogTax(id)
+      else if (activeTab === 'recommendations') await adminDatasource.deleteCatalogRecommendation(id)
+      else if (activeTab === 'invoices') await adminDatasource.deleteInvoiceTemplate(id)
+      else if (activeTab === 'services') await adminDatasource.deleteCatalogService(id)
+      
+      // Update state locally
+      if (activeTab === 'products') setProducts(p => p.filter(i => i.id !== id))
+      else if (activeTab === 'packages') setPackages(p => p.filter(i => i.id !== id))
+      else if (activeTab === 'addons') setAddons(p => p.filter(i => i.id !== id))
+      else if (activeTab === 'taxes') setTaxes(p => p.filter(i => i.id !== id))
+      else if (activeTab === 'recommendations') setRecommendations(p => p.filter(i => i.recommendationId !== id))
+      else if (activeTab === 'invoices') setInvoices(p => p.filter(i => i.id !== id))
+      else if (activeTab === 'services') setCatalogServices(p => p.filter(i => i.serviceId !== id))
+    } catch (err) { setError(err instanceof Error ? err.message : 'Delete failed') }
   }
 
   return (
     <div className="catalog-screen">
       <div className="catalog-header">
-        <div>
-          <h1 style={{ textTransform: 'capitalize' }}>{tab ? tab.replace('-', ' ') : 'Catalog'}</h1>
-          <p className="catalog-subtitle">Manage products, pricing, packages, and recommendation items.</p>
+        <div className="fade-in">
+          <h1>{tab ? tab.replace(/-/g, ' ') : 'Catalog'}</h1>
+          <p className="catalog-subtitle">Manage your product inventory, service packages, and pricing rules.</p>
         </div>
-        <div className="catalog-actions">
-          {['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices'].includes(activeTab) && (
+        <div className="catalog-actions slide-up">
+          {selectedItems.size > 0 && (
+            <button className="primary-btn danger glass-panel" onClick={async () => {
+              if (!window.confirm(`Delete ${selectedItems.size} selected items?`)) return
+              setIsSaving(true)
+              try {
+                const ids = Array.from(selectedItems)
+                for (const id of ids) {
+                  if (activeTab === 'products') await adminDatasource.deleteCatalogProduct(id)
+                  else if (activeTab === 'packages') await adminDatasource.deleteCatalogPackage(id)
+                  else if (activeTab === 'addons') await adminDatasource.deleteCatalogAddon(id)
+                  else if (activeTab === 'taxes') await adminDatasource.deleteCatalogTax(id)
+                  else if (activeTab === 'recommendations') await adminDatasource.deleteCatalogRecommendation(id)
+                  else if (activeTab === 'invoices') await adminDatasource.deleteInvoiceTemplate(id)
+                  else if (activeTab === 'services') await adminDatasource.deleteCatalogService(id)
+                }
+                setSelectedItems(new Set())
+                // Refresh all relevant states
+                if (activeTab === 'products') setProducts(p => p.filter(i => !ids.includes(i.id)))
+                else if (activeTab === 'packages') setPackages(p => p.filter(i => !ids.includes(i.id)))
+                else if (activeTab === 'addons') setAddons(p => p.filter(i => !ids.includes(i.id)))
+                else if (activeTab === 'taxes') setTaxes(p => p.filter(i => !ids.includes(i.id)))
+                else if (activeTab === 'recommendations') setRecommendations(p => p.filter(i => !ids.includes(i.recommendationId)))
+                else if (activeTab === 'invoices') setInvoices(p => p.filter(i => !ids.includes(i.id)))
+                else if (activeTab === 'services') setCatalogServices(p => p.filter(i => !ids.includes(i.serviceId)))
+              } catch (err) { setError(err instanceof Error ? err.message : 'Bulk delete failed') }
+              finally { setIsSaving(false) }
+            }}>🗑️ Delete {selectedItems.size} Items</button>
+          )}
+          {['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices', 'services'].includes(activeTab) && (
             <button className="primary-btn" onClick={() => {
-              if (activeTab === 'products') { setIsProductFormOpen(true) }
-              else if (activeTab === 'packages') { setIsPackageFormOpen(true) }
-              else if (activeTab === 'addons') { setIsAddonFormOpen(true) }
-              else if (activeTab === 'taxes') { setIsTaxFormOpen(true) }
-              else if (activeTab === 'recommendations') { setIsRecFormOpen(true) }
-              else if (activeTab === 'invoices') { setIsInvoiceFormOpen(true) }
-            }}>+ Add Item</button>
+              if (activeTab === 'products') { setEditingProduct(null); setProductForm({ name: '', category: 'Cameras', group: 'Core', unit: 'unit', price: 0, status: 'active' }); setIsProductFormOpen(true); }
+              else if (activeTab === 'packages') { setEditingPackage(null); setPackageForm({ name: '', description: '', productIds: [], totalPrice: 0, discountPercent: 0, finalPrice: 0, status: 'active' }); setIsPackageFormOpen(true); }
+              else if (activeTab === 'addons') { setEditingAddon(null); setAddonForm({ name: '', description: '', category: 'Services', price: 0, status: 'active' }); setIsAddonFormOpen(true); }
+              else if (activeTab === 'taxes') { setEditingTax(null); setTaxForm({ name: '', description: '', rate: 0, status: 'active' }); setIsTaxFormOpen(true); }
+              else if (activeTab === 'recommendations') { setEditingRec(null); setRecForm({ name: '', description: '', productIds: [], placement: 'checkout', serviceTypes: [], isAvailable: true, displayPriority: 0 }); setIsRecFormOpen(true); }
+              else if (activeTab === 'invoices') { setEditingInvoice(null); setInvoiceForm({ name: '', description: '', terms: '', notes: '', showTax: true, status: 'active' }); setIsInvoiceFormOpen(true); }
+              else if (activeTab === 'services') { setEditingCatalogService(null); setServiceForm({ serviceName: '', description: '', category: 'installation', basePrice: 0, isAvailable: true, productIds: [] }); setIsServiceFormOpen(true); }
+            }}>+ Add New Item</button>
           )}
         </div>
       </div>
 
-      {error && <div className="catalog-error">{error}</div>}
+      <div className="catalog-tabs fade-in">
+        <button className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>Products</button>
+        <button className={`tab-btn ${activeTab === 'packages' ? 'active' : ''}`} onClick={() => setActiveTab('packages')}>Packages</button>
+        <button className={`tab-btn ${activeTab === 'addons' ? 'active' : ''}`} onClick={() => setActiveTab('addons')}>Add-ons</button>
+        <button className={`tab-btn ${activeTab === 'services' ? 'active' : ''}`} onClick={() => setActiveTab('services')}>Services</button>
+        <button className={`tab-btn ${activeTab === 'recommendations' ? 'active' : ''}`} onClick={() => setActiveTab('recommendations')}>Recommendations</button>
+        <button className={`tab-btn ${activeTab === 'upgrade' ? 'active' : ''}`} onClick={() => setActiveTab('upgrade')}>Upgrades</button>
+        <button className={`tab-btn ${activeTab === 'pricing' ? 'active' : ''}`} onClick={() => setActiveTab('pricing')}>Pricing</button>
+        <button className={`tab-btn ${activeTab === 'taxes' ? 'active' : ''}`} onClick={() => setActiveTab('taxes')}>Taxes</button>
+        <button className={`tab-btn ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')}>Invoices</button>
+      </div>
+
+      {error && <div className="catalog-error slide-up">{error}</div>}
 
       {/* PRODUCTS TAB */}
       {activeTab === 'products' && (
-        <>
+        <div className="slide-up">
           <div className="catalog-toolbar">
             <div className="toolbar-group">
-              <label htmlFor="category">Category</label>
-              <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <label>Category</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
                 {categories.map((c) => (<option key={c} value={c}>{c}</option>))}
               </select>
             </div>
             <div className="toolbar-group">
-              <label htmlFor="group">Group</label>
-              <select id="group" value={group} onChange={(e) => setGroup(e.target.value)}>
+              <label>Group</label>
+              <select value={group} onChange={(e) => setGroup(e.target.value)}>
                 {groups.map((g) => (<option key={g} value={g}>{g}</option>))}
               </select>
             </div>
             <div className="toolbar-group search">
-              <label htmlFor="search">Search</label>
-              <input id="search" placeholder="Search product, ID, or keyword" value={searchProduct} onChange={(e) => setSearchProduct(e.target.value)} />
+              <label>Search Inventory</label>
+              <input placeholder="Search product name or ID..." value={searchProduct} onChange={(e) => setSearchProduct(e.target.value)} />
             </div>
           </div>
           <div className="catalog-table-wrapper">
-            {selectedProducts.size > 0 && (
-              <div className="bulk-actions" style={{ padding: '8px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px', fontWeight: '500' }}>{selectedProducts.size} selected</span>
-                <button className="secondary-btn danger" onClick={handleBulkDelete} disabled={isSaving}>Delete Selected</button>
-              </div>
-            )}
-            {isLoading ? <div className="catalog-loading">Loading...</div> : (
+            {isLoading ? <div className="catalog-loading">Syncing products...</div> : (
               <table className="catalog-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '40px' }}><input type="checkbox" checked={filteredProducts.length > 0 && selectedProducts.size === filteredProducts.length} onChange={toggleSelectAll} /></th>
-                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Product {sortField === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('category')}>Category {sortField === 'category' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('group')}>Group {sortField === 'group' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('unit')}>Unit {sortField === 'unit' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('price')}>Price {sortField === 'price' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>Status {sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th style={{ width: '40px' }}><input type="checkbox" checked={filteredProducts.length > 0 && selectedItems.size === filteredProducts.length} onChange={() => toggleSelectAll(filteredProducts, 'id')} /></th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Product {sortConfig.field === 'name' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('category')}>Category {sortConfig.field === 'category' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th className="num" style={{ cursor: 'pointer' }} onClick={() => handleSort('price')}>Price {sortConfig.field === 'price' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>Status {sortConfig.field === 'status' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.length === 0 ? (
-                    <tr><td colSpan={8} className="empty-cell">No products found</td></tr>
-                  ) : (
-                    filteredProducts.map((p) => (
-                      <tr key={p.id} className={selectedProducts.has(p.id) ? 'selected-row' : ''}>
-                        <td><input type="checkbox" checked={selectedProducts.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
-                        <td><div className="product-main"><span className="product-name">{p.name}</span><span className="product-id">{p.id}</span></div></td>
-                        <td>{p.category}</td>
-                        <td>{p.group}</td>
-                        <td>{p.unit}</td>
-                        <td>Rs {p.price.toLocaleString()}</td>
-                        <td><span className={`status ${p.status}`}>{p.status}</span></td>
-                        <td>
-                          <button className="icon-btn" onClick={() => { setEditingProduct(p); setProductForm(p); setIsProductFormOpen(true) }}>Edit</button>
-                          <button className="icon-btn danger" onClick={() => handleDeleteProduct(p.id)}>Delete</button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                  {filteredProducts.map((p) => (
+                    <tr key={p.id} className={selectedItems.has(p.id) ? 'selected' : ''}>
+                      <td><input type="checkbox" checked={selectedItems.has(p.id)} onChange={() => toggleSelection(p.id)} /></td>
+                      <td><div className="product-main"><span className="product-name">{p.name}</span><span className="product-id">{p.id}</span></div></td>
+                      <td>{p.category}</td>
+                      <td className="num">Rs {p.price.toLocaleString()}</td>
+                      <td><span className={`status ${p.status}`}>{p.status}</span></td>
+                      <td>
+                        <button className="icon-btn" onClick={() => { setEditingProduct(p); setProductForm(p); setIsProductFormOpen(true); }}>Edit</button>
+                        <button className="icon-btn danger" onClick={() => handleDeleteItem(p.id, 'products')}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {/* PACKAGES TAB */}
       {activeTab === 'packages' && (
-        <div className="catalog-table-wrapper">
-          {isLoading ? <div className="catalog-loading">Loading...</div> : (
-            <table className="catalog-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Total Price</th>
-                  <th>Discount %</th>
-                  <th>Final Price</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+        <div className="catalog-table-wrapper slide-up">
+          <table className="catalog-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px' }}><input type="checkbox" checked={packages.length > 0 && selectedItems.size === packages.length} onChange={() => toggleSelectAll(packages, 'id')} /></th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Package Name</th>
+                <th className="num">Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {packages.map((pkg) => (
+                <tr key={pkg.id} className={selectedItems.has(pkg.id) ? 'selected' : ''}>
+                  <td><input type="checkbox" checked={selectedItems.has(pkg.id)} onChange={() => toggleSelection(pkg.id)} /></td>
+                  <td>{pkg.name}</td>
+                  <td className="num">Rs {pkg.finalPrice.toLocaleString()}</td>
+                  <td><span className={`status ${pkg.status}`}>{pkg.status}</span></td>
+                  <td>
+                    <button className="icon-btn" onClick={() => { setEditingPackage(pkg); setPackageForm(pkg); setIsPackageFormOpen(true); }}>Edit</button>
+                    <button className="icon-btn danger" onClick={() => handleDeleteItem(pkg.id, 'packages')}>Delete</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {packages.length === 0 ? (
-                  <tr><td colSpan={7} className="empty-cell">No packages yet</td></tr>
-                ) : (
-                  packages.map((p) => (
-                    <tr key={p.id}>
-                      <td>{p.name}</td>
-                      <td>{p.description}</td>
-                      <td>Rs {p.totalPrice.toLocaleString()}</td>
-                      <td>{p.discountPercent}%</td>
-                      <td>Rs {p.finalPrice.toLocaleString()}</td>
-                      <td><span className={`status ${p.status}`}>{p.status}</span></td>
-                      <td>
-                        <button className="icon-btn" onClick={() => { setEditingPackage(p); setPackageForm(p); setIsPackageFormOpen(true) }}>Edit</button>
-                        <button className="icon-btn danger" onClick={() => handleDeletePackage(p.id)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
       {/* ADD-ONS TAB */}
       {activeTab === 'addons' && (
-        <div className="catalog-table-wrapper">
-          {isLoading ? <div className="catalog-loading">Loading...</div> : (
-            <table className="catalog-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+        <div className="catalog-table-wrapper slide-up">
+          <table className="catalog-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px' }}><input type="checkbox" checked={addons.length > 0 && selectedItems.size === addons.length} onChange={() => toggleSelectAll(addons, 'id')} /></th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Add-on Name</th>
+                <th>Category</th>
+                <th className="num">Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {addons.map((a) => (
+                <tr key={a.id} className={selectedItems.has(a.id) ? 'selected' : ''}>
+                  <td><input type="checkbox" checked={selectedItems.has(a.id)} onChange={() => toggleSelection(a.id)} /></td>
+                  <td>{a.name}</td>
+                  <td>{a.category}</td>
+                  <td className="num">Rs {a.price.toLocaleString()}</td>
+                  <td><span className={`status ${a.status}`}>{a.status}</span></td>
+                  <td>
+                    <button className="icon-btn" onClick={() => { setEditingAddon(a); setAddonForm(a); setIsAddonFormOpen(true); }}>Edit</button>
+                    <button className="icon-btn danger" onClick={() => handleDeleteItem(a.id, 'addons')}>Delete</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {addons.length === 0 ? (
-                  <tr><td colSpan={6} className="empty-cell">No add-ons yet</td></tr>
-                ) : (
-                  addons.map((a) => (
-                    <tr key={a.id}>
-                      <td>{a.name}</td>
-                      <td>{a.description}</td>
-                      <td>{a.category}</td>
-                      <td>Rs {a.price.toLocaleString()}</td>
-                      <td><span className={`status ${a.status}`}>{a.status}</span></td>
-                      <td>
-                        <button className="icon-btn" onClick={() => { setEditingAddon(a); setAddonForm(a); setIsAddonFormOpen(true) }}>Edit</button>
-                        <button className="icon-btn danger" onClick={() => handleDeleteAddon(a.id)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'services' && (
-        <div className="catalog-table-wrapper">
-          {isLoading ? <div className="catalog-loading">Loading...</div> : (
-            <table className="catalog-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Title</th>
-                  <th>Icon</th>
-                  <th>Enabled</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.length === 0 ? (
-                  <tr><td colSpan={4} className="empty-cell">No services found</td></tr>
-                ) : (
-                  services.map((service) => (
-                    <tr key={service.id}>
-                      <td>{service.id}</td>
-                      <td>{service.title}</td>
-                      <td>{service.icon}</td>
-                      <td>{service.enabled ? 'Yes' : 'No'}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'upgrade' && (
-        <div className="catalog-table-wrapper">
-          {isLoading ? <div className="catalog-loading">Loading...</div> : (
-            <table className="catalog-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {upgradeBundles.length === 0 ? (
-                  <tr><td colSpan={4} className="empty-cell">No upgrade bundles found</td></tr>
-                ) : (
-                  upgradeBundles.map((bundle) => (
-                    <tr key={bundle.id}>
-                      <td>{bundle.id}</td>
-                      <td>{bundle.name}</td>
-                      <td>{bundle.description}</td>
-                      <td>Rs {bundle.price.toLocaleString()}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'pricing' && (
-        <div className="catalog-pricing-wrapper">
-          {isLoading ? <div className="catalog-loading">Loading...</div> : (
-            <div className="pricing-sections">
-              {['installation', 'maintenance', 'repair', 'amc'].filter(s => !pricingSection || s === pricingSection).map((section) => (
-                <div key={section} className="pricing-card">
-                  <h3>{section.charAt(0).toUpperCase() + section.slice(1)} Pricing</h3>
-                  <pre>{JSON.stringify(pricingData[section as keyof PricingSet] || { message: 'Not available' }, null, 2)}</pre>
-                </div>
               ))}
-            </div>
-          )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* SERVICES TAB */}
+      {activeTab === 'services' && (
+        <div className="catalog-table-wrapper slide-up">
+          <table className="catalog-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px' }}><input type="checkbox" checked={catalogServices.length > 0 && selectedItems.size === catalogServices.length} onChange={() => toggleSelectAll(catalogServices, 'serviceId')} /></th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('serviceName')}>Service Package</th>
+                <th>Category</th>
+                <th className="num">Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {catalogServices.map((s) => (
+                <tr key={s.serviceId} className={selectedItems.has(s.serviceId) ? 'selected' : ''}>
+                  <td><input type="checkbox" checked={selectedItems.has(s.serviceId)} onChange={() => toggleSelection(s.serviceId)} /></td>
+                  <td>{s.serviceName}</td>
+                  <td style={{ textTransform: 'capitalize' }}>{s.category}</td>
+                  <td className="num">Rs {s.basePrice.toLocaleString()}</td>
+                  <td><span className={`status ${s.isAvailable ? 'active' : 'inactive'}`}>{s.isAvailable ? 'active' : 'inactive'}</span></td>
+                  <td>
+                    <button className="icon-btn" onClick={() => { setEditingCatalogService(s); setServiceForm(s); setIsServiceFormOpen(true); }}>Edit</button>
+                    <button className="icon-btn danger" onClick={() => handleDeleteItem(s.serviceId, 'services')}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* PRICING TAB */}
+      {activeTab === 'pricing' && (
+        <div className="slide-up">
+          <div className="pricing-sections" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+            {['installation', 'maintenance', 'repair', 'amc'].filter(s => !pricingSection || s === pricingSection).map((section) => (
+              <div key={section} className="catalog-table-wrapper" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 style={{ margin: 0, textTransform: 'capitalize' }}>{section} Pricing</h3>
+                  <button className="icon-btn" onClick={() => window.alert('Advanced Pricing Editor Coming Soon')}>Settings</button>
+                </div>
+                <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', maxHeight: '400px', overflowY: 'auto' }}>
+                  <pre style={{ fontSize: '11px', color: '#475569', margin: 0 }}>{JSON.stringify(pricingData[section as keyof PricingSet] || { message: 'Data loading...' }, null, 2)}</pre>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* TAXES TAB */}
       {activeTab === 'taxes' && (
-        <div className="catalog-table-wrapper">
-          {isLoading ? <div className="catalog-loading">Loading...</div> : (
-            <table className="catalog-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Rate %</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+        <div className="catalog-table-wrapper slide-up">
+          <table className="catalog-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px' }}><input type="checkbox" checked={taxes.length > 0 && selectedItems.size === taxes.length} onChange={() => toggleSelectAll(taxes, 'id')} /></th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Tax Name</th>
+                <th>Rate %</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {taxes.map((t) => (
+                <tr key={t.id} className={selectedItems.has(t.id) ? 'selected' : ''}>
+                  <td><input type="checkbox" checked={selectedItems.has(t.id)} onChange={() => toggleSelection(t.id)} /></td>
+                  <td>{t.name}</td>
+                  <td>{t.rate}%</td>
+                  <td><span className={`status ${t.status}`}>{t.status}</span></td>
+                  <td>
+                    <button className="icon-btn" onClick={() => { setEditingTax(t); setTaxForm(t); setIsTaxFormOpen(true); }}>Edit</button>
+                    <button className="icon-btn danger" onClick={() => handleDeleteItem(t.id, 'taxes')}>Delete</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {taxes.length === 0 ? (
-                  <tr><td colSpan={5} className="empty-cell">No taxes yet</td></tr>
-                ) : (
-                  taxes.map((t) => (
-                    <tr key={t.id}>
-                      <td>{t.name}</td>
-                      <td>{t.description}</td>
-                      <td>{t.rate}%</td>
-                      <td><span className={`status ${t.status}`}>{t.status}</span></td>
-                      <td>
-                        <button className="icon-btn" onClick={() => { setEditingTax(t); setTaxForm(t); setIsTaxFormOpen(true) }}>Edit</button>
-                        <button className="icon-btn danger" onClick={() => handleDeleteTax(t.id)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
       {/* RECOMMENDATIONS TAB */}
       {activeTab === 'recommendations' && (
-        <div className="catalog-table-wrapper">
-          {isLoading ? <div className="catalog-loading">Loading...</div> : (
-            <table className="catalog-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Placement</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+        <div className="catalog-table-wrapper slide-up">
+          <table className="catalog-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px' }}><input type="checkbox" checked={recommendations.length > 0 && selectedItems.size === recommendations.length} onChange={() => toggleSelectAll(recommendations, 'recommendationId')} /></th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Recommendation</th>
+                <th>Placement</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recommendations.map((r) => (
+                <tr key={r.recommendationId} className={selectedItems.has(r.recommendationId) ? 'selected' : ''}>
+                  <td><input type="checkbox" checked={selectedItems.has(r.recommendationId)} onChange={() => toggleSelection(r.recommendationId)} /></td>
+                  <td>{r.name}</td>
+                  <td style={{ textTransform: 'capitalize' }}>{r.placement}</td>
+                  <td><span className={`status ${r.isAvailable ? 'active' : 'inactive'}`}>{r.isAvailable ? 'active' : 'inactive'}</span></td>
+                  <td>
+                    <button className="icon-btn" onClick={() => { setEditingRec(r); setRecForm(r); setIsRecFormOpen(true); }}>Edit</button>
+                    <button className="icon-btn danger" onClick={() => handleDeleteItem(r.recommendationId, 'recommendations')}>Delete</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {recommendations.length === 0 ? (
-                  <tr><td colSpan={6} className="empty-cell">No recommendations yet</td></tr>
-                ) : (
-                  recommendations.map((r) => (
-                    <tr key={r.recommendationId}>
-                      <td>{r.name}</td>
-                      <td>{r.description}</td>
-                      <td>{r.placement}</td>
-                      <td>{r.displayPriority}</td>
-                      <td><span className={`status ${r.isAvailable ? 'active' : 'inactive'}`}>{r.isAvailable ? 'active' : 'inactive'}</span></td>
-                      <td>
-                        <button className="icon-btn" onClick={() => { setEditingRec(r); setRecForm({
-                          name: r.name,
-                          description: r.description || '',
-                          productIds: r.productIds,
-                          placement: r.placement,
-                          serviceTypes: r.serviceTypes || [],
-                          isAvailable: r.isAvailable,
-                          displayPriority: r.displayPriority
-                        }); setIsRecFormOpen(true) }}>Edit</button>
-                        <button className="icon-btn danger" onClick={() => handleDeleteRec(r.recommendationId)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* UPGRADE TAB */}
+      {activeTab === 'upgrade' && (
+        <div className="catalog-table-wrapper slide-up">
+          <table className="catalog-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th className="num">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {upgradeBundles.map((b) => (
+                <tr key={b.id}>
+                  <td>{b.id}</td>
+                  <td>{b.name}</td>
+                  <td>{b.description}</td>
+                  <td className="num">Rs {b.price.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
       {/* INVOICES TAB */}
       {activeTab === 'invoices' && (
-        <div className="catalog-table-wrapper">
-          {isLoading ? <div className="catalog-loading">Loading...</div> : (
-            <table className="catalog-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Show Tax</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+        <div className="catalog-table-wrapper slide-up">
+          <table className="catalog-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px' }}><input type="checkbox" checked={invoices.length > 0 && selectedItems.size === invoices.length} onChange={() => toggleSelectAll(invoices, 'id')} /></th>
+                <th>Template Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((i) => (
+                <tr key={i.id} className={selectedItems.has(i.id) ? 'selected' : ''}>
+                  <td><input type="checkbox" checked={selectedItems.has(i.id)} onChange={() => toggleSelection(i.id)} /></td>
+                  <td>{i.name}</td>
+                  <td><span className={`status ${i.status}`}>{i.status}</span></td>
+                  <td>
+                    <button className="icon-btn" onClick={() => { setEditingInvoice(i); setInvoiceForm(i); setIsInvoiceFormOpen(true); }}>Edit</button>
+                    <button className="icon-btn danger" onClick={() => handleDeleteItem(i.id, 'invoices')}>Delete</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {invoices.length === 0 ? (
-                  <tr><td colSpan={5} className="empty-cell">No invoice templates yet</td></tr>
-                ) : (
-                  invoices.map((i) => (
-                    <tr key={i.id}>
-                      <td>{i.name}</td>
-                      <td>{i.description}</td>
-                      <td>{i.showTax ? 'Yes' : 'No'}</td>
-                      <td><span className={`status ${i.status}`}>{i.status}</span></td>
-                      <td>
-                        <button className="icon-btn" onClick={() => { setEditingInvoice(i); setInvoiceForm(i); setIsInvoiceFormOpen(true) }}>Edit</button>
-                        <button className="icon-btn danger" onClick={() => handleDeleteInvoice(i.id)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* PRODUCT FORM MODAL */}
+      {/* MODALS */}
       {isProductFormOpen && (
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <h2>{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
+              <h2>{editingProduct ? 'Update Product' : 'Create New Product'}</h2>
               <button className="icon-btn" onClick={() => setIsProductFormOpen(false)}>×</button>
             </div>
             <div className="modal-body">
               <label>Name <input value={productForm.name} onChange={(e) => setProductForm({...productForm, name: e.target.value})} /></label>
-              <label>Category <input value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})} /></label>
-              <label>Group <input value={productForm.group} onChange={(e) => setProductForm({...productForm, group: e.target.value})} /></label>
-              <label>Unit <input value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} /></label>
-              <label>Price <input type="number" value={productForm.price} onChange={(e) => setProductForm({...productForm, price: Number(e.target.value)})} /></label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label>Category <input value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})} /></label>
+                <label>Group <input value={productForm.group} onChange={(e) => setProductForm({...productForm, group: e.target.value})} /></label>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label>Unit <input value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} /></label>
+                <label>Price <input type="number" value={productForm.price} onChange={(e) => setProductForm({...productForm, price: Number(e.target.value)})} /></label>
+              </div>
               <label>Status <select value={productForm.status} onChange={(e) => setProductForm({...productForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setIsProductFormOpen(false)}>Cancel</button>
-              <button className="primary-btn" onClick={handleSaveProduct} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+              <button className="primary-btn" onClick={handleSaveProduct} disabled={isSaving}>Save Product</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* PACKAGE FORM MODAL */}
       {isPackageFormOpen && (
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <h2>{editingPackage ? 'Edit Package' : 'Add Package'}</h2>
+              <h2>{editingPackage ? 'Update Package' : 'Create Package'}</h2>
               <button className="icon-btn" onClick={() => setIsPackageFormOpen(false)}>×</button>
             </div>
             <div className="modal-body">
               <label>Name <input value={packageForm.name} onChange={(e) => setPackageForm({...packageForm, name: e.target.value})} /></label>
               <label>Description <textarea value={packageForm.description} onChange={(e) => setPackageForm({...packageForm, description: e.target.value})} /></label>
-              <label>Total Price <input type="number" value={packageForm.totalPrice} onChange={(e) => setPackageForm({...packageForm, totalPrice: Number(e.target.value)})} /></label>
-              <label>Discount % <input type="number" value={packageForm.discountPercent} onChange={(e) => setPackageForm({...packageForm, discountPercent: Number(e.target.value)})} /></label>
-              <label>Final Price <input type="number" value={packageForm.finalPrice} onChange={(e) => setPackageForm({...packageForm, finalPrice: Number(e.target.value)})} /></label>
-              <label>Status <select value={packageForm.status} onChange={(e) => setPackageForm({...packageForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label>Final Price <input type="number" value={packageForm.finalPrice} onChange={(e) => setPackageForm({...packageForm, finalPrice: Number(e.target.value)})} /></label>
+                <label>Status <select value={packageForm.status} onChange={(e) => setPackageForm({...packageForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+              </div>
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setIsPackageFormOpen(false)}>Cancel</button>
-              <button className="primary-btn" onClick={handleSavePackage} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+              <button className="primary-btn" onClick={handleSavePackage} disabled={isSaving}>Save Package</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ADD-ON FORM MODAL */}
       {isAddonFormOpen && (
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <h2>{editingAddon ? 'Edit Add-on' : 'Add Add-on'}</h2>
+              <h2>{editingAddon ? 'Update Add-on' : 'Create Add-on'}</h2>
               <button className="icon-btn" onClick={() => setIsAddonFormOpen(false)}>×</button>
             </div>
             <div className="modal-body">
               <label>Name <input value={addonForm.name} onChange={(e) => setAddonForm({...addonForm, name: e.target.value})} /></label>
-              <label>Description <textarea value={addonForm.description} onChange={(e) => setAddonForm({...addonForm, description: e.target.value})} /></label>
-              <label>Category <input value={addonForm.category} onChange={(e) => setAddonForm({...addonForm, category: e.target.value})} /></label>
-              <label>Price <input type="number" value={addonForm.price} onChange={(e) => setAddonForm({...addonForm, price: Number(e.target.value)})} /></label>
-              <label>Status <select value={addonForm.status} onChange={(e) => setAddonForm({...addonForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label>Category <input value={addonForm.category} onChange={(e) => setAddonForm({...addonForm, category: e.target.value})} /></label>
+                <label>Price <input type="number" value={addonForm.price} onChange={(e) => setAddonForm({...addonForm, price: Number(e.target.value)})} /></label>
+              </div>
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setIsAddonFormOpen(false)}>Cancel</button>
-              <button className="primary-btn" onClick={handleSaveAddon} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+              <button className="primary-btn" onClick={handleSaveAddon} disabled={isSaving}>Save Add-on</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* TAX FORM MODAL */}
       {isTaxFormOpen && (
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <h2>{editingTax ? 'Edit Tax' : 'Add Tax'}</h2>
+              <h2>{editingTax ? 'Update Tax' : 'Create Tax Rule'}</h2>
               <button className="icon-btn" onClick={() => setIsTaxFormOpen(false)}>×</button>
             </div>
             <div className="modal-body">
-              <label>Name <input value={taxForm.name} onChange={(e) => setTaxForm({...taxForm, name: e.target.value})} /></label>
-              <label>Description <textarea value={taxForm.description} onChange={(e) => setTaxForm({...taxForm, description: e.target.value})} /></label>
+              <label>Tax Name <input value={taxForm.name} onChange={(e) => setTaxForm({...taxForm, name: e.target.value})} /></label>
               <label>Rate (%) <input type="number" value={taxForm.rate} onChange={(e) => setTaxForm({...taxForm, rate: Number(e.target.value)})} /></label>
-              <label>Status <select value={taxForm.status} onChange={(e) => setTaxForm({...taxForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setIsTaxFormOpen(false)}>Cancel</button>
-              <button className="primary-btn" onClick={handleSaveTax} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+              <button className="primary-btn" onClick={handleSaveTax} disabled={isSaving}>Save Tax</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* RECOMMENDATION FORM MODAL */}
       {isRecFormOpen && (
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <h2>{editingRec ? 'Edit Recommendation' : 'Add Recommendation'}</h2>
+              <h2>{editingRec ? 'Update Recommendation' : 'Create Recommendation'}</h2>
               <button className="icon-btn" onClick={() => setIsRecFormOpen(false)}>×</button>
             </div>
             <div className="modal-body">
               <label>Name <input value={recForm.name} onChange={(e) => setRecForm({...recForm, name: e.target.value})} /></label>
-              <label>Description <textarea value={recForm.description} onChange={(e) => setRecForm({...recForm, description: e.target.value})} /></label>
               <label>Placement
-                <select value={recForm.placement} onChange={(e) => setRecForm({...recForm, placement: e.target.value as CatalogRecommendation['placement']})}>
+                <select value={recForm.placement} onChange={(e) => setRecForm({...recForm, placement: e.target.value as any})}>
                   <option value="checkout">Checkout</option>
                   <option value="cart">Cart</option>
                   <option value="service">Service</option>
-                  <option value="general">General</option>
                 </select>
-              </label>
-              <label>Service Types
-                <select multiple value={recForm.serviceTypes || []} onChange={(e) => {
-                  const values = Array.from(e.target.selectedOptions).map((opt) => opt.value)
-                  setRecForm({ ...recForm, serviceTypes: values as CatalogRecommendation['serviceTypes'] })
-                }}>
-                  <option value="installation">Installation</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="amc">AMC</option>
-                  <option value="repair">Repair</option>
-                  <option value="upgrade">Upgrade</option>
-                  <option value="accessories">Accessories</option>
-                </select>
-              </label>
-              <label>Product IDs (comma-separated)
-                <input
-                  value={recForm.productIds.join(', ')}
-                  onChange={(e) => setRecForm({
-                    ...recForm,
-                    productIds: e.target.value.split(',').map((v) => v.trim()).filter(Boolean)
-                  })}
-                />
               </label>
               <label>Display Priority <input type="number" value={recForm.displayPriority} onChange={(e) => setRecForm({...recForm, displayPriority: Number(e.target.value)})} /></label>
-              <label>Status <select value={recForm.isAvailable ? 'active' : 'inactive'} onChange={(e) => setRecForm({...recForm, isAvailable: e.target.value === 'active'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setIsRecFormOpen(false)}>Cancel</button>
-              <button className="primary-btn" onClick={handleSaveRec} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+              <button className="primary-btn" onClick={handleSaveRec} disabled={isSaving}>Save Recommendation</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* INVOICE FORM MODAL */}
       {isInvoiceFormOpen && (
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <h2>{editingInvoice ? 'Edit Invoice Template' : 'Add Invoice Template'}</h2>
+              <h2>{editingInvoice ? 'Update Template' : 'Create Template'}</h2>
               <button className="icon-btn" onClick={() => setIsInvoiceFormOpen(false)}>×</button>
             </div>
             <div className="modal-body">
               <label>Name <input value={invoiceForm.name} onChange={(e) => setInvoiceForm({...invoiceForm, name: e.target.value})} /></label>
-              <label>Description <textarea value={invoiceForm.description} onChange={(e) => setInvoiceForm({...invoiceForm, description: e.target.value})} /></label>
-              <label>Terms <textarea value={invoiceForm.terms} onChange={(e) => setInvoiceForm({...invoiceForm, terms: e.target.value})} /></label>
-              <label>Notes <textarea value={invoiceForm.notes} onChange={(e) => setInvoiceForm({...invoiceForm, notes: e.target.value})} /></label>
-              <label><input type="checkbox" checked={invoiceForm.showTax} onChange={(e) => setInvoiceForm({...invoiceForm, showTax: e.target.checked})} /> Show Tax</label>
-              <label>Status <select value={invoiceForm.status} onChange={(e) => setInvoiceForm({...invoiceForm, status: e.target.value as 'active' | 'inactive'})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+              <label>Notes <textarea rows={3} value={invoiceForm.notes} onChange={(e) => setInvoiceForm({...invoiceForm, notes: e.target.value})} /></label>
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setIsInvoiceFormOpen(false)}>Cancel</button>
-              <button className="primary-btn" onClick={handleSaveInvoice} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+              <button className="primary-btn" onClick={handleSaveInvoice} disabled={isSaving}>Save Template</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isServiceFormOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h2>{editingCatalogService ? 'Update Service' : 'Create Service'}</h2>
+              <button className="icon-btn" onClick={() => setIsServiceFormOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <label>Service Name <input value={serviceForm.serviceName} onChange={(e) => setServiceForm({...serviceForm, serviceName: e.target.value})} /></label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label>Category
+                  <select value={serviceForm.category} onChange={(e) => setServiceForm({...serviceForm, category: e.target.value})}>
+                    <option value="installation">Installation</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="amc">AMC</option>
+                    <option value="repair">Repair</option>
+                  </select>
+                </label>
+                <label>Price <input type="number" value={serviceForm.basePrice} onChange={(e) => setServiceForm({...serviceForm, basePrice: Number(e.target.value)})} /></label>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="secondary-btn" onClick={() => setIsServiceFormOpen(false)}>Cancel</button>
+              <button className="primary-btn" onClick={handleSaveService} disabled={isSaving}>Save Service</button>
             </div>
           </div>
         </div>

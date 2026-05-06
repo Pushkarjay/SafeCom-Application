@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { Technician } from '@data/models/admin_models'
+import { getApiBaseUrl } from '@core/config/api'
 import './technicians_screen.css'
 
 export default function TechniciansScreen() {
@@ -75,7 +76,8 @@ export default function TechniciansScreen() {
     try {
       const toDelete = Array.from(selectedIds)
       for (const id of toDelete) {
-        await fetch(`${import.meta.env.VITE_API_URL || 'https://safecom-backend-177425757120.us-central1.run.app/api'}/technicians/${id}`, { method: 'DELETE' })
+        const token = await useAuthStore.getState().getIdToken()
+        await fetch(`${getApiBaseUrl()}/technicians/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       }
       setTechnicians(technicians.filter(t => !selectedIds.has(t.id)))
       setSelectedIds(new Set())

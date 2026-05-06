@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../services/firestore.js';
 import { FieldValue } from 'firebase-admin/firestore';
+import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 const SERVICE_COLLECTION = 'Services';
 const PRODUCT_COLLECTION = 'catalog_product';
@@ -31,7 +32,7 @@ async function getProductMap(): Promise<Map<string, Record<string, unknown>>> {
 
 // ─── GET /api/catalog/installation-admin ────────────────────
 // Returns the full hierarchical config with ALL options per product slot
-installationAdminRouter.get('/', async (_req: Request, res: Response) => {
+installationAdminRouter.get('/', authenticateToken, requireRole(['admin']), async (_req: Request, res: Response) => {
   try {
     const db = getDb();
     const doc = await db.collection(SERVICE_COLLECTION).doc('Installation').get();
@@ -92,7 +93,7 @@ installationAdminRouter.get('/', async (_req: Request, res: Response) => {
 });
 
 // ─── POST /category — Add a new category ───────────────────
-installationAdminRouter.post('/category', async (req: Request, res: Response) => {
+installationAdminRouter.post('/category', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const { name } = req.body as { name?: string };
     if (!name?.trim()) return res.status(400).json({ success: false, error: 'Category name is required' });
@@ -113,7 +114,7 @@ installationAdminRouter.post('/category', async (req: Request, res: Response) =>
 });
 
 // ─── DELETE /category/:key — Delete a category ─────────────
-installationAdminRouter.delete('/category/:key', async (req: Request, res: Response) => {
+installationAdminRouter.delete('/category/:key', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const categoryKey = req.params.key as string;
     const db = getDb();
@@ -128,7 +129,7 @@ installationAdminRouter.delete('/category/:key', async (req: Request, res: Respo
 });
 
 // ─── POST /category/:categoryKey/setup — Add a setup ───────
-installationAdminRouter.post('/category/:categoryKey/setup', async (req: Request, res: Response) => {
+installationAdminRouter.post('/category/:categoryKey/setup', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const { categoryKey } = req.params;
     const { name } = req.body as { name?: string };
@@ -147,7 +148,7 @@ installationAdminRouter.post('/category/:categoryKey/setup', async (req: Request
 });
 
 // ─── DELETE /category/:categoryKey/setup/:setupKey — Delete a setup
-installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey', async (req: Request, res: Response) => {
+installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const { categoryKey, setupKey } = req.params;
     const db = getDb();
@@ -163,7 +164,7 @@ installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey', async (
 });
 
 // ─── POST /category/:cat/setup/:setup/product — Add a product mapping
-installationAdminRouter.post('/category/:categoryKey/setup/:setupKey/product', async (req: Request, res: Response) => {
+installationAdminRouter.post('/category/:categoryKey/setup/:setupKey/product', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const { categoryKey, setupKey } = req.params;
     const { productId, defaultQty, minQty, maxQty } = req.body as {
@@ -214,7 +215,7 @@ installationAdminRouter.post('/category/:categoryKey/setup/:setupKey/product', a
 });
 
 // ─── DELETE /category/:cat/setup/:setup/product/:productKey — Delete product slot
-installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey/product/:productKey', async (req: Request, res: Response) => {
+installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey/product/:productKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const { categoryKey, setupKey, productKey } = req.params;
     const db = getDb();
@@ -232,6 +233,8 @@ installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey/product/:
 // ─── POST /…/product/:productKey/option — Club: add another option
 installationAdminRouter.post(
   '/category/:categoryKey/setup/:setupKey/product/:productKey/option',
+  authenticateToken,
+  requireRole(['admin']),
   async (req: Request, res: Response) => {
     try {
       const { categoryKey, setupKey, productKey } = req.params;
@@ -303,6 +306,8 @@ installationAdminRouter.delete(
 // ─── PATCH /…/option/:optionKey/quantities — Update min, max, default quantities
 installationAdminRouter.patch(
   '/category/:categoryKey/setup/:setupKey/product/:productKey/option/:optionKey/quantities',
+  authenticateToken,
+  requireRole(['admin']),
   async (req: Request, res: Response) => {
     try {
       const { categoryKey, setupKey, productKey, optionKey } = req.params;
@@ -327,6 +332,8 @@ installationAdminRouter.patch(
 // ─── POST /…/setup/:setupKey/club-existing — Club already mapped products together
 installationAdminRouter.post(
   '/category/:categoryKey/setup/:setupKey/club-existing',
+  authenticateToken,
+  requireRole(['admin']),
   async (req: Request, res: Response) => {
     try {
       const { categoryKey, setupKey } = req.params;
@@ -403,7 +410,7 @@ installationAdminRouter.post(
 );
 
 // ─── PATCH /products/:productId/price — Update price in master catalog
-installationAdminRouter.patch('/products/:productId/price', async (req: Request, res: Response) => {
+installationAdminRouter.patch('/products/:productId/price', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const { productId } = req.params;
     const { price } = req.body as { price?: number };
@@ -420,7 +427,7 @@ installationAdminRouter.patch('/products/:productId/price', async (req: Request,
 });
 
 // ─── GET /products — Search master catalog products ─────────
-installationAdminRouter.get('/products', async (req: Request, res: Response) => {
+installationAdminRouter.get('/products', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const q = String(req.query.q || '').toLowerCase();
     const productMap = await getProductMap();

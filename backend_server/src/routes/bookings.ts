@@ -2,7 +2,8 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { queryCollection, getDocument, createDocument, updateDocument, getDb } from '../services/firestore.js'
 import { sendPushNotification } from '../services/notificationService.js'
-import type { FirebaseAuthenticatedRequest } from '../middleware/firebaseAuth.js'
+import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
+import { Query, QueryDocumentSnapshot } from 'firebase-admin/firestore'
 import type { 
   CreateBookingRequest, 
   CanonicalInvoice, 
@@ -165,7 +166,7 @@ async function notifyEligibleEmployees(booking: CanonicalBooking): Promise<void>
  * Request body must match CreateBookingRequest
  * Response: CreateBookingResponse with booking ID and payment details
  */
-bookingsRouter.post('/', async (req, res) => {
+bookingsRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   const parsed = bookingCreateSchema.safeParse(req.body)
   
   if (!parsed.success) {
@@ -181,6 +182,18 @@ bookingsRouter.post('/', async (req, res) => {
   
   try {
     const request = parsed.data as CreateBookingRequest
+    
+    // Verify that the customerId matches the authenticated user's Firebase UID
+    if (request.customerId !== req.firebaseUid) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Cannot create booking for another customer'
+        },
+        timestamp: new Date().toISOString()
+      } as ApiResponse<never>)
+    }
     
     // Generate booking ID
     const bookingId = `BOOK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -248,10 +261,9 @@ bookingsRouter.post('/', async (req, res) => {
  * GET /bookings - List bookings for the authenticated user.
  * Pass ?all=true to list all bookings (admin only).
  */
-bookingsRouter.get('/', async (req, res) => {
+bookingsRouter.get('/', async (req: FirebaseAuthenticatedRequest, res) => {
   try {
-    const authReq = req as FirebaseAuthenticatedRequest
-    const uid = authReq.firebaseUid
+    const uid = req.firebaseUid
 
     if (!uid) {
       return res.status(401).json({
@@ -261,16 +273,28 @@ bookingsRouter.get('/', async (req, res) => {
       })
     }
 
-    let bookings = await queryCollection<CanonicalBooking>('bookings')
+    const db = getDb()
+    let query: Query = db.collection('bookings')
 
     // Only return the authenticated user's bookings unless ?all=true (admin)
     const showAll = req.query.all === 'true'
     if (!showAll) {
-      bookings = bookings.filter(b => b.customerId === uid)
+      query = query.where('customerId', '==', uid)
     }
 
-    // Sort newest first
-    bookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    // Order by creation date descending
+    query = query.orderBy('createdAt', 'desc')
+
+    const snapshot = await query.get()
+    const bookings: CanonicalBooking[] = []
+
+    snapshot.forEach((doc: QueryDocumentSnapshot) => {
+      const data = doc.data() as unknown as Record<string, unknown>
+      bookings.push({
+        bookingId: doc.id,
+        ...data
+      } as CanonicalBooking)
+    })
 
     return res.json({
       success: true,

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_customer/features/auth/models/customer_model.dart';
 import 'package:mobile_customer/features/auth/services/auth_service.dart';
 import 'package:mobile_customer/data/datasources/api_service.dart';
+import 'package:mobile_customer/core/sdui/sdui_provider.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences?>((ref) => null);
 
@@ -39,7 +40,7 @@ class AuthState {
       customer: customer ?? this.customer,
       token: token ?? this.token,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error, // Allow null to clear error
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
     );
   }
@@ -51,9 +52,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   AuthNotifier(this.authService, this.prefs) : super(AuthState()) {
     _restoreSession();
+    // Listen to Firebase auth state changes
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      // Invalidate SDUI cache on auth state change
+      invalidateSduiCache();
+    });
   }
 
-  void _restoreSession() {
+  void _restoreSession() async {
     try {
       final prefs = this.prefs;
       if (prefs == null) {
@@ -67,12 +73,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final customer = Customer.fromJson(
           jsonDecode(customerStr) as Map<String, dynamic>,
         );
-        state = AuthState(
-          customer: customer,
-          token: tokenStr,
-          isAuthenticated: true,
-          isLoading: false,
-        );
+        
+        // Verify the token is still valid by checking with Firebase
+        try {
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            final idToken = await user.getIdToken(/* forceRefresh */ false);
+            if (idToken == tokenStr) {
+              // Token matches current user, session is valid
+              state = AuthState(
+                customer: customer,
+                token: tokenStr,
+                isAuthenticated: true,
+                isLoading: false,
+              );
+              return;
+            }
+          }
+        } catch (e) {
+          // Token verification failed, fall through to clear session
+        }
+        
+        // If we reach here, token is invalid or user changed
+        await _clearSession();
+        state = AuthState();
       }
     } catch (e) {
       // Silently ignore session restoration errors
