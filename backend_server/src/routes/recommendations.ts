@@ -43,25 +43,32 @@ recommendationsRouter.get(
         query = query.where('isAvailable', '==', available === 'true')
       }
 
-      query = query.orderBy('displayPriority', 'asc')
-
+      // Fetch all matching and sort in memory to avoid complex composite index requirements
       const snapshot = await query.get()
-      const total = snapshot.docs.length
+      
+      let recommendations = snapshot.docs.map((doc: DocumentSnapshot) => {
+        const data = doc.data() as any
+        return {
+          recommendationId: doc.id,
+          ...data,
+          // Fallback for displayPriority if using old seed data with 'priority'
+          displayPriority: data.displayPriority ?? data.priority ?? 0
+        }
+      }) as (CatalogRecommendationRule & { priority?: number })[]
 
+      // In-memory sort
+      recommendations.sort((a, b) => (a.displayPriority ?? 0) - (b.displayPriority ?? 0))
+
+      const total = recommendations.length
       const startIndex = (page - 1) * pageSize
       const endIndex = startIndex + pageSize
-
-      const recommendations = snapshot.docs
-        .slice(startIndex, endIndex)
-        .map((doc: DocumentSnapshot) => ({
-          recommendationId: doc.id,
-          ...doc.data()
-        })) as CatalogRecommendationRule[]
+      
+      const paginatedRecommendations = recommendations.slice(startIndex, endIndex)
 
       return res.json({
         success: true,
         data: {
-          recommendations,
+          recommendations: paginatedRecommendations,
           total,
           page,
           pageSize,
@@ -69,6 +76,7 @@ recommendationsRouter.get(
         } as RecommendationListResponse
       })
     } catch (error) {
+      console.error('Error fetching recommendations:', error)
       next(error)
     }
   }

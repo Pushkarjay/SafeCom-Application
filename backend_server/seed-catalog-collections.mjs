@@ -30,9 +30,42 @@ const taxes = [
 ];
 
 const recommendations = [
-  { id: 'REC001', name: 'Best for Small Shops', description: 'Recommended package for small retail businesses', productIds: ['PROD001', 'PROD003'], priority: 1, status: 'active' },
-  { id: 'REC002', name: 'Best for Medium Offices', description: 'Recommended package for medium-sized offices', productIds: ['PROD002', 'PROD004', 'PROD005'], priority: 2, status: 'active' },
-  { id: 'REC003', name: 'Best for Large Enterprises', description: 'Recommended package for large enterprises', productIds: ['PROD002', 'PROD004', 'PROD005', 'PROD006'], priority: 3, status: 'active' }
+  { 
+    id: 'REC001', 
+    name: 'Best for Small Shops', 
+    description: 'Recommended package for small retail businesses', 
+    productIds: ['PROD001', 'PROD003'], 
+    placement: 'checkout',
+    serviceTypes: ['installation', 'maintenance'],
+    displayPriority: 1, 
+    isAvailable: true,
+    price: 1500,
+    status: 'active' 
+  },
+  { 
+    id: 'REC002', 
+    name: 'Best for Medium Offices', 
+    description: 'Recommended package for medium-sized offices', 
+    productIds: ['PROD002', 'PROD004', 'PROD005'], 
+    placement: 'checkout',
+    serviceTypes: ['installation'],
+    displayPriority: 2, 
+    isAvailable: true,
+    price: 2500,
+    status: 'active' 
+  },
+  { 
+    id: 'REC003', 
+    name: 'Best for Large Enterprises', 
+    description: 'Recommended package for large enterprises', 
+    productIds: ['PROD002', 'PROD004', 'PROD005', 'PROD006'], 
+    placement: 'checkout',
+    serviceTypes: ['installation'],
+    displayPriority: 3, 
+    isAvailable: true,
+    price: 4500,
+    status: 'active' 
+  }
 ];
 
 const invoices = [
