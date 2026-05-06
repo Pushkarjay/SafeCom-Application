@@ -23,24 +23,30 @@ import { authenticateToken } from './middleware/auth.js'
 import { verifyFirebaseIdToken } from './middleware/firebaseAuth.js'
 import employeeRoutes from './routes/employees.js'
 import usersRoutes from './routes/users.js'
+import { installationAdminRouter } from './routes/installationAdmin.js'
 
 export function createApp() {
   const app = express()
 
   // Security middleware
   app.use(helmet())
-  const corsOrigins = (process.env.CORS_ORIGINS || 'http://127.0.0.1:3000').split(',').map(o => o.trim())
+  const corsOrigins = (process.env.CORS_ORIGINS || 'http://127.0.0.1:3000,https://safecom-application-01.web.app').split(',').map(o => o.trim())
   const localhostRegex = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/
-  app.use(cors({
-    origin: (origin, callback) => {
+  const corsOptions = {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin || corsOrigins.includes(origin) || localhostRegex.test(origin)) {
         callback(null, true)
         return
       }
       callback(new Error('Not allowed by CORS'))
     },
-    credentials: true
-  }))
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    optionsSuccessStatus: 200
+  }
+  app.use(cors(corsOptions))
+  app.options('*', cors(corsOptions))
   app.use(express.json({ limit: '10mb' }))
   app.use(morgan('dev'))
 
@@ -87,6 +93,7 @@ export function createApp() {
   app.use('/api/catalog', verifyFirebaseIdToken, catalogRouter)
   app.use('/api/employees', verifyFirebaseIdToken, employeeRoutes)
   app.use('/api/users', verifyFirebaseIdToken, usersRoutes)
+  app.use('/api/catalog/installation-admin', verifyFirebaseIdToken, installationAdminRouter)
 
   app.use((_req, res) => {
     res.status(404).json({ message: 'Route not found' })

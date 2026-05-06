@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument, getDb } from '../services/firestore.js'
 
 const catalogCreateSchema = z.object({
   name: z.string().min(1),
@@ -60,6 +60,7 @@ const invoiceTemplateCreateSchema = z.object({
 const invoiceTemplateUpdateSchema = invoiceTemplateCreateSchema.partial()
 
 export const catalogRouter = Router()
+const db = getDb()
 
 // GET /catalog/products - List all catalog products
 catalogRouter.get('/products', async (req, res) => {
@@ -76,7 +77,7 @@ catalogRouter.get('/products', async (req, res) => {
       filters.push({ field: 'group', operator: '==', value: req.query.group })
     }
 
-    const products = await queryCollection<Record<string, unknown>>('catalog_products', filters)
+    const products = await queryCollection<Record<string, unknown>>('catalog_product', filters)
     return res.json(products)
   } catch (error) {
     console.error('Firestore catalog lookup failed:', error)
@@ -87,7 +88,7 @@ catalogRouter.get('/products', async (req, res) => {
 // GET /catalog/products/:id - Get single product
 catalogRouter.get('/products/:id', async (req, res) => {
   try {
-    const product = await getDocument<Record<string, unknown>>('catalog_products', req.params.id)
+    const product = await getDocument<Record<string, unknown>>('catalog_product', req.params.id)
     if (!product) {
       return res.status(404).json({ message: 'Catalog product not found' })
     }
@@ -108,7 +109,7 @@ catalogRouter.post('/products', async (req, res) => {
 
   try {
     const now = new Date().toISOString()
-    const docId = await createDocument('catalog_products', {
+    const docId = await createDocument('catalog_product', {
       ...parsed.data,
       status: parsed.data.status ?? 'active',
       createdAt: now,
@@ -130,11 +131,11 @@ catalogRouter.patch('/products/:id', async (req, res) => {
   }
 
   try {
-    await updateDocument('catalog_products', req.params.id, {
+    await updateDocument('catalog_product', req.params.id, {
       ...parsed.data,
       updatedAt: new Date().toISOString()
     })
-    const updated = await getDocument<Record<string, unknown>>('catalog_products', req.params.id)
+    const updated = await getDocument<Record<string, unknown>>('catalog_product', req.params.id)
     return res.json(updated)
   } catch (error) {
     console.error('Firestore update catalog product failed:', error)
@@ -145,7 +146,7 @@ catalogRouter.patch('/products/:id', async (req, res) => {
 // DELETE /catalog/products/:id - Delete product
 catalogRouter.delete('/products/:id', async (req, res) => {
   try {
-    await deleteDocument('catalog_products', req.params.id)
+    await deleteDocument('catalog_product', req.params.id)
     return res.status(204).send()
   } catch (error) {
     console.error('Firestore delete catalog product failed:', error)
@@ -153,45 +154,28 @@ catalogRouter.delete('/products/:id', async (req, res) => {
   }
 })
 
-// GET /catalog/accessories - List all accessory catalog items
+// GET /catalog/accessories - Deprecated (use /catalog/accessories route)
 catalogRouter.get('/accessories', async (_req, res) => {
-  try {
-    const accessories = await queryCollection<Record<string, unknown>>('catalog_accessories', [])
-    return res.json(accessories)
-  } catch (error) {
-    console.error('Firestore accessories lookup failed:', error)
-    return res.json([])
-  }
+  return res.json([])
 })
 
-// GET /catalog/services - List all service categories
+// GET /catalog/services - Deprecated (use /catalog/services route)
 catalogRouter.get('/services', async (_req, res) => {
-  try {
-    const services = await queryCollection<Record<string, unknown>>('catalog_services', [])
-    return res.json(services)
-  } catch (error) {
-    console.error('Firestore services lookup failed:', error)
-    return res.json([])
-  }
+  return res.json([])
 })
 
-// GET /catalog/upgrade - List all upgrade bundle items
+// GET /catalog/upgrade - Deprecated (use /catalog-public/upgrade)
 catalogRouter.get('/upgrade', async (_req, res) => {
-  try {
-    const bundles = await queryCollection<Record<string, unknown>>('catalog_upgrade_bundles', [])
-    return res.json(bundles)
-  } catch (error) {
-    console.error('Firestore upgrade bundles lookup failed:', error)
-    return res.json([])
-  }
+  return res.json([])
 })
 
 // GET /catalog/pricing - Read all pricing documents
 catalogRouter.get('/pricing', async (_req, res) => {
   try {
-    const installation = await getDocument<Record<string, unknown>>('catalog_pricing', 'installation')
-    const maintenance = await getDocument<Record<string, unknown>>('catalog_pricing', 'maintenance')
-    const repair = await getDocument<Record<string, unknown>>('catalog_pricing', 'repair')
+    const servicesRef = db.collection('Services')
+    const installation = (await servicesRef.doc('Installation').get()).data() || null
+    const maintenance = (await servicesRef.doc('Maintenance').get()).data() || null
+    const repair = (await servicesRef.doc('Camera_Repair').get()).data() || null
     return res.json({ installation, maintenance, repair })
   } catch (error) {
     console.error('Firestore pricing lookup failed:', error)
@@ -206,13 +190,13 @@ catalogRouter.put('/pricing', async (req, res) => {
     const now = new Date().toISOString()
 
     if (installation) {
-      await updateDocument('catalog_pricing', 'installation', { ...installation, updatedAt: now })
+      await db.collection('Services').doc('Installation').set({ ...installation, updatedAt: now })
     }
     if (maintenance) {
-      await updateDocument('catalog_pricing', 'maintenance', { ...maintenance, updatedAt: now })
+      await db.collection('Services').doc('Maintenance').set({ ...maintenance, updatedAt: now })
     }
     if (repair) {
-      await updateDocument('catalog_pricing', 'repair', { ...repair, updatedAt: now })
+      await db.collection('Services').doc('Camera_Repair').set({ ...repair, updatedAt: now })
     }
 
     return res.json({ success: true, timestamp: now })

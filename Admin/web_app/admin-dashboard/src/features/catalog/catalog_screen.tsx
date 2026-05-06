@@ -4,12 +4,15 @@ import { useAuthStore } from '@core/services/auth_service'
 import { CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet } from '@data/models/admin_models'
 import './catalog_screen.css'
 
-const categories = ['All', 'Cameras', 'Storage', 'Recording', 'Wiring', 'Accessories']
-const groups = ['All', 'Core', 'Package Base', 'Installation', 'Recommendations']
+const categories = ['All', 'IP Camera', 'DVR Camera', 'DVR', 'NVR', 'Storage', 'Power', 'Network', 'Cable', 'Connector', 'Accessory', 'Service']
+const groups = ['All', 'Cameras', 'Recording', 'Storage', 'Wiring', 'Accessories', 'Services', 'Core', 'Package Base', 'Installation', 'Recommendations']
 
 type TabType = 'products' | 'packages' | 'addons' | 'taxes' | 'recommendations' | 'invoices' | 'services' | 'upgrade' | 'pricing'
 
+import { useParams } from 'react-router-dom'
+
 export default function CatalogScreen() {
+  const { tab } = useParams()
   const [activeTab, setActiveTab] = useState<TabType>('products')
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -21,6 +24,9 @@ export default function CatalogScreen() {
   const [searchProduct, setSearchProduct] = useState('')
   const [category, setCategory] = useState('All')
   const [group, setGroup] = useState('All')
+  const [sortField, setSortField] = useState<keyof CatalogProduct>('name')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [editingProduct, setEditingProduct] = useState<CatalogProduct | null>(null)
   const [isProductFormOpen, setIsProductFormOpen] = useState(false)
   const [productForm, setProductForm] = useState({
@@ -78,6 +84,27 @@ export default function CatalogScreen() {
   const [pricingData, setPricingData] = useState<PricingSet>({})
 
   // Load data based on active tab
+  const [pricingSection, setPricingSection] = useState<string | null>(null)
+  
+  useEffect(() => {
+    if (tab) {
+      const normalized = tab.toLowerCase()
+      if (['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices', 'services', 'upgrade', 'pricing', 'accessories'].includes(normalized)) {
+        if (normalized === 'accessories') {
+          setActiveTab('products')
+          setCategory('All')
+          setGroup('Accessories')
+        } else {
+          setActiveTab(normalized as TabType)
+          setPricingSection(null)
+        }
+      } else if (['maintenance', 'repair', 'amc'].includes(normalized)) {
+        setActiveTab('pricing')
+        setPricingSection(normalized)
+      }
+    }
+  }, [tab])
+
   useEffect(() => {
     const loadData = async () => {
       if (!firebaseUser) {
@@ -125,13 +152,25 @@ export default function CatalogScreen() {
 
   const filteredProducts = useMemo(() => {
     const query = searchProduct.trim().toLowerCase()
-    return products.filter((p) => {
+    let result = products.filter((p) => {
       const matchesQuery = !query || p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query)
       const matchesCategory = category === 'All' || p.category === category
       const matchesGroup = group === 'All' || p.group === group
       return matchesQuery && matchesCategory && matchesGroup
     })
-  }, [searchProduct, category, group, products])
+    
+    result.sort((a, b) => {
+      let aVal = a[sortField]
+      let bVal = b[sortField]
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return result
+  }, [searchProduct, category, group, products, sortField, sortDirection])
 
   // Product CRUD
   const handleSaveProduct = async () => {
@@ -158,9 +197,54 @@ export default function CatalogScreen() {
     try {
       await adminDatasource.deleteCatalogProduct(id)
       setProducts((p) => p.filter((i) => i.id !== id))
+      setSelectedProducts(prev => { const next = new Set(prev); next.delete(id); return next; })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
     }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.size === 0) return
+    if (!window.confirm(`Delete ${selectedProducts.size} selected products?`)) return
+    setIsSaving(true)
+    try {
+      // Optimistic or sequential delete for now. Proper bulk endpoint would be better, but sequential works for UI.
+      const toDelete = Array.from(selectedProducts)
+      for (const id of toDelete) {
+        await adminDatasource.deleteCatalogProduct(id)
+      }
+      setProducts((p) => p.filter((i) => !selectedProducts.has(i.id)))
+      setSelectedProducts(new Set())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete some products')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSort = (field: keyof CatalogProduct) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length && filteredProducts.length > 0) {
+      setSelectedProducts(new Set())
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)))
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedProducts(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
   }
 
   // Package CRUD
@@ -330,7 +414,7 @@ export default function CatalogScreen() {
     <div className="catalog-screen">
       <div className="catalog-header">
         <div>
-          <h1>Accessories & Catalog</h1>
+          <h1 style={{ textTransform: 'capitalize' }}>{tab ? tab.replace('-', ' ') : 'Catalog'}</h1>
           <p className="catalog-subtitle">Manage products, pricing, packages, and recommendation items.</p>
         </div>
         <div className="catalog-actions">
@@ -345,14 +429,6 @@ export default function CatalogScreen() {
             }}>+ Add Item</button>
           )}
         </div>
-      </div>
-
-      <div className="catalog-tabs">
-        {(['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices', 'services', 'upgrade', 'pricing'] as TabType[]).map((tab) => (
-          <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-            {tab === 'products' ? 'Products' : tab === 'packages' ? 'Packages' : tab === 'addons' ? 'Add-ons' : tab === 'taxes' ? 'Taxes' : tab === 'recommendations' ? 'Recommendations' : tab === 'invoices' ? 'Invoice Templates' : tab === 'services' ? 'Services' : tab === 'upgrade' ? 'Upgrade Bundles' : 'Pricing'}
-          </button>
-        ))}
       </div>
 
       {error && <div className="catalog-error">{error}</div>}
@@ -379,25 +455,33 @@ export default function CatalogScreen() {
             </div>
           </div>
           <div className="catalog-table-wrapper">
+            {selectedProducts.size > 0 && (
+              <div className="bulk-actions" style={{ padding: '8px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', fontWeight: '500' }}>{selectedProducts.size} selected</span>
+                <button className="secondary-btn danger" onClick={handleBulkDelete} disabled={isSaving}>Delete Selected</button>
+              </div>
+            )}
             {isLoading ? <div className="catalog-loading">Loading...</div> : (
               <table className="catalog-table">
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th>Group</th>
-                    <th>Unit</th>
-                    <th>Price</th>
-                    <th>Status</th>
+                    <th style={{ width: '40px' }}><input type="checkbox" checked={filteredProducts.length > 0 && selectedProducts.size === filteredProducts.length} onChange={toggleSelectAll} /></th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Product {sortField === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('category')}>Category {sortField === 'category' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('group')}>Group {sortField === 'group' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('unit')}>Unit {sortField === 'unit' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('price')}>Price {sortField === 'price' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>Status {sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredProducts.length === 0 ? (
-                    <tr><td colSpan={7} className="empty-cell">No products found</td></tr>
+                    <tr><td colSpan={8} className="empty-cell">No products found</td></tr>
                   ) : (
                     filteredProducts.map((p) => (
-                      <tr key={p.id}>
+                      <tr key={p.id} className={selectedProducts.has(p.id) ? 'selected-row' : ''}>
+                        <td><input type="checkbox" checked={selectedProducts.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                         <td><div className="product-main"><span className="product-name">{p.name}</span><span className="product-id">{p.id}</span></div></td>
                         <td>{p.category}</td>
                         <td>{p.group}</td>
@@ -564,7 +648,7 @@ export default function CatalogScreen() {
         <div className="catalog-pricing-wrapper">
           {isLoading ? <div className="catalog-loading">Loading...</div> : (
             <div className="pricing-sections">
-              {['installation', 'maintenance', 'repair'].map((section) => (
+              {['installation', 'maintenance', 'repair', 'amc'].filter(s => !pricingSection || s === pricingSection).map((section) => (
                 <div key={section} className="pricing-card">
                   <h3>{section.charAt(0).toUpperCase() + section.slice(1)} Pricing</h3>
                   <pre>{JSON.stringify(pricingData[section as keyof PricingSet] || { message: 'Not available' }, null, 2)}</pre>

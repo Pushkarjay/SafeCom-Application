@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SafeCom Customer App</title>
+    <meta
+      name="description"
+      content="SafeCom Customer App for booking and paying for home services in-app."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0d1024;
+        --sky: #f4f7ff;
+        --sun: #ffb457;
+        --ocean: #1b3cff;
+        --lagoon: #29b3b0;
+        --cloud: #ffffff;
+        --shadow: rgba(9, 13, 42, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Sora", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at 20% 10%, rgba(255, 180, 87, 0.25), transparent 45%),
+          radial-gradient(circle at 80% 20%, rgba(41, 179, 176, 0.25), transparent 40%),
+          linear-gradient(135deg, #f8fbff 0%, #eef2ff 55%, #fff7ec 100%);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .glow {
+        position: absolute;
+        inset: auto auto -120px -120px;
+        width: 320px;
+        height: 320px;
+        background: radial-gradient(circle, rgba(27, 60, 255, 0.35), transparent 70%);
+        filter: blur(10px);
+        pointer-events: none;
+      }
+
+      header {
+        padding: 40px 8vw 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 12px 24px var(--shadow);
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      h1 {
+        font-family: "Fraunces", "Georgia", serif;
+        font-size: clamp(2.6rem, 4vw, 4.4rem);
+        margin: 0;
+        line-height: 1.02;
+      }
+
+      .hero {
+        position: relative;
+        padding: 30px 8vw 60px;
+        display: grid;
+        gap: 40px;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        align-items: center;
+      }
+
+      .hero-card {
+        background: var(--cloud);
+        border-radius: 28px;
+        padding: 28px;
+        box-shadow: 0 30px 60px rgba(14, 23, 70, 0.1);
+        display: grid;
+        gap: 16px;
+      }
+
+      .hero-card strong {
+        font-size: 18px;
+      }
+
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 20px;
+        border-radius: 999px;
+        background: var(--ocean);
+        color: white;
+        font-weight: 600;
+        text-decoration: none;
+        box-shadow: 0 12px 24px rgba(27, 60, 255, 0.3);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .cta:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 30px rgba(27, 60, 255, 0.35);
+      }
+
+      .section {
+        padding: 10px 8vw 70px;
+      }
+
+      .section h2 {
+        font-family: "Fraunces", "Georgia", serif;
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        margin-bottom: 20px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .card {
+        background: var(--cloud);
+        border-radius: 20px;
+        padding: 18px;
+        box-shadow: 0 20px 40px rgba(14, 23, 70, 0.08);
+      }
+
+      .card h3 {
+        margin-top: 0;
+      }
+
+      .policy {
+        background: #0d1024;
+        color: #f7f6ff;
+        border-radius: 26px;
+        padding: 26px;
+        box-shadow: 0 25px 45px rgba(9, 13, 42, 0.2);
+      }
+
+      .policy a {
+        color: #ffdf92;
+      }
+
+      footer {
+        padding: 30px 8vw 50px;
+        font-size: 14px;
+        color: rgba(13, 16, 36, 0.65);
+      }
+
+      .fade-in {
+        opacity: 0;
+        transform: translateY(10px);
+        animation: fadeUp 0.7s ease forwards;
+      }
+
+      .fade-in.delay-1 {
+        animation-delay: 0.15s;
+      }
+
+      .fade-in.delay-2 {
+        animation-delay: 0.3s;
+      }
+
+      @keyframes fadeUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 640px) {
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .hero {
+          padding-top: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+    <header>
+      <div class="brand fade-in">
+        <span class="pill">SafeCom Customer App</span>
+        <h1>Book home services. Pay in the app.</h1>
+      </div>
+      <a class="cta fade-in delay-1" href="mailto:pushkarjay.ajay1@gmail.com">Contact Developer</a>
+    </header>
+
+    <section class="hero">
+      <div class="hero-card fade-in delay-1">
+        <strong>App Status</strong>
+        <p>Android & iOS builds are in active development. Public release is coming soon.</p>
+        <p>Payments are collected in-app through Razorpay’s secure checkout.</p>
+      </div>
+      <div class="hero-card fade-in delay-2">
+        <strong>What SafeCom does</strong>
+        <p>We connect customers with verified technicians for appliance repair, maintenance, and home services.</p>
+        <p>Customers pay only after reviewing the job summary inside the app.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>How payments work</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>1. Book a service</h3>
+          <p>Select a service package and preferred time slot in the SafeCom Customer App.</p>
+        </div>
+        <div class="card">
+          <h3>2. Confirm & pay</h3>
+          <p>Razorpay checkout opens inside the app with UPI, cards, and netbanking options.</p>
+        </div>
+        <div class="card">
+          <h3>3. Get instant receipt</h3>
+          <p>We verify the payment and issue a digital receipt in-app and via email.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Customer policies</h2>
+      <div class="policy">
+        <p id="privacy"><strong>Privacy Policy</strong> — We only collect data needed to fulfil bookings and process payments. We do not sell personal data.</p>
+        <p id="terms"><strong>Terms of Service</strong> — By booking a service, you agree to pricing, scheduled visits, and technician availability.</p>
+        <p id="refund"><strong>Refunds</strong> — If a service cannot be delivered, we will process a refund back to the original payment method within 5-7 business days.</p>
+        <p><strong>Support</strong> — Email <a href="mailto:pushkarjay.ajay1@gmail.com">pushkarjay.ajay1@gmail.com</a> or call <a href="tel:+918210164935">+91 8210164935</a>.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Business details</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Business name</h3>
+          <p>SafeCom Services</p>
+        </div>
+        <div class="card">
+          <h3>Service area</h3>
+          <p>Patna, Bihar (initial launch area)</p>
+        </div>
+        <div class="card">
+          <h3>Headquarters</h3>
+          <p>Road no 1, phase- 01 Vit Vibagh Colony, Maurya Path, Khapura, Patna, Bihar 800014, IN</p>
+          <p>25.595833, 85.084474</p>
+        </div>
+        <div class="card">
+          <h3>Developer contact</h3>
+          <p>Pushkarjay Ajay</p>
+          <p><a href="mailto:pushkarjay.ajay1@gmail.com">pushkarjay.ajay1@gmail.com</a></p>
+          <p><a href="tel:+918210164935">+91 8210164935</a></p>
+        </div>
+        <div class="card">
+          <h3>LinkedIn</h3>
+          <p><a href="https://www.linkedin.com/company/safecomindia/?originalSubdomain=in">SafeCom India</a></p>
+          <p><a href="https://www.linkedin.com/in/shakti-k/">Owner: Shakti Kumar</a></p>
+          <p><a href="https://www.linkedin.com/in/pushkarjay">Developer: Pushkarjay Ajay</a></p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      SafeCom Customer App • Payments powered by Razorpay • Launching soon
+    </footer>
+  </body>
+</html>

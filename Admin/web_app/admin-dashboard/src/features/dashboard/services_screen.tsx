@@ -23,12 +23,12 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ apiBaseUrl }) =>
     setError(null)
     try {
       const [servicesRes, productsRes] = await Promise.all([
-        fetch(`${apiBaseUrl}/catalog/services`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
-        }),
-        fetch(`${apiBaseUrl}/catalog/products`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
-        })
+         fetch(`${apiBaseUrl}/catalog/services`, {
+           headers: { 'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}` }
+         }),
+         fetch(`${apiBaseUrl}/catalog/products`, {
+           headers: { 'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}` }
+         })
       ])
 
       if (!servicesRes.ok || !productsRes.ok) throw new Error('Failed to fetch data')
@@ -53,10 +53,10 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ apiBaseUrl }) =>
     if (!window.confirm('Are you sure you want to delete this service?')) return
 
     try {
-      const response = await fetch(`${apiBaseUrl}/catalog/services/${serviceId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
-      })
+       const response = await fetch(`${apiBaseUrl}/catalog/services/${serviceId}`, {
+         method: 'DELETE',
+         headers: { 'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}` }
+       })
 
       if (!response.ok) throw new Error('Failed to delete service')
       await fetchData()
@@ -276,14 +276,14 @@ const ServiceBuilderModal: React.FC<ServiceBuilderModalProps> = ({
       }
       delete (payload as any).selectedProducts
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-        },
-        body: JSON.stringify(payload)
-      })
+       const response = await fetch(url, {
+         method,
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}`
+         },
+         body: JSON.stringify(payload)
+       })
 
       if (!response.ok) {
         const errData = await response.json()

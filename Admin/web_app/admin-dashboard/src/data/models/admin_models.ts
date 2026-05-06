@@ -161,6 +161,46 @@ export interface CatalogRecommendation {
   updatedAt: string
 }
 
+// ============================================
+// INSTALLATION BUILDER INTERFACES
+// ============================================
+
+export interface InstallationMappedProduct {
+  productId: string
+  defaultQty: number
+  minQty: number
+  maxQty: number
+  product: {
+    id: string
+    productName: string
+    description: string
+    category: string
+    group?: string
+    basePrice: number
+    isAvailable: boolean
+  }
+}
+
+export interface InstallationSetup {
+  id: string
+  name: string
+  description: string
+  mappedProducts: InstallationMappedProduct[]
+}
+
+export interface InstallationCategory {
+  id: string
+  name: string
+  description: string
+  imageUrl: string
+  groups: InstallationSetup[]
+}
+
+export interface InstallationConfig {
+  name: string
+  categories: InstallationCategory[]
+}
+
 export interface InvoiceTemplate {
   id: string
   name: string

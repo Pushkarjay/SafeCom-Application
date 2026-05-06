@@ -15,9 +15,10 @@ import type {
 const productCreateUpdateSchema = z.object({
   productName: z.string().min(1, 'Product name required'),
   description: z.string().optional(),
-  category: z.enum(['installation', 'maintenance', 'amc', 'repair', 'upgrade', 'accessories']),
+  category: z.string().min(1, 'Category required'),
   group: z.string().optional(),
-  basePrice: z.number().positive('Price must be positive'),
+  basePrice: z.number().nonnegative('Price must be non-negative'),
+  unit: z.string().optional(),
   pricingTiers: z.array(z.object({
     minQuantity: z.number().positive(),
     unitPrice: z.number().positive()
@@ -48,7 +49,7 @@ productsRouter.get(
       const category = req.query.category as string | undefined
       const featured = req.query.featured === 'true'
 
-      let query: Query = getCollection('master_products')
+       let query: Query = getCollection('catalog_product')
 
       // Apply filters
       if (category) {
@@ -65,12 +66,18 @@ productsRouter.get(
       const startIndex = (page - 1) * pageSize
       const endIndex = startIndex + pageSize
       
-      const products = snapshot.docs
-        .slice(startIndex, endIndex)
-        .map((doc: DocumentSnapshot) => ({
-          productId: doc.id,
-          ...doc.data()
-        })) as MasterProduct[]
+       const products = snapshot.docs
+         .slice(startIndex, endIndex)
+         .map((doc: DocumentSnapshot) => {
+           const data = doc.data() as Record<string, unknown>;
+           return {
+             productId: doc.id,
+             ...data,
+             productName: (data?.name ?? data?.productName ?? '').toString(),
+             basePrice: Number((data?.price ?? data?.basePrice ?? 0) as number),
+             isAvailable: data?.status ? data.status === 'active' : ((data?.isAvailable ?? true) as boolean)
+           };
+         }) as MasterProduct[]
 
       return res.json({
         success: true,
@@ -94,7 +101,7 @@ productsRouter.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const productId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
-      const product = await getDocument<MasterProduct>('master_products', productId)
+       const product = await getDocument<MasterProduct>('catalog_product', productId)
       
       if (!product) {
         return res.status(404).json({
@@ -103,10 +110,17 @@ productsRouter.get(
         })
       }
 
-      return res.json({
-        success: true,
-        data: product
-      })
+       const normalized = {
+         ...product,
+         productId: (product as any).productId ?? productId,
+         productName: ((product as any).productName ?? (product as any).name ?? '').toString(),
+         basePrice: Number(((product as any).basePrice ?? (product as any).price ?? 0) as number),
+         isAvailable: (product as any).isAvailable ?? ((product as any).status === 'active')
+       }
+       return res.json({
+         success: true,
+         data: normalized
+       })
     } catch (error) {
       next(error)
     }
@@ -124,32 +138,39 @@ productsRouter.post(
       const validated = productCreateUpdateSchema.parse(req.body)
 
       const now = new Date().toISOString()
-      const product: Omit<MasterProduct, 'productId'> = {
-        productName: validated.productName,
-        description: validated.description,
-        category: validated.category,
-        group: validated.group,
-        basePrice: validated.basePrice,
-        pricingTiers: validated.pricingTiers,
-        variants: validated.variants,
-        stock: validated.stock ?? 0,
-        isAvailable: validated.isAvailable,
-        isFeatured: validated.isFeatured ?? false,
-        imageUrl: validated.imageUrl,
-        taxRate: validated.taxRate,
-        createdAt: now,
-        updatedAt: now
-      }
+       const product: Omit<MasterProduct, 'productId'> = {
+         productName: validated.productName,
+         description: validated.description,
+         category: validated.category,
+         group: validated.group,
+         basePrice: validated.basePrice,
+         unit: validated.unit,
+         pricingTiers: validated.pricingTiers,
+         variants: validated.variants,
+         stock: validated.stock ?? 0,
+         isAvailable: validated.isAvailable,
+         isFeatured: validated.isFeatured ?? false,
+         imageUrl: validated.imageUrl,
+         taxRate: validated.taxRate,
+         createdAt: now,
+         updatedAt: now
+       }
 
-      const productId = await createDocument('master_products', product as unknown as Record<string, unknown>)
+       const productId = await createDocument('catalog_product', {
+         ...product,
+         name: product.productName,
+         price: product.basePrice,
+         status: product.isAvailable ? 'active' : 'inactive',
+         unit: product.unit
+       } as unknown as Record<string, unknown>)
       
-      return res.status(201).json({
-        success: true,
-        data: {
-          productId,
-          ...product
-        }
-      })
+       return res.status(201).json({
+         success: true,
+         data: {
+           productId,
+           ...product
+         }
+       })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
@@ -176,7 +197,7 @@ productsRouter.patch(
       const partial = productCreateUpdateSchema.partial().parse(req.body)
 
       // Check product exists
-      const existing = await getDocument<MasterProduct>('master_products', productId)
+       const existing = await getDocument<MasterProduct>('catalog_product', productId)
       if (!existing) {
         return res.status(404).json({
           success: false,
@@ -185,18 +206,36 @@ productsRouter.patch(
       }
 
       const now = new Date().toISOString()
-      const updates: Record<string, unknown> = {
-        ...partial,
-        updatedAt: now
-      }
+       const updates: Record<string, unknown> = {
+         ...partial,
+         updatedAt: now
+       }
+       if (partial.productName !== undefined) {
+         updates.name = partial.productName
+       }
+       if (partial.basePrice !== undefined) {
+         updates.price = partial.basePrice
+       }
+       if (partial.isAvailable !== undefined) {
+         updates.status = partial.isAvailable ? 'active' : 'inactive'
+       }
 
-      await updateDocument('master_products', productId, updates)
+       await updateDocument('catalog_product', productId, updates)
 
-      const updated = await getDocument<MasterProduct>('master_products', productId)
-      return res.json({
-        success: true,
-        data: updated
-      })
+       const updated = await getDocument<MasterProduct>('catalog_product', productId)
+       const normalized = updated
+         ? {
+             ...updated,
+             productId: (updated as any).productId ?? productId,
+             productName: ((updated as any).productName ?? (updated as any).name ?? '').toString(),
+             basePrice: Number(((updated as any).basePrice ?? (updated as any).price ?? 0) as number),
+             isAvailable: (updated as any).isAvailable ?? ((updated as any).status === 'active')
+           }
+         : updated
+        return res.json({
+          success: true,
+         data: normalized
+        })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
@@ -220,7 +259,7 @@ productsRouter.delete(
       const productId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
       
       // Check product exists
-      const existing = await getDocument<MasterProduct>('master_products', productId)
+       const existing = await getDocument<MasterProduct>('catalog_product', productId)
       if (!existing) {
         return res.status(404).json({
           success: false,
@@ -228,7 +267,7 @@ productsRouter.delete(
         })
       }
 
-      await deleteDocument('master_products', productId)
+       await deleteDocument('catalog_product', productId)
 
       return res.json({
         success: true,
@@ -247,14 +286,20 @@ productsRouter.get(
     try {
       const category = typeof req.params.category === 'string' ? req.params.category : req.params.category[0]
       
-      const snapshot = await getCollection('master_products')
+       const snapshot = await getCollection('catalog_product')
         .where('category', '==', category)
         .get()
 
-      const products = snapshot.docs.map((doc: DocumentSnapshot) => ({
-        productId: doc.id,
-        ...doc.data()
-      })) as MasterProduct[]
+       const products = snapshot.docs.map((doc: DocumentSnapshot) => {
+         const data = doc.data() as Record<string, unknown>;
+         return {
+           productId: doc.id,
+           ...data,
+           productName: (data?.name ?? data?.productName ?? '').toString(),
+           basePrice: Number((data?.price ?? data?.basePrice ?? 0) as number),
+           isAvailable: data?.status ? data.status === 'active' : ((data?.isAvailable ?? true) as boolean)
+         };
+       }) as MasterProduct[]
 
       return res.json({
         success: true,

@@ -8,6 +8,10 @@ import './customers_screen.css'
 export default function CustomersScreen() {
   const navigate = useNavigate()
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortField, setSortField] = useState<keyof Customer>('name')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
   const firebaseUser = useAuthStore((state) => state.firebaseUser)
@@ -27,12 +31,83 @@ export default function CustomersScreen() {
 
     loadCustomers()
   }, [page, firebaseUser?.uid])
+  const processedCustomers = [...customers]
+    .filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      let aVal = a[sortField]
+      let bVal = b[sortField]
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+
+  const handleSort = (field: keyof Customer) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === processedCustomers.length && processedCustomers.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(processedCustomers.map(c => c.id)))
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    if (!window.confirm(`Delete ${selectedIds.size} selected customers?`)) return
+    setIsLoading(true)
+    try {
+      // NOTE: requires DELETE /customers/:id endpoint in backend
+      const toDelete = Array.from(selectedIds)
+      for (const id of toDelete) {
+        await fetch(`${import.meta.env.VITE_API_URL || 'https://safecom-backend-177425757120.us-central1.run.app/api'}/customers/${id}`, { method: 'DELETE' })
+      }
+      setCustomers(customers.filter(c => !selectedIds.has(c.id)))
+      setSelectedIds(new Set())
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="customers-screen">
       <div className="screen-header">
         <h1>Customers Management</h1>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <input 
+            type="text" 
+            placeholder="Search customers..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+          />
+        </div>
       </div>
+
+      {selectedIds.size > 0 && (
+        <div className="bulk-actions" style={{ padding: '8px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <span style={{ fontSize: '14px', fontWeight: '500' }}>{selectedIds.size} selected</span>
+          <button className="secondary-btn danger" onClick={handleBulkDelete} disabled={isLoading}>Delete Selected</button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="loading">Loading customers...</div>
@@ -41,18 +116,20 @@ export default function CustomersScreen() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Total Orders</th>
-                <th>Total Spent</th>
-                <th>Status</th>
+                <th style={{ width: '40px' }}><input type="checkbox" checked={processedCustomers.length > 0 && selectedIds.size === processedCustomers.length} onChange={toggleSelectAll} /></th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Name {sortField === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('email')}>Email {sortField === 'email' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('phone')}>Phone {sortField === 'phone' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('totalOrders')}>Total Orders {sortField === 'totalOrders' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('totalSpent')}>Total Spent {sortField === 'totalSpent' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>Status {sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {customers.map((customer) => (
-                <tr key={customer.id}>
+              {processedCustomers.map((customer) => (
+                <tr key={customer.id} className={selectedIds.has(customer.id) ? 'selected-row' : ''}>
+                  <td><input type="checkbox" checked={selectedIds.has(customer.id)} onChange={() => toggleSelect(customer.id)} /></td>
                   <td className="name-cell">
                     <span>{customer.name}</span>
                   </td>

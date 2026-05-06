@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '@core/services/auth_service'
 import LoginScreen from '@features/auth/login_screen'
 import DashboardScreen from '@features/dashboard/dashboard_screen'
@@ -18,6 +18,11 @@ import './App.css'
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  const CatalogRoute = () => {
+    const params = useParams()
+    return <CatalogScreen key={params.tab} />
+  }
 
   return (
     <Router>
@@ -41,7 +46,7 @@ function App() {
             <Route path="/payments" element={<PaymentsScreen />} />
             <Route path="/catalog/installation" element={<InstallationBuilderScreen />} />
             <Route path="/catalog/services" element={<ServiceCreatorScreen />} />
-            <Route path="/catalog/:tab" element={<CatalogScreen />} />
+            <Route path="/catalog/:tab" element={<CatalogRoute />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />

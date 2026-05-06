@@ -1,4 +1,4 @@
-import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet } from '../models/admin_models'
+import { DashboardMetrics, Customer, Technician, Job, Payment, CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, Service, UpgradeBundle, PricingSet, InstallationConfig } from '../models/admin_models'
 import { useAuthStore } from '../../core/services/auth_service'
 import { getApiBaseUrl } from '../../core/config/api'
 
@@ -55,8 +55,9 @@ export class AdminDatasource {
   }
 
   async getCustomers(page: number = 1, limit: number = 10): Promise<Customer[]> {
-    const customers = await this.fetchJson<Record<string, unknown>[]>(`${BASE_URL}/customers?page=${page}&limit=${limit}`)
-    return customers.map((item) => ({
+    const payload = await this.fetchJson<any>(`${BASE_URL}/customers?page=${page}&limit=${limit}`)
+    const customers = Array.isArray(payload) ? payload : (payload.data || [])
+    return customers.map((item: any) => ({
       id: String(item.id || ''),
       name: String(item.name || ''),
       email: String(item.email || ''),
@@ -70,8 +71,9 @@ export class AdminDatasource {
   }
 
   async getTechnicians(page: number = 1, limit: number = 10): Promise<Technician[]> {
-    const technicians = await this.fetchJson<Record<string, unknown>[]>(`${BASE_URL}/technicians?page=${page}&limit=${limit}`)
-    return technicians.map((item) => ({
+    const payload = await this.fetchJson<any>(`${BASE_URL}/technicians?page=${page}&limit=${limit}`)
+    const technicians = Array.isArray(payload) ? payload : (payload.data || [])
+    return technicians.map((item: any) => ({
       id: String(item.id || ''),
       name: String(item.name || ''),
       email: String(item.email || ''),
@@ -90,8 +92,9 @@ export class AdminDatasource {
     if (status) url.searchParams.set('status', status)
     url.searchParams.set('page', String(page))
     url.searchParams.set('limit', String(limit))
-    const jobs = await this.fetchJson<Record<string, unknown>[]>(url.toString())
-    return jobs.map((item) => ({
+    const payload = await this.fetchJson<any>(url.toString())
+    const jobs = Array.isArray(payload) ? payload : (payload.data || [])
+    return jobs.map((item: any) => ({
       id: String(item.id || ''),
       customerId: String(item.customerId || ''),
       technicianId: item.technicianId ? String(item.technicianId) : null,
@@ -105,8 +108,9 @@ export class AdminDatasource {
   }
 
   async getPayments(page: number = 1, limit: number = 10): Promise<Payment[]> {
-    const payments = await this.fetchJson<Record<string, unknown>[]>(`${BASE_URL}/payments?page=${page}&limit=${limit}`)
-    return payments.map((item) => {
+    const payload = await this.fetchJson<any>(`${BASE_URL}/payments?page=${page}&limit=${limit}`)
+    const payments = Array.isArray(payload) ? payload : (payload.data || [])
+    return payments.map((item: any) => {
       const amount = Number(item.amount || item.paidAmount || 0)
       const paidAmount = Number(item.paidAmount || amount)
       const remainingAmount = Number(item.remainingAmount || Math.max(0, amount - paidAmount))
@@ -130,12 +134,9 @@ export class AdminDatasource {
   }
 
   async getCatalogProducts(): Promise<CatalogProduct[]> {
-    const [productsPayload, accessories] = await Promise.all([
-      this.fetchJson<{ success: boolean; data: { products: Record<string, unknown>[] } }>(`${BASE_URL}/catalog/products`),
-      this.getCatalogAccessories()
-    ])
+    const productsPayload = await this.fetchJson<{ success: boolean; data: { products: Record<string, unknown>[] } }>(`${BASE_URL}/catalog/products?pageSize=1000`)
     const rawProducts = productsPayload?.data?.products ?? []
-    const products: CatalogProduct[] = rawProducts.map((item) => ({
+    return rawProducts.map((item) => ({
       id: String(item.productId || item.id || ''),
       name: String(item.productName || item.name || ''),
       category: String(item.category || ''),
@@ -145,33 +146,114 @@ export class AdminDatasource {
       status: (item.isAvailable !== false ? 'active' : 'inactive') as 'active' | 'inactive',
       updatedAt: String(item.updatedAt || new Date().toISOString())
     }))
-    return [...products, ...accessories]
   }
 
   async getCatalogAccessories(): Promise<CatalogProduct[]> {
-    const accessories = await this.fetchJson<Record<string, unknown>[]>(`${BASE_URL}/catalog/accessories`)
-    return accessories.map((item) => ({
-      id: String(item.id || ''),
+    const accessoriesPayload = await this.fetchJson<{ success: boolean; data: { accessories: Record<string, unknown>[] } }>(`${BASE_URL}/catalog/accessories`)
+    const items = accessoriesPayload?.data?.accessories ?? []
+    return items.map((item) => ({
+      id: String(item.accessoryId || item.id || ''),
       name: String(item.name || ''),
       category: String(item.category || 'Accessories'),
       group: String(item.group || 'Accessories'),
       unit: String(item.unit || 'unit'),
       price: Number(item.price || 0),
-      status: String(item.status || 'active') as 'active' | 'inactive',
+      status: (item.isAvailable !== false ? 'active' : 'inactive') as 'active' | 'inactive',
       updatedAt: String(item.updatedAt || new Date().toISOString())
     }))
   }
 
   async getServices(): Promise<Service[]> {
-    return await this.fetchJson<Service[]>(`${BASE_URL}/catalog/services`)
+    const payload = await this.fetchJson<{ services?: Service[]; data?: { services?: Service[] } }>(`${BASE_URL}/catalog-public/services`)
+    return payload.data?.services ?? payload.services ?? []
   }
 
   async getUpgradeBundles(): Promise<UpgradeBundle[]> {
-    return await this.fetchJson<UpgradeBundle[]>(`${BASE_URL}/catalog/upgrade`)
+    const payload = await this.fetchJson<{ bundles?: UpgradeBundle[] }>(`${BASE_URL}/catalog-public/upgrade`)
+    return payload.bundles ?? []
   }
 
   async getPricingData(): Promise<PricingSet> {
-    return await this.fetchJson<PricingSet>(`${BASE_URL}/catalog/pricing`)
+    const [installation, maintenance, repair] = await Promise.all([
+      this.fetchJson<Record<string, unknown>>(`${BASE_URL}/catalog-public/pricing/installation`),
+      this.fetchJson<Record<string, unknown>>(`${BASE_URL}/catalog-public/pricing/maintenance`),
+      this.fetchJson<Record<string, unknown>>(`${BASE_URL}/catalog-public/pricing/repair`)
+    ])
+    return { installation, maintenance, repair }
+  }
+
+  /**
+   * Fetch the full hierarchical installation config:
+   * { name, categories: [{ id, name, groups: [{ id, name, mappedProducts: [...] }] }] }
+   */
+  async getInstallationConfig(): Promise<InstallationConfig> {
+    const payload = await this.fetchJson<InstallationConfig>(`${BASE_URL}/catalog-public/pricing/installation`)
+    return payload
+  }
+
+  // ====== INSTALLATION ADMIN (CRUD + Clubbing) ======
+
+  async getInstallationAdminConfig(): Promise<{ categories: any[] }> {
+    const payload = await this.fetchJson<{ success: boolean; data: { categories: any[] } }>(`${BASE_URL}/catalog/installation-admin`)
+    return payload.data
+  }
+
+  async installationAddCategory(name: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category`, { method: 'POST', body: JSON.stringify({ name }) })
+  }
+
+  async installationDeleteCategory(key: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(key)}`, { method: 'DELETE' })
+  }
+
+  async installationAddSetup(categoryKey: string, name: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup`, { method: 'POST', body: JSON.stringify({ name }) })
+  }
+
+  async installationDeleteSetup(categoryKey: string, setupKey: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}`, { method: 'DELETE' })
+  }
+
+  async installationAddProduct(categoryKey: string, setupKey: string, productId: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product`, { method: 'POST', body: JSON.stringify({ productId }) })
+  }
+
+  async installationDeleteProduct(categoryKey: string, setupKey: string, productKey: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}`, { method: 'DELETE' })
+  }
+
+  async installationAddClubOption(categoryKey: string, setupKey: string, productKey: string, productId: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}/option`, { method: 'POST', body: JSON.stringify({ productId }) })
+  }
+
+  async installationDeleteClubOption(categoryKey: string, setupKey: string, productKey: string, optionKey: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}/option/${encodeURIComponent(optionKey)}`, { method: 'DELETE' })
+  }
+
+  async fetchInstallationProducts(query: string): Promise<Array<{ id: string; name: string; category: string; group: string; price: number; status: string }>> {
+    const payload = await this.fetchJson<{ success: boolean; data: { products: Array<{ id: string; name: string; category: string; group: string; price: number; status: string }> } }>(`${BASE_URL}/catalog/installation-admin/products?q=${encodeURIComponent(query)}`)
+    return payload.data?.products ?? []
+  }
+
+  async installationUpdateQuantities(categoryKey: string, setupKey: string, productKey: string, optionKey: string, quantities: { defaultQty?: number; minQty?: number; maxQty?: number }): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}/option/${encodeURIComponent(optionKey)}/quantities`, {
+      method: 'PATCH',
+      body: JSON.stringify(quantities)
+    })
+  }
+
+  async installationClubExisting(categoryKey: string, setupKey: string, productKeys: string[]): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/club-existing`, {
+      method: 'POST',
+      body: JSON.stringify({ productKeys })
+    })
+  }
+
+  async installationUpdateProductPrice(productId: string, price: number): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/products/${encodeURIComponent(productId)}/price`, {
+      method: 'PATCH',
+      body: JSON.stringify({ price })
+    })
   }
 
   async updatePricingData(data: Partial<PricingSet>): Promise<{ success: boolean }> {

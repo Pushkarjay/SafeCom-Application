@@ -20,6 +20,10 @@ export interface Payment {
 
 export default function PaymentsScreen() {
   const [payments, setPayments] = useState<Payment[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortField, setSortField] = useState<keyof Payment>('createdAt')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'partial' | 'completed'>('all')
   const firebaseUser = useAuthStore((state) => state.firebaseUser)
@@ -40,9 +44,61 @@ export default function PaymentsScreen() {
     loadPayments()
   }, [firebaseUser?.uid])
 
-  const filteredPayments = filter === 'all' 
-    ? payments 
-    : payments.filter(p => p.status === filter)
+  const baseFiltered = filter === 'all' ? payments : payments.filter(p => p.status === filter)
+  const processedPayments = baseFiltered
+    .filter(p => !searchQuery || p.transactionId.toLowerCase().includes(searchQuery.toLowerCase()) || p.customerName.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      let aVal = a[sortField]
+      let bVal = b[sortField]
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+
+  const handleSort = (field: keyof Payment) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === processedPayments.length && processedPayments.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(processedPayments.map(p => p.id)))
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    if (!window.confirm(`Delete ${selectedIds.size} selected payments?`)) return
+    setIsLoading(true)
+    try {
+      const toDelete = Array.from(selectedIds)
+      for (const id of toDelete) {
+        await fetch(`${import.meta.env.VITE_API_URL || 'https://safecom-backend-177425757120.us-central1.run.app/api'}/payments/${id}`, { method: 'DELETE' })
+      }
+      setPayments(payments.filter(p => !selectedIds.has(p.id)))
+      setSelectedIds(new Set())
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -57,9 +113,9 @@ export default function PaymentsScreen() {
     }
   }
 
-  const totalAmount = filteredPayments.reduce((sum, p) => sum + p.amount, 0)
-  const totalPaid = filteredPayments.reduce((sum, p) => sum + p.paidAmount, 0)
-  const totalPending = filteredPayments.reduce((sum, p) => sum + p.remainingAmount, 0)
+  const totalAmount = processedPayments.reduce((sum, p) => sum + p.amount, 0)
+  const totalPaid = processedPayments.reduce((sum, p) => sum + p.paidAmount, 0)
+  const totalPending = processedPayments.reduce((sum, p) => sum + p.remainingAmount, 0)
 
   if (isLoading) {
     return <div className="payments-loading">Loading payments...</div>
@@ -84,6 +140,23 @@ export default function PaymentsScreen() {
           </div>
         </div>
       </div>
+      
+      <div style={{ padding: '0 24px', marginBottom: '20px', display: 'flex', gap: '10px' }}>
+        <input 
+          type="text" 
+          placeholder="Search by ID or Customer..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '300px' }}
+        />
+      </div>
+
+      {selectedIds.size > 0 && (
+        <div className="bulk-actions" style={{ padding: '8px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <span style={{ fontSize: '14px', fontWeight: '500' }}>{selectedIds.size} selected</span>
+          <button className="secondary-btn danger" onClick={handleBulkDelete} disabled={isLoading}>Delete Selected</button>
+        </div>
+      )}
 
       <div className="payments-filters">
         <button
@@ -113,7 +186,7 @@ export default function PaymentsScreen() {
       </div>
 
       <div className="payments-table-container">
-        {filteredPayments.length === 0 ? (
+        {processedPayments.length === 0 ? (
           <div className="payments-empty">
             <p>No payments found</p>
           </div>
@@ -121,20 +194,22 @@ export default function PaymentsScreen() {
           <table className="payments-table">
             <thead>
               <tr>
-                <th>Transaction ID</th>
-                <th>Customer</th>
-                <th>Amount</th>
-                <th>Paid</th>
-                <th>Remaining</th>
-                <th>Status</th>
-                <th>Payment Method</th>
-                <th>Date</th>
+                <th style={{ width: '40px' }}><input type="checkbox" checked={processedPayments.length > 0 && selectedIds.size === processedPayments.length} onChange={toggleSelectAll} /></th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('transactionId')}>Transaction ID {sortField === 'transactionId' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('customerName')}>Customer {sortField === 'customerName' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('amount')}>Amount {sortField === 'amount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('paidAmount')}>Paid {sortField === 'paidAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('remainingAmount')}>Remaining {sortField === 'remainingAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>Status {sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('paymentMethod')}>Payment Method {sortField === 'paymentMethod' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('createdAt')}>Date {sortField === 'createdAt' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPayments.map((payment) => (
-                <tr key={payment.id}>
+              {processedPayments.map((payment) => (
+                <tr key={payment.id} className={selectedIds.has(payment.id) ? 'selected-row' : ''}>
+                  <td><input type="checkbox" checked={selectedIds.has(payment.id)} onChange={() => toggleSelect(payment.id)} /></td>
                   <td className="transaction-id">{payment.transactionId}</td>
                   <td>
                     <div className="customer-info">

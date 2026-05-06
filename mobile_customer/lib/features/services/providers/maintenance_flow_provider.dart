@@ -3,18 +3,6 @@ import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/data_providers.dart';
 import 'package:mobile_customer/data/repositories/pricing_repository.dart';
 
-class MaintenanceTypeEntry {
-  final String id;
-  final String name;
-  final String icon;
-
-  const MaintenanceTypeEntry({
-    required this.id,
-    required this.name,
-    required this.icon,
-  });
-}
-
 class MaintenanceItem {
   final String key;
   final String name;
@@ -169,10 +157,9 @@ class MaintenanceFlowNotifier extends StateNotifier<MaintenanceFlowState> {
       _contract = contract;
 
       // Parse maintenanceTypes from the response if available
-      List<MaintenanceTypeEntry> types = _fallbackTypes;
-      // The backend stores maintenanceTypes as a list on the maintenance config doc
-      // We access it via the contract — but since it's not in the Dart model yet,
-      // we keep the fallback. In production, you'd extend MaintenancePricingContract.
+      List<MaintenanceTypeEntry> types = _contract.maintenanceTypes.isNotEmpty
+          ? _contract.maintenanceTypes
+          : _fallbackTypes;
       
       state = state.copyWith(
         isLoading: false,

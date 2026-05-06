@@ -403,6 +403,9 @@ export interface MasterProduct {
   
   /** Product group/type (e.g., "CCTV", "Access Control", "Networking") */
   group?: string
+
+  /** Unit of measure (e.g., unit, per_camera, bundle) */
+  unit?: string
   
   /** Base unit price (for single quantity) */
   basePrice: number
@@ -454,6 +457,7 @@ export interface CreateUpdateProductRequest {
   description?: string
   category: string
   group?: string
+  unit?: string
   basePrice: number
   pricingTiers?: ProductPricingTier[]
   variants?: ProductVariant[]

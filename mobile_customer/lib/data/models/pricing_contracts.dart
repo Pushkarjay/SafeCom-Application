@@ -214,10 +214,10 @@ class MasterProduct {
   factory MasterProduct.fromJson(Map<String, dynamic> json) {
     final variantsJson = (json['variants'] as List<dynamic>? ?? []);
     return MasterProduct(
-      id: (json['id'] ?? '').toString(),
-      productName: (json['productName'] ?? '').toString(),
+      id: (json['id'] ?? json['productId'] ?? '').toString(),
+      productName: (json['productName'] ?? json['name'] ?? '').toString(),
       description: (json['description'] ?? '').toString(),
-      basePrice: (json['basePrice'] as num?)?.toDouble() ?? 0,
+      basePrice: (json['basePrice'] ?? json['price'] as num?)?.toDouble() ?? 0,
       category: (json['category'] ?? '').toString(),
       group: json['group']?.toString(),
       variants: variantsJson
@@ -256,10 +256,12 @@ class ProductVariant {
 }
 
 class MaintenancePricingContract {
+  final List<MaintenanceTypeEntry> maintenanceTypes;
   final Map<String, int> planVisits;
   final List<MaintenanceContractItem> itemTemplates;
 
   const MaintenancePricingContract({
+    this.maintenanceTypes = const [],
     required this.planVisits,
     required this.itemTemplates,
   });
@@ -274,12 +276,36 @@ class MaintenancePricingContract {
     }
 
     final itemJson = (json['itemTemplates'] as List<dynamic>? ?? []);
+    final typesJson = (json['maintenanceTypes'] as List<dynamic>? ?? []);
     return MaintenancePricingContract(
+      maintenanceTypes: typesJson
+          .map((entry) => MaintenanceTypeEntry.fromJson(entry as Map<String, dynamic>))
+          .toList(growable: false),
       planVisits: visits,
       itemTemplates: itemJson
           .map((entry) =>
               MaintenanceContractItem.fromJson(entry as Map<String, dynamic>))
           .toList(growable: false),
+    );
+  }
+}
+
+class MaintenanceTypeEntry {
+  final String id;
+  final String name;
+  final String icon;
+
+  const MaintenanceTypeEntry({
+    required this.id,
+    required this.name,
+    required this.icon,
+  });
+
+  factory MaintenanceTypeEntry.fromJson(Map<String, dynamic> json) {
+    return MaintenanceTypeEntry(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      icon: (json['icon'] ?? '').toString(),
     );
   }
 }
@@ -442,18 +468,24 @@ class AccessoryCatalogContract {
 class AccessoryItem {
   final String id;
   final String name;
+  final String category;
+  final String group;
   final double price;
 
   const AccessoryItem({
     required this.id,
     required this.name,
+    required this.category,
+    required this.group,
     required this.price,
   });
 
   factory AccessoryItem.fromJson(Map<String, dynamic> json) {
     return AccessoryItem(
-      id: (json['id'] ?? '').toString(),
+      id: (json['id'] ?? json['productId'] ?? '').toString(),
       name: (json['name'] ?? json['productName'] ?? '').toString(),
+      category: (json['category'] ?? '').toString(),
+      group: (json['group'] ?? '').toString(),
       price: (json['price'] ?? json['basePrice'] as num?)?.toDouble() ?? 0,
     );
   }

@@ -8,6 +8,7 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+db.settings({ databaseId: 'safecom-database-nosql' });
 
 async function inspectFirestore() {
   const collections = {};
@@ -22,13 +23,6 @@ async function inspectFirestore() {
     collections[collectionId].documents = snapshot.docs.map(d => ({ id: d.id, fields: Object.keys(d.data()), sampleData: d.data() }));
   }
   
-  // Special focus: P_Service collection
-  const pserviceRef = db.collection('P_Service');
-  const pserviceSnapshot = await pserviceRef.get();
-  const pserviceAnalysis = {};
-  for (const doc of pserviceSnapshot.docs) {
-    pserviceAnalysis[doc.id] = doc.data(); // Simple for now
-  }
   
   // Create firestore-analysis folder if not exists
   const analysisDir = 'firestore-analysis';
@@ -38,10 +32,10 @@ async function inspectFirestore() {
   
   // Save to files
   fs.writeFileSync(path.join(analysisDir, 'collections.json'), JSON.stringify(collections, null, 2));
-  fs.writeFileSync(path.join(analysisDir, 'pservice-analysis.json'), JSON.stringify(pserviceAnalysis, null, 2));
+  fs.writeFileSync(path.join(analysisDir, 'pservice-analysis.json'), JSON.stringify({}, null, 2));
   fs.writeFileSync(path.join(analysisDir, 'structure.json'), JSON.stringify({
     totalCollections: Object.keys(collections).length,
-    pserviceMappings: pserviceAnalysis
+    pserviceMappings: {}
   }, null, 2));
   
   // Generate README
@@ -49,15 +43,6 @@ async function inspectFirestore() {
 
 ## Current Structure
 - Total Collections: ${Object.keys(collections).length}
-- P_Service Analysis: ${Object.keys(pserviceAnalysis).length} documents
-
-## Problems Identified
-- Deep nested maps in P_Service
-- Difficult to query and maintain
-- Scalability issues
-
-## Recommended Migration
-Convert to normalized collections: PService, Catalog_Product, etc.
 `;
   fs.writeFileSync(path.join(analysisDir, 'README.md'), readme);
   

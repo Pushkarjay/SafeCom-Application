@@ -28,7 +28,7 @@ export const MaintenancePlansScreen: React.FC<MaintenancePlansScreenProps> = ({ 
       }
 
       const response = await fetch(url.toString(), {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}` }
       })
 
       if (!response.ok) throw new Error('Failed to fetch maintenance plans')
@@ -44,7 +44,7 @@ export const MaintenancePlansScreen: React.FC<MaintenancePlansScreenProps> = ({ 
   const fetchServices = async () => {
     try {
       const response = await fetch(`${apiBaseUrl}/catalog/services`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}` }
       })
       if (!response.ok) throw new Error('Failed to fetch services')
       const data = await response.json()
@@ -71,7 +71,7 @@ export const MaintenancePlansScreen: React.FC<MaintenancePlansScreenProps> = ({ 
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+          'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}`
         },
         body: JSON.stringify(formData)
       })
@@ -92,7 +92,7 @@ export const MaintenancePlansScreen: React.FC<MaintenancePlansScreenProps> = ({ 
     try {
       const response = await fetch(`${apiBaseUrl}/catalog/maintenance-plans/${planId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}` }
       })
 
       if (!response.ok) throw new Error('Failed to delete')

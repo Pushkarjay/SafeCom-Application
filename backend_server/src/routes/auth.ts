@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { queryCollection, getDocument, createDocument } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument, updateDocument } from '../services/firestore.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
 
@@ -11,11 +11,15 @@ export const authRouter = Router()
  * Returns user profile if the Firebase user is authorized as an admin
  */
 authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+  const requestId = Math.random().toString(36).substring(7)
   try {
     const uid = req.firebaseUid
     const email = req.firebaseClaims?.email as string | undefined
 
+    console.log(`[AUTH][${requestId}] Login attempt for UID: ${uid}, Email: ${email}`)
+
     if (!uid) {
+      console.warn(`[AUTH][${requestId}] Missing UID in request`)
       return res.status(401).json({
         success: false,
         message: 'Invalid Firebase ID token'
@@ -24,6 +28,7 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
 
     try {
       // Lookup admin record in Firestore by linked Firebase UID
+      console.log(`[AUTH][${requestId}] Querying admins by firebaseUid...`)
       const adminUsers = await queryCollection<{
         id: string
         email: string
@@ -35,6 +40,7 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
       let user = adminUsers[0]
 
       if (!user && email) {
+        console.log(`[AUTH][${requestId}] No admin found by UID, querying by email: ${email}`)
         const adminByEmail = await queryCollection<{
           id: string
           email: string
@@ -43,38 +49,47 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
           firebaseUid: string
         }>('admins', [{ field: 'email', operator: '==', value: email }])
         user = adminByEmail[0]
+        
+        if (user && !user.firebaseUid) {
+          console.log(`[AUTH][${requestId}] Found admin by email, linking firebaseUid: ${uid}`)
+          await updateDocument('admins', user.id, { firebaseUid: uid })
+          user.firebaseUid = uid
+        }
       }
 
       if (!user && email?.toLowerCase().endsWith('@safecom.com')) {
-        console.log('[AUTH] No admin profile found for safecom.com user, creating admin record', { uid, email })
+        console.log(`[AUTH][${requestId}] No admin profile found for safecom.com user, creating admin record`)
         const now = new Date()
         const newAdmin = {
           firebaseUid: uid,
           email,
           name: String(email.split('@')[0] ?? email),
-          role: 'super_admin',
+          role: 'admin', // Changed from 'super_admin' to match Role type
           permissions: ['all'],
           status: 'active',
           createdAt: now,
           updatedAt: now
         }
-        await createDocument('admins', newAdmin)
+        const newDocId = await createDocument('admins', newAdmin)
+        console.log(`[AUTH][${requestId}] Created new admin record with ID: ${newDocId}`)
         user = {
-          id: uid,
+          id: newDocId,
           firebaseUid: uid,
           email,
           name: newAdmin.name,
-          role: 'super_admin'
+          role: 'admin'
         }
       }
 
       if (!user) {
+        console.warn(`[AUTH][${requestId}] Access denied: User ${email || uid} is not authorized as admin`)
         return res.status(403).json({
           success: false,
           message: 'Firebase user is not authorized as an admin'
         })
       }
 
+      console.log(`[AUTH][${requestId}] Login successful for user: ${user.email}`)
       return res.json({
         success: true,
         user: {
@@ -87,19 +102,21 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
         message: 'Logged in successfully'
       })
     } catch (error) {
-      console.error('[AUTH] Firestore admin lookup failed:', error)
+      const errorDetails = error instanceof Error ? { message: error.message, stack: error.stack } : { message: String(error) }
+      console.error(`[AUTH][${requestId}] Firestore operation failed:`, errorDetails)
       return res.status(500).json({
         success: false,
         message: 'Authentication lookup failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorDetails.message
       })
     }
   } catch (error) {
-    console.error('[AUTH] Login error:', error)
+    const errorDetails = error instanceof Error ? { message: error.message, stack: error.stack } : { message: String(error) }
+    console.error(`[AUTH][${requestId}] Login service crash:`, errorDetails)
     return res.status(500).json({
       success: false,
       message: 'Authentication service error',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: errorDetails.message
     })
   }
 })

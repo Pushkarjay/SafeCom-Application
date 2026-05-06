@@ -28,7 +28,8 @@ export function initFirebase(): Firestore {
       firebaseApp = initializeApp();
     }
 
-    firestoreDb = getFirestore(firebaseApp, '(default)');
+    const databaseId = process.env.FIRESTORE_DB_ID || 'safecom-database-nosql';
+    firestoreDb = getFirestore(firebaseApp, databaseId);
     console.log('Firebase Admin initialized successfully');
     return firestoreDb;
   } catch (error) {

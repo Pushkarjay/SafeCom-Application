@@ -26,9 +26,9 @@ export const AccessoriesScreen: React.FC<AccessoriesScreenProps> = ({ apiBaseUrl
         url.searchParams.append('type', selectedType)
       }
 
-      const response = await fetch(url.toString(), {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
-      })
+       const response = await fetch(url.toString(), {
+         headers: { 'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}` }
+       })
 
       if (!response.ok) throw new Error('Failed to fetch accessories')
       const data = await response.json()
@@ -52,14 +52,14 @@ export const AccessoriesScreen: React.FC<AccessoriesScreenProps> = ({ apiBaseUrl
 
       const method = editingAccessory ? 'PATCH' : 'POST'
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-        },
-        body: JSON.stringify(formData)
-      })
+       const response = await fetch(url, {
+         method,
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}`
+         },
+         body: JSON.stringify(formData)
+       })
 
       if (!response.ok) throw new Error('Failed to save accessory')
 
@@ -75,10 +75,10 @@ export const AccessoriesScreen: React.FC<AccessoriesScreenProps> = ({ apiBaseUrl
     if (!window.confirm('Delete this accessory?')) return
 
     try {
-      const response = await fetch(`${apiBaseUrl}/catalog/accessories/${accessoryId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
-      })
+       const response = await fetch(`${apiBaseUrl}/catalog/accessories/${accessoryId}`, {
+         method: 'DELETE',
+         headers: { 'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}` }
+       })
 
       if (!response.ok) throw new Error('Failed to delete')
       await fetchAccessories()

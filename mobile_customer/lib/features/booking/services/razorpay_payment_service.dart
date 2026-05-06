@@ -64,7 +64,7 @@ class RazorpayPaymentService {
   static const String baseUrl = ApiConfig.baseUrl;
   static const String _fallbackKeyId = String.fromEnvironment(
     'RAZORPAY_KEY_ID',
-    defaultValue: 'rzp_test_SjLf9CH3nOALie',
+    defaultValue: '',
   );
 
   final Dio _dio;

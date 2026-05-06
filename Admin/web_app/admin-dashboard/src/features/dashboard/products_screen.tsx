@@ -28,11 +28,11 @@ export const ProductsScreen: React.FC<ProductsScreenProps> = ({ apiBaseUrl }) =>
         url.searchParams.append('category', selectedCategory)
       }
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-        }
-      })
+       const response = await fetch(url.toString(), {
+         headers: {
+           'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}`
+         }
+       })
 
       if (!response.ok) throw new Error('Failed to fetch products')
       const data = await response.json()
@@ -56,14 +56,14 @@ export const ProductsScreen: React.FC<ProductsScreenProps> = ({ apiBaseUrl }) =>
 
       const method = editingProduct ? 'PATCH' : 'POST'
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-        },
-        body: JSON.stringify(formData)
-      })
+       const response = await fetch(url, {
+         method,
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}`
+         },
+         body: JSON.stringify(formData)
+       })
 
       if (!response.ok) throw new Error('Failed to save product')
 
@@ -79,12 +79,12 @@ export const ProductsScreen: React.FC<ProductsScreenProps> = ({ apiBaseUrl }) =>
     if (!window.confirm('Are you sure you want to delete this product?')) return
 
     try {
-      const response = await fetch(`${apiBaseUrl}/catalog/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-        }
-      })
+       const response = await fetch(`${apiBaseUrl}/catalog/products/${productId}`, {
+         method: 'DELETE',
+         headers: {
+           'Authorization': `Bearer ${localStorage.getItem('safecom_admin_token') || ''}`
+         }
+       })
 
       if (!response.ok) throw new Error('Failed to delete product')
       await fetchProducts()
