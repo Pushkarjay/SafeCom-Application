@@ -6,6 +6,7 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+db.settings({ databaseId: 'safecom-database-nosql' });
 
 async function seedSchema() {
   // PService Collection
