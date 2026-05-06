@@ -199,6 +199,29 @@ catalogRouter.get('/pricing', async (_req, res) => {
   }
 })
 
+// PUT /catalog/pricing - Update pricing configuration
+catalogRouter.put('/pricing', async (req, res) => {
+  try {
+    const { installation, maintenance, repair } = req.body
+    const now = new Date().toISOString()
+
+    if (installation) {
+      await updateDocument('catalog_pricing', 'installation', { ...installation, updatedAt: now })
+    }
+    if (maintenance) {
+      await updateDocument('catalog_pricing', 'maintenance', { ...maintenance, updatedAt: now })
+    }
+    if (repair) {
+      await updateDocument('catalog_pricing', 'repair', { ...repair, updatedAt: now })
+    }
+
+    return res.json({ success: true, timestamp: now })
+  } catch (error) {
+    console.error('Firestore pricing update failed:', error)
+    return res.status(500).json({ message: 'Failed to update pricing configuration' })
+  }
+})
+
 // ===== PACKAGES =====
 // GET /catalog/packages
 catalogRouter.get('/packages', async (req, res) => {
@@ -384,7 +407,6 @@ catalogRouter.delete('/taxes/:id', async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete tax' })
   }
 })
-
 
 // ===== INVOICE TEMPLATES =====
 // GET /catalog/invoices

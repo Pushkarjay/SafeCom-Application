@@ -33,6 +33,7 @@ final dioProvider = Provider<Dio>((ref) {
 final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService(ref.watch(dioProvider));
 });
+
 class ApiService {
   final Dio _dio;
 
@@ -55,6 +56,17 @@ class ApiService {
       return response;
     } on DioException catch (e) {
       throw Exception('Failed to update data: ${e.message}');
+    } catch (e) {
+      throw Exception('An unknown error occurred: $e');
+    }
+  }
+
+  Future<Response> post(String path, Map<String, dynamic> body) async {
+    try {
+      final response = await _dio.post(path, data: body);
+      return response;
+    } on DioException catch (e) {
+      throw Exception('Failed to post data: ${e.message}');
     } catch (e) {
       throw Exception('An unknown error occurred: $e');
     }

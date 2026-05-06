@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { queryCollection, getDocument, createDocument, updateDocument, getDb } from '../services/firestore.js'
 import { sendPushNotification } from '../services/notificationService.js'
+import type { FirebaseAuthenticatedRequest } from '../middleware/firebaseAuth.js'
 import type { 
   CreateBookingRequest, 
   CanonicalInvoice, 
@@ -95,20 +96,25 @@ async function createCorrespondingJob(
   
   try {
     await createDocument('jobs', {
-      id: jobId,
+      jobId,
       bookingId,
-      customerId: booking.customerId,
-      serviceType: booking.serviceType,
-      status: 'pending',
-      amount: booking.invoice.grandTotal,
-      scheduledDate: booking.scheduledDate,
-      scheduledTimeSlot: booking.scheduledTimeSlot,
+      customer: {
+        customerId: booking.customerId,
+        name: booking.invoice.customerName,
+        phone: booking.invoice.customerPhone,
+        address: booking.invoice.customerAddress
+      },
       location: booking.location,
+      serviceType: booking.serviceType,
       invoice: {
         invoiceId: booking.invoice.invoiceId,
         grandTotal: booking.invoice.grandTotal,
         lineItems: booking.invoice.lineItems
       },
+      status: 'pending',
+      assignedTo: null,
+      scheduledDate: booking.scheduledDate,
+      scheduledTimeSlot: booking.scheduledTimeSlot,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })
@@ -239,18 +245,33 @@ bookingsRouter.post('/', async (req, res) => {
 })
 
 /**
- * GET /bookings - List bookings for customer or all (admin)
+ * GET /bookings - List bookings for the authenticated user.
+ * Pass ?all=true to list all bookings (admin only).
  */
 bookingsRouter.get('/', async (req, res) => {
   try {
-    const customerId = req.query.customerId as string | undefined
-    
-    let bookings = await queryCollection<CanonicalBooking>('bookings')
-    
-    if (customerId) {
-      bookings = bookings.filter(b => b.customerId === customerId)
+    const authReq = req as FirebaseAuthenticatedRequest
+    const uid = authReq.firebaseUid
+
+    if (!uid) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHENTICATED', message: 'Login required' },
+        timestamp: new Date().toISOString()
+      })
     }
-    
+
+    let bookings = await queryCollection<CanonicalBooking>('bookings')
+
+    // Only return the authenticated user's bookings unless ?all=true (admin)
+    const showAll = req.query.all === 'true'
+    if (!showAll) {
+      bookings = bookings.filter(b => b.customerId === uid)
+    }
+
+    // Sort newest first
+    bookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
     return res.json({
       success: true,
       data: bookings,

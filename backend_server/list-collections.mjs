@@ -7,17 +7,24 @@ admin.initializeApp({
   projectId: 'safecom-application-01'
 });
 
-async function listCollections() {
-  const collections = await admin.firestore().listCollections();
-  for (const collection of collections) {
-    console.log(`Collection: ${collection.id}`);
-    const snapshot = await collection.limit(3).get();
-    console.log(`  Count in first 3: ${snapshot.size}`);
-    if (snapshot.size > 0) {
-      console.log(`  First doc ID: ${snapshot.docs[0].id}`);
-      console.log(`  First doc Keys: ${Object.keys(snapshot.docs[0].data()).join(', ')}`);
-    }
+async function checkCollection(name) {
+  const snapshot = await admin.firestore().collection(name).get();
+  console.log(`\nCollection: ${name}`);
+  console.log(`Total documents: ${snapshot.size}`);
+  if (snapshot.size > 0) {
+    const doc = snapshot.docs[0];
+    console.log(`Sample ID: ${doc.id}`);
+    console.log(`Sample Data:`, JSON.stringify(doc.data(), null, 2));
   }
 }
 
-listCollections().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+async function run() {
+  await checkCollection('catalog_products');
+  await checkCollection('catalog_accessories');
+  await checkCollection('catalog_services');
+  await checkCollection('catalog_upgrade_bundles');
+  await checkCollection('catalog_pricing');
+  process.exit(0);
+}
+
+run().catch(console.error);

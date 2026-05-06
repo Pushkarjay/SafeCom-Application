@@ -57,8 +57,19 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
         );
         _setSelectedLocation(LatLng(position.latitude, position.longitude), address);
       }
-    } catch (_) {
-      // ignore, will show default
+    } catch (e) {
+      // Fallback to Patna if everything fails
+      const patna = LatLng(25.5941, 85.1376);
+      _setSelectedLocation(patna, 'Patna, Bihar');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not fetch current location. Using Patna as default.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -268,7 +279,7 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final initialPosition = _selectedLatLng ?? const LatLng(20.2961, 85.8245);
+    final initialPosition = _selectedLatLng ?? const LatLng(25.5941, 85.1376);
 
     return Scaffold(
       appBar: AppBar(

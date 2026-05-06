@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:mobile_customer/core/constants/app_routes.dart';
+import 'package:mobile_customer/core/utils/error_handler.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
@@ -99,12 +100,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       if (!mounted) return;
 
       setState(() => _isProcessing = false);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Payment verification failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppErrorHandler.showSnackbar(context, e);
     }
   }
 
@@ -174,12 +170,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           await ref.read(authProvider.notifier).continueWithGoogle();
         } catch (e) {
           if (!mounted) return;
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text('Google sign-in failed: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppErrorHandler.showSnackbar(context, e);
           return;
         }
       } else {
@@ -250,12 +241,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         _isProcessing = false;
         _checkoutOrder = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unable to start payment checkout: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppErrorHandler.showSnackbar(context, e);
     }
   }
 

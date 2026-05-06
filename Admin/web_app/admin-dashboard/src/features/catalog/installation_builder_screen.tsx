@@ -63,12 +63,14 @@ export default function InstallationBuilderScreen() {
     setIsSaving(true)
     setError(null)
     try {
-      // Typically we'd call adminDatasource.updatePricingData or similar
-      // Since it's mock, we simulate it
-      await new Promise(r => setTimeout(r, 800))
+      await adminDatasource.updatePricingData({
+        installation: {
+          mappings
+        }
+      })
       alert('Installation configuration saved successfully!')
     } catch (err) {
-      setError('Failed to save configuration')
+      setError('Failed to save configuration: ' + (err instanceof Error ? err.message : 'Unknown error'))
     } finally {
       setIsSaving(false)
     }

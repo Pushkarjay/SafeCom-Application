@@ -10,70 +10,7 @@ class AuthService {
 
   AuthService(this._dio);
 
-
-
-
-
-  /// Login with email and password
-  Future<({String token, Customer customer})> login({
-    required String email,
-    required String password,
-  }) async {
-    // Prefer Firebase Authentication first
-    try {
-      final fb = FirebaseAuth.instance;
-      final cred = await fb.signInWithEmailAndPassword(email: email, password: password);
-      final idToken = await cred.user?.getIdToken();
-      final customer = Customer(
-        id: cred.user?.uid,
-        name: cred.user?.displayName ?? email.split('@').first,
-        email: email,
-        phone: '',
-        totalOrders: 0,
-        totalSpent: 0.0,
-        registeredDate: cred.user?.metadata.creationTime,
-        status: 'active',
-      );
-
-      // Link Firebase user to backend Firestore (non-blocking)
-      if (cred.user != null) {
-        await linkUserToBackend(
-          firebaseUid: cred.user!.uid,
-          email: email,
-          displayName: cred.user!.displayName ?? email.split('@').first,
-          phone: '',
-        );
-      }
-
-      return (token: idToken ?? (throw Exception('No Firebase ID token')), customer: customer);
-    } catch (fbErr) {
-      // If Firebase auth fails, fallback to backend auth (existing behavior)
-      try {
-        final response = await _dio.post(
-          '$baseUrl/auth/login',
-          data: {'email': email, 'password': password},
-          options: Options(
-            sendTimeout: const Duration(seconds: 5),
-            receiveTimeout: const Duration(seconds: 5),
-          ),
-        );
-
-        if (response.statusCode == 200) {
-          final data = response.data as Map<String, dynamic>;
-          final token = data['token'] as String;
-          final customerData = data['user'] as Map<String, dynamic>;
-          return (
-            token: token,
-            customer: Customer.fromJson(customerData),
-          );
-        }
-
-        throw Exception('Login failed');
-      } catch (e) {
-        rethrow;
-      }
-    }
-  }
+  // ─── Google Sign-In ───────────────────────────────────────────────────────
 
   Future<({String token, Customer customer})> continueWithGoogle() async {
     try {
@@ -116,77 +53,75 @@ class AuthService {
     }
   }
 
-  /// Signup a new customer
-  Future<({String token, Customer customer})> signup({
-    required String name,
-    required String email,
-    required String phone,
-    required String password,
+  // ─── Phone OTP Sign-In ────────────────────────────────────────────────────
+
+  /// Initiates phone number verification. Firebase calls the callbacks
+  /// for auto-verification, code sent, and errors. The UI should listen
+  /// to these callbacks and drive the OTP input step.
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(PhoneAuthCredential) onVerificationCompleted,
+    required void Function(FirebaseAuthException) onVerificationFailed,
+    required void Function(String verificationId, int? resendToken) onCodeSent,
+    required void Function(String verificationId) onCodeAutoRetrievalTimeout,
+    Duration timeout = const Duration(seconds: 60),
   }) async {
-    // Try to create user in Firebase first
-    try {
-      final fb = FirebaseAuth.instance;
-      final cred = await fb.createUserWithEmailAndPassword(email: email, password: password);
-      // Optionally set displayName
-      if (cred.user != null) {
-        await cred.user!.updateDisplayName(name);
-      }
-      final idToken = await cred.user?.getIdToken();
-      final customer = Customer(
-        id: cred.user?.uid,
-        name: name,
-        email: email,
-        phone: phone,
-        totalOrders: 0,
-        totalSpent: 0.0,
-        registeredDate: cred.user?.metadata.creationTime,
-        status: 'active',
-      );
+    // Normalise to +91 if no country code supplied
+    final formatted = phoneNumber.startsWith('+') ? phoneNumber : '+91$phoneNumber';
 
-      // Link Firebase user to backend Firestore (non-blocking)
-      if (cred.user != null) {
-        await linkUserToBackend(
-          firebaseUid: cred.user!.uid,
-          email: email,
-          displayName: name,
-          phone: phone,
-        );
-      }
-
-      return (token: idToken ?? (throw Exception('No Firebase ID token')), customer: customer);
-    } catch (fbErr) {
-      // Fallback to backend signup
-      try {
-        final response = await _dio.post(
-          '$baseUrl/auth/signup',
-          data: {
-            'name': name,
-            'email': email,
-            'phone': phone,
-            'password': password,
-          },
-          options: Options(
-            sendTimeout: const Duration(seconds: 5),
-            receiveTimeout: const Duration(seconds: 5),
-          ),
-        );
-
-        if (response.statusCode == 201 || response.statusCode == 200) {
-          final data = response.data as Map<String, dynamic>;
-          final token = data['token'] as String;
-          final customerData = data['user'] as Map<String, dynamic>;
-          return (
-            token: token,
-            customer: Customer.fromJson(customerData),
-          );
-        }
-
-        throw Exception('Signup failed');
-      } catch (e) {
-        rethrow;
-      }
-    }
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: formatted,
+      timeout: timeout,
+      verificationCompleted: onVerificationCompleted,
+      verificationFailed: onVerificationFailed,
+      codeSent: onCodeSent,
+      codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+    );
   }
+
+  /// Signs in with a manually entered OTP.
+  Future<({String token, Customer customer})> signInWithOtp({
+    required String verificationId,
+    required String smsCode,
+  }) async {
+    final credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode,
+    );
+    return signInWithPhoneCredential(credential);
+  }
+
+  /// Signs in with a PhoneAuthCredential (either from OTP or auto-verify).
+  Future<({String token, Customer customer})> signInWithPhoneCredential(
+    PhoneAuthCredential credential,
+  ) async {
+    final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+    final user = userCredential.user;
+    if (user == null) throw Exception('Phone sign-in failed');
+
+    final idToken = await user.getIdToken();
+    final customer = Customer(
+      id: user.uid,
+      name: user.displayName ?? 'Customer',
+      email: user.email ?? '',
+      phone: user.phoneNumber ?? '',
+      totalOrders: 0,
+      totalSpent: 0.0,
+      registeredDate: user.metadata.creationTime,
+      status: 'active',
+    );
+
+    await linkUserToBackend(
+      firebaseUid: user.uid,
+      email: user.email ?? '',
+      displayName: user.displayName ?? 'Customer',
+      phone: user.phoneNumber ?? '',
+    );
+
+    return (token: idToken ?? (throw Exception('No Firebase ID token')), customer: customer);
+  }
+
+  // ─── Backend Link ─────────────────────────────────────────────────────────
 
   /// Helper to get current Firebase ID token if signed in
   Future<String?> getFirebaseIdToken() async {
@@ -237,87 +172,24 @@ class AuthService {
     }
   }
 
-  /// Request password reset
-  Future<void> requestPasswordReset(String email) async {
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-    } catch (_) {
-      try {
-        await _dio.post(
-          '$baseUrl/auth/request-reset',
-          data: {'email': email},
-          options: Options(
-            sendTimeout: const Duration(seconds: 5),
-            receiveTimeout: const Duration(seconds: 5),
-          ),
-        );
-      } catch (e) {
-        rethrow;
-      }
-    }
-  }
-
-  /// Verify OTP for password reset
-  Future<bool> verifyOTP({
-    required String email,
-    required String otp,
-  }) async {
-    try {
-      final response = await _dio.post(
-        '$baseUrl/auth/verify-otp',
-        data: {'email': email, 'otp': otp},
-        options: Options(
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        ),
-      );
-
-      return response.statusCode == 200;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// Reset password
-  Future<void> resetPassword({
-    required String email,
-    required String newPassword,
-  }) async {
-    try {
-      await _dio.post(
-        '$baseUrl/auth/reset-password',
-        data: {'email': email, 'newPassword': newPassword},
-        options: Options(
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        ),
-      );
-    } catch (e) {
-      // Simulate success
-      rethrow;
-    }
-  }
+  // ─── Profile ──────────────────────────────────────────────────────────────
 
   /// Get current customer profile
   Future<Customer> getProfile(String token) async {
-    try {
-      final response = await _dio.get(
-        '$baseUrl/customer/profile',
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        ),
-      );
+    final response = await _dio.get(
+      '$baseUrl/customer/profile',
+      options: Options(
+        headers: {'Authorization': 'Bearer $token'},
+        sendTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      ),
+    );
 
-      if (response.statusCode == 200) {
-        return Customer.fromJson(response.data as Map<String, dynamic>);
-      }
-
-      throw Exception('Failed to fetch profile');
-    } catch (e) {
-      rethrow;
+    if (response.statusCode == 200) {
+      return Customer.fromJson(response.data as Map<String, dynamic>);
     }
+
+    throw Exception('Failed to fetch profile');
   }
 
   /// Update customer profile
@@ -347,6 +219,8 @@ class AuthService {
     }
   }
 
+  // ─── Logout ───────────────────────────────────────────────────────────────
+
   /// Logout (clear token on backend)
   Future<void> logout(String token) async {
     try {
@@ -362,6 +236,8 @@ class AuthService {
       // Logout is best-effort
       // continue even if API fails
     }
+    // Always sign out of Firebase locally
+    await FirebaseAuth.instance.signOut();
+    await GoogleSignIn().signOut();
   }
 }
-

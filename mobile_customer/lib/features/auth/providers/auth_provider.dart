@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_customer/features/auth/models/customer_model.dart';
 import 'package:mobile_customer/features/auth/services/auth_service.dart';
@@ -107,33 +108,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final (:token, :customer) = await authService.login(
-        email: email,
-        password: password,
-      );
-      await _saveSession(token, customer);
-      state = AuthState(
-        customer: customer,
-        token: token,
-        isAuthenticated: true,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-        isAuthenticated: false,
-      );
-      rethrow;
-    }
-  }
-
   Future<void> continueWithGoogle() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -155,20 +129,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signup({
-    required String name,
-    required String email,
-    required String phone,
-    required String password,
-  }) async {
+  Future<void> signInWithPhoneCredential(PhoneAuthCredential credential) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final (:token, :customer) = await authService.signup(
-        name: name,
-        email: email,
-        phone: phone,
-        password: password,
-      );
+      final (:token, :customer) = await authService.signInWithPhoneCredential(credential);
       await _saveSession(token, customer);
       state = AuthState(
         customer: customer,
@@ -209,48 +173,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         customer: updated,
         isLoading: false,
       );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-      rethrow;
-    }
-  }
-
-  Future<void> requestPasswordReset(String email) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      await authService.requestPasswordReset(email);
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-      rethrow;
-    }
-  }
-
-  Future<bool> verifyOTP({
-    required String email,
-    required String otp,
-  }) async {
-    try {
-      return await authService.verifyOTP(email: email, otp: otp);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> resetPassword({
-    required String email,
-    required String newPassword,
-  }) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      await authService.resetPassword(email: email, newPassword: newPassword);
-      state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,

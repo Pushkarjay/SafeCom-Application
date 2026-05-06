@@ -32,7 +32,6 @@ export default function CustomersScreen() {
     <div className="customers-screen">
       <div className="screen-header">
         <h1>Customers Management</h1>
-        <button className="add-button" onClick={() => navigate('/customers/new')}>➕ Add Customer</button>
       </div>
 
       {isLoading ? (

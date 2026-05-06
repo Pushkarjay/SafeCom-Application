@@ -16,8 +16,7 @@ import 'package:mobile_customer/features/home/home_screen.dart';
 import 'package:mobile_customer/features/location/location_permission_screen.dart';
 import 'package:mobile_customer/features/location/location_picker_screen.dart';
 import 'package:mobile_customer/features/auth/screens/login_screen.dart';
-import 'package:mobile_customer/features/auth/screens/signup_screen.dart';
-import 'package:mobile_customer/features/auth/screens/forgot_password_screen.dart';
+import 'package:mobile_customer/features/auth/screens/phone_auth_screen.dart';
 import 'package:mobile_customer/features/profile/screens/profile_screen.dart';
 import 'package:mobile_customer/features/profile/screens/order_history_screen.dart';
 import 'package:mobile_customer/features/services/accessories_screen.dart';
@@ -45,12 +44,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: AppRoutes.signup,
-        builder: (context, state) => const SignupScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.forgotPassword,
-        builder: (context, state) => const ForgotPasswordScreen(),
+        path: AppRoutes.phoneAuth,
+        builder: (context, state) => const PhoneAuthScreen(),
       ),
       GoRoute(
         path: AppRoutes.locationPermission,

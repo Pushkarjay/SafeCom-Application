@@ -1,221 +1,310 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mobile_customer/features/profile/providers/booking_provider.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
+import 'package:mobile_customer/core/utils/error_handler.dart';
 
-class Order {
-  final String id;
-  final String serviceType;
-  final double amount;
-  final String status;
-  final DateTime createdDate;
-  final DateTime? completedDate;
 
-  Order({
-    required this.id,
-    required this.serviceType,
-    required this.amount,
-    required this.status,
-    required this.createdDate,
-    this.completedDate,
-  });
-}
+// ─── Screen ──────────────────────────────────────────────────────────────────
 
 class OrderHistoryScreen extends ConsumerWidget {
   const OrderHistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Mock orders - will be replaced with real data from backend
-    final orders = [
-      Order(
-        id: 'ORD001',
-        serviceType: 'Installation',
-        amount: 9000,
-        status: 'completed',
-        createdDate: DateTime.now().subtract(const Duration(days: 30)),
-        completedDate: DateTime.now().subtract(const Duration(days: 28)),
-      ),
-      Order(
-        id: 'ORD002',
-        serviceType: 'Maintenance',
-        amount: 1500,
-        status: 'completed',
-        createdDate: DateTime.now().subtract(const Duration(days: 15)),
-        completedDate: DateTime.now().subtract(const Duration(days: 15)),
-      ),
-      Order(
-        id: 'ORD003',
-        serviceType: 'Repair',
-        amount: 2500,
-        status: 'in-progress',
-        createdDate: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-      Order(
-        id: 'ORD004',
-        serviceType: 'AMC',
-        amount: 5000,
-        status: 'pending',
-        createdDate: DateTime.now(),
-      ),
-    ];
+    final user = FirebaseAuth.instance.currentUser;
+    final bookingsAsync = ref.watch(bookingsProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Order History'),
+        title: const Text(
+          'Order History',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE2E8F0)),
+        ),
       ),
       bottomNavigationBar: const CustomerBottomNavigation(selectedIndex: 1),
-      body: orders.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.shopping_cart_outlined,
-              size: 64,
-              color: Colors.grey[400],
+      body: user == null
+          ? _NotLoggedIn()
+          : bookingsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, __) => _ErrorState(onRetry: () => ref.refresh(bookingsProvider)),
+              data: (bookings) => bookings.isEmpty
+                  ? _EmptyState()
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: bookings.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) =>
+                          _BookingCard(booking: bookings[index]),
+                    ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No orders yet',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.grey[600],
+    );
+  }
+}
+
+// ─── Sub-widgets ─────────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: const Icon(
+              Icons.receipt_long_outlined,
+              size: 48,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'No bookings yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Your service history will appear here\nonce you book your first service.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 28),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Book a Service'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Book a Service'),
-            ),
-          ],
-        ),
-      )
-          : ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: orders.length,
-        itemBuilder: (context, index) {
-          final order = orders[index];
-          return _buildOrderCard(context, order);
-        },
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildOrderCard(BuildContext context, Order order) {
-    Color statusColor;
-    IconData statusIcon;
-
-    switch (order.status) {
-      case 'completed':
-        statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
-        break;
-      case 'in-progress':
-        statusColor = Colors.blue;
-        statusIcon = Icons.hourglass_top;
-        break;
-      case 'pending':
-        statusColor = Colors.orange;
-        statusIcon = Icons.schedule;
-        break;
-      case 'cancelled':
-        statusColor = Colors.red;
-        statusIcon = Icons.cancel;
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusIcon = Icons.help;
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () {
-          // Navigate to order detail
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Order ${order.id} details'),
-              duration: const Duration(seconds: 1),
+class _NotLoggedIn extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.lock_outline, size: 64, color: Color(0xFF94A3B8)),
+          const SizedBox(height: 16),
+          const Text(
+            'Sign in to view your orders',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF0F172A),
             ),
-          );
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => Navigator.pushNamed(context, '/login'),
+            child: const Text('Sign In'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.wifi_off_outlined, size: 64, color: Color(0xFF94A3B8)),
+          const SizedBox(height: 16),
+          const Text(
+            'Couldn\'t load your bookings',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Check your internet connection.',
+            style: TextStyle(color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  final BookingModel booking;
+  const _BookingCard({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    final statusInfo = _getStatusInfo(booking.status);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          // TODO: Navigate to booking detail screen
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        order.id,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: statusInfo.$3.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(statusInfo.$2, size: 20, color: statusInfo.$3),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _formatServiceType(booking.serviceType),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: Color(0xFF0F172A),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        order.serviceType,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
+                        const SizedBox(height: 2),
+                        Text(
+                          booking.id,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF94A3B8),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '₹${order.amount.toStringAsFixed(0)}',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                        '₹${booking.totalAmount.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: Color(0xFF0F172A),
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            statusIcon,
-                            size: 14,
-                            color: statusColor,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: statusInfo.$3.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          statusInfo.$1,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: statusInfo.$3,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            order.status.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: statusColor,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 12),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 10),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  const Icon(Icons.calendar_today_outlined,
+                      size: 13, color: Color(0xFF94A3B8)),
+                  const SizedBox(width: 4),
                   Text(
-                    'Ordered: ${_formatDate(order.createdDate)}',
-                    style: TextStyle(
+                    _formatDate(booking.scheduledAt ?? booking.createdAt),
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[500],
+                      color: Color(0xFF64748B),
                     ),
                   ),
-                  if (order.completedDate != null)
-                    Text(
-                      'Completed: ${_formatDate(order.completedDate!)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
+                  if (booking.location != null) ...[
+                    const SizedBox(width: 16),
+                    const Icon(Icons.location_on_outlined,
+                        size: 13, color: Color(0xFF94A3B8)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        booking.location!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                     ),
+                  ],
+                  const Spacer(),
+                  const Icon(Icons.chevron_right,
+                      size: 16, color: Color(0xFFCBD5E1)),
                 ],
               ),
             ],
@@ -225,7 +314,36 @@ class OrderHistoryScreen extends ConsumerWidget {
     );
   }
 
+  (String, IconData, Color) _getStatusInfo(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return ('COMPLETED', Icons.check_circle_outline, const Color(0xFF10B981));
+      case 'in_progress':
+      case 'in-progress':
+      case 'assigned':
+        return ('IN PROGRESS', Icons.hourglass_top_outlined, const Color(0xFF3B82F6));
+      case 'confirmed':
+        return ('CONFIRMED', Icons.thumb_up_outlined, const Color(0xFF6366F1));
+      case 'cancelled':
+        return ('CANCELLED', Icons.cancel_outlined, const Color(0xFFEF4444));
+      case 'pending':
+      default:
+        return ('PENDING', Icons.schedule_outlined, const Color(0xFFF59E0B));
+    }
+  }
+
+  String _formatServiceType(String type) {
+    return type
+        .split('_')
+        .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
+  }
+
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }

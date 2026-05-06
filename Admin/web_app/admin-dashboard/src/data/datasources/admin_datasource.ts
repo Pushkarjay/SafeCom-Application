@@ -50,7 +50,8 @@ export class AdminDatasource {
   }
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {
-    return await this.fetchJson<DashboardMetrics>(`${BASE_URL}/dashboard/metrics`)
+    const payload = await this.fetchJson<{ success: boolean; data: DashboardMetrics }>(`${BASE_URL}/dashboard/metrics`)
+    return payload.data ?? payload as unknown as DashboardMetrics
   }
 
   async getCustomers(page: number = 1, limit: number = 10): Promise<Customer[]> {
@@ -129,10 +130,21 @@ export class AdminDatasource {
   }
 
   async getCatalogProducts(): Promise<CatalogProduct[]> {
-    const [products, accessories] = await Promise.all([
-      this.fetchJson<CatalogProduct[]>(`${BASE_URL}/catalog/products`),
+    const [productsPayload, accessories] = await Promise.all([
+      this.fetchJson<{ success: boolean; data: { products: Record<string, unknown>[] } }>(`${BASE_URL}/catalog/products`),
       this.getCatalogAccessories()
     ])
+    const rawProducts = productsPayload?.data?.products ?? []
+    const products: CatalogProduct[] = rawProducts.map((item) => ({
+      id: String(item.productId || item.id || ''),
+      name: String(item.productName || item.name || ''),
+      category: String(item.category || ''),
+      group: String(item.group || ''),
+      unit: String(item.unit || 'unit'),
+      price: Number(item.basePrice || item.price || 0),
+      status: (item.isAvailable !== false ? 'active' : 'inactive') as 'active' | 'inactive',
+      updatedAt: String(item.updatedAt || new Date().toISOString())
+    }))
     return [...products, ...accessories]
   }
 
@@ -160,6 +172,13 @@ export class AdminDatasource {
 
   async getPricingData(): Promise<PricingSet> {
     return await this.fetchJson<PricingSet>(`${BASE_URL}/catalog/pricing`)
+  }
+
+  async updatePricingData(data: Partial<PricingSet>): Promise<{ success: boolean }> {
+    return await this.fetchJson<{ success: boolean }>(`${BASE_URL}/catalog/pricing`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
   }
 
   async createCatalogProduct(data: Partial<CatalogProduct>): Promise<CatalogProduct> {

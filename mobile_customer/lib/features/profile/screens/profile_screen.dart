@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
+import 'package:mobile_customer/core/utils/error_handler.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 
@@ -80,12 +81,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update profile: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppErrorHandler.showSnackbar(context, e);
       }
     }
   }
@@ -117,12 +113,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logout failed: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppErrorHandler.showSnackbar(context, e);
         }
       }
     }
@@ -207,7 +198,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     ),
                     elevation: 0,
                   ),
-                  child: const Text('Sign in with Email', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
@@ -216,7 +207,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       await ref.read(authProvider.notifier).continueWithGoogle();
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                        AppErrorHandler.showSnackbar(context, e);
                       }
                     }
                   },
@@ -439,14 +430,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   subtitle: 'View your past bookings and invoices',
                   color: const Color(0xFF0EA5E9),
                   onTap: () => context.push(AppRoutes.orderHistory),
-                ),
-                const SizedBox(height: 12),
-                _buildActionTile(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'Change Password',
-                  subtitle: 'Update your security credentials',
-                  color: const Color(0xFFF59E0B),
-                  onTap: () => context.push(AppRoutes.changePassword),
                 ),
                 const SizedBox(height: 32),
                 TextButton.icon(

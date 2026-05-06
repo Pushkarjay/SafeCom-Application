@@ -16,30 +16,33 @@ class JobsApiDatasource {
     try {
       final response = await _apiService.get('/jobs?employeeId=$technicianId');
 
-      if (response.statusCode == 200 && response.data is List) {
-        final List data = response.data as List;
-        final matchingJobs = data;
-
-        return matchingJobs.map<AssignedJob>((json) {
-          final map = <String, dynamic>{
-            'id': json['jobId'] ?? json['id'] ?? '',
-            'customer_id': json['customerId'] ?? '',
-            'customerName': json['customer']?['name'] ?? json['customerId'] ?? '',
-            'customerPhone': json['customer']?['phone'] ?? '',
-            'service_type': json['serviceType'] ?? '',
-            'location': json['location']?['address'] ?? json['location'] ?? '',
-            'latitude': (json['location']?['latitude'] as num?)?.toDouble() ?? (json['latitude'] as num?)?.toDouble() ?? 0.0,
-            'longitude': (json['location']?['longitude'] as num?)?.toDouble() ?? (json['longitude'] as num?)?.toDouble() ?? 0.0,
-            'scheduled_date_time': _parseScheduledDate(json['scheduledDate'] ?? json['scheduled_date_time']),
-            'status': json['status'] ?? 'pending',
-            'estimated_amount': (json['invoice']?['grandTotal'] as num?)?.toDouble() ?? (json['amount'] as num?)?.toDouble() ?? 0.0,
-            'notes': json['notes'] ?? '',
-            if (json['invoice'] != null) 'invoice': json['invoice'],
-          };
-          return AssignedJob.fromJson(map);
-        }).toList();
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data as Map<String, dynamic>;
+        if (body['success'] == true && body['data'] is List) {
+           final List data = body['data'] as List;
+           
+           return data.map<AssignedJob>((json) {
+             final map = <String, dynamic>{
+               'id': json['jobId'] ?? json['id'] ?? '',
+               'customer_id': json['customer']?['customerId'] ?? json['customerId'] ?? '',
+               'customerName': json['customer']?['name'] ?? 'Customer',
+               'customerPhone': json['customer']?['phone'] ?? '',
+               'service_type': json['serviceType'] ?? '',
+               'location': json['location']?['address'] ?? json['location'] ?? '',
+               'latitude': (json['location']?['latitude'] as num?)?.toDouble() ?? 0.0,
+               'longitude': (json['location']?['longitude'] as num?)?.toDouble() ?? 0.0,
+               'scheduled_date_time': _parseScheduledDate(json['scheduledDate']),
+               'status': json['status'] ?? 'pending',
+               'estimated_amount': (json['invoice']?['grandTotal'] as num?)?.toDouble() ?? 0.0,
+               'notes': json['notes'] ?? '',
+               if (json['invoice'] != null) 'invoice': json['invoice'],
+             };
+             return AssignedJob.fromJson(map);
+           }).toList();
+        }
+        return [];
       } else {
-        throw Exception('Failed to load jobs: Invalid response format');
+        throw Exception('Failed to load jobs: Invalid response status');
       }
     } catch (e) {
       throw Exception('Failed to fetch assigned jobs: $e');
@@ -53,11 +56,9 @@ class JobsApiDatasource {
     double collectedAmount,
   ) async {
     try {
-      await _apiService.patch('/jobs/$jobId', {
-        'status': 'completed',
+      await _apiService.post('/jobs/$jobId/complete', {
         'notes': completionNotes,
-        'amount': actualAmount,
-        'completedDate': DateTime.now().toIso8601String(),
+        'actualAmount': actualAmount,
         'collectedAmount': collectedAmount,
       });
     } catch (e) {
