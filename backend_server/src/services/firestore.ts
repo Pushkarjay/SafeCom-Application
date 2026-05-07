@@ -30,6 +30,19 @@ export function initFirebase(): Firestore {
 
     const databaseId = process.env.FIRESTORE_DB_ID || 'safecom-database-nosql';
     firestoreDb = getFirestore(firebaseApp, databaseId);
+    // Avoid failures when objects contain undefined values (client sometimes sends optional
+    // fields that are undefined). This mirrors the behavior of other SDKs and prevents the
+    // Firestore serializer from throwing: "Cannot use \"undefined\" as a Firestore value".
+    try {
+      // `settings` is available on the Firestore instance and accepts ignoreUndefinedProperties.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      firestoreDb.settings({ ignoreUndefinedProperties: true });
+    } catch (e) {
+      // Non-fatal - if settings isn't available for any reason, proceed without it and let
+      // individual routes handle validation. Log for visibility.
+      console.warn('Failed to apply Firestore settings ignoreUndefinedProperties:', e);
+    }
     console.log('Firebase Admin initialized successfully');
     return firestoreDb;
   } catch (error) {
@@ -107,7 +120,14 @@ export async function createDocument(
   collectionName: string,
   data: Record<string, unknown>
 ): Promise<string> {
-  const docRef = await getCollection(collectionName).add(data);
+  // Firestore rejects fields with `undefined` values unless ignoreUndefinedProperties
+  // is enabled. To be defensive, strip undefined-valued keys here to avoid runtime
+  // errors when the caller passes optional fields as undefined.
+  const sanitized: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) sanitized[k] = v
+  }
+  const docRef = await getCollection(collectionName).add(sanitized);
   return docRef.id;
 }
 
@@ -119,7 +139,12 @@ export async function updateDocument(
   docId: string,
   data: Record<string, unknown>
 ): Promise<void> {
-  await getCollection(collectionName).doc(docId).update(data);
+  // Remove undefined fields to avoid Firestore serializer errors.
+  const sanitized: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) sanitized[k] = v
+  }
+  await getCollection(collectionName).doc(docId).update(sanitized);
 }
 
 /**

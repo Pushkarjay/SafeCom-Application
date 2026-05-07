@@ -1,37 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
-import { useAuthStore } from '@core/services/auth_service'
 import { DashboardMetrics } from '@data/models/admin_models'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useAuthenticatedData } from '@/core/hooks/useAuthenticatedData'
 import './dashboard_screen.css'
 
 export default function DashboardScreen() {
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { data: metrics, isLoading, error } = useAuthenticatedData<DashboardMetrics | null>(
+    async () => {
+      const data = await adminDatasource.getDashboardMetrics()
+      return data
+    },
+    [] // Empty deps since we handle firebaseUser inside the hook
+  )
+  
   const [showReports, setShowReports] = useState(false)
-  const firebaseUser = useAuthStore((state) => state.firebaseUser)
-
-  useEffect(() => {
-    const loadMetrics = async () => {
-      if (!firebaseUser) {
-        return
-      }
-      try {
-        const data = await adminDatasource.getDashboardMetrics()
-        setMetrics(data)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadMetrics()
-  }, [firebaseUser?.uid])
 
   if (isLoading) {
     return <div className="dashboard-loading">Loading dashboard...</div>
   }
 
-  if (!metrics) {
+  if (error) {
     return <div className="dashboard-error">Failed to load metrics</div>
   }
 

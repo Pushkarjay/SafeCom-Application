@@ -60,7 +60,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Image.asset(
-                  'assets/images/logo.png',
+                  'assets/images/safecom_logo.jpeg',
                   width: 120,
                   height: 120,
                   fit: BoxFit.contain,

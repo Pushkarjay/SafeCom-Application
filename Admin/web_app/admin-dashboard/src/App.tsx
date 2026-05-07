@@ -11,8 +11,9 @@ import JobsScreen from '@features/jobs/jobs_screen'
 import JobDetailScreen from '@features/jobs/job_detail_screen'
 import PaymentsScreen from '@features/payments/payments_screen'
 import CatalogScreen from '@features/catalog/catalog_screen'
-import InstallationBuilderScreen from '@features/catalog/installation_builder_screen'
+import InstallationBuilderScreen from '@features/catalog/service_tree_builder_screen'
 import ServiceCreatorScreen from '@features/catalog/service_creator_screen'
+import MobilePreviewScreen from '@features/mobile_preview/mobile_preview_screen'
 import MainLayout from '@widgets/common/main_layout'
 import './App.css'
 
@@ -44,9 +45,10 @@ function App() {
             <Route path="/jobs" element={<JobsScreen />} />
             <Route path="/jobs/:id" element={<JobDetailScreen />} />
             <Route path="/payments" element={<PaymentsScreen />} />
-            <Route path="/catalog/installation" element={<InstallationBuilderScreen />} />
+            <Route path="/catalog/builder/:serviceId" element={<InstallationBuilderScreen />} />
             <Route path="/catalog/services" element={<ServiceCreatorScreen />} />
             <Route path="/catalog/:tab" element={<CatalogRoute />} />
+            <Route path="/mobile-preview" element={<MobilePreviewScreen />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />

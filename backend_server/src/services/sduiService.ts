@@ -212,6 +212,26 @@ function defaultHomeLayout(): SduiComponent[] {
       data: {
         title: 'Latest Updates',
         maxItems: 3,
+        items: [
+          {
+            title: 'Free Installation Consultation',
+            body: 'Book a free site survey with our experts this weekend.',
+            icon: 'engineering_outlined',
+            color: '#8B5CF6'
+          },
+          {
+            title: 'Expanded Service Areas',
+            body: 'We now serve Danapur, Hajipur, and Bihta regions.',
+            icon: 'map_outlined',
+            color: '#10B981'
+          },
+          {
+            title: 'Referral Program Live',
+            body: 'Refer a friend and earn Rs 500 in service credits.',
+            icon: 'card_giftcard_outlined',
+            color: '#F59E0B'
+          }
+        ]
       },
     },
   ]

@@ -1,38 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { Customer } from '@data/models/admin_models'
 import { getApiBaseUrl } from '@core/config/api'
+import { useAuthenticatedData } from '@/core/hooks/useAuthenticatedData'
 import './customers_screen.css'
 
 export default function CustomersScreen() {
   const navigate = useNavigate()
-  const [customers, setCustomers] = useState<Customer[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [sortField, setSortField] = useState<keyof Customer>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const firebaseUser = useAuthStore((state) => state.firebaseUser)
-
-  useEffect(() => {
-    const loadCustomers = async () => {
-      if (!firebaseUser) {
-        return
-      }
-      try {
-        const data = await adminDatasource.getCustomers(page)
-        setCustomers(data)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadCustomers()
-  }, [page, firebaseUser?.uid])
-  const processedCustomers = [...customers]
+  
+  const { data: customers, isLoading } = useAuthenticatedData<Customer[]>(
+    async () => {
+      const data = await adminDatasource.getCustomers(page)
+      return data
+    },
+    [page] // Re-fetch when page changes
+  )
+  
+  const processedCustomers = [...(customers || [])]
     .filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.email.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       let aVal = a[sortField]
@@ -72,20 +63,15 @@ export default function CustomersScreen() {
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
     if (!window.confirm(`Delete ${selectedIds.size} selected customers?`)) return
-    setIsLoading(true)
     try {
-      // NOTE: requires DELETE /customers/:id endpoint in backend
       const toDelete = Array.from(selectedIds)
       for (const id of toDelete) {
         const token = await useAuthStore.getState().getIdToken()
         await fetch(`${getApiBaseUrl()}/customers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       }
-      setCustomers(customers.filter(c => !selectedIds.has(c.id)))
       setSelectedIds(new Set())
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 

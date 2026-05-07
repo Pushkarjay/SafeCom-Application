@@ -30,8 +30,133 @@ async function getProductMap(): Promise<Map<string, Record<string, unknown>>> {
   return map;
 }
 
+// ─── Recursive node extraction ──────────────────────────────
+// Detects leaf vs branch nodes in the deeply nested Firestore map.
+// Leaf: has 'Price', 'Deafult q', 'available', 'rigid' fields.
+// Branch: children are maps → recurse.
+function isLeafNode(obj: Record<string, unknown>): boolean {
+  return (
+    obj.hasOwnProperty('Price') ||
+    obj.hasOwnProperty('Deafult q') ||
+    obj.hasOwnProperty('available') ||
+    obj.hasOwnProperty('rigid')
+  );
+}
+
+interface TreeNode {
+  key: string;
+  isLeaf: boolean;
+  isField?: boolean;
+  fieldType?: 'string' | 'number' | 'boolean' | 'reference' | 'map';
+  fieldValue?: any;
+  // Leaf fields
+  productId: string;
+  productName: string;
+  price: number;
+  category: string;
+  defaultQty: number;
+  minQty: number;
+  maxQty: number;
+  available: boolean;
+  rigid: boolean;
+  // Branch fields
+  children: TreeNode[];
+}
+
+function extractTree(
+  slot: Record<string, unknown>,
+  productMap: Map<string, Record<string, unknown>>
+): TreeNode[] {
+  const nodes: TreeNode[] = [];
+  for (const [key, value] of Object.entries(slot)) {
+    if (value === null || value === undefined) continue;
+
+    if (typeof value !== 'object') {
+      nodes.push({
+        key,
+        isLeaf: false,
+        isField: true,
+        fieldType: typeof value as any,
+        fieldValue: value,
+        productId: '',
+        productName: key,
+        price: 0,
+        category: '',
+        defaultQty: 1,
+        minQty: 0,
+        maxQty: 999,
+        available: true,
+        rigid: false,
+        children: []
+      });
+      continue;
+    }
+
+    if (isDocumentReference(value)) {
+      nodes.push({
+        key,
+        isLeaf: false,
+        isField: true,
+        fieldType: 'reference',
+        fieldValue: value.id,
+        productId: '',
+        productName: key,
+        price: 0,
+        category: '',
+        defaultQty: 1,
+        minQty: 0,
+        maxQty: 999,
+        available: true,
+        rigid: false,
+        children: []
+      });
+      continue;
+    }
+
+    const obj = value as Record<string, unknown>;
+
+    if (isLeafNode(obj)) {
+      const ref = extractProductRef(obj);
+      const catalogProduct = ref ? productMap.get(ref.id) : null;
+      nodes.push({
+        key,
+        isLeaf: true,
+        productId: ref?.id || '',
+        productName: catalogProduct ? String(catalogProduct.name || catalogProduct.productName || '') : key,
+        price: catalogProduct ? Number(catalogProduct.price || catalogProduct.basePrice || 0) : 0,
+        category: catalogProduct ? String(catalogProduct.category || '') : '',
+        defaultQty: Number(obj['Deafult q'] ?? 1),
+        minQty: Number(obj['min q'] ?? 0),
+        maxQty: Number(obj['max q'] ?? 999),
+        available: obj.available !== false,
+        rigid: obj.rigid === true,
+        children: []
+      });
+    } else {
+      const children = extractTree(obj, productMap);
+      nodes.push({
+        key,
+        isLeaf: false,
+        isField: false,
+        fieldType: 'map',
+        productId: '',
+        productName: key,
+        price: 0,
+        category: '',
+        defaultQty: 1,
+        minQty: 0,
+        maxQty: 999,
+        available: true,
+        rigid: false,
+        children
+      });
+    }
+  }
+  return nodes;
+}
+
 // ─── GET /api/catalog/installation-admin ────────────────────
-// Returns the full hierarchical config with ALL options per product slot
+// Returns the full recursive hierarchical config
 installationAdminRouter.get('/', authenticateToken, requireRole(['admin']), async (_req: Request, res: Response) => {
   try {
     const db = getDb();
@@ -49,27 +174,13 @@ installationAdminRouter.get('/', authenticateToken, requireRole(['admin']), asyn
         const products = productsRaw as Record<string, unknown>;
         const productSlots = Object.entries(products).map(([productKey, optionsRaw]) => {
           const options = optionsRaw as Record<string, unknown>;
-          const optionEntries = Object.entries(options).map(([optionKey, optionData]) => {
-            const opt = optionData as Record<string, unknown>;
-            const ref = extractProductRef(opt);
-            const catalogProduct = ref ? productMap.get(ref.id) : null;
-            return {
-              key: optionKey,
-              productId: ref?.id || '',
-              productName: catalogProduct ? String(catalogProduct.name || '') : '',
-              price: catalogProduct ? Number(catalogProduct.price || 0) : 0,
-              category: catalogProduct ? String(catalogProduct.category || '') : '',
-              defaultQty: Number(opt['Deafult q'] ?? 1),
-              minQty: Number(opt['min q'] ?? 0),
-              maxQty: Number(opt['max q'] ?? 999),
-              available: opt.available !== false,
-              rigid: opt.rigid === true
-            };
-          });
+          // Recursively extract the full tree for this product slot
+          const tree = extractTree(options, productMap);
+          const hasMultipleTopLevel = tree.length > 1;
           return {
             key: productKey,
-            options: optionEntries,
-            isClubbed: optionEntries.length > 1
+            options: tree,
+            isClubbed: hasMultipleTopLevel
           };
         });
         return {
@@ -230,35 +341,45 @@ installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey/product/:
   }
 });
 
-// ─── POST /…/product/:productKey/option — Club: add another option
+// ─── POST /category/:cat/setup/:setup/node — Add an option at any depth
 installationAdminRouter.post(
-  '/category/:categoryKey/setup/:setupKey/product/:productKey/option',
+  '/category/:categoryKey/setup/:setupKey/node',
   authenticateToken,
   requireRole(['admin']),
   async (req: Request, res: Response) => {
     try {
-      const { categoryKey, setupKey, productKey } = req.params;
-      const { productId, defaultQty, minQty, maxQty } = req.body as {
+      const { categoryKey, setupKey } = req.params;
+      const { nodePath, productId, defaultQty, minQty, maxQty } = req.body as {
+        nodePath?: string[]; // e.g. ['Product 2', 'Product 2 Option 1']
         productId?: string; defaultQty?: number; minQty?: number; maxQty?: number;
       };
 
       if (!productId?.trim()) return res.status(400).json({ success: false, error: 'Product ID is required' });
+      if (!Array.isArray(nodePath) || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath is required' });
 
       const db = getDb();
-
-      // Verify product exists
       const productDoc = await db.collection(PRODUCT_COLLECTION).doc(productId).get();
       if (!productDoc.exists) return res.status(404).json({ success: false, error: `Product ${productId} not found` });
 
-      // Find next option number
       const installDoc = await db.collection(SERVICE_COLLECTION).doc('Installation').get();
       const installData = installDoc.exists ? installDoc.data() || {} : {};
-      const catData2 = installData[categoryKey as string] as Record<string, unknown> | undefined;
-      const setupData2 = catData2?.[setupKey as string] as Record<string, unknown> | undefined;
-      const productSlot = (setupData2?.[productKey as string] as Record<string, unknown>) || {};
-      const optionCount = Object.keys(productSlot).length;
+      
+      let currentLevel = installData[categoryKey as string] as Record<string, unknown> | undefined;
+      currentLevel = currentLevel?.[setupKey as string] as Record<string, unknown> | undefined;
+      
+      for (const segment of nodePath) {
+        currentLevel = currentLevel?.[segment] as Record<string, unknown> | undefined;
+      }
+
+      const parentNode = currentLevel || {};
+      const optionCount = Object.keys(parentNode).length;
       const nextOptionNum = optionCount + 1;
-      const optionKey = `${productKey} Option ${nextOptionNum}`;
+      
+      // Generate name: e.g. "Product 2 Option 1 sub 1"
+      const parentName = nodePath[nodePath.length - 1];
+      const isSub = nodePath.length > 1; // Product N is depth 1, Product N Option M is depth 2
+      const prefix = isSub ? 'sub' : 'Option';
+      const optionKey = `${parentName} ${prefix} ${nextOptionNum}`;
 
       const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
       const optionData = {
@@ -271,60 +392,107 @@ installationAdminRouter.post(
         'rigid': false
       };
 
-      const path = `${categoryKey}.${setupKey}.${productKey}.${optionKey}`;
+      const firestorePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}.${optionKey}`;
       await db.collection(SERVICE_COLLECTION).doc('Installation').update({
-        [path]: optionData
+        [firestorePath]: optionData
       });
 
-      res.json({ success: true, message: `Option "${optionKey}" added (clubbed under "${productKey}")`, optionKey });
+      res.json({ success: true, message: `Node "${optionKey}" added`, optionKey });
     } catch (error) {
-      console.error('[INSTALL-ADMIN] POST club-option error:', error);
-      res.status(500).json({ success: false, error: 'Failed to add club option' });
+      console.error('[INSTALL-ADMIN] POST node error:', error);
+      res.status(500).json({ success: false, error: 'Failed to add node option' });
     }
   }
 );
 
-// ─── DELETE /…/product/:productKey/option/:optionKey — Remove a club option
+// ─── DELETE /category/:cat/setup/:setup/node — Remove a node at any depth
 installationAdminRouter.delete(
-  '/category/:categoryKey/setup/:setupKey/product/:productKey/option/:optionKey',
-  async (req: Request, res: Response) => {
-    try {
-      const { categoryKey, setupKey, productKey, optionKey } = req.params;
-      const db = getDb();
-      const path = `${categoryKey}.${setupKey}.${productKey}.${optionKey}`;
-      await db.collection(SERVICE_COLLECTION).doc('Installation').update({
-        [path]: FieldValue.delete()
-      });
-      res.json({ success: true, message: `Option "${optionKey}" removed from "${productKey}"` });
-    } catch (error) {
-      console.error('[INSTALL-ADMIN] DELETE club-option error:', error);
-      res.status(500).json({ success: false, error: 'Failed to remove club option' });
-    }
-  }
-);
-
-// ─── PATCH /…/option/:optionKey/quantities — Update min, max, default quantities
-installationAdminRouter.patch(
-  '/category/:categoryKey/setup/:setupKey/product/:productKey/option/:optionKey/quantities',
+  '/category/:categoryKey/setup/:setupKey/node',
   authenticateToken,
   requireRole(['admin']),
   async (req: Request, res: Response) => {
     try {
-      const { categoryKey, setupKey, productKey, optionKey } = req.params;
-      const { defaultQty, minQty, maxQty } = req.body as { defaultQty?: number; minQty?: number; maxQty?: number };
+      const { categoryKey, setupKey } = req.params;
+      const nodePathStr = req.query.path as string;
+      if (!nodePathStr) return res.status(400).json({ success: false, error: 'path array is required in query' });
+      
+      const nodePath = JSON.parse(nodePathStr);
+      if (!Array.isArray(nodePath) || nodePath.length === 0) {
+        return res.status(400).json({ success: false, error: 'invalid path array' });
+      }
+
+      const db = getDb();
+      const firestorePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+      await db.collection(SERVICE_COLLECTION).doc('Installation').update({
+        [firestorePath]: FieldValue.delete()
+      });
+
+      res.json({ success: true, message: `Node removed` });
+    } catch (error) {
+      console.error('[INSTALL-ADMIN] DELETE node error:', error);
+      res.status(500).json({ success: false, error: 'Failed to delete node' });
+    }
+  }
+);
+
+// ─── PATCH /category/:cat/setup/:setup/node/quantities — Update min, max, default quantities at any depth
+installationAdminRouter.patch(
+  '/category/:categoryKey/setup/:setupKey/node/quantities',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const { categoryKey, setupKey } = req.params;
+      const { nodePath, defaultQty, minQty, maxQty } = req.body as { nodePath?: string[]; defaultQty?: number; minQty?: number; maxQty?: number };
+      
+      if (!Array.isArray(nodePath) || nodePath.length === 0) {
+        return res.status(400).json({ success: false, error: 'nodePath array is required' });
+      }
+
       const db = getDb();
       const updates: Record<string, unknown> = {};
-      if (defaultQty !== undefined) updates[`${categoryKey}.${setupKey}.${productKey}.${optionKey}.Deafult q`] = defaultQty;
-      if (minQty !== undefined) updates[`${categoryKey}.${setupKey}.${productKey}.${optionKey}.min q`] = minQty;
-      if (maxQty !== undefined) updates[`${categoryKey}.${setupKey}.${productKey}.${optionKey}.max q`] = maxQty;
+      const firestorePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+      
+      if (defaultQty !== undefined) updates[`${firestorePath}.Deafult q`] = defaultQty;
+      if (minQty !== undefined) updates[`${firestorePath}.min q`] = minQty;
+      if (maxQty !== undefined) updates[`${firestorePath}.max q`] = maxQty;
       
       if (Object.keys(updates).length > 0) {
         await db.collection(SERVICE_COLLECTION).doc('Installation').update(updates);
       }
-      res.json({ success: true, message: `Quantities updated for "${optionKey}"` });
+      res.json({ success: true, message: `Quantities updated` });
     } catch (error) {
       console.error('[INSTALL-ADMIN] PATCH quantities error:', error);
       res.status(500).json({ success: false, error: 'Failed to update quantities' });
+    }
+  }
+);
+
+// ─── PATCH /category/:cat/setup/:setup/node/dynamic-field — Add/update primitive fields or maps
+installationAdminRouter.patch(
+  '/category/:categoryKey/setup/:setupKey/node/dynamic-field',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const { categoryKey, setupKey } = req.params;
+      const { nodePath, value } = req.body as { nodePath?: string[]; value?: any };
+      
+      if (!Array.isArray(nodePath) || nodePath.length === 0) {
+        return res.status(400).json({ success: false, error: 'nodePath array is required' });
+      }
+
+      const db = getDb();
+      const firestorePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+      
+      await db.collection(SERVICE_COLLECTION).doc('Installation').update({
+        [firestorePath]: value
+      });
+      
+      res.json({ success: true, message: `Field updated` });
+    } catch (error) {
+      console.error('[INSTALL-ADMIN] PATCH dynamic-field error:', error);
+      res.status(500).json({ success: false, error: 'Failed to update dynamic field' });
     }
   }
 );

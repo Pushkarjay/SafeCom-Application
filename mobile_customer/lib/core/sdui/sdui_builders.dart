@@ -11,6 +11,7 @@ import 'package:mobile_customer/core/sdui/sdui_models.dart';
 import 'package:mobile_customer/features/home/providers/home_providers.dart';
 import 'package:mobile_customer/features/home/widgets/location_header.dart';
 import 'package:mobile_customer/features/home/widgets/service_grid.dart';
+import 'package:mobile_customer/features/home/widgets/horizontal_scroll_list.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 
 // ============================================
@@ -97,6 +98,306 @@ void _handleServiceTap(BuildContext context, HomeServiceItem item) {
     context.push(route);
   } else {
     context.push('${AppRoutes.servicePlaceholder}/${item.id}');
+  }
+}
+
+// ============================================
+// HORIZONTAL SERVICES LIST
+// ============================================
+
+Widget buildHorizontalServices(SduiComponent component, BuildContext context) {
+  final title = component.data['title'] as String? ?? 'Our Services';
+  return Consumer(
+    builder: (context, ref, _) {
+      final servicesAsync = ref.watch(homeServicesProvider);
+      return servicesAsync.when(
+        data: (services) => HorizontalScrollList(
+          title: title,
+          itemCount: services.length,
+          onSeeAll: () {
+            // Logic to see all services if needed
+          },
+          itemBuilder: (context, index) {
+            final service = services[index];
+            return _buildHorizontalServiceCard(context, service);
+          },
+        ),
+        loading: () => const _HorizontalShimmer(),
+        error: (error, _) => const SizedBox.shrink(),
+      );
+    },
+  );
+}
+
+Widget _buildHorizontalServiceCard(BuildContext context, HomeServiceItem service) {
+  return InkWell(
+    onTap: () => _handleServiceTap(context, service),
+    borderRadius: BorderRadius.circular(18),
+    child: Ink(
+      width: 110,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(service.icon, style: const TextStyle(fontSize: 28)),
+            const SizedBox(height: 10),
+            Text(
+              service.title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF334155),
+                  ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+// ============================================
+// HORIZONTAL RECOMMENDATIONS LIST
+// ============================================
+
+Widget buildHorizontalRecommendations(SduiComponent component, BuildContext context) {
+  final title = component.data['title'] as String? ?? 'Recommended for You';
+  return Consumer(
+    builder: (context, ref, _) {
+      final recsAsync = ref.watch(homeRecommendationsProvider);
+      return recsAsync.when(
+        data: (recs) {
+          if (recs.isEmpty) return const SizedBox.shrink();
+          return HorizontalScrollList(
+            title: title,
+            itemCount: recs.length,
+            itemBuilder: (context, index) {
+              final rec = recs[index];
+              return _buildHorizontalRecommendationCard(context, rec);
+            },
+          );
+        },
+        loading: () => const _HorizontalShimmer(),
+        error: (error, _) => const SizedBox.shrink(),
+      );
+    },
+  );
+}
+
+Widget _buildHorizontalRecommendationCard(BuildContext context, HomeRecommendationItem rec) {
+  return InkWell(
+    onTap: () {
+      // Navigate to recommendation detail or checkout with this
+      context.push(AppRoutes.recommendation);
+    },
+    borderRadius: BorderRadius.circular(20),
+    child: Ink(
+      width: 240,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0F2FE),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.auto_awesome_outlined, 
+                      size: 18, color: Color(0xFF0369A1)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    rec.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: Color(0xFF0F172A),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              rec.description,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${rec.productIds.length} items included',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0A84FF),
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_rounded, 
+                    size: 14, color: Color(0xFF0A84FF)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+// ============================================
+// HORIZONTAL PRODUCTS LIST
+// ============================================
+
+Widget buildHorizontalProducts(SduiComponent component, BuildContext context) {
+  final title = component.data['title'] as String? ?? 'Popular Products';
+  return Consumer(
+    builder: (context, ref, _) {
+      final productsAsync = ref.watch(homePopularProductsProvider);
+      return productsAsync.when(
+        data: (products) => HorizontalScrollList(
+          title: title,
+          itemCount: products.length,
+          onSeeAll: () => context.push(AppRoutes.productsDiscovery),
+          itemBuilder: (context, index) {
+            final product = products[index];
+            return _buildHorizontalProductCard(context, product);
+          },
+        ),
+        loading: () => const _HorizontalShimmer(),
+        error: (error, _) => const SizedBox.shrink(),
+      );
+    },
+  );
+}
+
+Widget _buildHorizontalProductCard(BuildContext context, HomeProductItem product) {
+  return InkWell(
+    onTap: () {
+      // In this app, we go to product discovery to add to cart
+      context.push(AppRoutes.productsDiscovery);
+    },
+    borderRadius: BorderRadius.circular(20),
+    child: Ink(
+      width: 140,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                image: product.imageUrl != null
+                    ? DecorationImage(
+                        image: NetworkImage(product.imageUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: product.imageUrl == null
+                  ? const Center(child: Icon(Icons.inventory_2_outlined, color: Colors.grey))
+                  : null,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: Color(0xFF1E293B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Rs ${product.price.toInt()}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: Color(0xFF0A84FF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _HorizontalShimmer extends StatelessWidget {
+  const _HorizontalShimmer();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 140,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: 3,
+        itemBuilder: (context, index) => Container(
+          width: 140,
+          margin: const EdgeInsets.only(right: 12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -284,30 +585,23 @@ Widget buildDivider(SduiComponent component, BuildContext context) {
 // ============================================
 
 Widget buildAnnouncementsList(SduiComponent component, BuildContext context) {
-  final title = component.data['title'] as String? ?? 'Announcements';
+  final title = component.data['title'] as String? ?? 'Latest Updates';
+  final rawItems = component.data['items'] as List?;
+  
+  List<_Announcement> announcements = [];
+  if (rawItems != null) {
+    announcements = rawItems.map((item) {
+      final map = item as Map<String, dynamic>;
+      return _Announcement(
+        title: map['title'] as String? ?? '',
+        body: map['body'] as String? ?? '',
+        icon: _parseIcon(map['icon'] as String?),
+        color: _parseColor(map['color'] as String? ?? '#0A84FF'),
+      );
+    }).toList();
+  }
 
-  // For now, show static announcements — in production these would come
-  // from a Firestore collection fetched via a provider.
-  final announcements = [
-    _Announcement(
-      title: 'Free Installation Consultation',
-      body: 'Book a free site survey with our experts this weekend.',
-      icon: Icons.engineering_outlined,
-      color: const Color(0xFF8B5CF6),
-    ),
-    _Announcement(
-      title: 'Expanded Service Areas',
-      body: 'We now serve Danapur, Hajipur, and Bihta regions.',
-      icon: Icons.map_outlined,
-      color: const Color(0xFF10B981),
-    ),
-    _Announcement(
-      title: 'Referral Program Live',
-      body: 'Refer a friend and earn Rs 500 in service credits.',
-      icon: Icons.card_giftcard_outlined,
-      color: const Color(0xFFF59E0B),
-    ),
-  ];
+  if (announcements.isEmpty) return const SizedBox.shrink();
 
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,7 +681,24 @@ class _Announcement {
 Color _parseColor(String hex) {
   hex = hex.replaceFirst('#', '');
   if (hex.length == 6) hex = 'FF$hex';
-  return Color(int.parse(hex, radix: 16));
+  try {
+    return Color(int.parse(hex, radix: 16));
+  } catch (e) {
+    return const Color(0xFF0A84FF);
+  }
+}
+
+IconData _parseIcon(String? iconName) {
+  switch (iconName) {
+    case 'engineering_outlined': return Icons.engineering_outlined;
+    case 'map_outlined': return Icons.map_outlined;
+    case 'card_giftcard_outlined': return Icons.card_giftcard_outlined;
+    case 'info_outline': return Icons.info_outline;
+    case 'local_offer_outlined': return Icons.local_offer_outlined;
+    case 'new_releases_outlined': return Icons.new_releases_outlined;
+    case 'campaign_outlined': return Icons.campaign_outlined;
+    default: return Icons.notifications_active_outlined;
+  }
 }
 
 void _handleAction(BuildContext context, SduiAction? action) {

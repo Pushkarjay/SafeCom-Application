@@ -1,12 +1,18 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import './catalog_screen.css'
 import './installation_builder.css'
 
-// ─── Types (match backend response) ────────────────────────
-interface ProductOption {
+// ─── Types (match backend recursive tree response) ─────────
+interface TreeNode {
   key: string
+  isLeaf: boolean
+  isField?: boolean
+  fieldType?: 'string' | 'number' | 'boolean' | 'reference' | 'map'
+  fieldValue?: any
+  // Leaf fields
   productId: string
   productName: string
   price: number
@@ -16,11 +22,13 @@ interface ProductOption {
   maxQty: number
   available: boolean
   rigid: boolean
+  // Branch fields — recursive children
+  children: TreeNode[]
 }
 
 interface ProductSlot {
   key: string
-  options: ProductOption[]
+  options: TreeNode[]
   isClubbed: boolean
 }
 
@@ -70,7 +78,7 @@ function ProductSearchModal({ onSelect, onClose }: {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    adminDatasource.fetchInstallationProducts('').then((products) => {
+    adminDatasource.fetchMasterProducts('').then((products) => {
       setAllProducts(products)
       setResults(products)
       setLoading(false)
@@ -127,7 +135,9 @@ function ProductSearchModal({ onSelect, onClose }: {
 }
 
 // ─── Main Screen ────────────────────────────────────────────
-export default function InstallationBuilderScreen() {
+export default function ServiceTreeBuilderScreen() {
+  const { serviceId } = useParams<{ serviceId: string }>()
+  const navigate = useNavigate()
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -138,7 +148,7 @@ export default function InstallationBuilderScreen() {
 
   // Modals
   const [showProductSearch, setShowProductSearch] = useState<{ categoryKey: string; setupKey: string } | null>(null)
-  const [showClubSearch, setShowClubSearch] = useState<{ categoryKey: string; setupKey: string; productKey: string } | null>(null)
+  const [showClubSearch, setShowClubSearch] = useState<{ categoryKey: string; setupKey: string; nodePath: string[] } | null>(null)
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [showAddSetup, setShowAddSetup] = useState<string | null>(null) // categoryKey
   const [newName, setNewName] = useState('')
@@ -148,11 +158,11 @@ export default function InstallationBuilderScreen() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   const loadData = useCallback(async () => {
-    if (!firebaseUser) return
+    if (!firebaseUser || !serviceId) return
     setIsLoading(true)
     setError(null)
     try {
-      const data = await adminDatasource.getInstallationAdminConfig()
+      const data = await adminDatasource.getServiceConfig(serviceId)
       setCategories(data.categories as Category[])
       if (data.categories.length > 0 && expandedCats.size === 0) {
         setExpandedCats(new Set([String(data.categories[0].key)]))
@@ -162,7 +172,7 @@ export default function InstallationBuilderScreen() {
     } finally {
       setIsLoading(false)
     }
-  }, [firebaseUser])
+  }, [firebaseUser, serviceId])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -201,10 +211,10 @@ export default function InstallationBuilderScreen() {
 
   // ─── CRUD Handlers ───────────────────────────────────────
   const addCategory = async () => {
-    if (!newName.trim()) return
+    if (!newName.trim() || !serviceId) return
     setSaving(true)
     try {
-      await adminDatasource.installationAddCategory(newName.trim())
+      await adminDatasource.serviceAddCategory(serviceId, newName.trim())
       setShowAddCategory(false)
       setNewName('')
       await loadData()
@@ -213,20 +223,21 @@ export default function InstallationBuilderScreen() {
   }
 
   const deleteCategory = async (key: string) => {
+    if (!serviceId) return
     if (!confirm(`Delete category "${key}" and ALL its setups/products?`)) return
     setSaving(true)
     try {
-      await adminDatasource.installationDeleteCategory(key)
+      await adminDatasource.serviceDeleteCategory(serviceId, key)
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
   }
 
   const addSetup = async (categoryKey: string) => {
-    if (!newName.trim()) return
+    if (!newName.trim() || !serviceId) return
     setSaving(true)
     try {
-      await adminDatasource.installationAddSetup(categoryKey, newName.trim())
+      await adminDatasource.serviceAddSetup(serviceId, categoryKey, newName.trim())
       setShowAddSetup(null)
       setNewName('')
       await loadData()
@@ -235,19 +246,21 @@ export default function InstallationBuilderScreen() {
   }
 
   const deleteSetup = async (categoryKey: string, setupKey: string) => {
+    if (!serviceId) return
     if (!confirm(`Delete setup "${setupKey}" and all its products?`)) return
     setSaving(true)
     try {
-      await adminDatasource.installationDeleteSetup(categoryKey, setupKey)
+      await adminDatasource.serviceDeleteSetup(serviceId, categoryKey, setupKey)
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
   }
 
   const addProduct = async (categoryKey: string, setupKey: string, product: CatalogProduct) => {
+    if (!serviceId) return
     setSaving(true)
     try {
-      await adminDatasource.installationAddProduct(categoryKey, setupKey, product.id)
+      await adminDatasource.serviceAddProduct(serviceId, categoryKey, setupKey, product.id)
       setShowProductSearch(null)
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
@@ -255,16 +268,18 @@ export default function InstallationBuilderScreen() {
   }
 
   const deleteProduct = async (categoryKey: string, setupKey: string, productKey: string) => {
+    if (!serviceId) return
     if (!confirm(`Remove "${productKey}" from this setup?`)) return
     setSaving(true)
     try {
-      await adminDatasource.installationDeleteProduct(categoryKey, setupKey, productKey)
+      await adminDatasource.serviceDeleteProduct(serviceId, categoryKey, setupKey, productKey)
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
   }
 
   const bulkDeleteProducts = async (categoryKey: string, setupKey: string) => {
+    if (!serviceId) return
     const setupId = `${categoryKey}::${setupKey}`
     const selected = Array.from(selectedForClubbing[setupId] || [])
     if (selected.length === 0) return
@@ -272,7 +287,7 @@ export default function InstallationBuilderScreen() {
     setSaving(true)
     try {
       for (const productKey of selected) {
-        await adminDatasource.installationDeleteProduct(categoryKey, setupKey, productKey)
+        await adminDatasource.serviceDeleteProduct(serviceId, categoryKey, setupKey, productKey)
       }
       setSelectedForClubbing(prev => ({ ...prev, [setupId]: new Set() }))
       await loadData()
@@ -280,50 +295,38 @@ export default function InstallationBuilderScreen() {
     finally { setSaving(false) }
   }
 
-  const addClubOption = async (categoryKey: string, setupKey: string, productKey: string, product: CatalogProduct) => {
+  const addClubOption = async (categoryKey: string, setupKey: string, nodePath: string[], product: CatalogProduct) => {
+    if (!serviceId) return
     setSaving(true)
     try {
-      await adminDatasource.installationAddClubOption(categoryKey, setupKey, productKey, product.id)
+      await adminDatasource.serviceAddNode(serviceId, categoryKey, setupKey, nodePath, product.id)
       setShowClubSearch(null)
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
   }
 
-  const deleteClubOption = async (categoryKey: string, setupKey: string, productKey: string, optionKey: string) => {
-    if (!confirm(`Remove option "${optionKey}" from club?`)) return
+  const deleteClubOption = async (categoryKey: string, setupKey: string, nodePath: string[]) => {
+    if (!serviceId) return
+    const nodeName = nodePath[nodePath.length - 1]
+    if (!confirm(`Remove option "${nodeName}" from club?`)) return
     setSaving(true)
     try {
-      await adminDatasource.installationDeleteClubOption(categoryKey, setupKey, productKey, optionKey)
+      await adminDatasource.serviceDeleteNode(serviceId, categoryKey, setupKey, nodePath)
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
   }
 
-  const handleClubSelected = async (categoryKey: string, setupKey: string) => {
-    const setupId = `${categoryKey}::${setupKey}`
-    const selected = Array.from(selectedForClubbing[setupId] || [])
-    if (selected.length < 2) {
-      setError('Select at least 2 products to club')
-      return
-    }
-    setSaving(true)
-    try {
-      await adminDatasource.installationClubExisting(categoryKey, setupKey, selected)
-      setSelectedForClubbing(prev => ({ ...prev, [setupId]: new Set() }))
-      await loadData()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
-    finally { setSaving(false) }
-  }
-
-  const editQty = async (catKey: string, setupKey: string, prodKey: string, optKey: string, type: 'defaultQty'|'minQty'|'maxQty', current: number) => {
+  const editQty = async (catKey: string, setupKey: string, nodePath: string[], type: 'defaultQty'|'minQty'|'maxQty', current: number) => {
+    if (!serviceId) return
     const v = prompt(`Enter new ${type}:`, String(current))
     if (v === null) return
     const num = Number(v)
     if (isNaN(num) || num < 0) return
     setSaving(true)
     try {
-       await adminDatasource.installationUpdateQuantities(catKey, setupKey, prodKey, optKey, { [type]: num })
+       await adminDatasource.serviceUpdateQuantities(serviceId, catKey, setupKey, nodePath, { [type]: num })
        await loadData()
     } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
@@ -352,12 +355,154 @@ export default function InstallationBuilderScreen() {
     return { cats, setups, products, clubs, totalValue }
   }, [categories])
 
+  // ─── Recursive tree helpers ─────────────────────────────
+  function countLeaves(nodes: TreeNode[]): number {
+    return nodes.reduce((sum, n) => n.isLeaf ? sum + 1 : sum + countLeaves(n.children), 0)
+  }
+
+  /** Render tree nodes recursively as table rows with indentation */
+  function renderTreeNodes(
+    nodes: TreeNode[],
+    depth: number,
+    catKey: string,
+    setupKey: string,
+    currentPath: string[]
+  ): JSX.Element[] {
+    const rows: JSX.Element[] = []
+    const indent = depth * 24
+
+    for (const node of nodes) {
+      const nodePath = [...currentPath, node.key]
+      const nodeId = `${catKey}::${setupKey}::${nodePath.join('::')}::d${depth}`
+
+      if (node.isLeaf) {
+        // ── LEAF ROW: shows product details ──
+        rows.push(
+          <tr key={nodeId} className="ib-product-row ib-club-option-row">
+            <td></td>
+            <td>
+              <div className="product-main" style={{ paddingLeft: indent }}>
+                <span className="product-name">
+                  {'│ '.repeat(Math.max(0, depth - 1))}↳ {node.productName || node.productId || node.key}
+                </span>
+                <span className="product-id">{node.productId} · {node.key}</span>
+              </div>
+            </td>
+            <td className="num"><button className="link-btn" onClick={() => editPrice(node.productId, node.price)}>{fmt(node.price)}</button></td>
+            <td className="num"><button className="link-btn" onClick={() => editQty(catKey, setupKey, nodePath, 'defaultQty', node.defaultQty)}>{node.defaultQty}</button></td>
+            <td className="num"><button className="link-btn" onClick={() => editQty(catKey, setupKey, nodePath, 'minQty', node.minQty)}>{node.minQty}</button></td>
+            <td className="num"><button className="link-btn" onClick={() => editQty(catKey, setupKey, nodePath, 'maxQty', node.maxQty)}>{node.maxQty}</button></td>
+            <td className="num">{fmt(node.price * node.defaultQty)}</td>
+            <td>
+              <div className="ib-actions">
+                <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add sub-option">+ Option</button>
+                <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this option">✕</button>
+              </div>
+            </td>
+          </tr>
+        )
+      } else if (node.isField) {
+        // ── FIELD ROW: shows arbitrary primitive data ──
+        rows.push(
+          <tr key={nodeId} className="ib-product-row ib-club-option-row">
+            <td></td>
+            <td>
+              <div className="product-main" style={{ paddingLeft: indent }}>
+                <span className="product-name">
+                  {'│ '.repeat(Math.max(0, depth - 1))}↳ {node.key}
+                </span>
+                <span className="product-id">Field ({node.fieldType})</span>
+              </div>
+            </td>
+            <td className="num">—</td>
+            <td className="num">—</td>
+            <td className="num">—</td>
+            <td className="num">—</td>
+            <td className="num">
+              {node.fieldType === 'boolean' 
+                 ? (node.fieldValue ? 'true' : 'false') 
+                 : String(node.fieldValue)}
+            </td>
+            <td>
+              <div className="ib-actions">
+                <button className="link-btn" onClick={() => {
+                   const val = prompt(`Enter new value for ${node.key} (${node.fieldType}):`, String(node.fieldValue))
+                   if (val !== null && serviceId) {
+                      let parsed: any = val;
+                      if (node.fieldType === 'number') parsed = Number(val);
+                      if (node.fieldType === 'boolean') parsed = val === 'true';
+                      adminDatasource.serviceUpdateDynamicField(serviceId, catKey, setupKey, nodePath, parsed).then(() => {
+                        loadData();
+                      })
+                   }
+                }}>Edit</button>
+                <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this field">✕</button>
+              </div>
+            </td>
+          </tr>
+        )
+      } else {
+        // ── BRANCH ROW: expandable, shows children count ──
+        const branchOpen = expandedClubs.has(nodeId)
+        rows.push(
+          <tr key={nodeId} className="ib-product-row ib-club-option-row" style={{ background: `rgba(10,132,255,${0.02 * depth})` }}>
+            <td></td>
+            <td>
+              <button className="ib-club-toggle" onClick={() => toggle(expandedClubs, nodeId, setExpandedClubs)} type="button">
+                <div className="product-main" style={{ paddingLeft: indent }}>
+                  <span className="product-name">
+                    <span className={`ib-chevron ${branchOpen ? 'open' : ''}`} style={{ fontSize: '10px', marginRight: '6px' }}>▶</span>
+                    📂 {node.key} <span className="ib-badge" style={{ fontSize: '10px' }}>{countLeaves(node.children)} leaves</span>
+                  </span>
+                  <span className="product-id">Branch — {node.children.length} children at this level</span>
+                </div>
+              </button>
+            </td>
+            <td className="num">—</td>
+            <td className="num">—</td>
+            <td className="num">—</td>
+            <td className="num">—</td>
+            <td className="num">—</td>
+            <td>
+              <div className="ib-actions">
+                <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add product sub-option">+ Option</button>
+                <button className="link-btn" onClick={() => {
+                   const fieldName = prompt('Enter new field name:')
+                   if (!fieldName || !serviceId) return;
+                   const type = prompt('Enter type (string, number, boolean, map):', 'string')
+                   if (!type) return;
+                   let val: any = '';
+                   if (type === 'number') val = 0;
+                   if (type === 'boolean') val = false;
+                   if (type === 'map') val = {};
+                   
+                   adminDatasource.serviceUpdateDynamicField(serviceId, catKey, setupKey, [...nodePath, fieldName], val).then(() => {
+                     loadData();
+                   })
+                }} title="Add dynamic field">+ Field</button>
+                {depth > 0 && <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this branch">✕</button>}
+              </div>
+            </td>
+          </tr>
+        )
+
+        if (branchOpen) {
+          rows.push(...renderTreeNodes(node.children, depth + 1, catKey, setupKey, nodePath))
+        }
+      }
+    }
+    return rows
+  }
+
   return (
     <div className="catalog-screen">
       <div className="catalog-header">
-        <div>
-          <h1>Installation Builder</h1>
-          <p className="catalog-subtitle">Manage installation categories, setups, product mappings, and clubbed options — all synced to your database.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <button className="icon-btn" onClick={() => navigate('/catalog/services')} title="Back to Services">←</button>
+          <div>
+            <h1>{serviceId} Builder</h1>
+            <p className="catalog-subtitle">Recursive tree configuration for {serviceId}. Add categories, setups, and products with infinite nesting.</p>
+          </div>
         </div>
         <div className="catalog-actions">
           <button className="primary-btn" onClick={() => { setShowAddCategory(true); setNewName('') }}>+ Add Category</button>
@@ -367,7 +512,7 @@ export default function InstallationBuilderScreen() {
       {error && <div className="catalog-error">{error} <button className="icon-btn" onClick={() => setError(null)}>×</button></div>}
 
       {isLoading ? (
-        <div className="catalog-loading">Loading installation configuration from database...</div>
+        <div className="catalog-loading">Loading {serviceId} configuration...</div>
       ) : (
         <>
           {/* Stats */}
@@ -375,14 +520,14 @@ export default function InstallationBuilderScreen() {
             <div className="ib-stat"><span className="ib-stat-value">{stats.cats}</span><span className="ib-stat-label">Categories</span></div>
             <div className="ib-stat"><span className="ib-stat-value">{stats.setups}</span><span className="ib-stat-label">Setups</span></div>
             <div className="ib-stat"><span className="ib-stat-value">{stats.products}</span><span className="ib-stat-label">Products</span></div>
-            <div className="ib-stat"><span className="ib-stat-value">{stats.clubs}</span><span className="ib-stat-label">Clubbed</span></div>
-            <div className="ib-stat highlight"><span className="ib-stat-value">{fmt(stats.totalValue)}</span><span className="ib-stat-label">Total Value</span></div>
+            <div className="ib-stat"><span className="ib-stat-value">{stats.clubs}</span><span className="ib-stat-label">Clubs/Branches</span></div>
+            <div className="ib-stat highlight"><span className="ib-stat-value">{fmt(stats.totalValue)}</span><span className="ib-stat-label">Estimated Base</span></div>
           </div>
 
           {/* Tree */}
           <div className="ib-tree">
             {categories.length === 0 ? (
-              <div className="ib-empty-state"><p>No installation categories found. Click "+ Add Category" to create one.</p></div>
+              <div className="ib-empty-state"><p>No categories found for {serviceId}. Click "+ Add Category" to create one.</p></div>
             ) : categories.map((cat) => {
               const catOpen = expandedCats.has(cat.key)
               return (
@@ -428,9 +573,6 @@ export default function InstallationBuilderScreen() {
                               <div className="ib-setup-body">
                                 <div className="ib-section-actions">
                                   <button className="secondary-btn" onClick={() => setShowProductSearch({ categoryKey: cat.key, setupKey: setup.key })}>+ Add Product</button>
-                                  {(selectedForClubbing[sKey]?.size || 0) >= 2 && (
-                                    <button className="secondary-btn" onClick={() => handleClubSelected(cat.key, setup.key)}>🔗 Club Selected</button>
-                                  )}
                                   {(selectedForClubbing[sKey]?.size || 0) > 0 && (
                                     <button className="secondary-btn danger" onClick={() => bulkDeleteProducts(cat.key, setup.key)}>🗑️ Delete Selected</button>
                                   )}
@@ -460,10 +602,10 @@ export default function InstallationBuilderScreen() {
                                     </thead>
                                     <tbody>
                                       {[...setup.products].sort((a, b) => {
-                                        const optA = a.options[0] || {}
-                                        const optB = b.options[0] || {}
-                                        let aVal = sortField === 'productName' ? (optA.productName || optA.productId || a.key) : optA[sortField as keyof ProductOption] || a.key
-                                        let bVal = sortField === 'productName' ? (optB.productName || optB.productId || b.key) : optB[sortField as keyof ProductOption] || b.key
+                                        const optA = (a.options[0] || {}) as TreeNode
+                                        const optB = (b.options[0] || {}) as TreeNode
+                                        let aVal: string | number = sortField === 'productName' ? (optA.productName || optA.productId || a.key) : (optA as any)[sortField] ?? a.key
+                                        let bVal: string | number = sortField === 'productName' ? (optB.productName || optB.productId || b.key) : (optB as any)[sortField] ?? b.key
                                         
                                         if (typeof aVal === 'string') aVal = aVal.toLowerCase()
                                         if (typeof bVal === 'string') bVal = bVal.toLowerCase()
@@ -472,7 +614,7 @@ export default function InstallationBuilderScreen() {
                                         return 0
                                       }).map((slot) => {
                                         if (!slot.isClubbed) {
-                                          // Regular product row
+                                          // Regular product row (single leaf option)
                                           const opt = slot.options[0]
                                           if (!opt) return null
                                           return (
@@ -487,9 +629,9 @@ export default function InstallationBuilderScreen() {
                                                 </div>
                                               </td>
                                               <td className="num"><button className="link-btn" onClick={() => editPrice(opt.productId, opt.price)}>{fmt(opt.price)}</button></td>
-                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, slot.key, opt.key, 'defaultQty', opt.defaultQty)}>{opt.defaultQty}</button></td>
-                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, slot.key, opt.key, 'minQty', opt.minQty)}>{opt.minQty}</button></td>
-                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, slot.key, opt.key, 'maxQty', opt.maxQty)}>{opt.maxQty}</button></td>
+                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, [slot.key, opt.key], 'defaultQty', opt.defaultQty)}>{opt.defaultQty}</button></td>
+                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, [slot.key, opt.key], 'minQty', opt.minQty)}>{opt.minQty}</button></td>
+                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, [slot.key, opt.key], 'maxQty', opt.maxQty)}>{opt.maxQty}</button></td>
                                               <td className="num total">{fmt(opt.price * opt.defaultQty)}</td>
                                               <td>
                                                 <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove product">🗑️</button>
@@ -498,7 +640,7 @@ export default function InstallationBuilderScreen() {
                                           )
                                         }
 
-                                        // Clubbed product
+                                        // Clubbed product — render recursive tree
                                         const clubId = `${cat.key}::${setup.key}::${slot.key}`
                                         const clubOpen = expandedClubs.has(clubId)
                                         return [
@@ -511,9 +653,9 @@ export default function InstallationBuilderScreen() {
                                                 <span className={`ib-chevron ${clubOpen ? 'open' : ''}`}>▶</span>
                                                 <div className="product-main">
                                                   <span className="product-name">
-                                                    {slot.key} <span className="ib-badge club">🔗 {slot.options.length} options</span>
+                                                    {slot.key} <span className="ib-badge club">🔗 {countLeaves(slot.options)} options</span>
                                                   </span>
-                                                  <span className="product-id">Clubbed — customer selects one</span>
+                                                  <span className="product-id">Clubbed — customer drills down to select</span>
                                                 </div>
                                               </button>
                                             </td>
@@ -523,29 +665,11 @@ export default function InstallationBuilderScreen() {
                                             <td className="num">—</td>
                                             <td className="num total">{fmt(slot.options[0]?.price * (slot.options[0]?.defaultQty || 1) || 0)}</td>
                                             <td>
-                                              <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, productKey: slot.key })} title="Add option">+ Option</button>
+                                              <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add option">+ Option</button>
                                               <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
                                             </td>
                                           </tr>,
-                                          ...(clubOpen ? slot.options.map((opt) => (
-                                            <tr key={`${slot.key}-${opt.key}`} className="ib-product-row ib-club-option-row">
-                                              <td></td>
-                                              <td>
-                                                <div className="product-main" style={{ paddingLeft: 32 }}>
-                                                  <span className="product-name">↳ {opt.productName || opt.productId}</span>
-                                                  <span className="product-id">{opt.productId} · {opt.key}</span>
-                                                </div>
-                                              </td>
-                                              <td className="num"><button className="link-btn" onClick={() => editPrice(opt.productId, opt.price)}>{fmt(opt.price)}</button></td>
-                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, slot.key, opt.key, 'defaultQty', opt.defaultQty)}>{opt.defaultQty}</button></td>
-                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, slot.key, opt.key, 'minQty', opt.minQty)}>{opt.minQty}</button></td>
-                                              <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, slot.key, opt.key, 'maxQty', opt.maxQty)}>{opt.maxQty}</button></td>
-                                              <td className="num">{fmt(opt.price * opt.defaultQty)}</td>
-                                              <td>
-                                                <button className="icon-btn danger" onClick={() => deleteClubOption(cat.key, setup.key, slot.key, opt.key)} title="Remove this option">✕</button>
-                                              </td>
-                                            </tr>
-                                          )) : [])
+                                          ...(clubOpen ? renderTreeNodes(slot.options, 1, cat.key, setup.key, [slot.key]) : [])
                                         ]
                                       })}
                                     </tbody>
@@ -616,7 +740,7 @@ export default function InstallationBuilderScreen() {
       {showClubSearch && (
         <ProductSearchModal
           onClose={() => setShowClubSearch(null)}
-          onSelect={(p) => addClubOption(showClubSearch.categoryKey, showClubSearch.setupKey, showClubSearch.productKey, p)}
+          onSelect={(p) => addClubOption(showClubSearch.categoryKey, showClubSearch.setupKey, showClubSearch.nodePath, p)}
         />
       )}
     </div>

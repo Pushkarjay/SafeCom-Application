@@ -45,7 +45,7 @@ productsRouter.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const page = parseInt((req.query.page as string) || '1')
-      const pageSize = Math.min(parseInt((req.query.pageSize as string) || '20'), 100)
+      const pageSize = Math.min(parseInt((req.query.pageSize as string) || '200'), 500)
       const category = req.query.category as string | undefined
       const featured = req.query.featured === 'true'
 

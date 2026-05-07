@@ -21,4 +21,9 @@ class ServiceCatalogApiDataSource {
     );
     return RecommendationCatalogResponse.fromJson(response);
   }
+
+  Future<MasterProductResponse> getProducts({int pageSize = 20}) async {
+    final response = await _apiService.getAllProducts();
+    return MasterProductResponse.fromJson(response);
+  }
 }

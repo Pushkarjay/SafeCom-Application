@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { Service } from '@data/models/admin_models'
 import './catalog_screen.css' // Reuse catalog styling
 
 export default function ServiceCreatorScreen() {
+  const navigate = useNavigate()
   const [services, setServices] = useState<Service[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -25,7 +27,7 @@ export default function ServiceCreatorScreen() {
     if (!firebaseUser) return
     setIsLoading(true)
     try {
-      const data = await adminDatasource.getServices()
+      const data = await adminDatasource.getServicesList()
       setServices(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load services')
@@ -67,17 +69,17 @@ export default function ServiceCreatorScreen() {
     setIsSaving(true)
     setError(null)
     try {
-      // Mocking save for now
-      await new Promise(r => setTimeout(r, 600))
-      
       if (editingService) {
-        setServices(services.map(s => s.id === form.id ? { ...form } : s))
+        // For now, we only update via the tree builder, 
+        // but we can add meta-update here if needed.
+        await adminDatasource.createService(form.id, form.title, form.icon)
       } else {
-        setServices([...services, { ...form }])
+        await adminDatasource.createService(form.id, form.title, form.icon)
       }
+      await loadData()
       setIsModalOpen(false)
     } catch (err) {
-      setError('Failed to save service')
+      setError('Failed to save service: ' + (err instanceof Error ? err.message : 'Unknown error'))
     } finally {
       setIsSaving(false)
     }
@@ -87,9 +89,8 @@ export default function ServiceCreatorScreen() {
     if (!window.confirm('Are you sure you want to delete this service?')) return
     setIsSaving(true)
     try {
-      // Mocking delete
-      await new Promise(r => setTimeout(r, 600))
-      setServices(services.filter(s => s.id !== id))
+      await adminDatasource.deleteService(id)
+      await loadData()
     } catch (err) {
       setError('Failed to delete service')
     } finally {
@@ -138,7 +139,8 @@ export default function ServiceCreatorScreen() {
                       </span>
                     </td>
                     <td>
-                      <button className="icon-btn" onClick={() => openForm(s)}>Edit</button>
+                      <button className="icon-btn" onClick={() => navigate(`/catalog/builder/${s.id}`)}>Builder</button>
+                      <button className="icon-btn" onClick={() => openForm(s)}>Edit Meta</button>
                       <button className="icon-btn danger" onClick={() => handleDelete(s.id)}>Delete</button>
                     </td>
                   </tr>

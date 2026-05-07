@@ -163,6 +163,18 @@ export class AdminDatasource {
     }))
   }
 
+  async getCatalogMetadata(): Promise<{ categories: string[]; groups: string[] }> {
+    const payload = await this.fetchJson<{ success: boolean; data: { categories: string[]; groups: string[] } }>(`${BASE_URL}/catalog/metadata`)
+    return payload.data || { categories: [], groups: [] }
+  }
+
+  async createCatalogMetadata(type: 'category' | 'group', value: string): Promise<{ success: boolean; type: string; value: string }> {
+    return await this.fetchJson(`${BASE_URL}/catalog/metadata`, {
+      method: 'POST',
+      body: JSON.stringify({ type, value })
+    })
+  }
+
   async createCatalogProduct(data: Partial<CatalogProduct>): Promise<CatalogProduct> {
     const payload = await this.fetchJson<{ success: boolean; data: CatalogProduct }>(`${BASE_URL}/catalog/products`, {
       method: 'POST',
@@ -261,72 +273,153 @@ export class AdminDatasource {
 
   // ====== INSTALLATION ADMIN (CRUD + Clubbing) ======
 
-  async getInstallationAdminConfig(): Promise<{ categories: any[] }> {
-    const payload = await this.fetchJson<{ success: boolean; data: { categories: any[] } }>(`${BASE_URL}/catalog/installation-admin`)
+  // ====== GENERIC SERVICES ADMIN (CRUD + Tree Configuration) ======
+
+  async getServicesList(): Promise<Service[]> {
+    const payload = await this.fetchJson<{ success: boolean; data: Service[] }>(`${BASE_URL}/catalog/services-admin/list`)
     return payload.data
   }
 
-  async installationAddCategory(name: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category`, { method: 'POST', body: JSON.stringify({ name }) })
+  async createService(id: string, title: string, icon: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/create`, {
+      method: 'POST',
+      body: JSON.stringify({ id, title, icon })
+    })
   }
 
-  async installationDeleteCategory(key: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(key)}`, { method: 'DELETE' })
+  async deleteService(serviceId: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}`, {
+      method: 'DELETE'
+    })
   }
 
-  async installationAddSetup(categoryKey: string, name: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup`, { method: 'POST', body: JSON.stringify({ name }) })
+  async getServiceConfig(serviceId: string): Promise<{ categories: any[] }> {
+    const payload = await this.fetchJson<{ success: boolean; data: { categories: any[] } }>(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}`)
+    return payload.data
   }
 
-  async installationDeleteSetup(categoryKey: string, setupKey: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}`, { method: 'DELETE' })
+  async serviceAddCategory(serviceId: string, name: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category`, {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    })
   }
 
-  async installationAddProduct(categoryKey: string, setupKey: string, productId: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product`, { method: 'POST', body: JSON.stringify({ productId }) })
+  async serviceDeleteCategory(serviceId: string, key: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(key)}`, {
+      method: 'DELETE'
+    })
   }
 
-  async installationDeleteProduct(categoryKey: string, setupKey: string, productKey: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}`, { method: 'DELETE' })
+  async serviceAddSetup(serviceId: string, categoryKey: string, name: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup`, {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    })
   }
 
-  async installationAddClubOption(categoryKey: string, setupKey: string, productKey: string, productId: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}/option`, { method: 'POST', body: JSON.stringify({ productId }) })
+  async serviceDeleteSetup(serviceId: string, categoryKey: string, setupKey: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}`, {
+      method: 'DELETE'
+    })
   }
 
-  async installationDeleteClubOption(categoryKey: string, setupKey: string, productKey: string, optionKey: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}/option/${encodeURIComponent(optionKey)}`, { method: 'DELETE' })
+  async serviceAddProduct(serviceId: string, categoryKey: string, setupKey: string, productId: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product`, {
+      method: 'POST',
+      body: JSON.stringify({ productId })
+    })
   }
 
-  async fetchInstallationProducts(query: string): Promise<Array<{ id: string; name: string; category: string; group: string; price: number; status: string }>> {
-    const payload = await this.fetchJson<{ success: boolean; data: { products: Array<{ id: string; name: string; category: string; group: string; price: number; status: string }> } }>(`${BASE_URL}/catalog/installation-admin/products?q=${encodeURIComponent(query)}`)
+  async serviceDeleteProduct(serviceId: string, categoryKey: string, setupKey: string, productKey: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async serviceAddNode(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], productId: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node`, {
+      method: 'POST',
+      body: JSON.stringify({ nodePath, productId })
+    })
+  }
+
+  async serviceDeleteNode(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[]): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node?path=${encodeURIComponent(JSON.stringify(nodePath))}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async serviceUpdateQuantities(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], quantities: { defaultQty?: number; minQty?: number; maxQty?: number }): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/quantities`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nodePath, ...quantities })
+    })
+  }
+
+  async serviceUpdateDynamicField(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], value: any): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/dynamic-field`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nodePath, value })
+    })
+  }
+
+  async fetchMasterProducts(query: string): Promise<any[]> {
+    const payload = await this.fetchJson<{ success: boolean; data: { products: any[] } }>(`${BASE_URL}/catalog/services-admin/products?q=${encodeURIComponent(query)}`)
     return payload.data?.products ?? []
   }
 
-  async installationUpdateQuantities(categoryKey: string, setupKey: string, productKey: string, optionKey: string, quantities: { defaultQty?: number; minQty?: number; maxQty?: number }): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}/option/${encodeURIComponent(optionKey)}/quantities`, {
-      method: 'PATCH',
-      body: JSON.stringify(quantities)
-    })
-  }
-
-  async installationClubExisting(categoryKey: string, setupKey: string, productKeys: string[]): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/club-existing`, {
-      method: 'POST',
-      body: JSON.stringify({ productKeys })
-    })
-  }
-
-  async installationUpdateProductPrice(productId: string, price: number): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/installation-admin/products/${encodeURIComponent(productId)}/price`, {
-      method: 'PATCH',
-      body: JSON.stringify({ price })
-    })
+  // ====== LEGACY ALIASES (to avoid breaking components immediately) ======
+  async getInstallationAdminConfig() { return this.getServiceConfig('Installation') }
+  async installationAddCategory(name: string) { return this.serviceAddCategory('Installation', name) }
+  async installationDeleteCategory(key: string) { return this.serviceDeleteCategory('Installation', key) }
+  async installationAddSetup(cat: string, name: string) { return this.serviceAddSetup('Installation', cat, name) }
+  async installationDeleteSetup(cat: string, setup: string) { return this.serviceDeleteSetup('Installation', cat, setup) }
+  async installationAddProduct(cat: string, setup: string, id: string) { return this.serviceAddProduct('Installation', cat, setup, id) }
+  async installationDeleteProduct(cat: string, setup: string, pk: string) { return this.serviceDeleteProduct('Installation', cat, setup, pk) }
+  async installationAddClubOption(cat: string, setup: string, path: string[], id: string) { return this.serviceAddNode('Installation', cat, setup, path, id) }
+  async installationDeleteClubOption(cat: string, setup: string, path: string[]) { return this.serviceDeleteNode('Installation', cat, setup, path) }
+  async fetchInstallationProducts(q: string) { return this.fetchMasterProducts(q) }
+  async installationUpdateQuantities(cat: string, setup: string, path: string[], q: any) { return this.serviceUpdateQuantities('Installation', cat, setup, path, q) }
+  async installationUpdateDynamicField(cat: string, setup: string, path: string[], v: any) { return this.serviceUpdateDynamicField('Installation', cat, setup, path, v) }
+  async installationUpdateProductPrice(id: string, p: number) { 
+    await this.fetchJson(`${BASE_URL}/catalog/products/${id}`, { method: 'PATCH', body: JSON.stringify({ basePrice: p }) })
   }
 
   async updatePricingData(data: Partial<PricingSet>): Promise<{ success: boolean }> {
     return await this.fetchJson<{ success: boolean }>(`${BASE_URL}/catalog/pricing`, {
       method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  // ====== SDUI ADMIN ======
+
+  async fetchSduiLayouts(): Promise<any[]> {
+    const payload = await this.fetchJson<{ success: boolean; data: any[] }>(`${BASE_URL}/catalog/sdui-admin/layouts`)
+    return payload.data
+  }
+
+  async fetchSduiLayout(id: string): Promise<any> {
+    const payload = await this.fetchJson<{ success: boolean; data: any }>(`${BASE_URL}/catalog/sdui-admin/layouts/${id}`)
+    return payload.data
+  }
+
+  async saveSduiLayout(id: string, layout: any[], meta: any): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/sdui-admin/layouts/${id}`, {
+      method: 'POST',
+      body: JSON.stringify({ layout, meta })
+    })
+  }
+
+  async fetchSduiFlags(): Promise<any[]> {
+    const payload = await this.fetchJson<{ success: boolean; data: any[] }>(`${BASE_URL}/catalog/sdui-admin/feature-flags`)
+    return payload.data
+  }
+
+  async saveSduiFlag(key: string, data: { enabled: boolean; description: string }): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/sdui-admin/feature-flags/${key}`, {
+      method: 'POST',
       body: JSON.stringify(data)
     })
   }

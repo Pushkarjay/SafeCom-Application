@@ -30,4 +30,8 @@ class ServiceCatalogRepository {
       serviceType: serviceType,
     );
   }
+
+  Future<MasterProductResponse> getProducts({int pageSize = 20}) {
+    return _dataSource.getProducts(pageSize: pageSize);
+  }
 }

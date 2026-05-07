@@ -31,6 +31,12 @@ export default function MainLayout() {
             📊 Dashboard
           </button>
           <button
+            className={`nav-item ${isActive('/mobile-preview') ? 'active' : ''}`}
+            onClick={() => navigate('/mobile-preview')}
+          >
+            📱 Customer Mobile
+          </button>
+          <button
             className={`nav-item ${isActive('/customers') ? 'active' : ''}`}
             onClick={() => navigate('/customers')}
           >

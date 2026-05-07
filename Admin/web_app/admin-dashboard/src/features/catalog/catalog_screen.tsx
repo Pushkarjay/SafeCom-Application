@@ -3,19 +3,22 @@ import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { CatalogProduct, CatalogPackage, CatalogAddon, CatalogTax, CatalogRecommendation, InvoiceTemplate, UpgradeBundle, PricingSet, CatalogService } from '@data/models/admin_models'
 import './catalog_screen.css'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 
-const categories = ['All', 'IP Camera', 'DVR Camera', 'DVR', 'NVR', 'Storage', 'Power', 'Network', 'Cable', 'Connector', 'Accessory', 'Service']
-const groups = ['All', 'Cameras', 'Recording', 'Storage', 'Wiring', 'Accessories', 'Services', 'Core', 'Package Base', 'Installation', 'Recommendations']
+const CATEGORIES_KEY = 'All'
+const GROUPS_KEY = 'All'
 
 type TabType = 'products' | 'packages' | 'addons' | 'taxes' | 'recommendations' | 'invoices' | 'services' | 'upgrade' | 'pricing'
 
 export default function CatalogScreen() {
   const { tab } = useParams()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('products')
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isMetadataLoading, setIsMetadataLoading] = useState(false)
+  const [metadataError, setMetadataError] = useState<string | null>(null)
   const firebaseUser = useAuthStore((state) => state.firebaseUser)
 
   // Data States
@@ -29,10 +32,18 @@ export default function CatalogScreen() {
   const [upgradeBundles, setUpgradeBundles] = useState<UpgradeBundle[]>([])
   const [pricingData, setPricingData] = useState<PricingSet>({})
 
+  // Metadata for dynamic dropdowns
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([])
+  const [groupOptions, setGroupOptions] = useState<string[]>([])
+  const [newCategoryInput, setNewCategoryInput] = useState('')
+  const [newGroupInput, setNewGroupInput] = useState('')
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false)
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false)
+
   // UI States
   const [searchProduct, setSearchProduct] = useState('')
-  const [category, setCategory] = useState('All')
-  const [group, setGroup] = useState('All')
+  const [category, setCategory] = useState(CATEGORIES_KEY)
+  const [group, setGroup] = useState(GROUPS_KEY)
   const [pricingSection, setPricingSection] = useState<string | null>(null)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [sortConfig, setSortConfig] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: 'name', direction: 'asc' })
@@ -101,6 +112,68 @@ export default function CatalogScreen() {
     }
     fetchData()
   }, [activeTab, category, group, firebaseUser])
+
+  // Load metadata (categories and groups) for dynamic dropdowns
+  useEffect(() => {
+    const loadMetadata = async () => {
+      if (!firebaseUser) return
+      setIsMetadataLoading(true)
+      setMetadataError(null)
+      try {
+        const meta = await adminDatasource.getCatalogMetadata()
+        // Prepend 'All' options
+        setCategoryOptions([CATEGORIES_KEY, ...(meta.categories || [])])
+        setGroupOptions([GROUPS_KEY, ...(meta.groups || [])])
+      } catch (err) {
+        console.error('Failed to load metadata:', err)
+        setMetadataError(err instanceof Error ? err.message : 'Failed to load metadata')
+        // Fallback to basic options on error
+        setCategoryOptions([CATEGORIES_KEY])
+        setGroupOptions([GROUPS_KEY])
+      } finally {
+        setIsMetadataLoading(false)
+      }
+    }
+    loadMetadata()
+  }, [firebaseUser, products.length]) // Re-fetch when products change
+
+  // Handler to create new category
+  const handleCreateCategory = async () => {
+    const trimmed = newCategoryInput.trim()
+    if (!trimmed) return
+    setIsCreatingCategory(true)
+    try {
+      await adminDatasource.createCatalogMetadata('category', trimmed)
+      setNewCategoryInput('')
+      // Refresh metadata
+      const meta = await adminDatasource.getCatalogMetadata()
+      setCategoryOptions([CATEGORIES_KEY, ...(meta.categories || [])])
+    } catch (err) {
+      console.error('Failed to create category:', err)
+      setError(err instanceof Error ? err.message : 'Failed to create category')
+    } finally {
+      setIsCreatingCategory(false)
+    }
+  }
+
+  // Handler to create new group
+  const handleCreateGroup = async () => {
+    const trimmed = newGroupInput.trim()
+    if (!trimmed) return
+    setIsCreatingGroup(true)
+    try {
+      await adminDatasource.createCatalogMetadata('group', trimmed)
+      setNewGroupInput('')
+      // Refresh metadata
+      const meta = await adminDatasource.getCatalogMetadata()
+      setGroupOptions([GROUPS_KEY, ...(meta.groups || [])])
+    } catch (err) {
+      console.error('Failed to create group:', err)
+      setError(err instanceof Error ? err.message : 'Failed to create group')
+    } finally {
+      setIsCreatingGroup(false)
+    }
+  }
 
   // Sorting & Selection Helpers
   const handleSort = (field: string) => {
@@ -346,15 +419,41 @@ export default function CatalogScreen() {
           <div className="catalog-toolbar">
             <div className="toolbar-group">
               <label>Category</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {categories.map((c) => (<option key={c} value={c}>{c}</option>))}
-              </select>
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} disabled={isMetadataLoading}>
+                  {categoryOptions.map((c) => (<option key={c} value={c}>{c}</option>))}
+                </select>
+                <input
+                  type="text"
+                  placeholder="New category..."
+                  value={newCategoryInput}
+                  onChange={(e) => setNewCategoryInput(e.target.value)}
+                  style={{ width: '100px', fontSize: '11px' }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory() } }}
+                />
+                <button onClick={handleCreateCategory} disabled={isCreatingCategory || !newCategoryInput.trim()} style={{ padding: '2px 6px', fontSize: '10px' }}>
+                  {isCreatingCategory ? '...' : '+'}
+                </button>
+              </div>
             </div>
             <div className="toolbar-group">
               <label>Group</label>
-              <select value={group} onChange={(e) => setGroup(e.target.value)}>
-                {groups.map((g) => (<option key={g} value={g}>{g}</option>))}
-              </select>
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <select value={group} onChange={(e) => setGroup(e.target.value)} disabled={isMetadataLoading}>
+                  {groupOptions.map((g) => (<option key={g} value={g}>{g}</option>))}
+                </select>
+                <input
+                  type="text"
+                  placeholder="New group..."
+                  value={newGroupInput}
+                  onChange={(e) => setNewGroupInput(e.target.value)}
+                  style={{ width: '100px', fontSize: '11px' }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateGroup() } }}
+                />
+                <button onClick={handleCreateGroup} disabled={isCreatingGroup || !newGroupInput.trim()} style={{ padding: '2px 6px', fontSize: '10px' }}>
+                  {isCreatingGroup ? '...' : '+'}
+                </button>
+              </div>
             </div>
             <div className="toolbar-group search">
               <label>Search Inventory</label>
@@ -500,7 +599,7 @@ export default function CatalogScreen() {
               <div key={section} className="catalog-table-wrapper" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <h3 style={{ margin: 0, textTransform: 'capitalize' }}>{section} Pricing</h3>
-                  <button className="icon-btn" onClick={() => window.alert('Advanced Pricing Editor Coming Soon')}>Settings</button>
+                  <button className="icon-btn" onClick={() => navigate(`/catalog/builder/${section === 'installation' ? 'Installation' : section.charAt(0).toUpperCase() + section.slice(1)}`)}>Configure Tree</button>
                 </div>
                 <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', maxHeight: '400px', overflowY: 'auto' }}>
                   <pre style={{ fontSize: '11px', color: '#475569', margin: 0 }}>{JSON.stringify(pricingData[section as keyof PricingSet] || { message: 'Data loading...' }, null, 2)}</pre>
@@ -639,8 +738,34 @@ export default function CatalogScreen() {
             <div className="modal-body">
               <label>Name <input value={productForm.name} onChange={(e) => setProductForm({...productForm, name: e.target.value})} /></label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <label>Category <input value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})} /></label>
-                <label>Group <input value={productForm.group} onChange={(e) => setProductForm({...productForm, group: e.target.value})} /></label>
+                <label>Category 
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <select value={productForm.category} onChange={(e) => setProductForm({...productForm, category: e.target.value})}>
+                      {categoryOptions.filter(c => c !== CATEGORIES_KEY).map((c) => (<option key={c} value={c}>{c}</option>))}
+                    </select>
+                    <input 
+                      placeholder="New..." 
+                      list="new-cat-opt" 
+                      value={newCategoryInput} 
+                      onChange={(e) => { setNewCategoryInput(e.target.value); if (e.target.value && !categoryOptions.includes(e.target.value)) setProductForm({...productForm, category: e.target.value }) }} 
+                      style={{ width: '80px' }}
+                    />
+                  </div>
+                </label>
+                <label>Group 
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <select value={productForm.group} onChange={(e) => setProductForm({...productForm, group: e.target.value})}>
+                      {groupOptions.filter(g => g !== GROUPS_KEY).map((g) => (<option key={g} value={g}>{g}</option>))}
+                    </select>
+                    <input 
+                      placeholder="New..." 
+                      list="new-group-opt" 
+                      value={newGroupInput} 
+                      onChange={(e) => { setNewGroupInput(e.target.value); if (e.target.value && !groupOptions.includes(e.target.value)) setProductForm({...productForm, group: e.target.value }) }} 
+                      style={{ width: '80px' }}
+                    />
+                  </div>
+                </label>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <label>Unit <input value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} /></label>

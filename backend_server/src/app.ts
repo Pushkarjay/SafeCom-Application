@@ -23,7 +23,8 @@ import { authenticateToken } from './middleware/auth.js'
 import { verifyFirebaseIdToken } from './middleware/firebaseAuth.js'
 import employeeRoutes from './routes/employees.js'
 import usersRoutes from './routes/users.js'
-import { installationAdminRouter } from './routes/installationAdmin.js'
+import { servicesAdminRouter } from './routes/servicesAdmin.js'
+import { sduiAdminRouter } from './routes/sduiAdmin.js'
 
 export function createApp() {
   const app = express()
@@ -93,7 +94,8 @@ export function createApp() {
   app.use('/api/catalog', verifyFirebaseIdToken, catalogRouter)
   app.use('/api/employees', verifyFirebaseIdToken, employeeRoutes)
   app.use('/api/users', verifyFirebaseIdToken, usersRoutes)
-  app.use('/api/catalog/installation-admin', verifyFirebaseIdToken, installationAdminRouter)
+  app.use('/api/catalog/services-admin', verifyFirebaseIdToken, servicesAdminRouter)
+  app.use('/api/catalog/sdui-admin', verifyFirebaseIdToken, sduiAdminRouter)
 
   app.use((_req, res) => {
     res.status(404).json({ message: 'Route not found' })

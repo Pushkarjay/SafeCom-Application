@@ -1,39 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { Job } from '@data/models/admin_models'
 import { getApiBaseUrl } from '@core/config/api'
+import { useAuthenticatedData } from '@/core/hooks/useAuthenticatedData'
 import './jobs_screen.css'
 
 export default function JobsScreen() {
   const navigate = useNavigate()
-  const [jobs, setJobs] = useState<Job[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [sortField, setSortField] = useState<keyof Job>('id')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const firebaseUser = useAuthStore((state) => state.firebaseUser)
-
-  useEffect(() => {
-    const loadJobs = async () => {
-      if (!firebaseUser) {
-        return
-      }
-      try {
-        const data = await adminDatasource.getJobs(null, page)
-        setJobs(data)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadJobs()
-  }, [page, firebaseUser?.uid])
-
-  const processedJobs = [...jobs]
+  
+  const { data: jobs, isLoading, error } = useAuthenticatedData<Job[]>(
+    async () => {
+      const data = await adminDatasource.getJobs(null, page)
+      return data
+    },
+    [page] // Re-fetch when page changes
+  )
+  
+  const processedJobs = [...(jobs || [])]
     .filter(j => !searchQuery || j.id.toLowerCase().includes(searchQuery.toLowerCase()) || j.serviceType.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       let aVal = a[sortField] || ''
@@ -73,19 +63,15 @@ export default function JobsScreen() {
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
     if (!window.confirm(`Delete ${selectedIds.size} selected jobs?`)) return
-    setIsLoading(true)
     try {
       const toDelete = Array.from(selectedIds)
       for (const id of toDelete) {
         const token = await useAuthStore.getState().getIdToken()
         await fetch(`${getApiBaseUrl()}/jobs/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       }
-      setJobs(jobs.filter(j => !selectedIds.has(j.id)))
       setSelectedIds(new Set())
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 

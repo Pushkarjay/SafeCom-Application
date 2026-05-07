@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { getApiBaseUrl } from '@core/config/api'
+import { useAuthenticatedData } from '@/core/hooks/useAuthenticatedData'
 import './payments_screen.css'
 
 export interface Payment {
@@ -20,32 +21,21 @@ export interface Payment {
 }
 
 export default function PaymentsScreen() {
-  const [payments, setPayments] = useState<Payment[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [sortField, setSortField] = useState<keyof Payment>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'partial' | 'completed'>('all')
-  const firebaseUser = useAuthStore((state) => state.firebaseUser)
+  
+  const { data: payments, isLoading, error } = useAuthenticatedData<Payment[]>(
+    async () => {
+      const data = await adminDatasource.getPayments()
+      return data
+    },
+    [] // No dependencies since we're not using any changing values
+  )
 
-  useEffect(() => {
-    const loadPayments = async () => {
-      if (!firebaseUser) {
-        return
-      }
-      try {
-        const data = await adminDatasource.getPayments()
-        setPayments(data)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadPayments()
-  }, [firebaseUser?.uid])
-
-  const baseFiltered = filter === 'all' ? payments : payments.filter(p => p.status === filter)
+  const baseFiltered = filter === 'all' ? (payments || []) : (payments || []).filter(p => p.status === filter)
   const processedPayments = baseFiltered
     .filter(p => !searchQuery || p.transactionId.toLowerCase().includes(searchQuery.toLowerCase()) || p.customerName.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
@@ -86,19 +76,15 @@ export default function PaymentsScreen() {
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
     if (!window.confirm(`Delete ${selectedIds.size} selected payments?`)) return
-    setIsLoading(true)
     try {
       const toDelete = Array.from(selectedIds)
       for (const id of toDelete) {
         const token = await useAuthStore.getState().getIdToken()
         await fetch(`${getApiBaseUrl()}/payments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       }
-      setPayments(payments.filter(p => !selectedIds.has(p.id)))
       setSelectedIds(new Set())
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 

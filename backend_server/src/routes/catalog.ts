@@ -3,12 +3,15 @@ import { z } from 'zod'
 import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument, getDb } from '../services/firestore.js'
 
 const catalogCreateSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).optional(),
+  productName: z.string().min(1).optional(),
   category: z.string().min(1),
-  group: z.string().min(1),
-  unit: z.string().min(1),
-  price: z.number().nonnegative(),
-  status: z.enum(['active', 'inactive']).optional()
+  group: z.string().optional(),
+  unit: z.string().optional(),
+  price: z.number().nonnegative().optional(),
+  basePrice: z.number().nonnegative().optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+  isAvailable: z.boolean().optional()
 })
 
 const catalogUpdateSchema = catalogCreateSchema.partial()
@@ -85,6 +88,49 @@ catalogRouter.get('/products', async (req, res) => {
   }
 })
 
+// GET /catalog/metadata - Get unique categories and groups from products
+catalogRouter.get('/metadata', async (_req, res) => {
+  try {
+    const products = await queryCollection<Record<string, unknown>>('catalog_product', [] as { field: string; operator: '==' ; value: unknown }[])
+    const categoriesSet = new Set<string>()
+    const groupsSet = new Set<string>()
+    for (const p of products) {
+      if (typeof p.category === 'string') categoriesSet.add(p.category)
+      if (typeof p.group === 'string') groupsSet.add(p.group)
+    }
+    const categories = Array.from(categoriesSet).sort()
+    const groups = Array.from(groupsSet).sort()
+    return res.json({ success: true, data: { categories, groups } })
+  } catch (error) {
+    console.error('Firestore metadata lookup failed:', error)
+    return res.status(500).json({ message: 'Failed to fetch metadata' })
+  }
+})
+
+// POST /catalog/metadata - Create new category or group
+catalogRouter.post('/metadata', async (req, res) => {
+  const { type, value } = req.body
+  if (!type || !value) {
+    return res.status(400).json({ message: 'type and value are required' })
+  }
+  if (type !== 'category' && type !== 'group') {
+    return res.status(400).json({ message: 'type must be "category" or "group"' })
+  }
+  try {
+    const now = new Date().toISOString()
+    const docId = await createDocument('catalog_metadata', {
+      type,
+      value,
+      createdAt: now,
+      updatedAt: now
+    })
+    return res.status(201).json({ success: true, id: docId, type, value })
+  } catch (error) {
+    console.error('Firestore metadata create failed:', error)
+    return res.status(500).json({ message: 'Failed to create metadata' })
+  }
+})
+
 // GET /catalog/products/:id - Get single product
 catalogRouter.get('/products/:id', async (req, res) => {
   try {
@@ -108,14 +154,29 @@ catalogRouter.post('/products', async (req, res) => {
   }
 
   try {
+    const input = parsed.data
     const now = new Date().toISOString()
+    // Normalize field names: handle both frontend and backend naming conventions
+    const productName = input.productName || input.name
+    const price = input.price ?? input.basePrice ?? 0
+    const status = input.isAvailable === false ? 'inactive' : (input.status ?? 'active')
+    const category = input.category
+    const group = input.group
+    const unit = input.unit
     const docId = await createDocument('catalog_product', {
-      ...parsed.data,
-      status: parsed.data.status ?? 'active',
+      productName,
+      name: productName, // also set 'name' for compatibility
+      category,
+      group: group || 'General',
+      unit: unit || 'unit',
+      basePrice: price,
+      price, // also set 'price' for compatibility
+      status,
+      isAvailable: status === 'active',
       createdAt: now,
       updatedAt: now
     })
-    return res.status(201).json({ id: docId, ...parsed.data, status: parsed.data.status ?? 'active' })
+    return res.status(201).json({ success: true, id: docId, data: { productName, category, group, basePrice: price, status } })
   } catch (error) {
     console.error('Firestore create catalog product failed:', error)
     return res.status(500).json({ message: 'Failed to create catalog product' })

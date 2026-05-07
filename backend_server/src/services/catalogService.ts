@@ -63,8 +63,104 @@ function normalizeProduct(productId: string, data: Record<string, unknown>) {
     category: (data.category ?? '').toString(),
     group: data.group ? data.group.toString() : undefined,
     basePrice: Number(data.price ?? data.basePrice ?? 0),
-    isAvailable: data.status ? data.status === 'active' : (data.isAvailable ?? true)
+    isAvailable: data.status ? data.status === 'active' : (data.isAvailable ?? true),
+    imageUrl: data.imageUrl ? data.imageUrl.toString() : undefined,
+    stock: data.stock !== undefined ? Number(data.stock) : undefined,
+    taxRate: data.taxRate !== undefined ? Number(data.taxRate) : undefined
   };
+}
+
+interface ClubbedOption {
+  optionKey: string;
+  productId: string;
+  productName: string;
+  price: number;
+  category: string;
+  defaultQty: number;
+  minQty: number;
+  maxQty: number;
+  available: boolean;
+  rigid: boolean;
+  isLeaf: boolean;
+  children: ClubbedOption[];
+}
+
+/**
+ * Detect whether a Firestore map is a LEAF node (has product detail fields)
+ * or a BRANCH node (children are maps that need further traversal).
+ *
+ * Leaf signature: contains 'Deafult q', 'Price', 'available', etc.
+ */
+function isLeafNode(obj: Record<string, unknown>): boolean {
+  return (
+    obj.hasOwnProperty('Price') ||
+    obj.hasOwnProperty('Deafult q') ||
+    obj.hasOwnProperty('available') ||
+    obj.hasOwnProperty('rigid')
+  );
+}
+
+/**
+ * Recursively extract clubbed options from a deeply nested Firestore map.
+ *
+ * Schema pattern:
+ *   Product N (map) →
+ *     Product N Option M (map) →
+ *       Product N Option M sub K (map) →
+ *         ... → LEAF { Deafult q, Price, available, rigid, min q, max q }
+ *
+ * If a node is a LEAF → extract product details from catalog reference.
+ * If a node is a BRANCH → recurse into children.
+ */
+function extractClubbedOptions(
+  productSlot: Record<string, unknown>,
+  productMap: Map<string, Record<string, unknown>>
+): ClubbedOption[] {
+  const options: ClubbedOption[] = [];
+  for (const [optionKey, optionData] of Object.entries(productSlot)) {
+    if (optionData === null || optionData === undefined || typeof optionData !== 'object') {
+      continue; // skip primitives at this level
+    }
+    const opt = optionData as Record<string, unknown>;
+
+    if (isLeafNode(opt)) {
+      // LEAF: extract product reference and details
+      const ref = extractProductRef(opt);
+      const catalogProduct = ref ? productMap.get(ref.id) : null;
+      options.push({
+        optionKey,
+        productId: ref?.id || '',
+        productName: catalogProduct ? String(catalogProduct.name || catalogProduct.productName || '') : optionKey,
+        price: catalogProduct ? Number(catalogProduct.price || catalogProduct.basePrice || 0) : 0,
+        category: catalogProduct ? String(catalogProduct.category || '') : '',
+        defaultQty: Number(opt['Deafult q'] ?? 1),
+        minQty: Number(opt['min q'] ?? 0),
+        maxQty: Number(opt['max q'] ?? 999),
+        available: opt.available !== false,
+        rigid: opt.rigid === true,
+        isLeaf: true,
+        children: []
+      });
+    } else {
+      // BRANCH: children are maps — recurse
+      const children = extractClubbedOptions(opt, productMap);
+      options.push({
+        optionKey,
+        productId: '',
+        productName: optionKey, // branch label is the key itself
+        price: 0,
+        category: '',
+        defaultQty: 1,
+        minQty: 0,
+        maxQty: 999,
+        available: true,
+        rigid: false,
+        isLeaf: false,
+        children
+      });
+    }
+  }
+  return options;
 }
 
 function toKey(value: string) {
@@ -140,21 +236,33 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
     const categories = Object.entries(data).map(([categoryKey, setups]) => {
       const groups = Object.entries(setups as Record<string, unknown>).map(([setupName, productMapEntry]) => {
         const groupProducts = productMapEntry as Record<string, unknown>;
-        const mappedProducts: Array<{ productId: string; defaultQty: number; minQty: number; maxQty: number; product: Record<string, unknown> }> = [];
-        for (const optionMap of Object.values(groupProducts)) {
-          const optionMappings = optionMap as Record<string, unknown>;
-          const option = Object.values(optionMappings)[0] as Record<string, unknown> | undefined;
-          if (!option) continue;
-          const productRef = extractProductRef(option);
-          if (!productRef) continue;
-          const product = productMap.get(productRef.id);
+        const mappedProducts: Array<{
+          productKey: string;
+          productId: string;
+          defaultQty: number;
+          minQty: number;
+          maxQty: number;
+          product: Record<string, unknown>;
+          isClubbed: boolean;
+          clubbedOptions: ClubbedOption[];
+        }> = [];
+        for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
+          const optionMappings = optionMapEntry as Record<string, unknown>;
+          const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
+          const isClubbed = clubbedOptions.length > 1;
+          const firstOption = clubbedOptions[0];
+          if (!firstOption) continue;
+          const product = productMap.get(firstOption.productId);
           if (!product) continue;
           mappedProducts.push({
-            productId: productRef.id,
-            defaultQty: Number(option['Deafult q'] ?? 1),
-            minQty: Number(option['min q'] ?? 0),
-            maxQty: Number(option['max q'] ?? 999),
-            product: normalizeProduct(productRef.id, product)
+            productKey,
+            productId: firstOption.productId,
+            defaultQty: firstOption.defaultQty,
+            minQty: firstOption.minQty,
+            maxQty: firstOption.maxQty,
+            product: normalizeProduct(firstOption.productId, product),
+            isClubbed,
+            clubbedOptions
           });
         }
         return {

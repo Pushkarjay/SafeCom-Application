@@ -168,26 +168,95 @@ class InstallationGroup {
 
 class MappedProduct {
   final String productId;
+  final String productKey;
   final int defaultQty;
   final int minQty;
   final int maxQty;
   final MasterProduct product;
+  final bool isClubbed;
+  final List<ClubbedOption> clubbedOptions;
 
   const MappedProduct({
     required this.productId,
+    required this.productKey,
     required this.defaultQty,
     required this.minQty,
     required this.maxQty,
     required this.product,
+    this.isClubbed = false,
+    this.clubbedOptions = const [],
   });
 
   factory MappedProduct.fromJson(Map<String, dynamic> json) {
+    final clubbedJson = (json['clubbedOptions'] as List<dynamic>? ?? []);
+    final isClubbed = json['isClubbed'] as bool? ?? clubbedJson.length > 1;
     return MappedProduct(
       productId: (json['productId'] ?? '').toString(),
+      productKey: (json['productKey'] ?? '').toString(),
       defaultQty: json['defaultQty'] as int? ?? 1,
       minQty: json['minQty'] as int? ?? 0,
       maxQty: json['maxQty'] as int? ?? 999,
       product: MasterProduct.fromJson(json['product'] as Map<String, dynamic>? ?? {}),
+      isClubbed: isClubbed,
+      clubbedOptions: clubbedJson
+          .map((e) => ClubbedOption.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+/// Represents one node in the recursive clubbed product tree.
+///
+/// - If [isLeaf] is true: this is a terminal product with price/qty details.
+/// - If [isLeaf] is false: this is a branch — user must choose from [children].
+///
+/// Supports infinite nesting depth (map→map→map→...→leaf).
+class ClubbedOption {
+  final String optionKey;
+  final String productId;
+  final String productName;
+  final double price;
+  final String category;
+  final int defaultQty;
+  final int minQty;
+  final int maxQty;
+  final bool available;
+  final bool rigid;
+  final bool isLeaf;
+  final List<ClubbedOption> children;
+
+  const ClubbedOption({
+    required this.optionKey,
+    required this.productId,
+    required this.productName,
+    required this.price,
+    required this.category,
+    required this.defaultQty,
+    required this.minQty,
+    required this.maxQty,
+    required this.available,
+    required this.rigid,
+    this.isLeaf = true,
+    this.children = const [],
+  });
+
+  factory ClubbedOption.fromJson(Map<String, dynamic> json) {
+    final childrenJson = json['children'] as List<dynamic>? ?? [];
+    return ClubbedOption(
+      optionKey: (json['optionKey'] ?? '').toString(),
+      productId: (json['productId'] ?? '').toString(),
+      productName: (json['productName'] ?? '').toString(),
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      category: (json['category'] ?? '').toString(),
+      defaultQty: json['defaultQty'] as int? ?? 1,
+      minQty: json['minQty'] as int? ?? 0,
+      maxQty: json['maxQty'] as int? ?? 999,
+      available: json['available'] as bool? ?? true,
+      rigid: json['rigid'] as bool? ?? false,
+      isLeaf: json['isLeaf'] as bool? ?? (childrenJson.isEmpty),
+      children: childrenJson
+          .map((c) => ClubbedOption.fromJson(c as Map<String, dynamic>))
+          .toList(growable: false),
     );
   }
 }
@@ -199,6 +268,7 @@ class MasterProduct {
   final double basePrice;
   final String category;
   final String? group;
+  final String? imageUrl;
   final List<ProductVariant> variants;
 
   const MasterProduct({
@@ -208,8 +278,12 @@ class MasterProduct {
     required this.basePrice,
     required this.category,
     this.group,
+    this.imageUrl,
     required this.variants,
   });
+
+  String get name => productName;
+  double get price => basePrice;
 
   factory MasterProduct.fromJson(Map<String, dynamic> json) {
     final variantsJson = (json['variants'] as List<dynamic>? ?? []);
@@ -220,6 +294,7 @@ class MasterProduct {
       basePrice: (json['basePrice'] ?? json['price'] as num?)?.toDouble() ?? 0,
       category: (json['category'] ?? '').toString(),
       group: json['group']?.toString(),
+      imageUrl: json['imageUrl']?.toString(),
       variants: variantsJson
           .map((entry) => ProductVariant.fromJson(entry as Map<String, dynamic>))
           .toList(growable: false),
@@ -533,6 +608,22 @@ class AmcPlan {
           .map((e) => e.toString())
           .toList(growable: false),
       order: (json['order'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class MasterProductResponse {
+  final List<MasterProduct> products;
+
+  const MasterProductResponse({required this.products});
+
+  factory MasterProductResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] as Map<String, dynamic>? ?? {};
+    final items = data['products'] as List<dynamic>? ?? [];
+    return MasterProductResponse(
+      products: items
+          .map((entry) => MasterProduct.fromJson(entry as Map<String, dynamic>))
+          .toList(growable: false),
     );
   }
 }

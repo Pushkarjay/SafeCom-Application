@@ -1,0 +1,512 @@
+import { Router, Request, Response } from 'express';
+import { getDb } from '../services/firestore.js';
+import { FieldValue } from 'firebase-admin/firestore';
+import { authenticateToken, requireRole } from '../middleware/auth.js';
+
+const SERVICE_COLLECTION = 'Services';
+const PRODUCT_COLLECTION = 'catalog_product';
+
+export const servicesAdminRouter = Router();
+
+// ─── Helpers ────────────────────────────────────────────────
+
+function isDocumentReference(value: unknown): value is { id: string } {
+  return Boolean(value && typeof value === 'object' && 'id' in (value as Record<string, unknown>));
+}
+
+function extractProductRef(
+  option: Record<string, unknown>,
+  productMap: Map<string, ProductData>
+): { id: string } | null {
+  // 1. Explicit Reference in "Price" field
+  if (isDocumentReference(option.Price)) return option.Price as { id: string };
+
+  // 2. String ID in "Price" field
+  if (typeof option.Price === 'string' && productMap.has(option.Price)) {
+    return { id: option.Price };
+  }
+
+  // 3. Scan for keys ending in " ID" (common in legacy schema)
+  for (const [k, v] of Object.entries(option)) {
+    if (k.toLowerCase().endsWith(' id')) {
+      if (isDocumentReference(v)) return v as { id: string };
+      if (typeof v === 'string' && productMap.has(v)) return { id: v };
+    }
+  }
+
+  // 4. Fallback: scan all values for any reference or known string ID
+  for (const value of Object.values(option)) {
+    if (isDocumentReference(value)) return value as { id: string };
+    if (typeof value === 'string' && productMap.has(value)) return { id: value };
+  }
+  
+  return null;
+}
+
+interface ProductData {
+  id: string;
+  name?: string;
+  productName?: string;
+  price?: number;
+  basePrice?: number;
+  category?: string;
+  group?: string;
+  status?: string;
+}
+
+async function getProductMap(): Promise<Map<string, ProductData>> {
+  const db = getDb();
+  const snapshot = await db.collection(PRODUCT_COLLECTION).get();
+  const map = new Map<string, ProductData>();
+  snapshot.docs.forEach((doc) => {
+    map.set(doc.id, { id: doc.id, ...doc.data() } as ProductData);
+  });
+  return map;
+}
+
+function isLeafNode(obj: Record<string, unknown>): boolean {
+  return (
+    obj.hasOwnProperty('Price') ||
+    obj.hasOwnProperty('Deafult q') ||
+    obj.hasOwnProperty('available') ||
+    obj.hasOwnProperty('rigid')
+  );
+}
+
+interface TreeNode {
+  key: string;
+  isLeaf: boolean;
+  isField?: boolean;
+  fieldType?: 'string' | 'number' | 'boolean' | 'reference' | 'map';
+  fieldValue?: any;
+  productId: string;
+  productName: string;
+  price: number;
+  category: string;
+  defaultQty: number;
+  minQty: number;
+  maxQty: number;
+  available: boolean;
+  rigid: boolean;
+  children: TreeNode[];
+}
+
+function extractTree(
+  slot: Record<string, unknown>,
+  productMap: Map<string, ProductData>
+): TreeNode[] {
+  const nodes: TreeNode[] = [];
+  for (const [key, value] of Object.entries(slot)) {
+    if (value === null || value === undefined) continue;
+
+    if (typeof value !== 'object') {
+      nodes.push({
+        key,
+        isLeaf: false,
+        isField: true,
+        fieldType: typeof value as any,
+        fieldValue: value,
+        productId: '',
+        productName: key,
+        price: 0,
+        category: '',
+        defaultQty: 1,
+        minQty: 0,
+        maxQty: 999,
+        available: true,
+        rigid: false,
+        children: []
+      });
+      continue;
+    }
+
+    if (isDocumentReference(value)) {
+      nodes.push({
+        key,
+        isLeaf: false,
+        isField: true,
+        fieldType: 'reference',
+        fieldValue: value.id,
+        productId: '',
+        productName: key,
+        price: 0,
+        category: '',
+        defaultQty: 1,
+        minQty: 0,
+        maxQty: 999,
+        available: true,
+        rigid: false,
+        children: []
+      });
+      continue;
+    }
+
+    const obj = value as Record<string, unknown>;
+
+    if (isLeafNode(obj)) {
+      const ref = extractProductRef(obj, productMap);
+      const catalogProduct = ref ? productMap.get(ref.id) : null;
+      nodes.push({
+        key,
+        isLeaf: true,
+        productId: ref?.id || '',
+        productName: catalogProduct ? String(catalogProduct.name || catalogProduct.productName || '') : key,
+        price: catalogProduct ? Number(catalogProduct.price || catalogProduct.basePrice || 0) : 0,
+        category: catalogProduct ? String(catalogProduct.category || '') : '',
+        defaultQty: Number(obj['Deafult q'] ?? 1),
+        minQty: Number(obj['min q'] ?? 0),
+        maxQty: Number(obj['max q'] ?? 999),
+        available: obj.available !== false,
+        rigid: obj.rigid === true,
+        children: []
+      });
+    } else {
+      const children = extractTree(obj, productMap);
+      nodes.push({
+        key,
+        isLeaf: false,
+        isField: false,
+        fieldType: 'map',
+        productId: '',
+        productName: key,
+        price: 0,
+        category: '',
+        defaultQty: 1,
+        minQty: 0,
+        maxQty: 999,
+        available: true,
+        rigid: false,
+        children
+      });
+    }
+  }
+  return nodes;
+}
+
+// ─── ROUTES ─────────────────────────────────────────────────
+
+// GET /list — List all available services in the Services collection
+servicesAdminRouter.get('/list', authenticateToken, requireRole(['admin']), async (_req: Request, res: Response) => {
+  try {
+    const db = getDb();
+    const snapshot = await db.collection(SERVICE_COLLECTION).get();
+    const services = snapshot.docs.map(doc => ({
+      id: doc.id,
+      title: doc.id,
+      icon: '🔧', // Fallback icon
+      enabled: true,
+      ...doc.data()
+    }));
+    res.json({ success: true, data: services });
+  } catch (error) {
+    console.error('[SERVICES-ADMIN] GET list error:', error);
+    res.status(500).json({ success: false, error: 'Failed to load services list' });
+  }
+});
+
+// POST /create — Create a new service document
+servicesAdminRouter.post('/create', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const { id, title, icon } = req.body as { id: string, title?: string, icon?: string };
+    if (!id?.trim()) return res.status(400).json({ success: false, error: 'Service ID is required' });
+
+    const db = getDb();
+    const docRef = db.collection(SERVICE_COLLECTION).doc(id);
+    const doc = await docRef.get();
+    if (doc.exists) return res.status(409).json({ success: false, error: 'Service ID already exists' });
+
+    await docRef.set({
+      _meta: {
+        title: title || id,
+        icon: icon || '🔧',
+        createdAt: new Date().toISOString()
+      }
+    });
+    res.json({ success: true, message: `Service "${id}" created` });
+  } catch (error) {
+    console.error('[SERVICES-ADMIN] POST create error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create service' });
+  }
+});
+
+// GET /config/:serviceId — Get full tree for a service
+servicesAdminRouter.get('/config/:serviceId', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const db = getDb();
+    const doc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
+    if (!doc.exists) return res.status(404).json({ success: false, error: 'Service not found' });
+
+    const data = doc.data() || {};
+    // Remove metadata from the tree view
+    delete data._meta;
+
+    const productMap = await getProductMap();
+
+    const categories = Object.entries(data).map(([categoryKey, setupsRaw]) => {
+      const setups = setupsRaw as Record<string, unknown>;
+      const setupEntries = Object.entries(setups).map(([setupKey, productsRaw]) => {
+        const products = productsRaw as Record<string, unknown>;
+        const productSlots = Object.entries(products).map(([productKey, optionsRaw]) => {
+          const options = optionsRaw as Record<string, unknown>;
+          const tree = extractTree(options, productMap);
+          return {
+            key: productKey,
+            options: tree,
+            isClubbed: tree.length > 1
+          };
+        });
+        return { key: setupKey, name: setupKey, products: productSlots };
+      });
+      return { key: categoryKey, name: categoryKey, setups: setupEntries };
+    });
+
+    res.json({ success: true, data: { categories } });
+  } catch (error) {
+    console.error('[SERVICES-ADMIN] GET config error:', error);
+    res.status(500).json({ success: false, error: 'Failed to load service configuration' });
+  }
+});
+
+// DELETE /config/:serviceId — Delete a whole service
+servicesAdminRouter.delete('/config/:serviceId', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).delete();
+    res.json({ success: true, message: `Service "${serviceId}" deleted` });
+  } catch (error) {
+    console.error('[SERVICES-ADMIN] DELETE service error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete service' });
+  }
+});
+
+// ─── Nested Mutations (Generic for any serviceId) ────────────
+
+// POST /config/:serviceId/category
+servicesAdminRouter.post('/config/:serviceId/category', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const { name } = req.body as { name?: string };
+    if (!name?.trim()) return res.status(400).json({ success: false, error: 'Category name required' });
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).set({ [name]: {} }, { merge: true });
+    res.json({ success: true, message: `Category "${name}" created` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to create category' });
+  }
+});
+
+// DELETE /config/:serviceId/category/:key
+servicesAdminRouter.delete('/config/:serviceId/category/:key', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const key = String(req.params.key);
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [key]: FieldValue.delete() });
+    res.json({ success: true, message: `Category "${key}" deleted` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to delete category' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { name } = req.body as { name?: string };
+    if (!name?.trim()) return res.status(400).json({ success: false, error: 'Setup name required' });
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${name}`]: {} });
+    res.json({ success: true, message: `Setup "${name}" created` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to create setup' });
+  }
+});
+
+// DELETE /config/:serviceId/category/:categoryKey/setup/:setupKey
+servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setupKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}`]: FieldValue.delete() });
+    res.json({ success: true, message: `Setup deleted` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to delete setup' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/product
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/product', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { productId, defaultQty, minQty, maxQty } = req.body as { productId?: string; defaultQty?: number; minQty?: number; maxQty?: number; };
+    if (!productId?.trim()) return res.status(400).json({ success: false, error: 'Product ID required' });
+
+    const db = getDb();
+    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
+    const productDoc = await productRef.get();
+    if (!productDoc.exists) return res.status(404).json({ success: false, error: 'Product not found' });
+
+    const serviceDoc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
+    const setupData = (serviceDoc.data()?.[categoryKey]?.[setupKey] || {}) as Record<string, unknown>;
+    const nextNum = Object.keys(setupData).length + 1;
+    const productKey = `Product ${nextNum}`;
+    const optionKey = `${productKey} Option 1`;
+
+    const optionData = {
+      'Deafult q': defaultQty ?? 1,
+      'Price': productRef,
+      [`${optionKey} ID`]: productRef,
+      'available': true,
+      'max q': maxQty ?? 50,
+      'min q': minQty ?? 0,
+      'rigid': false
+    };
+
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
+      [`${categoryKey}.${setupKey}.${productKey}.${optionKey}`]: optionData
+    });
+    res.json({ success: true, message: `Product added as "${productKey}"` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to add product' });
+  }
+});
+
+// DELETE /config/:serviceId/category/:categoryKey/setup/:setupKey/product/:productKey
+servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setupKey/product/:productKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const productKey = String(req.params.productKey);
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${productKey}`]: FieldValue.delete() });
+    res.json({ success: true, message: `Product slot removed` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to remove product' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/node
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { nodePath, productId, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; productId: string; defaultQty?: number; minQty?: number; maxQty?: number; };
+    
+    const db = getDb();
+    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
+    const parentName = nodePath[nodePath.length - 1];
+    const optionKey = `${parentName} Option ${Date.now().toString().slice(-4)}`; // Simple unique name
+
+    const optionData = {
+      'Deafult q': defaultQty ?? 1,
+      'Price': productRef,
+      [`${optionKey} ID`]: productRef,
+      'available': true,
+      'max q': maxQty ?? 50,
+      'min q': minQty ?? 0,
+      'rigid': false
+    };
+
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
+      [`${categoryKey}.${setupKey}.${nodePath.join('.')}.${optionKey}`]: optionData
+    });
+    res.json({ success: true, message: `Node added` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to add node' });
+  }
+});
+
+// DELETE /config/:serviceId/category/:categoryKey/setup/:setupKey/node
+servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setupKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const path = JSON.parse(req.query.path as string) as string[];
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${path.join('.')}`]: FieldValue.delete() });
+    res.json({ success: true, message: 'Node deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to delete node' });
+  }
+});
+
+// PATCH /config/:serviceId/category/:categoryKey/setup/:setupKey/node/quantities
+servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/setup/:setupKey/node/quantities', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { nodePath, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; defaultQty?: number; minQty?: number; maxQty?: number; };
+    const db = getDb();
+    const firestorePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+    const updates: any = {};
+    if (defaultQty !== undefined) updates[`${firestorePath}.Deafult q`] = defaultQty;
+    if (minQty !== undefined) updates[`${firestorePath}.min q`] = minQty;
+    if (maxQty !== undefined) updates[`${firestorePath}.max q`] = maxQty;
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+    res.json({ success: true, message: 'Quantities updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to update quantities' });
+  }
+});
+
+// PATCH /config/:serviceId/category/:categoryKey/setup/:setupKey/node/dynamic-field
+servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/setup/:setupKey/node/dynamic-field', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { nodePath, value } = req.body as { nodePath: string[]; value: any; };
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${nodePath.join('.')}`]: value });
+    res.json({ success: true, message: 'Field updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to update field' });
+  }
+});
+
+// ─── Shared Catalog Helpers ─────────────────────────────────
+
+servicesAdminRouter.get('/products', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const q = String(req.query.q || '').toLowerCase();
+    const productMap = await getProductMap();
+    let products = Array.from(productMap.values()).map(p => ({
+      id: p.id, 
+      name: p.name || p.productName || '', 
+      category: p.category || '', 
+      price: p.price || p.basePrice || 0, 
+      status: p.status || 'active'
+    }));
+    if (q) products = products.filter(p => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q));
+    res.json({ success: true, data: { products } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to search products' });
+  }
+});
+
+// PATCH /product/:productId/price — Update master catalog price
+servicesAdminRouter.patch('/product/:productId/price', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const productId = String(req.params.productId);
+    const { price } = req.body as { price: number };
+    const db = getDb();
+    await db.collection(PRODUCT_COLLECTION).doc(productId).update({ 
+      price: price,
+      basePrice: price // Support both field names for compatibility
+    });
+    res.json({ success: true, message: `Price updated for ${productId}` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to update product price' });
+  }
+});
