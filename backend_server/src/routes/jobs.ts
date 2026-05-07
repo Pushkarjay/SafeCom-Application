@@ -15,7 +15,7 @@ export const jobsRouter = Router()
 /**
  * GET /jobs - List jobs for technician or all (admin)
  */
-jobsRouter.get('/', async (req: FirebaseAuthenticatedRequest, res) => {
+jobsRouter.get('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   try {
     const technicianId = (req.query.employeeId || req.query.technicianId) as string | undefined
     
@@ -103,7 +103,7 @@ jobsRouter.get('/:id', async (req, res) => {
 /**
  * PATCH /jobs/:id - Update job (assignment, status, completion)
  */
-jobsRouter.patch('/:id', async (req, res) => {
+jobsRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
   const jobUpdateSchema = z.object({
     status: z.enum(['draft', 'pending', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold']).optional(),
     assignedTo: z.object({
@@ -128,12 +128,13 @@ jobsRouter.patch('/:id', async (req, res) => {
   }
 
   try {
-    await updateDocument('jobs', req.params.id, {
+  const jobId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
+    await updateDocument('jobs', jobId, {
       ...parsed.data,
       updatedAt: new Date().toISOString()
     })
     
-    const updated = await getDocument<CanonicalJob>('jobs', req.params.id)
+    const updated = await getDocument<CanonicalJob>('jobs', jobId)
     
     return res.json({
       success: true,
@@ -156,7 +157,7 @@ jobsRouter.patch('/:id', async (req, res) => {
 /**
  * POST /jobs/:id/complete - Submit work completion
  */
-jobsRouter.post('/:id/complete', async (req, res) => {
+jobsRouter.post('/:id/complete', verifyFirebaseIdToken, async (req, res) => {
    const completionSchema = z.object({
       notes: z.string().min(1),
       actualAmount: z.number().nonnegative(),
@@ -176,17 +177,18 @@ jobsRouter.post('/:id/complete', async (req, res) => {
    }
 
    try {
-      await updateDocument('jobs', req.params.id, {
-         status: 'completed',
-         completionNotes: parsed.data.notes,
-         actualAmount: parsed.data.actualAmount,
-         collectedAmount: parsed.data.collectedAmount,
-         completedAt: new Date().toISOString(),
-         updatedAt: new Date().toISOString()
-      })
+   const jobId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
+    await updateDocument('jobs', jobId, {
+      status: 'completed',
+      completionNotes: parsed.data.notes,
+      actualAmount: parsed.data.actualAmount,
+      collectedAmount: parsed.data.collectedAmount,
+      completedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })
 
-      // Also update the associated booking
-      const job = await getDocument<CanonicalJob>('jobs', req.params.id)
+    // Also update the associated booking
+    const job = await getDocument<CanonicalJob>('jobs', jobId)
       if (job && job.bookingId) {
          await updateDocument('bookings', job.bookingId, {
             status: 'completed',
