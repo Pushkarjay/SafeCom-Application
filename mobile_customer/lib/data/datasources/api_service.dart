@@ -134,6 +134,21 @@ class ApiService {
     }
   }
 
+  // Get single product by ID
+  Future<Map<String, dynamic>> getProduct(String productId) async {
+    try {
+      final response = await _dio.get('/catalog/products/$productId');
+      final data = response.data as Map<String, dynamic>;
+      // The backend returns { success: true, data: product }, so extract product
+      if (data.containsKey('success') && data.containsKey('data')) {
+        return data['data'] as Map<String, dynamic>;
+      }
+      return data;
+    } catch (e) {
+      throw Exception('Failed to fetch product: $e');
+    }
+  }
+
   // Get all master products
   Future<Map<String, dynamic>> getAllProducts() async {
     try {

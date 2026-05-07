@@ -179,7 +179,7 @@ export class AdminDatasource {
 
   async updateCatalogProduct(id: string, data: Partial<CatalogProduct>): Promise<CatalogProduct> {
     await this.fetchJson(`${BASE_URL}/catalog/products/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({
         productName: data.name,
         category: data.category,

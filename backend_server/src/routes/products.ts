@@ -100,86 +100,38 @@ productsRouter.get(
   '/:id',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const productId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
-       const product = await getDocument<MasterProduct>('catalog_product', productId)
-      
+      const productId = req.params.id as string;
+      const product = await getDocument<Record<string, unknown>>('catalog_product', productId);
       if (!product) {
         return res.status(404).json({
           success: false,
           message: 'Product not found'
-        })
+        });
       }
-
-       const normalized = {
-         ...product,
-         productId: (product as any).productId ?? productId,
-         productName: ((product as any).productName ?? (product as any).name ?? '').toString(),
-         basePrice: Number(((product as any).basePrice ?? (product as any).price ?? 0) as number),
-         isAvailable: (product as any).isAvailable ?? ((product as any).status === 'active')
-       }
-       return res.json({
-         success: true,
-         data: normalized
-       })
+      // Normalize product to match MasterProduct shape (include all fields including variants)
+      const normalized: Record<string, unknown> = {
+        productId: product.id,
+        productName: (product.name ?? product.productName ?? '').toString(),
+        description: (product.description ?? '').toString(),
+        category: (product.category ?? '').toString(),
+        group: product.group ? product.group.toString() : undefined,
+        basePrice: Number(product.basePrice ?? product.price ?? 0),
+        variants: product.variants ?? [],
+        pricingTiers: product.pricingTiers ?? undefined,
+        stock: product.stock ?? undefined,
+        isAvailable: product.isAvailable ?? (product.status === 'active'),
+        isFeatured: product.isFeatured ?? false,
+        imageUrl: product.imageUrl?.toString(),
+        taxRate: Number(product.taxRate ?? 18),
+        createdAt: product.createdAt?.toString() ?? new Date().toISOString(),
+        updatedAt: product.updatedAt?.toString() ?? new Date().toISOString()
+      };
+      return res.json({
+        success: true,
+        data: normalized
+      });
     } catch (error) {
-      next(error)
-    }
-  }
-)
-
-// POST /catalog/products - Create new product (ADMIN ONLY)
-productsRouter.post(
-  '/',
-  authenticateToken,
-  requireRole(['admin']),
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    try {
-      // Validate request body
-      const validated = productCreateUpdateSchema.parse(req.body)
-
-      const now = new Date().toISOString()
-       const product: Omit<MasterProduct, 'productId'> = {
-         productName: validated.productName,
-         description: validated.description,
-         category: validated.category,
-         group: validated.group,
-         basePrice: validated.basePrice,
-         unit: validated.unit,
-         pricingTiers: validated.pricingTiers,
-         variants: validated.variants,
-         stock: validated.stock ?? 0,
-         isAvailable: validated.isAvailable,
-         isFeatured: validated.isFeatured ?? false,
-         imageUrl: validated.imageUrl,
-         taxRate: validated.taxRate,
-         createdAt: now,
-         updatedAt: now
-       }
-
-       const productId = await createDocument('catalog_product', {
-         ...product,
-         name: product.productName,
-         price: product.basePrice,
-         status: product.isAvailable ? 'active' : 'inactive',
-         unit: product.unit
-       } as unknown as Record<string, unknown>)
-      
-       return res.status(201).json({
-         success: true,
-         data: {
-           productId,
-           ...product
-         }
-       })
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: error.errors
-        })
-      }
-      next(error)
+      next(error);
     }
   }
 )
@@ -191,60 +143,68 @@ productsRouter.patch(
   requireRole(['admin']),
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
-      const productId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
-      
-      // Validate request body (all fields optional for PATCH)
-      const partial = productCreateUpdateSchema.partial().parse(req.body)
+      const productId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0];
+      const partial = productCreateUpdateSchema.partial().parse(req.body);
 
-      // Check product exists
-       const existing = await getDocument<MasterProduct>('catalog_product', productId)
+      const existing = await getDocument<Record<string, unknown>>('catalog_product', productId);
       if (!existing) {
         return res.status(404).json({
           success: false,
           message: 'Product not found'
-        })
+        });
       }
 
-      const now = new Date().toISOString()
-       const updates: Record<string, unknown> = {
-         ...partial,
-         updatedAt: now
-       }
-       if (partial.productName !== undefined) {
-         updates.name = partial.productName
-       }
-       if (partial.basePrice !== undefined) {
-         updates.price = partial.basePrice
-       }
-       if (partial.isAvailable !== undefined) {
-         updates.status = partial.isAvailable ? 'active' : 'inactive'
-       }
+      const now = new Date().toISOString();
+      const updates: Record<string, unknown> = {
+        ...partial,
+        updatedAt: now
+      };
+      if (partial.productName !== undefined) {
+        updates.name = partial.productName;
+      }
+      if (partial.basePrice !== undefined) {
+        updates.price = partial.basePrice;
+      }
+      if (partial.isAvailable !== undefined) {
+        updates.status = partial.isAvailable ? 'active' : 'inactive';
+      }
 
-       await updateDocument('catalog_product', productId, updates)
+      await updateDocument('catalog_product', productId, updates);
 
-       const updated = await getDocument<MasterProduct>('catalog_product', productId)
-       const normalized = updated
-         ? {
-             ...updated,
-             productId: (updated as any).productId ?? productId,
-             productName: ((updated as any).productName ?? (updated as any).name ?? '').toString(),
-             basePrice: Number(((updated as any).basePrice ?? (updated as any).price ?? 0) as number),
-             isAvailable: (updated as any).isAvailable ?? ((updated as any).status === 'active')
-           }
-         : updated
-        return res.json({
-          success: true,
-         data: normalized
-        })
+      const updated = await getDocument<Record<string, unknown>>('catalog_product', productId);
+      const normalized = updated
+        ? {
+            productId: updated.id,
+            productName: (updated.name ?? updated.productName ?? '').toString(),
+            description: (updated.description ?? '').toString(),
+            category: (updated.category ?? '').toString(),
+            group: updated.group ? updated.group.toString() : undefined,
+            basePrice: Number(updated.basePrice ?? updated.price ?? 0),
+            variants: updated.variants ?? [],
+            pricingTiers: updated.pricingTiers ?? undefined,
+            stock: updated.stock,
+            isAvailable: updated.isAvailable ?? (updated.status === 'active'),
+            isFeatured: updated.isFeatured ?? false,
+            imageUrl: updated.imageUrl?.toString(),
+            taxRate: Number(updated.taxRate ?? 18),
+            createdAt: updated.createdAt?.toString() ?? '',
+            updatedAt: updated.updatedAt?.toString() ?? now
+          }
+        : null;
+
+      return res.json({
+        success: true,
+        data: normalized
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
           message: 'Validation failed',
           errors: error.errors
-        })
+        });
       }
-      next(error)
+      next(error);
     }
   }
 )
@@ -256,25 +216,24 @@ productsRouter.delete(
   requireRole(['admin']),
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
-      const productId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
-      
-      // Check product exists
-       const existing = await getDocument<MasterProduct>('catalog_product', productId)
+      const productId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0];
+
+      const existing = await getDocument<Record<string, unknown>>('catalog_product', productId);
       if (!existing) {
         return res.status(404).json({
           success: false,
           message: 'Product not found'
-        })
+        });
       }
 
-       await deleteDocument('catalog_product', productId)
+      await deleteDocument('catalog_product', productId);
 
       return res.json({
         success: true,
         message: 'Product deleted successfully'
-      })
+      });
     } catch (error) {
-      next(error)
+      next(error);
     }
   }
 )
