@@ -6,6 +6,7 @@ class AppRoutes {
   static const locationPicker = '/location-picker';
   static const home = '/home';
   static const profile = '/profile';
+  static const about = '/about';
   static const orderHistory = '/order-history';
   static const productsDiscovery = '/products-discovery';
   static const serviceTypes = '/service-types';

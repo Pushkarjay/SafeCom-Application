@@ -431,6 +431,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   color: const Color(0xFF0EA5E9),
                   onTap: () => context.push(AppRoutes.orderHistory),
                 ),
+                _buildActionTile(
+                  icon: Icons.info_outline_rounded,
+                  title: 'About SafeCom',
+                  subtitle: 'Company info, policies, and contact',
+                  color: const Color(0xFF10B981),
+                  onTap: () => context.push(AppRoutes.about),
+                ),
                 const SizedBox(height: 32),
                 TextButton.icon(
                   onPressed: _handleLogout,

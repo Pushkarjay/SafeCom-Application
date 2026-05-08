@@ -8,6 +8,7 @@ import 'package:mobile_customer/features/booking/booking_confirmation_screen.dar
 import 'package:mobile_customer/features/booking/payment_screen.dart';
 import 'package:mobile_customer/features/booking/recommendation_screen.dart';
 import 'package:mobile_customer/features/booking/scheduling_screen.dart';
+import 'package:mobile_customer/features/info/about_screen.dart';
 import 'package:mobile_customer/features/invoice/accessories_estimate_screen.dart';
 import 'package:mobile_customer/features/invoice/installation_customization_screen.dart';
 import 'package:mobile_customer/features/invoice/maintenance_customization_screen.dart';
@@ -86,6 +87,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.profile,
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.about,
+        builder: (context, state) => const AboutScreen(),
       ),
       GoRoute(
         path: AppRoutes.orderHistory,
