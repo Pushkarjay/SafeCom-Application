@@ -81,7 +81,11 @@ class SchedulingScreen extends ConsumerWidget {
         return;
       }
 
-      context.push(AppRoutes.recommendation);
+      if (activeOrder?.serviceName == 'Product Purchase') {
+        context.go(AppRoutes.payment);
+      } else {
+        context.push(AppRoutes.recommendation);
+      }
     }
 
     return Scaffold(

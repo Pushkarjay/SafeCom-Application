@@ -153,3 +153,5 @@ play_upload/service-account.json
 # Keystore properties and local signing files
 **/keystore.properties
 
+graphify-out
+temp-env.yaml

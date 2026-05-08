@@ -81,10 +81,10 @@ export default function CatalogScreen() {
   useEffect(() => {
     if (tab) {
       const normalized = tab.toLowerCase()
-      const validTabs = ['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices', 'services', 'upgrade', 'pricing', 'accessories', 'maintenance', 'repair', 'amc']
+      const validTabs = ['products', 'packages', 'addons', 'taxes', 'recommendations', 'invoices', 'services', 'upgrade', 'pricing', 'accessories', 'maintenance', 'repair', 'amc', 'installation']
       if (validTabs.includes(normalized)) {
         if (normalized === 'accessories') { setActiveTab('products'); setCategory('All'); setGroup('Accessories'); }
-        else if (['maintenance', 'repair', 'amc'].includes(normalized)) { setActiveTab('pricing'); setPricingSection(normalized); }
+        else if (['installation', 'maintenance', 'repair', 'amc'].includes(normalized)) { setActiveTab('pricing'); setPricingSection(normalized); }
         else { setActiveTab(normalized as TabType); setPricingSection(null); }
       }
     }

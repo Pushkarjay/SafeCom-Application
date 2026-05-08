@@ -1,0 +1,706 @@
+﻿{
+    "products":  [
+                     {
+                         "productId":  "PROD001",
+                         "productName":  "CP Plus 4 Channel HD NVR 1080 P",
+                         "description":  "",
+                         "category":  "NVR",
+                         "group":  "Recording",
+                         "basePrice":  2500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD002",
+                         "productName":  "CP Plus 8 Channel HD NVR 1080 P",
+                         "description":  "",
+                         "category":  "NVR",
+                         "group":  "Recording",
+                         "basePrice":  3500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD003",
+                         "productName":  "CP Plus 16 Channel HD NVR 1080 P",
+                         "description":  "",
+                         "category":  "NVR",
+                         "group":  "Recording",
+                         "basePrice":  5500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD004",
+                         "productName":  "CP Plus 32 Channel HD NVR 1080 P",
+                         "description":  "",
+                         "category":  "NVR",
+                         "group":  "Recording",
+                         "basePrice":  0,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD005",
+                         "productName":  "CP Plus 2MP Color Indoor Camera with Audio Built In",
+                         "description":  "",
+                         "category":  "IP Camera",
+                         "group":  "Cameras",
+                         "basePrice":  2250,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD006",
+                         "productName":  "CP Plus 2MP Color Outdoor Camera with Audio Built In",
+                         "description":  "",
+                         "category":  "IP Camera",
+                         "group":  "Cameras",
+                         "basePrice":  2350,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD007",
+                         "productName":  "CP Plus 4MP Color Indoor Camera with Audio Built In",
+                         "description":  "",
+                         "category":  "IP Camera",
+                         "group":  "Cameras",
+                         "basePrice":  3250,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD008",
+                         "productName":  "CP Plus 4MP Color Outdoor Camera with Audio Built In",
+                         "description":  "",
+                         "category":  "IP Camera",
+                         "group":  "Cameras",
+                         "basePrice":  3350,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD009",
+                         "productName":  "HI-Focus 4Ch - POE Switch ",
+                         "description":  "",
+                         "category":  "Network",
+                         "group":  "Accessories",
+                         "basePrice":  1300,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD010",
+                         "productName":  "CP Plus 4Ch - POE Switch ",
+                         "description":  "",
+                         "category":  "Network",
+                         "group":  "Accessories",
+                         "basePrice":  1400,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD012",
+                         "productName":  "CP Plus 8Ch - POE Switch",
+                         "description":  "",
+                         "category":  "Network",
+                         "group":  "Accessories",
+                         "basePrice":  1700,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD013",
+                         "productName":  "CP Plus 4 Channel HD DVR 1080 P(2.4MP Support)",
+                         "description":  "",
+                         "category":  "DVR",
+                         "group":  "Recording",
+                         "basePrice":  2450,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD014",
+                         "productName":  "CP Plus 8 Channel HD DVR 1080 P(2.4MP Support)",
+                         "description":  "",
+                         "category":  "DVR",
+                         "group":  "Recording",
+                         "basePrice":  3400,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD015",
+                         "productName":  "CP Plus 16 Channel HD DVR 1080 P(2.4MP Support)",
+                         "description":  "",
+                         "category":  "DVR",
+                         "group":  "Recording",
+                         "basePrice":  6000,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD021",
+                         "productName":  "CP-Plus 2.4MP B/W Indoor Camera",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  900,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD022",
+                         "productName":  "CP Plus 2.4MP B/W Outdoor Camera ",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  950,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD023",
+                         "productName":  "CP Plus 2.4MP Color Indoor Camera",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  1400,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD024",
+                         "productName":  "CP Plus 2.4MP Color Outdoor Camera",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  1500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD025",
+                         "productName":  "CP Plus 2.4MP Color Indoor Camera with Audio Built In",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  1800,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD026",
+                         "productName":  "CP Plus 2.4MP Color Outdoor Camera with Audio Built In",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  1900,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD027",
+                         "productName":  "CP Plus 2.4MP B/W Indoor Camera with Audio Built In",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  1000,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD028",
+                         "productName":  "CP Plus 2.4MP B/W Outdoor Camera with Audio Built In",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  1050,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD029",
+                         "productName":  "CP Plus 5MP B/W Indoor Camera ",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  1800,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD030",
+                         "productName":  "CP Plus 5MP B/W Outdoor Camera ",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  1850,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD031",
+                         "productName":  "CP Plus 5MP Color Indoor Camera",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  2300,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD032",
+                         "productName":  "CP Plus 5MP Color Outdoor Camera ",
+                         "description":  "",
+                         "category":  "DVR Camera",
+                         "group":  "Cameras",
+                         "basePrice":  2400,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD033",
+                         "productName":  "CP Plus 5A SMPS - 4Ch DVR Support",
+                         "description":  "",
+                         "category":  "Power",
+                         "group":  "Accessories",
+                         "basePrice":  400,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD034",
+                         "productName":  "CP Plus 10A SMPS - 8Ch DVR Support",
+                         "description":  "",
+                         "category":  "Power",
+                         "group":  "Accessories",
+                         "basePrice":  650,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD035",
+                         "productName":  "CP Plus 20A SMPS - 16Ch DVR Support",
+                         "description":  "",
+                         "category":  "Power",
+                         "group":  "Accessories",
+                         "basePrice":  1200,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD037",
+                         "productName":  "Consistent Surveillance Hard Disk 1TB ",
+                         "description":  "",
+                         "category":  "Storage",
+                         "group":  "Storage",
+                         "basePrice":  4200,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD038",
+                         "productName":  "Consistent Surveillance Hard Disk 2TB ",
+                         "description":  "",
+                         "category":  "Storage",
+                         "group":  "Storage",
+                         "basePrice":  6200,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD039",
+                         "productName":  "Consistent Surveillance Hard Disk 3TB ",
+                         "description":  "",
+                         "category":  "Storage",
+                         "group":  "Storage",
+                         "basePrice":  7000,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD040",
+                         "productName":  "CP Plus 3+1 Co-Axial Cable - DVR Supported",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Wiring",
+                         "basePrice":  1400,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD041",
+                         "productName":  "CP-Plus 305m Cat6 Cable Economy - NVR Supported",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Wiring",
+                         "basePrice":  3500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD042",
+                         "productName":  "Standard 100m Cat6 Cable Economy",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Wiring",
+                         "basePrice":  1500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD044",
+                         "productName":  "Connector / Wire Clip Per Camera ",
+                         "description":  "",
+                         "category":  "Connector",
+                         "group":  "Accessories",
+                         "basePrice":  80,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD046",
+                         "productName":  "No Recording",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Services",
+                         "basePrice":  399,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD047",
+                         "productName":  "Standard CCTV 2U Rack",
+                         "description":  "",
+                         "category":  "Accessory",
+                         "group":  "Accessories",
+                         "basePrice":  750,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD048",
+                         "productName":  "Standard CCTV 4U Rack",
+                         "description":  "",
+                         "category":  "Accessory",
+                         "group":  "Accessories",
+                         "basePrice":  1500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD049",
+                         "productName":  "Standard CCTV Junction Box",
+                         "description":  "",
+                         "category":  "Accessory",
+                         "group":  "Accessories",
+                         "basePrice":  80,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD050",
+                         "productName":  "ERD-CCTV Power Adaptor (12V,3A)",
+                         "description":  "",
+                         "category":  "Power",
+                         "group":  "Accessories",
+                         "basePrice":  650,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD051",
+                         "productName":  "ERD-CCTV Power Adaptor (12V,2A)",
+                         "description":  "",
+                         "category":  "Power",
+                         "group":  "Accessories",
+                         "basePrice":  480,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD052",
+                         "productName":  "Zebion 19\" Monitor",
+                         "description":  "",
+                         "category":  "Display",
+                         "group":  "Accessories",
+                         "basePrice":  2500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD053",
+                         "productName":  "Consistent Full HD 19\" Monitor",
+                         "description":  "",
+                         "category":  "Display",
+                         "group":  "Accessories",
+                         "basePrice":  3000,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD054",
+                         "productName":  "LG 24\" FHD Monitor",
+                         "description":  "",
+                         "category":  "Display",
+                         "group":  "Accessories",
+                         "basePrice":  5500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD055",
+                         "productName":  "4K HDMI Cable -1.5m",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Accessories",
+                         "basePrice":  220,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD056",
+                         "productName":  "4K HDMI Cable -5m",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Accessories",
+                         "basePrice":  350,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD057",
+                         "productName":  "4K HDMI Cable -10m",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Accessories",
+                         "basePrice":  550,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD058",
+                         "productName":  "4K HDMI Cable -20m",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Accessories",
+                         "basePrice":  1000,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD059",
+                         "productName":  "USB Cable Mouse",
+                         "description":  "",
+                         "category":  "Accessory",
+                         "group":  "Accessories",
+                         "basePrice":  150,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD060",
+                         "productName":  "Wireless Mouse",
+                         "description":  "",
+                         "category":  "Accessory",
+                         "group":  "Accessories",
+                         "basePrice":  350,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD062",
+                         "productName":  "4K VGA Cable - 10m",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Accessories",
+                         "basePrice":  450,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD063",
+                         "productName":  "4K VGA Cable - 5m",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Accessories",
+                         "basePrice":  250,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD064",
+                         "productName":  "4K VGA Cable - 15m ",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Accessories",
+                         "basePrice":  650,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD065",
+                         "productName":  "CMOS Cell Battery DVR ",
+                         "description":  "",
+                         "category":  "Accessory",
+                         "group":  "Accessories",
+                         "basePrice":  60,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD066",
+                         "productName":  "Service / Site Visit Charge",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Maintenance",
+                         "basePrice":  300,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD067",
+                         "productName":  "Camera Cleaning \u0026 Refocus - 4 Camera Setup ",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Maintenance",
+                         "basePrice":  399,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD069",
+                         "productName":  "Camera Shifting Charge ",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Maintenance",
+                         "basePrice":  299,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD072",
+                         "productName":  "Camera Cleaning \u0026 Refocus - 32 Camera Setup ",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Repair",
+                         "basePrice":  1599,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD073",
+                         "productName":  "Camera Cleaning \u0026 Refocus - 8 Camera Setup ",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Repair",
+                         "basePrice":  599,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD076",
+                         "productName":  "Installation Support",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Upgrade",
+                         "basePrice":  499,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD077",
+                         "productName":  "Camera Cleaning \u0026 Refocus - 16 Camera Setup ",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Upgrade",
+                         "basePrice":  999,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD078",
+                         "productName":  "No Power ",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Upgrade",
+                         "basePrice":  399,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "PROD079",
+                         "productName":  "No Video",
+                         "description":  "",
+                         "category":  "Service",
+                         "group":  "Upgrade",
+                         "basePrice":  399,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_cable_cat6",
+                         "productName":  "Cat6 Cable (Roll)",
+                         "description":  "",
+                         "category":  "Cabling",
+                         "group":  "Accessories",
+                         "basePrice":  1200,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_connectors_pack",
+                         "productName":  "BNC/DC Connectors (Pack)",
+                         "description":  "",
+                         "category":  "Accessories",
+                         "group":  "Accessories",
+                         "basePrice":  200,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_dvr_cam_basic",
+                         "productName":  "DVR Camera (Basic)",
+                         "description":  "",
+                         "category":  "Cameras",
+                         "group":  "Core",
+                         "basePrice":  1200,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_hdd_4tb",
+                         "productName":  "4TB Surveillance HDD",
+                         "description":  "",
+                         "category":  "Storage",
+                         "group":  "Core",
+                         "basePrice":  8000,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_hdd_8tb",
+                         "productName":  "8TB Surveillance HDD",
+                         "description":  "",
+                         "category":  "Storage",
+                         "group":  "Core",
+                         "basePrice":  14000,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_ip_cam_basic",
+                         "productName":  "IP Camera (Basic)",
+                         "description":  "",
+                         "category":  "Cameras",
+                         "group":  "Core",
+                         "basePrice":  1800,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_junction_box",
+                         "productName":  "Camera Junction Box",
+                         "description":  "",
+                         "category":  "Mounting",
+                         "group":  "Accessories",
+                         "basePrice":  150,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_nvr_8ch",
+                         "productName":  "8 Channel NVR",
+                         "description":  "",
+                         "category":  "Recording",
+                         "group":  "Package Base",
+                         "basePrice":  6000,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_poe_switch_8ch",
+                         "productName":  "8CH PoE Switch",
+                         "description":  "",
+                         "category":  "Network",
+                         "group":  "Accessories",
+                         "basePrice":  2500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_power_supply_8ch",
+                         "productName":  "8CH Power Supply",
+                         "description":  "",
+                         "category":  "Power",
+                         "group":  "Accessories",
+                         "basePrice":  800,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "prod_wifi_cam",
+                         "productName":  "Wi-Fi Camera",
+                         "description":  "",
+                         "category":  "Cameras",
+                         "group":  "Core",
+                         "basePrice":  2500,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "srv_installation_charge_per_cam",
+                         "productName":  "Per Camera Installation Charge",
+                         "description":  "",
+                         "category":  "Services",
+                         "group":  "Labor",
+                         "basePrice":  300,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "t8vPrg5v7ubABTKwAOdC",
+                         "productName":  "Patch Cord 5m",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Wiring",
+                         "basePrice":  459,
+                         "isAvailable":  true
+                     },
+                     {
+                         "productId":  "xzCWVGFudD9wnrjBXsOC",
+                         "productName":  "Patch Cord 2m",
+                         "description":  "",
+                         "category":  "Cable",
+                         "group":  "Wiring",
+                         "basePrice":  300,
+                         "isAvailable":  true
+                     }
+                 ]
+}

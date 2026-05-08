@@ -20,15 +20,15 @@ npm run create-admin-user
 ```
 
 ### What This Does
-1. Creates Firebase Auth user: `admin@safecom.local`
+1. Creates Firebase Auth user: `admin@safecom.com`
 2. Creates user document in Firestore with role: `admin`
 3. Creates admin profile document
 4. Returns credentials for admin dashboard login
 
 ### Admin Credentials (Test)
 ```
-Email:    admin@safecom.local
-Password: AdminTest@123
+Email:    admin@safecom.com
+Password: admin123
 ```
 
 ---

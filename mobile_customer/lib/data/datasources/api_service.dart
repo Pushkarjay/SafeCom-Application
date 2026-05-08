@@ -177,7 +177,7 @@ class ApiService {
     }
   }
 
-  // Check serviceability
+// Check serviceability
   Future<Map<String, dynamic>> checkServiceability({
     required double lat,
     required double lng,
@@ -201,6 +201,34 @@ class ApiService {
          return resData;
       }
       throw Exception('Failed to check serviceability: $e');
+    }
+  }
+
+  // Create a new booking after payment
+  Future<Map<String, dynamic>> createBooking({
+    required String customerId,
+    required String serviceType,
+    required Map<String, dynamic> serviceConfig,
+    required Map<String, dynamic> location,
+    required String scheduledDate,
+    required String scheduledTimeSlot,
+    required List<Map<String, dynamic>> lineItems,
+    String? notes,
+  }) async {
+    try {
+      final response = await _dio.post('/bookings', data: {
+        'customerId': customerId,
+        'serviceType': serviceType,
+        'serviceConfig': serviceConfig,
+        'location': location,
+        'scheduledDate': scheduledDate,
+        'scheduledTimeSlot': scheduledTimeSlot,
+        'lineItems': lineItems,
+        if (notes != null) 'notes': notes,
+      });
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to create booking: $e');
     }
   }
 }

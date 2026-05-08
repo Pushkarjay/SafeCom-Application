@@ -120,6 +120,11 @@ class RazorpayPaymentService {
       throw Exception('Razorpay keyId is missing. Please set RAZORPAY_KEY_ID environment variable.');
     }
 
+    // Validate required fields for payment
+    if (customerPhone == null || customerPhone.trim().isEmpty) {
+      throw Exception('MISSING_PHONE:Please add your phone number in Profile to complete booking');
+    }
+
     final payload = <String, dynamic>{
       'amount': amountRupees,
       'currency': 'INR',

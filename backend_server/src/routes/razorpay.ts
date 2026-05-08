@@ -9,11 +9,11 @@ const createOrderSchema = z.object({
   receipt: z.string().trim().min(1).optional(),
   customerId: z.string().trim().min(1).optional(),
   customerName: z.string().trim().min(1).optional(),
-  customerEmail: z.string().email().optional(),
+  customerEmail: z.string().email().optional().or(z.literal('')),
   customerPhone: z.string().trim().min(1).optional(),
   jobId: z.string().trim().min(1).optional().nullable(),
-  serviceName: z.string().trim().min(1),
-  packageLabel: z.string().trim().min(1),
+  serviceName: z.string().trim().min(1).optional(),
+  packageLabel: z.string().trim().min(1).optional(),
   notes: z.record(z.string()).optional()
 })
 
@@ -27,8 +27,8 @@ const verifyPaymentSchema = z.object({
   customerName: z.string().trim().min(1).optional(),
   customerEmail: z.string().email().optional(),
   jobId: z.string().trim().min(1).optional().nullable(),
-  serviceName: z.string().trim().min(1),
-  packageLabel: z.string().trim().min(1),
+  serviceName: z.string().trim().min(1).optional(),
+  packageLabel: z.string().trim().min(1).optional(),
   notes: z.record(z.string()).optional()
 })
 
@@ -45,15 +45,19 @@ razorpayRouter.post('/create-order', async (req, res) => {
   }
 
   const receipt = parsed.data.receipt ?? `rcpt_${Date.now()}`
-  const notes = {
-    serviceName: parsed.data.serviceName,
-    packageLabel: parsed.data.packageLabel,
+  const notes: Record<string, string> = {
+    serviceName: parsed.data.serviceName ?? '',
+    packageLabel: parsed.data.packageLabel ?? '',
     customerId: parsed.data.customerId ?? '',
     customerName: parsed.data.customerName ?? '',
     customerEmail: parsed.data.customerEmail ?? '',
     customerPhone: parsed.data.customerPhone ?? '',
     jobId: parsed.data.jobId ?? '',
-    ...(parsed.data.notes ?? {})
+  }
+  if (parsed.data.notes) {
+    for (const [k, v] of Object.entries(parsed.data.notes)) {
+      notes[k] = String(v)
+    }
   }
 
   try {

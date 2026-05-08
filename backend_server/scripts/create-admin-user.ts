@@ -48,8 +48,8 @@ function parseAdminUsersFromEnv(): AdminUserData[] {
 
   return [
     {
-      email: 'admin@safecom.local',
-      password: 'AdminTest@123',
+      email: 'admin@safecom.com',
+      password: 'admin123',
       displayName: 'SafeCom Admin'
     }
   ]

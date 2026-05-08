@@ -175,9 +175,9 @@ class AuthService {
   // ─── Profile ──────────────────────────────────────────────────────────────
 
   /// Get current customer profile
-  Future<Customer> getProfile(String token) async {
+  Future<Customer> getProfile(String token, String customerId) async {
     final response = await _dio.get(
-      '$baseUrl/customer/profile',
+      '$baseUrl/customers/$customerId',
       options: Options(
         headers: {'Authorization': 'Bearer $token'},
         sendTimeout: const Duration(seconds: 5),
@@ -195,11 +195,12 @@ class AuthService {
   /// Update customer profile
   Future<Customer> updateProfile(
     String token,
+    String customerId,
     Customer customer,
   ) async {
     try {
       final response = await _dio.patch(
-        '$baseUrl/customer/profile',
+        '$baseUrl/customers/$customerId',
         data: customer.toJson(),
         options: Options(
           headers: {'Authorization': 'Bearer $token'},

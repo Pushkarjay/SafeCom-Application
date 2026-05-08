@@ -198,9 +198,18 @@ bookingsRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticate
     // Generate booking ID
     const bookingId = `BOOK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     
-    // Fetch customer details (TODO: from auth context or database)
-    const customerName = 'Customer' // TODO: Get from customer record
-    const customerPhone = request.customerId // TODO: Get from customer record
+    // Fetch customer details from Firestore
+    let customerName = 'Customer'
+    let customerPhone = ''
+    try {
+      const customerDoc = await getDocument<Record<string, unknown>>('customers', request.customerId)
+      if (customerDoc) {
+        customerName = String(customerDoc.name || customerDoc.displayName || 'Customer')
+        customerPhone = String(customerDoc.phone || '')
+      }
+    } catch (e) {
+      console.warn(`Failed to fetch customer ${request.customerId}:`, e)
+    }
     
     // Generate canonical invoice
     const invoice = generateCanonicalInvoice(bookingId, request, customerName, customerPhone)
@@ -309,6 +318,30 @@ bookingsRouter.get('/', async (req: FirebaseAuthenticatedRequest, res) => {
     })
   } catch (error) {
     console.error('Failed to list bookings:', error)
+    // Try fallback without orderBy
+    try {
+      const db = getDb()
+      const showAll = req.query.all === 'true'
+      let fallbackQuery: Query = db.collection('bookings')
+      if (!showAll) {
+        fallbackQuery = fallbackQuery.where('customerId', '==', req.firebaseUid)
+      }
+      const snapshot = await fallbackQuery.get()
+      const bookings: CanonicalBooking[] = []
+      snapshot.forEach((doc: QueryDocumentSnapshot) => {
+        bookings.push({
+          bookingId: doc.id,
+          ...doc.data()
+        } as CanonicalBooking)
+      })
+      return res.json({
+        success: true,
+        data: bookings,
+        timestamp: new Date().toISOString()
+      })
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError)
+    }
     return res.status(500).json({
       success: false,
       error: {

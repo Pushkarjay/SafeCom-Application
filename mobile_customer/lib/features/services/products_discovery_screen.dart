@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/datasources/api_service.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/cart_provider.dart';
+import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 
 /// Provider that fetches all master products from the backend
 final allProductsProvider = FutureProvider<List<MasterProduct>>((ref) async {
@@ -532,14 +534,28 @@ class _CartSheet extends ConsumerWidget {
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Proceeding to checkout...'),
-                            behavior: SnackBarBehavior.floating,
+                        final cart = ref.read(cartProvider);
+                        if (cart.items.isEmpty) return;
+                        
+                        final lineItems = cart.items.map((item) => ActiveOrderLineItem(
+                          name: item.product.name,
+                          quantity: item.quantity,
+                          unitPrice: item.product.basePrice,
+                        )).toList();
+                        
+                        final total = cart.subtotal;
+                        
+                        ref.read(activeOrderProvider.notifier).setSummary(
+                          ActiveOrderSummary(
+                            serviceName: 'Product Purchase',
+                            packageLabel: 'Cart Order',
+                            estimatedTotal: total,
+                            items: lineItems,
                           ),
                         );
-                        // TODO: Navigate to checkout/booking flow
+                        
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, AppRoutes.scheduling);
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF0A84FF),

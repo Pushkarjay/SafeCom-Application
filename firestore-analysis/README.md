@@ -1,4 +1,4 @@
 # Firestore Analysis
 
 ## Current Structure
-- Total Collections: 12
+- Total Collections: 17

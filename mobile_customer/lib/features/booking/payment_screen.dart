@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,10 +6,12 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/core/utils/error_handler.dart';
+import 'package:mobile_customer/data/datasources/api_service.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/booking/services/razorpay_payment_service.dart';
+import 'package:mobile_customer/features/location/providers/location_provider.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
@@ -58,6 +61,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       final activeOrder = ref.read(activeOrderProvider);
       final booking = ref.read(bookingFlowProvider);
       final authState = ref.read(authProvider);
+      final locationState = ref.read(locationProvider);
 
       final verification = await ref.read(razorpayPaymentServiceProvider).verifyPayment(
             orderId: checkoutOrder.orderId,
@@ -74,12 +78,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       if (!mounted) return;
 
-      setState(() {
-        _isProcessing = false;
-        _checkoutOrder = null;
-      });
-
       if (!verification.verified) {
+        setState(() {
+          _isProcessing = false;
+          _checkoutOrder = null;
+        });
         messenger.showSnackBar(
           SnackBar(
             content: Text(verification.message),
@@ -89,9 +92,58 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         return;
       }
 
+      final serviceType = _mapServiceNameToType(activeOrder?.serviceName ?? 'installation');
+
+      final lineItems = (activeOrder?.items ?? []).map((item) => {
+        'productId': item.name.replaceAll(' ', '_').toLowerCase(),
+        'productName': item.name,
+        'quantity': item.quantity,
+        'unitPrice': item.unitPrice,
+        'lineTotal': item.unitPrice * item.quantity,
+      }).toList();
+
+      final createBookingData = {
+        'customerId': authState.customer?.id ?? '',
+        'serviceType': serviceType,
+        'serviceConfig': {
+          'packageLabel': activeOrder?.packageLabel ?? 'Standard',
+        },
+        'location': {
+          'address': locationState.location,
+          'latitude': locationState.latitude ?? 25.5941,
+          'longitude': locationState.longitude ?? 85.1376,
+        },
+        'scheduledDate': '${booking.selectedDate.year}-${booking.selectedDate.month.toString().padLeft(2, '0')}-${booking.selectedDate.day.toString().padLeft(2, '0')}',
+        'scheduledTimeSlot': booking.selectedTimeSlot,
+        'lineItems': lineItems,
+        'notes': 'Payment ID: ${response.paymentId}',
+      };
+
+      try {
+        await ref.read(apiServiceProvider).createBooking(
+          customerId: authState.customer?.id ?? '',
+          serviceType: serviceType,
+          serviceConfig: createBookingData['serviceConfig'] as Map<String, dynamic>,
+          location: createBookingData['location'] as Map<String, dynamic>,
+          scheduledDate: createBookingData['scheduledDate'] as String,
+          scheduledTimeSlot: createBookingData['scheduledTimeSlot'] as String,
+          lineItems: createBookingData['lineItems'] as List<Map<String, dynamic>>,
+          notes: createBookingData['notes'] as String?,
+        );
+      } catch (bookingError) {
+        debugPrint('Failed to create booking: $bookingError');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _isProcessing = false;
+        _checkoutOrder = null;
+      });
+
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Payment verified for ${booking.selectedTimeSlot}'),
+          content: Text('Payment verified! Booking created for ${booking.selectedTimeSlot}'),
           backgroundColor: Colors.green,
         ),
       );
@@ -102,6 +154,17 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       setState(() => _isProcessing = false);
       AppErrorHandler.showSnackbar(context, e);
     }
+  }
+
+  String _mapServiceNameToType(String serviceName) {
+    final name = serviceName.toLowerCase();
+    if (name.contains('install')) return 'installation';
+    if (name.contains('maintenance') || name.contains('amc')) return 'amc';
+    if (name.contains('repair')) return 'repair';
+    if (name.contains('upgrade')) return 'upgrade';
+    if (name.contains('accessories')) return 'accessories';
+    if (name.contains('product') || name.contains('purchase') || name.contains('cart')) return 'installation';
+    return 'installation';
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
@@ -198,7 +261,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     try {
       final checkoutOrder = await ref.read(razorpayPaymentServiceProvider).createOrder(
-            amountRupees: 100,
+            amountRupees: activeOrder.estimatedTotal,
             serviceName: activeOrder.serviceName,
             packageLabel: activeOrder.packageLabel,
             customerId: customer?.id,
@@ -241,6 +304,34 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         _isProcessing = false;
         _checkoutOrder = null;
       });
+
+      // Check for specific errors
+      final errorStr = e.toString();
+      if (errorStr.contains('MISSING_PHONE')) {
+        // Show dialog to add phone number
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Phone Number Required'),
+            content: const Text('Please add your phone number in your Profile to complete booking.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.push('/profile');
+                },
+                child: const Text('Go to Profile'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
       AppErrorHandler.showSnackbar(context, e);
     }
   }

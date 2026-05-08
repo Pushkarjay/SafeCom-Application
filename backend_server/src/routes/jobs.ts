@@ -28,18 +28,8 @@ jobsRouter.get('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequ
     const db = getDb()
     let query: Query = db.collection('jobs')
     
-    if (unassigned) {
-      // Employee job board: show only pending unassigned jobs
-      query = query.where('status', '==', 'pending')
-    } else if (technicianId) {
-      // Show jobs for a specific technician — includes both assignedTo.employeeId and assignedTo
-      // Firestore nested field query
-      query = query.where('assignedTo.employeeId', '==', technicianId)
-    }
-    
-    if (statusFilter && !unassigned) {
-      query = query.where('status', '==', statusFilter)
-    }
+    // Get all jobs first (no complex queries to avoid composite index errors)
+    // Then filter in memory
     
     // Order by creation date descending
     query = query.orderBy('createdAt', 'desc')
@@ -54,6 +44,24 @@ jobsRouter.get('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequ
         ...data
       } as CanonicalJob)
     })
+    
+    // Filter by unassigned
+    if (unassigned) {
+      jobs = jobs.filter((job: any) => 
+        job.status === 'pending' && !job.assignedTo
+      )
+    }
+    // Filter by technicianId
+    else if (technicianId) {
+      jobs = jobs.filter((job: any) => 
+        job.assignedTo?.employeeId === technicianId || 
+        job.assignedTo === technicianId
+      )
+    }
+    // Filter by status
+    if (statusFilter) {
+      jobs = jobs.filter((job: any) => job.status === statusFilter)
+    }
     
     // For unassigned: also filter out jobs that already have assignedTo set
     if (unassigned) {

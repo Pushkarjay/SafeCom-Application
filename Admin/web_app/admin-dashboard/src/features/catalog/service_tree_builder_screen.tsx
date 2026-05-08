@@ -539,6 +539,8 @@ export default function ServiceTreeBuilderScreen() {
                       <span className="ib-badge secondary">{cat.setups.length} setup{cat.setups.length !== 1 ? 's' : ''}</span>
                     </button>
                     <div className="ib-header-actions">
+                      <button className="secondary-btn small" onClick={() => { setShowAddSetup(cat.key); setNewName('') }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px' }}>+ Add Setup</button>
+                      <button className="secondary-btn small" onClick={() => { setShowProductSearch({ categoryKey: cat.key, setupKey: '' }); }} style={{ marginRight: '8px', fontSize: '11px', padding: '4px 8px', background: '#10b981' }}>+ Add Product</button>
                       <span className="ib-category-price">{fmt(categoryTotal(cat))}</span>
                       <button className="icon-btn danger" onClick={() => deleteCategory(cat.key)} title="Delete category">🗑️</button>
                     </div>
@@ -546,10 +548,6 @@ export default function ServiceTreeBuilderScreen() {
 
                   {catOpen && (
                     <div className="ib-category-body">
-                      <div className="ib-section-actions">
-                        <button className="secondary-btn" onClick={() => { setShowAddSetup(cat.key); setNewName('') }}>+ Add Setup</button>
-                      </div>
-
                       {cat.setups.length === 0 ? (
                         <p className="ib-empty">No setups. Click "+ Add Setup" to create one.</p>
                       ) : cat.setups.map((setup) => {
@@ -564,6 +562,7 @@ export default function ServiceTreeBuilderScreen() {
                                 <span className="ib-badge">{setup.products.length} product{setup.products.length !== 1 ? 's' : ''}</span>
                               </button>
                               <div className="ib-header-actions">
+                                <button className="secondary-btn small" onClick={() => setShowProductSearch({ categoryKey: cat.key, setupKey: setup.key })} style={{ marginRight: '8px', fontSize: '11px', padding: '4px 8px' }}>+ Add Product</button>
                                 <span className="ib-setup-price">{fmt(setupTotal(setup))}</span>
                                 <button className="icon-btn danger" onClick={() => deleteSetup(cat.key, setup.key)} title="Delete setup">🗑️</button>
                               </div>
@@ -572,7 +571,6 @@ export default function ServiceTreeBuilderScreen() {
                             {setupOpen && (
                               <div className="ib-setup-body">
                                 <div className="ib-section-actions">
-                                  <button className="secondary-btn" onClick={() => setShowProductSearch({ categoryKey: cat.key, setupKey: setup.key })}>+ Add Product</button>
                                   {(selectedForClubbing[sKey]?.size || 0) > 0 && (
                                     <button className="secondary-btn danger" onClick={() => bulkDeleteProducts(cat.key, setup.key)}>🗑️ Delete Selected</button>
                                   )}
@@ -634,6 +632,18 @@ export default function ServiceTreeBuilderScreen() {
                                               <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, [slot.key, opt.key], 'maxQty', opt.maxQty)}>{opt.maxQty}</button></td>
                                               <td className="num total">{fmt(opt.price * opt.defaultQty)}</td>
                                               <td>
+                                                <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add option">+ Option</button>
+                                                <button className="icon-btn" onClick={() => {
+                                                  const fieldName = prompt('Enter field name:')
+                                                  if (!fieldName || !serviceId) return
+                                                  const type = prompt('Enter type (string, number, boolean, map):', 'string')
+                                                  if (!type) return
+                                                  let val: any = ''
+                                                  if (type === 'number') val = 0
+                                                  if (type === 'boolean') val = false
+                                                  if (type === 'map') val = {}
+                                                  adminDatasource.serviceUpdateDynamicField(serviceId!, cat.key, setup.key, [...[slot.key, opt.key], fieldName], val).then(() => loadData())
+                                                }} title="Add dynamic field">+ Field</button>
                                                 <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove product">🗑️</button>
                                               </td>
                                             </tr>
@@ -666,6 +676,17 @@ export default function ServiceTreeBuilderScreen() {
                                             <td className="num total">{fmt(slot.options[0]?.price * (slot.options[0]?.defaultQty || 1) || 0)}</td>
                                             <td>
                                               <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add option">+ Option</button>
+                                              <button className="icon-btn" onClick={() => {
+                                                const fieldName = prompt('Enter field name:')
+                                                if (!fieldName || !serviceId) return
+                                                const type = prompt('Enter type (string, number, boolean, map):', 'string')
+                                                if (!type) return
+                                                let val: any = ''
+                                                if (type === 'number') val = 0
+                                                if (type === 'boolean') val = false
+                                                if (type === 'map') val = {}
+                                                adminDatasource.serviceUpdateDynamicField(serviceId!, cat.key, setup.key, [...[slot.key], fieldName], val).then(() => loadData())
+                                              }} title="Add dynamic field">+ Field</button>
                                               <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
                                             </td>
                                           </tr>,

@@ -188,10 +188,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> updateProfile(Customer customer) async {
     if (state.token == null) throw Exception('Not authenticated');
+    if (state.customer == null) throw Exception('No customer found');
     
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final updated = await authService.updateProfile(state.token!, customer);
+      final updated = await authService.updateProfile(state.token!, state.customer?.id ?? '', customer);
       await _saveSession(state.token!, updated);
       state = state.copyWith(
         customer: updated,
