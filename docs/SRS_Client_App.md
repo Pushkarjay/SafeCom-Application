@@ -200,5 +200,9 @@ This screen allows the user to build their order dynamically.
     - Phone number
     - Photo
     - Saved addresses
-    - Booking history
 - Non-critical fields should not dominate primary profile layout.
+
+#### 7.7 Nested Service Architecture (2026-05-09)
+- **Clubbed Product Selection:** When configuring an installation, certain products (like cameras) may contain deeply nested "clubbed options". The customer app must preserve this hierarchical structure instead of flattening it.
+- **Recursive Drill-down:** Customers must be presented with a recursive drill-down selection popup (`ClubbedProductSelector`) that allows them to navigate through sub-categories (branches) to select specific variant combinations (leaf nodes).
+- **Interactive Invoices:** The dynamic invoice table must support interactive elements, rendering a "Change" button next to clubbed products to trigger the nested selection flow.

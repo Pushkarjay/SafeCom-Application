@@ -8,6 +8,7 @@ import 'package:mobile_customer/features/home/widgets/location_header.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
+import 'package:mobile_customer/widgets/common/clubbed_product_selector.dart';
 
 class InstallationCustomizationScreen extends ConsumerWidget {
   const InstallationCustomizationScreen({super.key});
@@ -95,7 +96,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                 rows: flow.items
                     .map(
                       (item) => InvoiceTableRowData(
-                        product: _buildItemName(item),
+                        product: _buildItemWidget(context, ref, item),
                         unitPrice: item.unitPrice,
                         quantityWidget: QuantityStepper(
                           quantity: item.quantity,
@@ -164,6 +165,62 @@ class InstallationCustomizationScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// For clubbed products, show a tappable widget that opens the drill-down popup.
+  /// For normal products, show the name with variant info.
+  Widget _buildItemWidget(BuildContext context, WidgetRef ref, InvoiceLineItem item) {
+    if (item.isClubbed) {
+      return GestureDetector(
+        onTap: () async {
+          final selected = await ClubbedProductSelector.show(
+            context,
+            title: item.key,
+            options: item.clubbedOptions,
+          );
+          if (selected != null) {
+            ref.read(installationFlowProvider.notifier).selectClubbedOption(item.key, selected);
+          }
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                item.name,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFF93C5FD), width: 0.5),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.swap_horiz, size: 12, color: Color(0xFF0A84FF)),
+                  SizedBox(width: 2),
+                  Text(
+                    'Change',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0A84FF),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Text(_buildItemName(item));
   }
 
   String _buildItemName(InvoiceLineItem item) {

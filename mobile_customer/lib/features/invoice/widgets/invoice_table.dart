@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class InvoiceTableRowData {
-  final String product;
+  /// Can be a [String] or a [Widget].
+  final dynamic product;
   final double unitPrice;
   final Widget quantityWidget;
   final double amount;
@@ -85,12 +86,14 @@ class InvoiceTable extends StatelessWidget {
                 children: [
                   Expanded(
                     flex: 4,
-                    child: Text(
-                      row.product,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                    child: row.product is Widget
+                        ? row.product as Widget
+                        : Text(
+                            row.product.toString(),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
-                    ),
                   ),
                   Expanded(
                     flex: 2,

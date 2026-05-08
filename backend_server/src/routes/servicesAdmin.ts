@@ -536,6 +536,131 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/dynamic
   } catch (error) { res.status(500).json({ success: false, error: 'Failed to update dynamic field' }); }
 });
 
+// POST /config/:serviceId/category/:categoryKey/branch (add empty branch node at category level)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/branch', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, branchName } = req.body as { nodePath?: string[]; branchName: string };
+    if (!branchName?.trim()) return res.status(400).json({ success: false, error: 'Branch name required' });
+    
+    const db = getDb();
+    const path = nodePath && nodePath.length > 0
+      ? `${categoryKey}.${nodePath.join('.')}.${branchName}`
+      : `${categoryKey}.${branchName}`;
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [path]: {} });
+    res.json({ success: true, message: `Branch "${branchName}" created at category level` });
+  } catch (error) { res.status(500).json({ success: false, error: 'Failed to create branch' }); }
+});
+
+// POST /config/:serviceId/category/:categoryKey/node (add product node at category level, no setup)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, productId, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; productId: string; defaultQty?: number; minQty?: number; maxQty?: number; };
+    
+    const db = getDb();
+    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
+    const parentName = nodePath[nodePath.length - 1];
+    const optionKey = `${parentName} Option ${Date.now().toString().slice(-4)}`;
+
+    const optionData = {
+      'Deafult q': defaultQty ?? 1,
+      'Price': productRef,
+      [`${optionKey} ID`]: productRef,
+      'available': true,
+      'max q': maxQty ?? 50,
+      'min q': minQty ?? 0,
+      'rigid': false
+    };
+
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
+      [`${categoryKey}.${nodePath.join('.')}.${optionKey}`]: optionData
+    });
+    res.json({ success: true, message: `Node added at category level` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST node (category) error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to add node' });
+  }
+});
+
+// DELETE /config/:serviceId/category/:categoryKey/node (delete node at category level)
+servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const path = JSON.parse(req.query.path as string) as string[];
+    if (!Array.isArray(path) || path.length === 0) return res.status(400).json({ success: false, error: 'path required' });
+    
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${path.join('.')}`]: FieldValue.delete() });
+    res.json({ success: true, message: 'Node deleted' });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] DELETE node (category) error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to delete node' });
+  }
+});
+
+// PATCH /config/:serviceId/category/:categoryKey/node/quantities (update quantities at category level)
+servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/quantities', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; defaultQty?: number; minQty?: number; maxQty?: number };
+    if (!Array.isArray(nodePath) || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath required' });
+
+    const db = getDb();
+    const updates: Record<string, unknown> = {};
+    const firestorePath = `${categoryKey}.${nodePath.join('.')}`;
+    if (defaultQty !== undefined) updates[`${firestorePath}.Deafult q`] = defaultQty;
+    if (minQty !== undefined) updates[`${firestorePath}.min q`] = minQty;
+    if (maxQty !== undefined) updates[`${firestorePath}.max q`] = maxQty;
+    if (Object.keys(updates).length > 0) {
+      await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+    }
+    res.json({ success: true, message: 'Quantities updated' });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] PATCH quantities (category) error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to update quantities' });
+  }
+});
+
+// PATCH /config/:serviceId/category/:categoryKey/node/dynamic-field (update field at category level)
+servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/dynamic-field', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, value } = req.body as { nodePath: string[]; value: any };
+    if (!Array.isArray(nodePath) || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath required' });
+
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${nodePath.join('.')}`]: value });
+    res.json({ success: true, message: 'Field updated' });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] PATCH dynamic-field (category) error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to update field' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/branch (add empty branch node at setup level)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/branch', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { nodePath, branchName } = req.body as { nodePath?: string[]; branchName: string };
+    if (!branchName?.trim()) return res.status(400).json({ success: false, error: 'Branch name required' });
+    
+    const db = getDb();
+    const path = nodePath && nodePath.length > 0
+      ? `${categoryKey}.${setupKey}.${nodePath.join('.')}.${branchName}`
+      : `${categoryKey}.${setupKey}.${branchName}`;
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [path]: {} });
+    res.json({ success: true, message: `Branch "${branchName}" created` });
+  } catch (error) { res.status(500).json({ success: false, error: 'Failed to create branch' }); }
+});
+
 // POST /config/:serviceId/category/:categoryKey/setup/:setupKey/node
 servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
@@ -563,7 +688,8 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
       [`${categoryKey}.${setupKey}.${nodePath.join('.')}.${optionKey}`]: optionData
     });
     res.json({ success: true, message: `Node added` });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST node error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to add node' });
   }
 });
@@ -578,7 +704,8 @@ servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setu
     const db = getDb();
     await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${path.join('.')}`]: FieldValue.delete() });
     res.json({ success: true, message: 'Node deleted' });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] DELETE node error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to delete node' });
   }
 });
@@ -613,7 +740,8 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/setup/:setup
     const db = getDb();
     await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${nodePath.join('.')}`]: value });
     res.json({ success: true, message: 'Field updated' });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] PATCH dynamic-field error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to update field' });
   }
 });

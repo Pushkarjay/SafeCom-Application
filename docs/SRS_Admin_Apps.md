@@ -93,3 +93,7 @@ Includes both web-first admin panel and lightweight admin mobile app for on-the-
 - Provide centralized invoice generation/view in top-level admin operations.
 - Invoice variants can include installation/service/delivery forms as needed.
 - All invoices must align with canonical booking invoice payload.
+
+## Addendum: Nested Service Architecture (2026-05-09)
+- **Infinite Nesting Support:** The service builder now natively supports infinite nesting of products through 'Branch' nodes. Branch nodes can be created at the category level or setup level, allowing complex hierarchical product structures (e.g., Camera -> 2.4 MP -> colour -> indoor) before leaf products are added.
+- **Category-Level Routing:** The backend routing and frontend datasource have been upgraded to strictly support node CRUD operations at the category level without requiring a setup grouping.

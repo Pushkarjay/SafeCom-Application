@@ -351,30 +351,71 @@ export class AdminDatasource {
   }
 
   async serviceAddNode(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], productId: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node`, {
-      method: 'POST',
-      body: JSON.stringify({ nodePath, productId })
-    })
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node`, {
+        method: 'POST',
+        body: JSON.stringify({ nodePath, productId })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node`, {
+        method: 'POST',
+        body: JSON.stringify({ nodePath, productId })
+      })
+    }
   }
 
   async serviceDeleteNode(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[]): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node?path=${encodeURIComponent(JSON.stringify(nodePath))}`, {
-      method: 'DELETE'
-    })
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node?path=${encodeURIComponent(JSON.stringify(nodePath))}`, {
+        method: 'DELETE'
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node?path=${encodeURIComponent(JSON.stringify(nodePath))}`, {
+        method: 'DELETE'
+      })
+    }
   }
 
   async serviceUpdateQuantities(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], quantities: { defaultQty?: number; minQty?: number; maxQty?: number }): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/quantities`, {
-      method: 'PATCH',
-      body: JSON.stringify({ nodePath, ...quantities })
-    })
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node/quantities`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, ...quantities })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/quantities`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, ...quantities })
+      })
+    }
   }
 
   async serviceUpdateDynamicField(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], value: any): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/dynamic-field`, {
-      method: 'PATCH',
-      body: JSON.stringify({ nodePath, value })
-    })
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node/dynamic-field`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, value })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/dynamic-field`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, value })
+      })
+    }
+  }
+
+  async serviceAddBranch(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], branchName: string): Promise<void> {
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/branch`, {
+        method: 'POST',
+        body: JSON.stringify({ nodePath, branchName })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/branch`, {
+        method: 'POST',
+        body: JSON.stringify({ nodePath, branchName })
+      })
+    }
   }
 
   async fetchMasterProducts(query: string): Promise<any[]> {

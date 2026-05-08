@@ -213,3 +213,10 @@
 - [ ] Test category-level product addition in AMC builder
 - [ ] Upload APKs to Play Store
 - [ ] Verify full booking flow end-to-end
+
+
+## 2026-05-09 (Nested Service Architecture & UI Resolution)
+- **Backend API Fixes:** Registered \installationAdminRouter\ in \pp.ts\ to fix 404 errors. Added category-level CRUD endpoints and branch creation endpoints to support infinite nesting logic directly at the category level (without needing a setup key).
+- **Admin Dashboard Fixes:** Fixed \dmin_datasource.ts\ to properly route category-level vs setup-level paths. Added \serviceAddBranch\ and UI buttons (\+ Branch\) to enable admins to create empty branch folders.
+- **Customer App UI Resolution:** Overhauled the \InstallationFlowProvider\ to maintain the deeply nested \clubbedOptions\ tree structure instead of flattening it. Implemented a recursive drill-down selection popup (\ClubbedProductSelector\) allowing customers to select specific variants across multiple nesting levels. Updated \InvoiceTable\ to support interactive \Widget\ elements within rows.
+- **Build & Deploy Automation:** Created a script to automate dual-region backend deployment (Cloud Run), Vite building for Admin Dashboard, and Flutter builds (APK/AAB) for both Mobile apps, saving all artifacts natively to \elease_assets\.

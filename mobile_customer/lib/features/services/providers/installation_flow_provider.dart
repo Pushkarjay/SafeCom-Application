@@ -13,6 +13,12 @@ class InvoiceLineItem {
   final int maxQty;
   final Map<String, String> selectedVariants;
 
+  /// If this product slot has clubbed options, the full tree is stored here.
+  /// The customer must drill-down to select a leaf.
+  final bool isClubbed;
+  final List<ClubbedOption> clubbedOptions;
+  final ClubbedOption? selectedOption; // The leaf node the customer chose
+
   const InvoiceLineItem({
     required this.key,
     required this.name,
@@ -22,6 +28,9 @@ class InvoiceLineItem {
     this.minQty = 1,
     this.maxQty = 999,
     this.selectedVariants = const {},
+    this.isClubbed = false,
+    this.clubbedOptions = const [],
+    this.selectedOption,
   });
 
   double get amount => unitPrice * quantity;
@@ -35,6 +44,10 @@ class InvoiceLineItem {
     int? minQty,
     int? maxQty,
     Map<String, String>? selectedVariants,
+    bool? isClubbed,
+    List<ClubbedOption>? clubbedOptions,
+    ClubbedOption? selectedOption,
+    bool clearSelectedOption = false,
   }) {
     return InvoiceLineItem(
       key: key ?? this.key,
@@ -45,6 +58,9 @@ class InvoiceLineItem {
       minQty: minQty ?? this.minQty,
       maxQty: maxQty ?? this.maxQty,
       selectedVariants: selectedVariants ?? this.selectedVariants,
+      isClubbed: isClubbed ?? this.isClubbed,
+      clubbedOptions: clubbedOptions ?? this.clubbedOptions,
+      selectedOption: clearSelectedOption ? null : (selectedOption ?? this.selectedOption),
     );
   }
 }
@@ -133,6 +149,23 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     if (group == null) return;
 
     final items = group.mappedProducts.map((mappedProduct) {
+      if (mappedProduct.isClubbed && mappedProduct.clubbedOptions.isNotEmpty) {
+        // For clubbed products: find the first leaf to use as default
+        final firstLeaf = _findFirstLeaf(mappedProduct.clubbedOptions);
+        return InvoiceLineItem(
+          key: mappedProduct.productKey,
+          name: firstLeaf?.productName ?? mappedProduct.product.productName,
+          unitPrice: firstLeaf?.price ?? mappedProduct.product.basePrice,
+          quantity: firstLeaf?.defaultQty ?? mappedProduct.defaultQty,
+          canEditQuantity: (firstLeaf?.minQty ?? mappedProduct.minQty) != (firstLeaf?.maxQty ?? mappedProduct.maxQty),
+          minQty: firstLeaf?.minQty ?? mappedProduct.minQty,
+          maxQty: firstLeaf?.maxQty ?? mappedProduct.maxQty,
+          isClubbed: true,
+          clubbedOptions: mappedProduct.clubbedOptions,
+          selectedOption: firstLeaf,
+        );
+      }
+      // Normal non-clubbed product
       return InvoiceLineItem(
         key: mappedProduct.productId,
         name: mappedProduct.product.productName,
@@ -145,6 +178,35 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     }).toList();
 
     state = state.copyWith(items: items);
+  }
+
+  /// Walk the tree and return the first leaf node found (depth-first).
+  ClubbedOption? _findFirstLeaf(List<ClubbedOption> options) {
+    for (final opt in options) {
+      if (opt.isLeaf) return opt;
+      final childLeaf = _findFirstLeaf(opt.children);
+      if (childLeaf != null) return childLeaf;
+    }
+    return null;
+  }
+
+  /// Called when the customer selects a leaf from the nested popup.
+  void selectClubbedOption(String itemKey, ClubbedOption selectedLeaf) {
+    final updatedItems = state.items.map((item) {
+      if (item.key == itemKey && item.isClubbed) {
+        return item.copyWith(
+          name: selectedLeaf.productName,
+          unitPrice: selectedLeaf.price,
+          quantity: selectedLeaf.defaultQty,
+          minQty: selectedLeaf.minQty,
+          maxQty: selectedLeaf.maxQty,
+          canEditQuantity: selectedLeaf.minQty != selectedLeaf.maxQty,
+          selectedOption: selectedLeaf,
+        );
+      }
+      return item;
+    }).toList();
+    state = state.copyWith(items: updatedItems);
   }
 
   void incrementQuantity(String itemKey) {

@@ -318,6 +318,18 @@ export default function ServiceTreeBuilderScreen() {
     finally { setSaving(false) }
   }
 
+  const addBranch = async (categoryKey: string, setupKey: string, nodePath: string[]) => {
+    if (!serviceId) return
+    const name = prompt('Enter branch name (e.g. "2.4 MP", "colour", "indoor"):')
+    if (!name?.trim()) return
+    setSaving(true)
+    try {
+      await adminDatasource.serviceAddBranch(serviceId, categoryKey, setupKey, nodePath, name.trim())
+      await loadData()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
+    finally { setSaving(false) }
+  }
+
   const editQty = async (catKey: string, setupKey: string, nodePath: string[], type: 'defaultQty'|'minQty'|'maxQty', current: number) => {
     if (!serviceId) return
     const v = prompt(`Enter new ${type}:`, String(current))
@@ -396,6 +408,7 @@ export default function ServiceTreeBuilderScreen() {
             <td>
               <div className="ib-actions">
                 <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add sub-option">+ Option</button>
+                <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add empty branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
                 <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this option">✕</button>
               </div>
             </td>
@@ -466,6 +479,7 @@ export default function ServiceTreeBuilderScreen() {
             <td>
               <div className="ib-actions">
                 <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add product sub-option">+ Option</button>
+                <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add empty branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
                 <button className="link-btn" onClick={() => {
                    const fieldName = prompt('Enter new field name:')
                    if (!fieldName || !serviceId) return;
@@ -540,7 +554,8 @@ export default function ServiceTreeBuilderScreen() {
                     </button>
                     <div className="ib-header-actions">
                       <button className="secondary-btn small" onClick={() => { setShowAddSetup(cat.key); setNewName('') }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px' }}>+ Add Setup</button>
-                      <button className="secondary-btn small" onClick={() => { setShowProductSearch({ categoryKey: cat.key, setupKey: '' }); }} style={{ marginRight: '8px', fontSize: '11px', padding: '4px 8px', background: '#10b981' }}>+ Add Product</button>
+                      <button className="secondary-btn small" onClick={() => { setShowProductSearch({ categoryKey: cat.key, setupKey: '' }); }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#10b981' }}>+ Add Product</button>
+                      <button className="secondary-btn small" onClick={() => addBranch(cat.key, '', [])} style={{ marginRight: '8px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
                       <span className="ib-category-price">{fmt(categoryTotal(cat))}</span>
                       <button className="icon-btn danger" onClick={() => deleteCategory(cat.key)} title="Delete category">🗑️</button>
                     </div>
@@ -562,7 +577,8 @@ export default function ServiceTreeBuilderScreen() {
                                 <span className="ib-badge">{setup.products.length} product{setup.products.length !== 1 ? 's' : ''}</span>
                               </button>
                               <div className="ib-header-actions">
-                                <button className="secondary-btn small" onClick={() => setShowProductSearch({ categoryKey: cat.key, setupKey: setup.key })} style={{ marginRight: '8px', fontSize: '11px', padding: '4px 8px' }}>+ Add Product</button>
+                                <button className="secondary-btn small" onClick={() => setShowProductSearch({ categoryKey: cat.key, setupKey: setup.key })} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px' }}>+ Add Product</button>
+                                <button className="secondary-btn small" onClick={() => addBranch(cat.key, setup.key, [])} style={{ marginRight: '8px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
                                 <span className="ib-setup-price">{fmt(setupTotal(setup))}</span>
                                 <button className="icon-btn danger" onClick={() => deleteSetup(cat.key, setup.key)} title="Delete setup">🗑️</button>
                               </div>
