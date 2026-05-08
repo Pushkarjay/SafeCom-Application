@@ -14,21 +14,37 @@ class AuthService {
 
   Future<({String token, Customer customer})> continueWithGoogle() async {
     try {
+      // ignore: avoid_print
+      print('01: Starting Google Sign-In...');
       final googleUser = await GoogleSignIn().signIn();
+      // ignore: avoid_print
+      print('02: googleUser: $googleUser');
       if (googleUser == null) {
-        throw Exception('Google sign-in canceled');
+        throw Exception('sign_in_canceled');
       }
+      // ignore: avoid_print
+      print('03: Got Google user: ${googleUser.email}');
       final googleAuth = await googleUser.authentication;
+      // ignore: avoid_print
+      print('04: Got auth tokens, accessToken: ${googleAuth.accessToken?.substring(0, 10)}...');
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+      // ignore: avoid_print
+      print('05: Created credential, signing in to Firebase...');
       final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      // ignore: avoid_print
+      print('06: Got userCredential');
       final user = userCredential.user;
       if (user == null) {
-        throw Exception('Google sign-in failed');
+        throw Exception('Firebase sign-in failed - no user returned');
       }
+      // ignore: avoid_print
+      print('07: Firebase user: ${user.uid}, email: ${user.email}');
       final idToken = await user.getIdToken();
+      // ignore: avoid_print
+      print('08: Got ID token');
       final customer = Customer(
         id: user.uid,
         name: user.displayName ?? user.email?.split('@').first ?? 'Customer',

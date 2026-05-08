@@ -37,6 +37,9 @@ class AppErrorHandler {
         return 'An account already exists with this email. Try another sign-in method.';
       case 'PERMISSION_DENIED':
         return 'Access denied. Please contact support.';
+      case 'ERROR_INVALID_CREDENTIALS':
+      case 'ERROR_INVALID_USER_TOKEN':
+        return 'Authentication failed. Try again or use Guest mode.';
       default:
         return 'Something went wrong. Please try again.';
     }

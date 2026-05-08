@@ -16,4 +16,8 @@ final assignedJobsProvider = FutureProvider.autoDispose.family<List<AssignedJob>
   (ref, technicianId) => ref.watch(jobsRepositoryProvider).getAssignedJobs(technicianId),
 );
 
+final availableJobsProvider = FutureProvider.autoDispose<List<AssignedJob>>(
+  (ref) => ref.watch(jobsRepositoryProvider).getAvailableJobs(),
+);
+
 final selectedJobProvider = StateProvider<AssignedJob?>((ref) => null);

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/providers/employee_providers.dart';
+import 'package:mobile_employee/features/auth/services/auth_service.dart';
 
 class EmployeeProfileScreen extends ConsumerWidget {
   const EmployeeProfileScreen({super.key});
@@ -178,7 +181,7 @@ class EmployeeProfileScreen extends ConsumerWidget {
                         ListTile(
                           leading: const Icon(Icons.logout, color: Colors.red),
                           title: const Text('Logout', style: TextStyle(color: Colors.red)),
-                          onTap: () => _showLogoutDialog(context),
+                          onTap: () => _showLogoutDialog(context, ref),
                         ),
                       ],
                     ),
@@ -301,20 +304,29 @@ class EmployeeProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await ref.read(authServiceProvider).signOut();
+              } catch (e) {
+                // Ignore signout errors
+              }
+              ref.invalidate(activeEmployeeIdProvider);
+              if (context.mounted) {
+                context.go(AppRoutes.login);
+              }
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Logged out successfully')),
               );

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { Technician, Job } from '@data/models/admin_models'
+import { useAuthStore } from '@core/services/auth_service'
+import { getApiBaseUrl } from '@core/config/api'
 import '../styles/detail_screen.css'
 
 export default function TechnicianDetailScreen() {
@@ -65,13 +67,41 @@ export default function TechnicianDetailScreen() {
     .reduce((sum, j) => sum + j.amount, 0)
   const isNewTechnician = id === 'new'
 
+  const handleSave = async () => {
+    try {
+      const token = await useAuthStore.getState().getIdToken()
+      const response = await fetch(`${getApiBaseUrl()}/technicians`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(technician)
+      })
+      if (response.ok) {
+        alert('Technician created successfully!')
+        navigate('/technicians')
+      } else {
+        const err = await response.json()
+        alert('Failed to create technician: ' + err.message)
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error creating technician')
+    }
+  }
+
   return (
     <div className="detail-screen">
       <div className="detail-header">
         <div className="header-top">
           <button className="back-button" onClick={() => navigate('/technicians')}>← Back</button>
           <div className="header-actions">
-            {!isNewTechnician && (
+            {isNewTechnician ? (
+              <button className="btn btn-primary" onClick={() => handleSave()}>
+                Create Technician
+              </button>
+            ) : (
               <button className="btn btn-secondary" onClick={() => navigate(`/technicians/${id}/edit`)}>
                 Edit Technician
               </button>

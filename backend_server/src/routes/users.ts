@@ -26,13 +26,17 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
 
   const { email, displayName, role, phone, location, address, name, skills } = req.body;
 
-  if (!email || !displayName || !role) {
-    return res.status(400).json({ message: 'Missing required fields: email, displayName, role' });
+  // Allow phone-only sign-in (email optional)
+  if (!displayName || !role) {
+    return res.status(400).json({ message: 'Missing required fields: displayName, role' });
   }
+
+  // Use a placeholder email for phone-only sign-in
+  const finalEmail = email || (phone ? `${phone}@safecom.local` : '');
 
   try {
     // Create/update the central users collection document
-    const firestoreUser = await upsertFirestoreUser(uid, email, displayName, role);
+    const firestoreUser = await upsertFirestoreUser(uid, finalEmail, displayName, role);
 
     // Based on role, create or link the customer/employee document
     let linkedDoc = null;
@@ -46,7 +50,7 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
         // Create new customer record
         linkedDoc = await createCustomerWithFirebaseUid(
           uid,
-          email,
+          finalEmail,
           name || displayName,
           phone || '',
           address
@@ -74,9 +78,10 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
       message: 'User linked successfully',
       user: {
         uid,
-        email,
+        email: finalEmail,
         displayName,
         role,
+        phone,
       },
       linkedDocument: linkedDoc,
     });

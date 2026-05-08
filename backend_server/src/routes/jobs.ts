@@ -40,15 +40,15 @@ jobsRouter.get('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequ
     snapshot.forEach((doc: QueryDocumentSnapshot) => {
       const data = doc.data() as unknown as Record<string, unknown>
       jobs.push({
-        jobId: doc.id,
+        jobId: data.jobId || doc.id,
         ...data
       } as CanonicalJob)
     })
     
-    // Filter by unassigned
+    // Filter by unassigned - include jobs with missing status or pending status
     if (unassigned) {
       jobs = jobs.filter((job: any) => 
-        job.status === 'pending' && !job.assignedTo
+        (!job.status || job.status === 'pending') && !job.assignedTo
       )
     }
     // Filter by technicianId
@@ -108,15 +108,19 @@ jobsRouter.post('/:id/pickup', verifyFirebaseIdToken, async (req: FirebaseAuthen
       })
     }
     
-    // Verify job exists and is still pending
-    const job = await getDocument<CanonicalJob>('jobs', jobId)
-    if (!job) {
+    // Verify job exists and is still pending - search by jobId field
+    const db = getDb()
+    const jobSnap = await db.collection('jobs').where('jobId', '==', jobId).limit(1).get()
+    
+    if (jobSnap.empty) {
       return res.status(404).json({
         success: false,
         error: { code: 'JOB_NOT_FOUND', message: 'Job not found' },
         timestamp: new Date().toISOString()
       })
     }
+    
+    const job = { jobId: jobSnap.docs[0].id, ...jobSnap.docs[0].data() } as CanonicalJob
     
     if ((job as any).assignedTo || job.status === 'assigned' || job.status === 'in_progress') {
       return res.status(409).json({
@@ -126,7 +130,9 @@ jobsRouter.post('/:id/pickup', verifyFirebaseIdToken, async (req: FirebaseAuthen
       })
     }
     
-    await updateDocument('jobs', jobId, {
+    const docId = jobSnap.docs[0].id
+    
+    await updateDocument('jobs', docId, {
       status: 'assigned',
       assignedTo: {
         employeeId,
@@ -145,7 +151,7 @@ jobsRouter.post('/:id/pickup', verifyFirebaseIdToken, async (req: FirebaseAuthen
       })
     }
     
-    const updated = await getDocument<CanonicalJob>('jobs', jobId)
+    const updated = await getDocument<CanonicalJob>('jobs', docId)
     return res.json({
       success: true,
       data: updated,
