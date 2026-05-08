@@ -161,3 +161,55 @@
   - Confirmed map fallback to Patna, Bihar with improved error handling.
 
 **Status:** 🚀 Platform is now production-ready with full data integrity and synchronized operations.
+
+## 2026-05-08 (Session: Database Cleanup, Admin Updates, Nested Service Architecture)
+
+### 1. Database Cleanup ✅
+- Deleted irrelevant Firestore collections: `Bookings`, `users`
+- Verified remaining 7 collections: admins, customers, employees, catalog_product, Services, sdui_layouts, Invoices
+- Database now properly mapped to active backend code
+
+### 2. Admin Dashboard Updates ✅
+- Simplified sidebar: Removed Packages, Add-ons, Taxes, Invoices from CATALOG section
+- Added actual SafeCom logo from Firebase Storage to sidebar header
+- Optimized CSS for better visibility (reduced font sizes, spacing)
+- Fixed invalid route tabs in catalog
+
+### 3. Backend API Enhancements ✅
+- Added category-level product operations (no setup required):
+  - `POST /config/:serviceId/category/:categoryKey/product`
+  - `DELETE /config/:serviceId/category/:categoryKey/product/:productKey`
+  - `POST /config/:serviceId/category/:categoryKey/node`
+  - `DELETE /config/:serviceId/category/:categoryKey/node`
+  - `PATCH /config/:serviceId/category/:categoryKey/node/quantities`
+  - `PATCH /config/:serviceId/category/:categoryKey/node/dynamic-field`
+- Fixed double-slash (//) bug when setupKey is empty
+
+### 4. Frontend Updates ✅
+- Updated `serviceAddProduct` to use category endpoint when setupKey is empty
+- Updated `serviceDeleteProduct` to use category endpoint when setupKey is empty
+- All 8 service builders (Installation, Maintenance, Repair, AMC, Accessories, Upgrade, Recommendations, Services) now support:
+  - Category-level product addition
+  - Setup-level product addition
+  - Infinite nesting within setups
+
+### 5. Firebase Storage ✅
+- Logo uploaded to: `gs://safecom-application-01.firebasestorage.app/logos/safecom_logo_v1_1.jpeg`
+- URL: `https://firebasestorage.googleapis.com/v0/b/safecom-application-01.appspot.com/o/logos%2Fsafecom_logo_v1_1.jpeg?alt=media`
+
+### 6. Deployment ✅
+- Admin Dashboard: https://safecom-application-01.web.app
+- Backend: https://safecom-backend-177425757120.us-central1.run.app
+
+### 7. Documentation ✅
+- Created comprehensive session documentation: `session_2026_05_08_documentation.md`
+- Added architecture notes on nested approach, SDUI, dual backend, notifications
+- Updated progress log with session summary
+
+---
+
+## Next Priorities
+- [ ] Complete backend deployment with new node endpoints
+- [ ] Test category-level product addition in AMC builder
+- [ ] Upload APKs to Play Store
+- [ ] Verify full booking flow end-to-end

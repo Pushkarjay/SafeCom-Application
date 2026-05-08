@@ -2,6 +2,22 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@core/services/auth_service'
 import './main_layout.css'
 
+const SERVICE_ITEMS = [
+  { key: 'Installation', label: 'Installation', icon: '🔧', builder: true },
+  { key: 'Maintenance', label: 'Maintenance', icon: '⚙️', builder: true },
+  { key: 'Repair', label: 'Camera Repair', icon: '📷', builder: true },
+  { key: 'Amc', label: 'AMC Plans', icon: '📋', builder: true },
+  { key: 'accessories', label: 'Accessories', icon: '🔌', builder: false, path: '/catalog/accessories' },
+  { key: 'upgrade', label: 'Upgrade', icon: '⬆️', builder: false, path: '/catalog/upgrade' },
+  { key: 'recommendations', label: 'Recommendations', icon: '💡', builder: false, path: '/catalog/recommendations' },
+  { key: 'services', label: 'Services', icon: '📦', builder: false, path: '/catalog/services' },
+]
+
+const CATALOG_ITEMS = [
+  { key: 'products', label: 'Products', icon: '📦', path: '/catalog/products' },
+  { key: 'services', label: 'Services', icon: '🛠️', path: '/catalog/services' },
+]
+
 export default function MainLayout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -15,118 +31,127 @@ export default function MainLayout() {
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`)
 
+  const getServicePath = (item: typeof SERVICE_ITEMS[0]) => {
+    if (item.builder) {
+      return `/catalog/builder/${item.key}`
+    }
+    return item.path
+  }
+
+  const isServiceActive = (item: typeof SERVICE_ITEMS[0]) => {
+    if (item.builder) {
+      return location.pathname === `/catalog/builder/${item.key}`
+    }
+    return location.pathname === item.path
+  }
+
   return (
     <div className="main-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h2>SafeCom</h2>
-          <p>Admin</p>
+          <div className="logo-box">
+            <img src="https://firebasestorage.googleapis.com/v0/b/safecom-application-01.appspot.com/o/logos%2Fsafecom_logo_v1_1.jpeg?alt=media" alt="SafeCom" className="logo-img" />
+          </div>
+          <div className="logo-text">
+            <h2>SafeCom</h2>
+            <p>Admin</p>
+          </div>
         </div>
 
         <nav className="sidebar-nav">
-          <button
-            className={`nav-item ${isActive('/') ? 'active' : ''}`}
-            onClick={() => navigate('/')}
-          >
-            📊 Dashboard
-          </button>
-          <button
-            className={`nav-item ${isActive('/mobile-preview') ? 'active' : ''}`}
-            onClick={() => navigate('/mobile-preview')}
-          >
-            📱 Customer Mobile
-          </button>
-          <button
-            className={`nav-item ${isActive('/customers') ? 'active' : ''}`}
-            onClick={() => navigate('/customers')}
-          >
-            👥 Customers
-          </button>
-          <button
-            className={`nav-item ${isActive('/technicians') ? 'active' : ''}`}
-            onClick={() => navigate('/technicians')}
-          >
-            🔧 Technicians
-          </button>
-          <button
-            className={`nav-item ${isActive('/jobs') ? 'active' : ''}`}
-            onClick={() => navigate('/jobs')}
-          >
-            📋 Jobs
-          </button>
-          <button
-            className={`nav-item ${isActive('/payments') ? 'active' : ''}`}
-            onClick={() => navigate('/payments')}
-          >
-            💳 Payments
-          </button>
+          {/* Main Nav */}
+          <div className="nav-section">
+            <button
+              className={`nav-item main ${isActive('/') ? 'active' : ''}`}
+              onClick={() => navigate('/')}
+            >
+              <span className="nav-icon">📊</span>
+              <span>Dashboard</span>
+            </button>
+            <button
+              className={`nav-item main ${isActive('/mobile-preview') ? 'active' : ''}`}
+              onClick={() => navigate('/mobile-preview')}
+            >
+              <span className="nav-icon">📱</span>
+              <span>Customer Mobile</span>
+            </button>
+          </div>
 
-          <div className="sidebar-section">
-            <p className="sidebar-section-title" style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginTop: '16px', marginBottom: '8px', paddingLeft: '16px' }}>CATALOG & SERVICES</p>
+          {/* Management Section */}
+          <div className="nav-section">
+            <p className="section-title">MANAGEMENT</p>
             <button
-              className={`nav-item ${location.pathname === '/catalog/products' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/products')}
+              className={`nav-item ${isActive('/customers') ? 'active' : ''}`}
+              onClick={() => navigate('/customers')}
             >
-              Products
+              <span className="nav-icon">👥</span>
+              <span>Customers</span>
             </button>
             <button
-              className={`nav-item ${location.pathname === '/catalog/installation' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/installation')}
+              className={`nav-item ${isActive('/technicians') ? 'active' : ''}`}
+              onClick={() => navigate('/technicians')}
             >
-              Installation
+              <span className="nav-icon">🔧</span>
+              <span>Technicians</span>
             </button>
             <button
-              className={`nav-item ${location.pathname === '/catalog/accessories' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/accessories')}
+              className={`nav-item ${isActive('/jobs') ? 'active' : ''}`}
+              onClick={() => navigate('/jobs')}
             >
-              Accessories
+              <span className="nav-icon">📋</span>
+              <span>Jobs</span>
             </button>
             <button
-              className={`nav-item ${location.pathname === '/catalog/maintenance' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/maintenance')}
+              className={`nav-item ${isActive('/payments') ? 'active' : ''}`}
+              onClick={() => navigate('/payments')}
             >
-              Maintenance
+              <span className="nav-icon">💳</span>
+              <span>Payments</span>
             </button>
-            <button
-              className={`nav-item ${location.pathname === '/catalog/repair' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/repair')}
-            >
-              Camera Repair
-            </button>
-            <button
-              className={`nav-item ${location.pathname === '/catalog/amc' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/amc')}
-            >
-              AMC Plans
-            </button>
-            <button
-              className={`nav-item ${location.pathname === '/catalog/upgrade' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/upgrade')}
-            >
-              Upgrade
-            </button>
-            <button
-              className={`nav-item ${location.pathname === '/catalog/recommendations' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/recommendations')}
-            >
-              Recommendations
-            </button>
-            <button
-              className={`nav-item ${location.pathname === '/catalog/services' ? 'active' : ''}`}
-              onClick={() => navigate('/catalog/services')}
-            >
-              Services
-            </button>
+          </div>
+
+          {/* Catalog Section */}
+          <div className="nav-section">
+            <p className="section-title">CATALOG</p>
+            {CATALOG_ITEMS.map(item => (
+              <button
+                key={item.key}
+                className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+                onClick={() => navigate(item.path!)}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Services Section */}
+          <div className="nav-section services">
+            <p className="section-title">SERVICES</p>
+            {SERVICE_ITEMS.map(item => (
+              <button
+                key={item.key}
+                className={`nav-item service-item ${isServiceActive(item) ? 'active' : ''}`}
+                onClick={() => navigate(getServicePath(item))}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span className="service-label">{item.label}</span>
+                <span className="nav-arrow">→</span>
+              </button>
+            ))}
           </div>
         </nav>
 
         <div className="sidebar-footer">
           <div className="admin-info">
-            <p className="admin-name">{admin?.name}</p>
-            <p className="admin-email">{admin?.email}</p>
+            <div className="admin-avatar">{(admin?.name || 'A')[0].toUpperCase()}</div>
+            <div className="admin-details">
+              <p className="admin-name">{admin?.name || 'Admin'}</p>
+              <p className="admin-email">{admin?.email || 'admin@safecom.com'}</p>
+            </div>
           </div>
           <button className="logout-button" onClick={handleLogout}>
-            Logout
+            🚪 Logout
           </button>
         </div>
       </aside>

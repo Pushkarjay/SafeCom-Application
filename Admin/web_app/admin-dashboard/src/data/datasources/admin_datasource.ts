@@ -325,16 +325,29 @@ export class AdminDatasource {
   }
 
   async serviceAddProduct(serviceId: string, categoryKey: string, setupKey: string, productId: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product`, {
-      method: 'POST',
-      body: JSON.stringify({ productId })
-    })
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/product`, {
+        method: 'POST',
+        body: JSON.stringify({ productId })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product`, {
+        method: 'POST',
+        body: JSON.stringify({ productId })
+      })
+    }
   }
 
   async serviceDeleteProduct(serviceId: string, categoryKey: string, setupKey: string, productKey: string): Promise<void> {
-    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}`, {
-      method: 'DELETE'
-    })
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/product/${encodeURIComponent(productKey)}`, {
+        method: 'DELETE'
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/product/${encodeURIComponent(productKey)}`, {
+        method: 'DELETE'
+      })
+    }
   }
 
   async serviceAddNode(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], productId: string): Promise<void> {

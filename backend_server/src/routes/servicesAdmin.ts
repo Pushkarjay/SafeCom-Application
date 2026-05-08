@@ -339,14 +339,57 @@ servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setu
   }
 });
 
+// POST /config/:serviceId/category/:categoryKey/product (add directly to category, no setup)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/product', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { productId, defaultQty, minQty, maxQty } = req.body as { productId?: string; defaultQty?: number; minQty?: number; maxQty?: number; };
+    if (!productId?.trim()) return res.status(400).json({ success: false, error: 'Product ID required' });
+
+    const db = getDb();
+    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
+    const productDoc = await productRef.get();
+    if (!productDoc.exists) return res.status(404).json({ success: false, error: 'Product not found' });
+
+    const serviceDoc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
+    const categoryData = (serviceDoc.data()?.[categoryKey] || {}) as Record<string, unknown>;
+    const nextNum = Object.keys(categoryData).length + 1;
+    const productKey = `Product ${nextNum}`;
+    const optionKey = `${productKey} Option 1`;
+
+    const optionData = {
+      'Deafult q': defaultQty ?? 1,
+      'Price': productRef,
+      [`${optionKey} ID`]: productRef,
+      'available': true,
+      'max q': maxQty ?? 50,
+      'min q': minQty ?? 0,
+      'rigid': false
+    };
+
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
+      [`${categoryKey}.${productKey}.${optionKey}`]: optionData
+    });
+    res.json({ success: true, message: `Product added as "${productKey}" directly to category` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to add product to category' });
+  }
+});
+
 // POST /config/:serviceId/category/:categoryKey/setup/:setupKey/product
 servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/product', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
     const categoryKey = String(req.params.categoryKey);
-    const setupKey = String(req.params.setupKey);
+    let setupKey = String(req.params.setupKey);
     const { productId, defaultQty, minQty, maxQty } = req.body as { productId?: string; defaultQty?: number; minQty?: number; maxQty?: number; };
     if (!productId?.trim()) return res.status(400).json({ success: false, error: 'Product ID required' });
+
+    // If setupKey is empty, use/create a "General" setup
+    if (!setupKey || setupKey === '' || setupKey === '_') {
+      setupKey = 'General';
+    }
 
     const db = getDb();
     const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
@@ -372,9 +415,24 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
       [`${categoryKey}.${setupKey}.${productKey}.${optionKey}`]: optionData
     });
-    res.json({ success: true, message: `Product added as "${productKey}"` });
+    res.json({ success: true, message: `Product added as "${productKey}" to ${setupKey}` });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to add product' });
+  }
+});
+
+// DELETE /config/:serviceId/category/:categoryKey/product/:productKey (delete directly from category)
+servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/product/:productKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const productKey = String(req.params.productKey);
+    
+    const db = getDb();
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${productKey}`]: FieldValue.delete() });
+    res.json({ success: true, message: `Product removed from category` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to remove product from category' });
   }
 });
 
@@ -383,14 +441,99 @@ servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setu
   try {
     const serviceId = String(req.params.serviceId);
     const categoryKey = String(req.params.categoryKey);
-    const setupKey = String(req.params.setupKey);
+    let setupKey = String(req.params.setupKey);
     const productKey = String(req.params.productKey);
+    
+    // If setupKey is empty, use "General"
+    if (!setupKey || setupKey === '' || setupKey === '_') {
+      setupKey = 'General';
+    }
+    
     const db = getDb();
     await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${productKey}`]: FieldValue.delete() });
     res.json({ success: true, message: `Product slot removed` });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to remove product' });
   }
+});
+
+// POST /config/:serviceId/category/:categoryKey/node (add node directly to category)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, productId, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; productId: string; defaultQty?: number; minQty?: number; maxQty?: number; };
+    
+    const db = getDb();
+    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
+    const productDoc = await productRef.get();
+    if (!productDoc.exists) return res.status(404).json({ success: false, error: 'Product not found' });
+
+    const serviceDoc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
+    const categoryData = (serviceDoc.data()?.[categoryKey] || {}) as Record<string, unknown>;
+    const targetPath = nodePath.length > 0 ? nodePath : [];
+    let targetData = categoryData;
+    for (const p of targetPath) { targetData = (targetData[p] || {}) as Record<string, unknown>; }
+    
+    const nextNum = Object.keys(targetData).length + 1;
+    const productKey = `Product ${nextNum}`;
+    const optionKey = `${productKey} Option 1`;
+    const optionData = { 'Deafult q': defaultQty ?? 1, 'Price': productRef, [`${optionKey} ID`]: productRef, 'available': true, 'max q': maxQty ?? 50, 'min q': minQty ?? 0, 'rigid': false };
+
+    const updatePath = targetPath.length > 0 ? `${categoryKey}.${targetPath.join('.')}.${productKey}.${optionKey}` : `${categoryKey}.${productKey}.${optionKey}`;
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [updatePath]: optionData });
+    res.json({ success: true, message: `Node added at category level` });
+  } catch (error) { res.status(500).json({ success: false, error: 'Failed to add node' }); }
+});
+
+// DELETE /config/:serviceId/category/:categoryKey/node (delete node from category)
+servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const nodePath = JSON.parse(String(req.query.path) || '[]') as string[];
+    if (nodePath.length === 0) return res.status(400).json({ success: false, error: 'Node path required' });
+    
+    const db = getDb();
+    const updatePath = `${categoryKey}.${nodePath.join('.')}`;
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [updatePath]: FieldValue.delete() });
+    res.json({ success: true, message: `Node deleted from category` });
+  } catch (error) { res.status(500).json({ success: false, error: 'Failed to delete node' }); }
+});
+
+// PATCH /config/:serviceId/category/:categoryKey/node/quantities (update quantities at category level)
+servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/quantities', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; defaultQty?: number; minQty?: number; maxQty?: number; };
+    if (!nodePath || nodePath.length === 0) return res.status(400).json({ success: false, error: 'Node path required' });
+    
+    const db = getDb();
+    const basePath = `${categoryKey}.${nodePath.join('.')}`;
+    const updates: Record<string, any> = {};
+    if (defaultQty !== undefined) updates[`${basePath}.Deafult q`] = defaultQty;
+    if (minQty !== undefined) updates[`${basePath}.min q`] = minQty;
+    if (maxQty !== undefined) updates[`${basePath}.max q`] = maxQty;
+    
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+    res.json({ success: true, message: `Quantities updated at category level` });
+  } catch (error) { res.status(500).json({ success: false, error: 'Failed to update quantities' }); }
+});
+
+// PATCH /config/:serviceId/category/:categoryKey/node/dynamic-field (update dynamic field at category level)
+servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/dynamic-field', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, field, value } = req.body as { nodePath: string[]; field: string; value: any; };
+    if (!nodePath || nodePath.length === 0) return res.status(400).json({ success: false, error: 'Node path required' });
+    
+    const db = getDb();
+    const updatePath = `${categoryKey}.${nodePath.join('.')}.${field}`;
+    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [updatePath]: value });
+    res.json({ success: true, message: `Dynamic field updated at category level` });
+  } catch (error) { res.status(500).json({ success: false, error: 'Failed to update dynamic field' }); }
 });
 
 // POST /config/:serviceId/category/:categoryKey/setup/:setupKey/node
