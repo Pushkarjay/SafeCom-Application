@@ -1,0 +1,47 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4'}}}%%
+flowchart TB
+    subgraph "EVENT TRIGGERS" ["Event Sources"]
+        Booking["📋 Booking Created"]:::trigger
+        JobAssigned["👷 Job Assigned"]:::trigger
+        JobCompleted["✅ Job Completed"]:::trigger
+        PaymentReceived["💳 Payment Received"]:::trigger
+        PaymentFailed["❌ Payment Failed"]:::trigger
+    end
+
+    subgraph "NOTIFICATION SERVICE" ["Push Notifications"]
+        Notif["📨 notificationService.ts"]:::notif
+        FCM["🔥 Firebase Cloud Messaging"]:::fcm
+    end
+
+    subgraph "EVENT HANDLERS" ["Event Consumers"]
+        CustomerApp["📱 Customer App"]:::app
+        EmployeeApp["👷 Employee App"]:::app
+        AdminApp["⚙️ Admin Dashboard"]:::app
+    end
+
+    subgraph "FUTURE EVENTS" ["Not Yet Implemented"]
+        FirestoreTrig["☁️ Firestore Triggers"]:::future
+        CronJobs["⏰ Scheduled Jobs"]:::future
+        Webhooks["🔗 Webhooks"]:::future
+    end
+
+    Booking --> Notif
+    JobAssigned --> Notif
+    JobCompleted --> Notif
+    PaymentReceived --> Notif
+    PaymentFailed --> Notif
+
+    Notif --> FCM
+    FCM --> CustomerApp
+    FCM --> EmployeeApp
+    FCM --> AdminApp
+
+    Notif -.->|"Could use"| FirestoreTrig
+    Notif -.->|"Could use"| CronJobs
+    Notif -.->|"Could implement"| Webhooks
+
+    classDef trigger fill:#FBBC04,color:#000,stroke:#d97706,stroke-width:2px
+    classDef notif fill:#9C27B0,color:#fff,stroke:#7b1fa2,stroke-width:2px
+    classDef fcm fill:#FF9800,color:#fff,stroke:#e65100,stroke-width:2px
+    classDef app fill:#4285F4,color:#fff,stroke:#1a56db,stroke-width:2px
+    classDef future fill:#9E9E9E,color:#fff,stroke:#616161,stroke-width:2px,stroke-dasharray: 5 5

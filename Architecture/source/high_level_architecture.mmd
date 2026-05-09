@@ -1,0 +1,79 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4', 'primaryTextColor': '#fff', 'primaryBorderColor': '#4285F4', 'lineColor': '#6B7280', 'secondaryColor': '#34A853', 'tertiaryColor': '#EA4335', 'background': '#ffffff', 'mainBkg': '#f8fafc', 'nodeBorder': '#334155', 'clusterBkg': '#f1f5f9', 'clusterBorder': '#e2e8f0', 'titleColor': '#0f172a', 'edgeLabelBackground':'#ffffff'}}}%%
+flowchart TB
+    subgraph "CLIENT LAYER" ["Client Applications"]
+        direction LR
+        subgraph "Mobile Apps"
+            Customer["📱 Customer App<br/>Flutter/Riverpod"]:::mobile
+            Employee["👷 Employee App<br/>Flutter/Riverpod"]:::mobile
+        end
+        subgraph "Web Apps"
+            Admin["⚙️ Admin Dashboard<br/>React/Vite/TS"]:::web
+        end
+    end
+
+    subgraph "API GATEWAY LAYER" ["Backend Server"]
+        Backend["🚀 Express.js + TypeScript<br/>Cloud Run / Firebase"]:::backend
+        subgraph "Middleware"
+            AuthMW["🔐 Firebase Auth Middleware"]:::middleware
+            Security["🛡️ Helmet + CORS + Rate Limit"]:::middleware
+        end
+        subgraph "API Routes (17)"
+            Routes["📡 REST API Endpoints"]:::routes
+        end
+        subgraph "Services (8)"
+            Services["⚙️ Business Logic Services"]:::services
+        end
+    end
+
+    subgraph "DATA & PLATFORM LAYER" ["Firebase Platform"]
+        subgraph "Firebase Core"
+            Auth["🔑 Firebase Auth"]:::firebase
+            Firestore["💾 Firestore DB"]:::firebase
+            Storage["📦 Cloud Storage"]:::firebase
+            FCM["📨 Cloud Messaging (FCM)"]:::firebase
+        end
+
+        subgraph "External Services"
+            Razorpay["💳 Razorpay Payment"]:::external
+            Maps["🗺️ Google Maps API"]:::external
+        end
+    end
+
+    subgraph "EXTERNAL USERS"
+        EndUsers["👥 End Users<br/>Customers, Employees, Admins"]:::user
+    end
+
+    %% Relationships
+    Customer -.->|"HTTPS JSON"| Backend
+    Employee -.->|"HTTPS JSON"| Backend
+    Admin -.->|"HTTPS JSON"| Backend
+
+    Backend --> AuthMW
+    Backend --> Security
+    Backend --> Routes
+    Backend --> Services
+
+    Routes --> Services
+    Services --> AuthMW
+    AuthMW --> Auth
+    Services --> Firestore
+    Services --> Storage
+    Services --> FCM
+    Services --> Razorpay
+
+    EndUsers --> Customer
+    EndUsers --> Employee
+    EndUsers --> Admin
+
+    %% Styling
+    classDef mobile fill:#4285F4,color:#fff,stroke:#1a56db,stroke-width:2px
+    classDef web fill:#34A853,color:#fff,stroke:#166534,stroke-width:2px
+    classDef backend fill:#EA4335,color:#fff,stroke:#c5221f,stroke-width:2px
+    classDef middleware fill:#FBBC04,color:#000,stroke:#d97706,stroke-width:2px
+    classDef routes fill:#9C27B0,color:#fff,stroke:#7b1fa2,stroke-width:2px
+    classDef services fill:#00BCD4,color:#fff,stroke:#00838f,stroke-width:2px
+    classDef firebase fill:#FF9800,color:#fff,stroke:#e65100,stroke-width:2px
+    classDef external fill:#607D8B,color:#fff,stroke:#37474f,stroke-width:2px
+    classDef user fill:#9E9E9E,color:#fff,stroke:#616161,stroke-width:2px
+
+    linkStyle default stroke:#6B7280,stroke-width:2px

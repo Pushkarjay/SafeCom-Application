@@ -1,0 +1,123 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#FF9800', 'background': '#ffffff'}}}%%
+erDiagram
+    admins ||--o{ jobs : "assigns"
+    customers ||--o{ bookings : "creates"
+    customers ||--o{ jobs : "owns"
+    employees ||--o{ jobs : "assigned_to"
+    jobs ||--o| bookings : "links_to"
+    jobs ||--o| Invoices : "generates"
+    services ||--o| services : "references"
+
+    admins {
+        string uid PK
+        string email
+        string name
+        string role
+        string firebaseUid
+        string status
+        string createdAt
+    }
+
+    customers {
+        string uid PK
+        string name
+        string phone
+        string email
+        string profileImage
+        string defaultLocationId
+        string status
+        string createdAt
+    }
+
+    employees {
+        string uid PK
+        string name
+        string phone
+        string email
+        string role
+        string department
+        string status
+        string createdAt
+    }
+
+    catalog_product {
+        string id PK
+        string sku
+        string name
+        string category
+        string group
+        string brand
+        number price
+        string unit
+        string status
+        boolean stockEnabled
+        boolean visible
+        string createdAt
+        string updatedAt
+    }
+
+    jobs {
+        string jobId PK
+        string bookingId FK
+        string customerId FK
+        string serviceType
+        string status
+        json assignedTo
+        json location
+        number subtotal
+        number tax
+        number discount
+        number total
+        string paymentStatus
+        string scheduledDate
+        string createdAt
+        string updatedAt
+    }
+
+    bookings {
+        string id PK
+        string customerId FK
+        string orderId
+        string serviceId
+        string locationId
+        number subtotal
+        number tax
+        number discount
+        number total
+        string status
+        string paymentStatus
+        string scheduledDate
+        string createdAt
+    }
+
+    invoices {
+        string id PK
+        string bookingId FK
+        string customerId FK
+        json items
+        number subtotal
+        number tax
+        number total
+        string status
+        string pdfUrl
+        string createdAt
+    }
+
+    services {
+        string id PK
+        string name
+        string key
+        string description
+        string icon
+        string status
+        object tree
+        string createdAt
+    }
+
+    sdui_layouts {
+        string id PK
+        string name
+        string layoutType
+        json config
+        string status
+    }

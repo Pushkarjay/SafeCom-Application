@@ -1,0 +1,71 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4'}}}%%
+flowchart TB
+    subgraph "Current Monolith"
+        Current["📦 Express.js Server"]:::current
+    end
+
+    subgraph "Proposed Microservices"
+        direction LR
+
+        subgraph "High Priority"
+            AuthSvc["🔐 Auth Service<br/>User auth, sessions"]:::high
+            NotifSvc["📨 Notification Service<br/>FCM, email triggers"]:::high
+            Analytics["📊 Analytics Service<br/>Metrics, dashboards"]:::high
+        end
+
+        subgraph "Medium Priority"
+            CatalogSvc["📦 Catalog Service<br/>Products, pricing"]:::medium
+            EmployeeSvc["👷 Employee Service<br/>Profiles, earnings"]:::medium
+            PaymentSvc["💳 Payment Service<br/>Razorpay, invoices"]:::medium
+        end
+
+        subgraph "Core Services"
+            OrderSvc["📋 Order/Job Service<br/>Bookings, jobs lifecycle"]:::core
+        end
+    end
+
+    subgraph "Infrastructure"
+        subgraph "Data Stores"
+            Firestore["💾 Firestore"]:::db
+            Cache["⚡ Redis Cache"]:::db
+        end
+
+        subgraph "Message Bus"
+            Events["📨 Event Bus<br/>Pub/Sub"]:::events
+        end
+
+        subgraph "External"
+            Firebase["🔥 Firebase Auth"]:::ext
+            Razorpay["💳 Razorpay"]:::ext
+        end
+    end
+
+    Current -.->|"Refactor"| AuthSvc
+    Current -.->|"Refactor"| NotifSvc
+    Current -.->|"Refactor"| Analytics
+    Current -.->|"Refactor"| CatalogSvc
+    Current -.->|"Refactor"| EmployeeSvc
+    Current -.->|"Refactor"| PaymentSvc
+    Current -.->|"Refactor"| OrderSvc
+
+    AuthSvc --> Firebase
+    NotifSvc --> Events
+    Analytics --> Firestore
+    Analytics --> Cache
+    CatalogSvc --> Firestore
+    CatalogSvc --> Cache
+    EmployeeSvc --> Firestore
+    PaymentSvc --> Razorpay
+    PaymentSvc --> Firestore
+    OrderSvc --> Firestore
+    OrderSvc --> Events
+
+    Events --> NotifSvc
+
+    classDef current fill:#9E9E9E,color:#fff,stroke:#616161
+    classDef high fill:#34A853,color:#fff,stroke:#166534
+    classDef medium fill:#FBBC04,color:#000,stroke:#d97706
+    classDef core fill:#EA4335,color:#fff,stroke:#c5221f
+    classDef db fill:#FF9800,color:#fff,stroke:#e65100
+    classDef events fill:#9C27B0,color:#fff,stroke:#7b1fa2
+    classDef ext fill:#607D8B,color:#fff,stroke:#37474f

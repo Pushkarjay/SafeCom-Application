@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SafeCom Architecture - High Level</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'dark',
+            securityLevel: 'loose',
+            flowchart: { 
+                curve: 'basis',
+                useMaxWidth: false
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="mermaid">
+flowchart TB
+    subgraph "CLIENT LAYER"
+        direction LR
+        Customer["📱 Customer App"]
+        Employee["👷 Employee App"]
+        Admin["⚙️ Admin Dashboard"]
+    end
+
+    subgraph "API GATEWAY"
+        Backend["🚀 Express.js + TypeScript"]
+    end
+
+    subgraph "FIREBASE PLATFORM"
+        Auth["🔑 Firebase Auth"]
+        Firestore["💾 Firestore DB"]
+        Storage["📦 Cloud Storage"]
+        FCM["📨 Cloud Messaging"]
+    end
+
+    Customer -->|"HTTPS"| Backend
+    Employee -->|"HTTPS"| Backend
+    Admin -->|"HTTPS"| Backend
+    Backend --> Auth
+    Backend --> Firestore
+    Backend --> Storage
+    Backend --> FCM
+    </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4'}}}%%
+sequenceDiagram
+    participant Customer as "Customer App"
+    participant API as "Backend API"
+    participant Firestore as "Firestore"
+    participant FCM as "FCM"
+    participant Razorpay as "Razorpay"
+
+    Note over Customer,Firestore: Step 1: Browse & Select Service
+
+    Customer->>API: GET /api/catalog-public/services
+    API->>Firestore: Query Services collection
+    Firestore->>API: Service tree (products, pricing)
+    API-->>Customer: Service catalog
+
+    Note over Customer,Firestore: Step 2: Create Booking
+
+    Customer->>API: POST /api/bookings (service details, location, schedule)
+    API->>Firestore: Create booking document
+    API->>Firestore: Create job document (status: pending)
+    API->>FCM: Send notification to employees (new job available)
+    Firestore-->>API: Confirm writes
+    API-->>Customer: Booking created (bookingId)
+
+    Note over Customer,Razorpay: Step 3: Payment
+
+    Customer->>API: POST /api/payments/razorpay/create-order (amount)
+    API->>Firestore: Create pending payment record
+    API-->>Customer: Razorpay order_id
+
+    Customer->>Razorpay: Complete payment (card/UPI)
+    Razorpay-->>Customer: Payment success
+
+    Customer->>API: POST /api/payments/razorpay/verify (payment_id, order_id)
+    API->>Razorpay: Verify payment signature
+    Razorpay-->>API: Valid
+    API->>Firestore: Update payment status to 'completed'
+    API->>Firestore: Update booking status to 'confirmed'
+    API->>Firestore: Update job status to 'assigned'
+    API->>FCM: Notify customer: "Payment successful"
+    API-->>Customer: Payment verified, booking confirmed
+
+    Note over Customer,FCM: Step 4: Job Completion
+
+    loop Employee works on job
+        Employee->>API: POST /api/jobs/:id/pickup
+        API->>Firestore: Update job status to 'assigned'
+        API->>FCM: Notify customer: "Technician assigned"
+    end
+
+    loop Work completion
+        Employee->>API: POST /api/photos/upload (job photos)
+        Employee->>API: POST /api/jobs/:id/complete (notes, amount)
+        API->>Firestore: Update job status to 'completed'
+        API->>Firestore: Generate invoice
+        API->>Firestore: Update booking status to 'completed'
+        API->>FCM: Notify customer: "Job completed"
+    end
+
+    Note over Customer,API: Step 5: View Invoice
+
+    Customer->>API: GET /api/bookings/:id
+    API->>Firestore: Fetch booking + invoice
+    Firestore-->>API: Invoice data
+    API-->>Customer: Invoice (PDF URL, details)

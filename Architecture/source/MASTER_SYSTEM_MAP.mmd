@@ -1,0 +1,110 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4', 'lineColor': '#6B7280', 'fontSize': '14px'}}}%%
+graph TB
+    subgraph "USERS" ["🎯 End Users"]
+        direction LR
+        Customers["👥 Customers<br/>Book services<br/>View invoices<br/>Track jobs"]:::user
+        Employees["👷 Employees<br/>Accept jobs<br/>Complete work<br/>View earnings"]:::user
+        Admins["⚙️ Admins<br/>Manage catalog<br/>Assign jobs<br/>View analytics"]:::user
+    end
+
+    subgraph "CUSTOMER APK" ["📱 Customer Mobile App"]
+        direction TB
+        subgraph "Core"
+            C1["Config<br/>Theme<br/>Utils"]:::mobile
+        end
+        subgraph "Data"
+            C2["API Service<br/>Repositories<br/>Models<br/>Providers"]:::mobile
+        end
+        subgraph "Features"
+            C3["Auth<br/>Home<br/>Services<br/>Booking<br/>Payment<br/>Profile<br/>Invoice"]:::mobile
+        end
+        subgraph "SDUI"
+            C4["SDUI Provider<br/>Renderer<br/>Builders"]:::mobile
+        end
+    end
+
+    subgraph "EMPLOYEE APK" ["👷 Employee Mobile App"]
+        direction TB
+        subgraph "Core"
+            E1["Config<br/>Theme<br/>Services"]:::mobile
+        end
+        subgraph "Data"
+            E2["API Service<br/>Repositories<br/>Models<br/>Providers"]:::mobile
+        end
+        subgraph "Features"
+            E3["Auth<br/>Jobs<br/>Map<br/>Photos<br/>Earnings<br/>Profile"]:::mobile
+        end
+    end
+
+    subgraph "ADMIN WEB" ["⚙️ Admin Web Dashboard"]
+        direction TB
+        subgraph "Core"
+            A1["Config<br/>Hooks<br/>Services"]:::web
+        end
+        subgraph "Data"
+            A2["Datasource<br/>Models"]:::web
+        end
+        subgraph "Features"
+            A3["Dashboard<br/>Jobs<br/>Customers<br/>Technicians<br/>Catalog<br/>Payments"]:::web
+        end
+    end
+
+    subgraph "BACKEND SERVER" ["🚀 Backend (Express + TypeScript)"]
+        direction TB
+        subgraph "Middleware"
+            M1["firebaseAuth<br/>JWT<br/>Helmet<br/>CORS"]:::backend
+        end
+        subgraph "Routes (17)"
+            R1["auth<br/>jobs<br/>bookings<br/>payments<br/>catalog<br/>employees<br/>dashboard<br/>sdui<br/>..."]:::backend
+        end
+        subgraph "Services (8)"
+            S1["firestore<br/>notification<br/>catalog<br/>user<br/>employee<br/>earnings<br/>razorpay<br/>sdui"]:::backend
+        end
+    end
+
+    subgraph "DATABASE" ["💾 Data Layer"]
+        direction LR
+        subgraph "Collections"
+            D1["admins<br/>customers<br/>employees<br/>catalog_product<br/>jobs<br/>bookings<br/>invoices<br/>services<br/>sdui_layouts"]:::db
+        end
+    end
+
+    subgraph "EXTERNAL SERVICES" ["🔌 External Integrations"]
+        direction LR
+        X1["Firebase Auth<br/>ID verification<br/>User management"]:::external
+        X2["Firebase Cloud Messaging<br/>Push notifications"]:::external
+        X3["Firebase Cloud Storage<br/>Images, PDFs"]:::external
+        X4["Razorpay<br/>Payment processing"]:::external
+        X5["Google Maps<br/>Location services"]:::external
+    end
+
+    %% Relationships
+    Customers -->|"Uses"| C1
+    Employees -->|"Uses"| E1
+    Admins -->|"Uses"| A1
+
+    C1 --> C2 --> C3 --> C4
+    E1 --> E2 --> E3
+    A1 --> A2 --> A3
+
+    C3 -->|"API Calls"| R1
+    E3 -->|"API Calls"| R1
+    A3 -->|"API Calls"| R1
+
+    R1 --> M1 --> S1
+    S1 --> D1
+
+    S1 --> X1
+    S1 --> X2
+    S1 --> X3
+    S1 --> X4
+
+    %% Styling
+    classDef user fill:#9E9E9E,color:#fff,stroke:#616161,stroke-width:2px
+    classDef mobile fill:#4285F4,color:#fff,stroke:#1a56db,stroke-width:2px
+    classDef web fill:#34A853,color:#fff,stroke:#166534,stroke-width:2px
+    classDef backend fill:#EA4335,color:#fff,stroke:#c5221f,stroke-width:2px
+    classDef db fill:#FF9800,color:#fff,stroke:#e65100,stroke-width:2px
+    classDef external fill:#607D8B,color:#fff,stroke:#37474f,stroke-width:2px
+
+    linkStyle default stroke:#6B7280,stroke-width:2px

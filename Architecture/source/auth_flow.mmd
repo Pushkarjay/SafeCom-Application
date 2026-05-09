@@ -1,0 +1,54 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4'}}}%%
+sequenceDiagram
+    participant User as "User"
+    participant App as "Mobile/Web App"
+    participant Firebase as "Firebase Auth"
+    participant Backend as "Backend Server"
+    participant Firestore as "Firestore"
+
+    Note over User,App: 1. User initiates login
+
+    User->>App: Enter credentials<br/>(phone/email/password)
+    App->>Firebase: Authenticate()
+
+    Note over Firebase: Verify credentials<br/>Generate ID token
+    Firebase-->>App: Firebase ID Token<br/>(JWT)
+
+    Note over App,Backend: 2. API request with token
+
+    App->>Backend: GET /api/resource<br/>Authorization: Bearer <token>
+
+    Note over Backend: 3. Token verification
+
+    Backend->>Firebase: verifyIdToken(token)
+    Firebase-->>Backend: Decoded Token<br/>{uid, email, ...}
+
+    Note over Backend: 4. Role verification
+
+    alt User is Admin
+        Backend->>Firestore: Query admins<br/>WHERE firebaseUid == uid
+        Firestore-->>Backend: Admin profile found
+        Backend->>Backend: Set role = admin
+    else User is Employee
+        Backend->>Firestore: Query employees<br/>WHERE firebaseUid == uid
+        Firestore-->>Backend: Employee profile found
+        Backend->>Backend: Set role = employee
+    else User is Customer
+        Backend->>Firestore: Query customers<br/>WHERE firebaseUid == uid
+        Firestore-->>Backend: Customer profile found
+        Backend->>Backend: Set role = customer
+    else Not Authorized
+        Backend-->>App: 403 Forbidden
+    end
+
+    Note over Backend: 5. Process request
+
+    alt Authorized
+        Backend->>Firestore: Query/Write data
+        Firestore-->>Backend: Response
+        Backend-->>App: 200 OK + Data
+    end
+
+    Note over App: 6. App handles response
+
+    App->>App: Update state<br/>Store token<br/>Navigate to home

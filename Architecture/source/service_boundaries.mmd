@@ -1,0 +1,58 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4'}}}%%
+graph TB
+    subgraph "CUSTOMER DOMAIN" ["Customer Context"]
+        C1["🔍 Service Discovery<br/>Catalog, Products, Pricing"]:::customer
+        C2["📋 Booking Management<br/>Create, Schedule, Modify"]:::customer
+        C3["💳 Payment Processing<br/>Razorpay, Invoice"]:::customer
+        C4["👤 Profile Management<br/>Address, History, Settings"]:::customer
+    end
+
+    subgraph "EMPLOYEE DOMAIN" ["Employee Context"]
+        E1["📋 Job Board<br/>Available Jobs, Filters"]:::employee
+        E2["🔧 Work Execution<br/>Pickup, Update, Complete"]:::employee
+        E3["💰 Earnings<br/>History, Summary, Withdraw"]:::employee
+        E4["🗺️ Location Services<br/>Map, Navigation"]:::employee
+    end
+
+    subgraph "ADMIN DOMAIN" ["Admin Context"]
+        A1["📦 Service Catalog<br/>Products, Services, Pricing"]:::admin
+        A2["📋 Job Management<br/>Create, Assign, Monitor"]:::admin
+        A3["👥 Customer Mgmt<br/>Profiles, History, Support"]:::admin
+        A4["👷 Employee Mgmt<br/>Profiles, Performance"]:::admin
+        A5["📊 Analytics<br/>Metrics, Reports, Dashboard"]:::admin
+    end
+
+    subgraph "SHARED SERVICES" ["Cross-Cutting"]
+        S1["🔐 Authentication<br/>Firebase Auth, RBAC"]:::shared
+        S2["📨 Notifications<br/>FCM, Push, In-app"]:::shared
+        S3["💾 Data Layer<br/>Firestore, Storage"]:::shared
+        S4["📡 API Gateway<br/>Routes, Middleware"]:::shared
+    end
+
+    C1 --> S1
+    C2 --> S1
+    C3 --> S1
+    C4 --> S1
+    C2 --> S2
+    C3 --> S2
+
+    E1 --> S1
+    E2 --> S1
+    E3 --> S1
+    E4 --> S1
+    E1 --> S2
+
+    A1 --> S1
+    A2 --> S1
+    A3 --> S1
+    A4 --> S1
+    A5 --> S1
+    A2 --> S2
+
+    S1 --> S3
+    S4 --> S3
+
+    classDef customer fill:#4285F4,color:#fff,stroke:#1a56db,stroke-width:2px
+    classDef employee fill:#34A853,color:#fff,stroke:#166534,stroke-width:2px
+    classDef admin fill:#EA4335,color:#fff,stroke:#c5221f,stroke-width:2px
+    classDef shared fill:#9C27B0,color:#fff,stroke:#7b1fa2,stroke-width:2px

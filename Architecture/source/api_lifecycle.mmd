@@ -1,0 +1,47 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4'}}}%%
+flowchart TB
+    subgraph "Client"
+        Request["📤 HTTP Request<br/>Bearer Token"]:::client
+    end
+
+    subgraph "Middleware Pipeline"
+        Helmet["🛡️ Helmet.js<br/>Security Headers"]:::middleware
+        CORS["🌐 CORS<br/>Origin Validation"]:::middleware
+        JSON["📝 JSON Parser<br/>Body Parse"]:::middleware
+        Morgan["📋 Morgan<br/>Request Logging"]:::middleware
+    end
+
+    subgraph "Authentication"
+        AuthMW["🔐 firebaseAuth<br/>Token Verification"]:::auth
+        Check["✅ Role Check"]:::auth
+    end
+
+    subgraph "Route Handler"
+        Router["📍 Route Matching"]:::route
+        Validate["🔍 Zod Validation"]:::route
+        Service["⚙️ Service Layer"]:::service
+    end
+
+    subgraph "Data Layer"
+        Firestore["💾 Firestore Service"]:::data
+        Query["📊 Query/Write"]:::data
+    end
+
+    subgraph "Response"
+        Transform["🔄 Response Transform"]:::response
+        JSONOut["📥 JSON Response"]:::response
+    end
+
+    Request --> Helmet --> CORS --> JSON --> Morgan
+    Morgan --> AuthMW --> Check --> Router
+    Router --> Validate --> Service
+    Service --> Firestore --> Query
+    Query --> Transform --> JSONOut
+
+    classDef client fill:#4285F4,color:#fff,stroke:#1a56db
+    classDef middleware fill:#FBBC04,color:#000,stroke:#d97706
+    classDef auth fill:#34A853,color:#fff,stroke:#166534
+    classDef route fill:#9C27B0,color:#fff,stroke:#7b1fa2
+    classDef service fill:#00BCD4,color:#fff,stroke:#00838f
+    classDef data fill:#FF9800,color:#fff,stroke:#e65100
+    classDef response fill:#607D8B,color:#fff,stroke:#37474f

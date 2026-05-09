@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <style>
+      .title { font-family: 'Segoe UI', sans-serif; font-size: 32px; font-weight: bold; fill: #0f172a; }
+      .subtitle { font-family: 'Segoe UI', sans-serif; font-size: 18px; fill: #475569; }
+      .label { font-family: 'Segoe UI', sans-serif; font-size: 14px; fill: #1e293b; }
+      .sublabel { font-family: 'Segoe UI', sans-serif; font-size: 12px; fill: #64748b; }
+      .box { stroke: #334155; stroke-width: 2px; }
+      .arrow { stroke: #6b7280; stroke-width: 2px; fill: none; marker-end: url(#arrowhead); }
+      .mobile { fill: #4285f4; }
+      .web { fill: #34a853; }
+      .backend { fill: #ea4335; }
+      .firebase { fill: #fbbc04; }
+      .external { fill: #607d8b; }
+      .shared { fill: #9c27b0; }
+      .user { fill: #9e9e9e; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="900" fill="#f8fafc"/>
+  <rect width="1600" height="60" fill="#0f172a"/>
+  <text x="800" y="40" text-anchor="middle" fill="white" font-family="Segoe UI" font-size="24" font-weight="bold">SafeCom Application - Master Architecture Poster</text>
+
+  <!-- USER LAYER -->
+  <rect x="50" y="100" width="200" height="80" rx="8" fill="#94a3b8" class="box"/>
+  <text x="150" y="135" text-anchor="middle" fill="white" class="label" font-weight="bold">END USERS</text>
+  <text x="150" y="160" text-anchor="middle" fill="white" class="sublabel">Customers, Employees, Admins</text>
+
+  <!-- CLIENT LAYER -->
+  <rect x="50" y="220" width="350" height="200" rx="8" fill="#e2e8f0" class="box"/>
+  <text x="225" y="250" text-anchor="middle" class="subtitle" font-weight="bold">CLIENT APPLICATIONS</text>
+  
+  <!-- Customer App -->
+  <rect x="70" y="270" width="140" height="120" rx="6" fill="#4285f4" class="box"/>
+  <text x="140" y="300" text-anchor="middle" fill="white" class="label" font-weight="bold">📱 Customer App</text>
+  <text x="140" y="320" text-anchor="middle" fill="white" class="sublabel">Flutter/Riverpod</text>
+  <text x="140" y="340" text-anchor="middle" fill="white" class="sublabel">GoRouter Navigation</text>
+  <text x="140" y="360" text-anchor="middle" fill="white" class="sublabel">SDUI Renderer</text>
+
+  <!-- Employee App -->
+  <rect x="230" y="270" width="140" height="120" rx="6" fill="#4285f4" class="box"/>
+  <text x="300" y="300" text-anchor="middle" fill="white" class="label" font-weight="bold">👷 Employee App</text>
+  <text x="300" y="320" text-anchor="middle" fill="white" class="sublabel">Flutter/Riverpod</text>
+  <text x="300" y="340" text-anchor="middle" fill="white" class="sublabel">Job Management</text>
+  <text x="300" y="360" text-anchor="middle" fill="white" class="sublabel">Location Services</text>
+
+  <!-- Admin Web -->
+  <rect x="50" y="450" width="350" height="100" rx="6" fill="#34a853" class="box"/>
+  <text x="225" y="480" text-anchor="middle" fill="white" class="label" font-weight="bold">⚙️ Admin Dashboard</text>
+  <text x="225" y="505" text-anchor="middle" fill="white" class="sublabel">React/Vite/TypeScript</text>
+  <text x="225" y="525" text-anchor="middle" fill="white" class="sublabel">Catalog, Jobs, Analytics, Customers</text>
+
+  <!-- API GATEWAY -->
+  <rect x="450" y="220" width="400" height="330" rx="8" fill="#e2e8f0" class="box"/>
+  <text x="650" y="250" text-anchor="middle" class="subtitle" font-weight="bold">BACKEND SERVER</text>
+
+  <!-- Middleware -->
+  <rect x="470" y="270" width="360" height="60" rx="4" fill="#fbbc04" class="box"/>
+  <text x="650" y="305" text-anchor="middle" class="label" font-weight="bold">🛡️ Middleware: Firebase Auth, Helmet, CORS</text>
+
+  <!-- Routes -->
+  <rect x="470" y="350" width="360" height="60" rx="4" fill="#9c27b0" class="box"/>
+  <text x="650" y="385" text-anchor="middle" class="label" font-weight="bold">📡 Routes (17): auth, jobs, bookings, payments...</text>
+
+  <!-- Services -->
+  <rect x="470" y="430" width="360" height="100" rx="4" fill="#00bcd4" class="box"/>
+  <text x="650" y="460" text-anchor="middle" class="label" font-weight="bold">⚙️ Services (8)</text>
+  <text x="650" y="480" text-anchor="middle" class="sublabel">firestore, notification, catalog, user</text>
+  <text x="650" y="500" text-anchor="middle" class="sublabel">employee, earnings, razorpay, sdui</text>
+
+  <!-- DATA LAYER -->
+  <rect x="900" y="220" width="300" height="330" rx="8" fill="#e2e8f0" class="box"/>
+  <text x="1050" y="250" text-anchor="middle" class="subtitle" font-weight="bold">FIREBASE PLATFORM</text>
+
+  <!-- Firebase Services -->
+  <rect x="920" y="270" width="260" height="50" rx="4" fill="#fbbc04" class="box"/>
+  <text x="1050" y="300" text-anchor="middle" class="label" font-weight="bold">🔑 Firebase Auth</text>
+
+  <rect x="920" y="330" width="260" height="50" rx="4" fill="#fbbc04" class="box"/>
+  <text x="1050" y="360" text-anchor="middle" class="label" font-weight="bold">💾 Firestore DB</text>
+
+  <rect x="920" y="390" width="260" height="50" rx="4" fill="#fbbc04" class="box"/>
+  <text x="1050" y="420" text-anchor="middle" class="label" font-weight="bold">📦 Cloud Storage</text>
+
+  <rect x="920" y="450" width="260" height="50" rx="4" fill="#fbbc04" class="box"/>
+  <text x="1050" y="480" text-anchor="middle" class="label" font-weight="bold">📨 Cloud Messaging</text>
+
+  <!-- EXTERNAL SERVICES -->
+  <rect x="1250" y="220" width="280" height="180" rx="8" fill="#e2e8f0" class="box"/>
+  <text x="1390" y="250" text-anchor="middle" class="subtitle" font-weight="bold">EXTERNAL SERVICES</text>
+
+  <rect x="1270" y="270" width="240" height="35" rx="4" fill="#607d8b" class="box"/>
+  <text x="1390" y="293" text-anchor="middle" fill="white" class="label">💳 Razorpay</text>
+
+  <rect x="1270" y="315" width="240" height="35" rx="4" fill="#607d8b" class="box"/>
+  <text x="1390" y="338" text-anchor="middle" fill="white" class="label">🗺️ Google Maps API</text>
+
+  <!-- ARROWS -->
+  <path d="M250 180 L250 220" class="arrow"/>
+  <path d="M225 420 L225 450" class="arrow"/>
+  <path d="M400 320 L450 320" class="arrow"/>
+  <path d="M850 320 L900 320" class="arrow"/>
+  <path d="M1200 310 L1250 310" class="arrow"/>
+
+  <!-- COLLECTIONS -->
+  <rect x="50" y="600" width="1500" height="250" rx="8" fill="#fff7ed" stroke="#fb923c" stroke-width="2"/>
+  <text x="800" y="630" text-anchor="middle" class="subtitle" font-weight="bold" fill="#c2410c">FIRESTORE COLLECTIONS</text>
+
+  <!-- Collections boxes -->
+  <rect x="80" y="660" width="140" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="150" y="685" text-anchor="middle" class="label" font-weight="bold">admins</text>
+  <text x="150" y="705" text-anchor="middle" class="sublabel">Admin profiles</text>
+
+  <rect x="240" y="660" width="140" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="310" y="685" text-anchor="middle" class="label" font-weight="bold">customers</text>
+  <text x="310" y="705" text-anchor="middle" class="sublabel">User profiles</text>
+
+  <rect x="400" y="660" width="140" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="470" y="685" text-anchor="middle" class="label" font-weight="bold">employees</text>
+  <text x="470" y="705" text-anchor="middle" class="sublabel">Technicians</text>
+
+  <rect x="560" y="660" width="160" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="640" y="685" text-anchor="middle" class="label" font-weight="bold">catalog_product</text>
+  <text x="640" y="705" text-anchor="middle" class="sublabel">Master products</text>
+
+  <rect x="740" y="660" width="140" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="810" y="685" text-anchor="middle" class="label" font-weight="bold">jobs</text>
+  <text x="810" y="705" text-anchor="middle" class="sublabel">Work orders</text>
+
+  <rect x="900" y="660" width="140" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="970" y="685" text-anchor="middle" class="label" font-weight="bold">bookings</text>
+  <text x="970" y="705" text-anchor="middle" class="sublabel">Customer bookings</text>
+
+  <rect x="1060" y="660" width="140" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="1130" y="685" text-anchor="middle" class="label" font-weight="bold">invoices</text>
+  <text x="1130" y="705" text-anchor="middle" class="sublabel">Invoice docs</text>
+
+  <rect x="1220" y="660" width="140" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="1290" y="685" text-anchor="middle" class="label" font-weight="bold">services</text>
+  <text x="1290" y="705" text-anchor="middle" class="sublabel">Service tree</text>
+
+  <rect x="1380" y="660" width="140" height="60" rx="4" fill="#fed7aa" class="box"/>
+  <text x="1450" y="685" text-anchor="middle" class="label" font-weight="bold">sdui_layouts</text>
+  <text x="1450" y="705" text-anchor="middle" class="sublabel">UI layouts</text>
+
+  <!-- Legend -->
+  <rect x="50" y="860" width="1500" height="35" fill="#1e293b"/>
+  <text x="150" y="882" text-anchor="middle" fill="white" class="sublabel">Architecture Score: 7/10</text>
+  <text x="650" y="882" text-anchor="middle" fill="white" class="sublabel">Components: 4 | Routes: 17 | Services: 8 | Collections: 9</text>
+  <text x="1150" y="882" text-anchor="middle" fill="white" class="sublabel">Generated: 2026-05-09</text>
+</svg>

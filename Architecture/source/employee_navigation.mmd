@@ -1,0 +1,38 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4'}}}%%
+flowchart TB
+    subgraph "Employee App Navigation"
+        Start["🚀 Splash Screen"]:::start
+
+        subgraph "Authentication"
+            Login["🔐 Login Screen"]:::auth
+        end
+
+        subgraph "Main App (Authenticated)"
+            JobsHome["📋 Jobs Home"]:::main
+            JobDetail["🔍 Job Detail"]:::main
+            WorkComplete["✅ Work Completion"]:::main
+            Map["🗺️ Map View"]:::main
+            PhotoCapture["📸 Photo Capture"]:::main
+            PhotoGallery["🖼️ Photo Gallery"]:::main
+            Earnings["💰 Earnings"]:::main
+            Profile["👤 Profile"]:::profile
+        end
+
+        Start --> Login
+        Login --> JobsHome
+
+        JobsHome --> JobDetail
+        JobsHome --> Map
+        JobsHome --> PhotoCapture
+        JobsHome --> Earnings
+        JobsHome --> Profile
+
+        JobDetail --> WorkComplete
+        JobDetail --> PhotoGallery
+        PhotoCapture --> PhotoGallery
+        PhotoGallery --> JobDetail
+
+        classDef start fill:#9E9E9E,color:#fff,stroke:#616161
+        classDef auth fill:#FBBC04,color:#000,stroke:#d97706
+        classDef main fill:#34A853,color:#fff,stroke:#166534
+        classDef profile fill:#9C27B0,color:#fff,stroke:#7b1fa2

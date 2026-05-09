@@ -1,0 +1,59 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4285F4'}}}%%
+flowchart TB
+    subgraph "Customer App Navigation"
+        Start["🚀 Splash Screen"]:::start
+
+        subgraph "Authentication"
+            Login["🔐 Login Screen"]:::auth
+            PhoneAuth["📱 Phone Auth"]:::auth
+        end
+
+        subgraph "Main App (Authenticated)"
+            Home["🏠 Home Screen"]:::main
+            Services["🔧 Service Type"]:::main
+            Package["📦 Package Selection"]:::main
+            Maintenance["🛠️ Maintenance"]:::main
+            Repair["🔧 Repair Issue"]:::main
+            Upgrade["⬆️ System Upgrade"]:::main
+            Accessories["🎒 Accessories"]:::main
+        end
+
+        subgraph "Booking Flow"
+            Booking["📋 Booking Form"]:::flow
+            Schedule["📅 Scheduling"]:::flow
+            Payment["💳 Payment"]:::flow
+            Confirm["✅ Confirmation"]:::flow
+        end
+
+        subgraph "Profile"
+            Profile["👤 Profile"]:::profile
+            Orders["📄 Order History"]:::profile
+            Detail["🔍 Booking Detail"]:::profile
+        end
+
+        Start --> Login
+        Login --> PhoneAuth
+        PhoneAuth --> Home
+        Home --> Services
+        Services --> Package
+        Services --> Maintenance
+        Services --> Repair
+        Services --> Upgrade
+        Services --> Accessories
+        Package --> Booking
+        Maintenance --> Booking
+        Repair --> Booking
+        Upgrade --> Booking
+        Accessories --> Booking
+        Booking --> Schedule
+        Schedule --> Payment
+        Payment --> Confirm
+        Home --> Profile
+        Profile --> Orders
+        Orders --> Detail
+
+        classDef start fill:#9E9E9E,color:#fff,stroke:#616161
+        classDef auth fill:#FBBC04,color:#000,stroke:#d97706
+        classDef main fill:#4285F4,color:#fff,stroke:#1a56db
+        classDef flow fill:#34A853,color:#fff,stroke:#166534
+        classDef profile fill:#9C27B0,color:#fff,stroke:#7b1fa2
