@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+  <defs>
+    <style>
+      .title { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: #0f172a; }
+      .section { font-family: sans-serif; font-size: 14px; font-weight: bold; fill: #1e293b; }
+      .label { font-family: sans-serif; font-size: 11px; fill: #1e293b; }
+      .sublabel { font-family: sans-serif; font-size: 10px; fill: #64748b; }
+      .box { stroke: #334155; stroke-width: 1px; }
+    </style>
+  </defs>
+
+  <rect width="1000" height="700" fill="#f8fafc"/>
+  <text x="500" y="35" text-anchor="middle" class="title">SafeCom - Firestore Schema Diagram</text>
+
+  <!-- Admins Collection -->
+  <rect x="50" y="70" width="180" height="130" rx="6" fill="#fed7aa" class="box"/>
+  <text x="140" y="95" text-anchor="middle" class="section" font-weight="bold">admins</text>
+  <line x1="60" y1="110" x2="220" y2="110" stroke="#fb923c" stroke-width="1"/>
+  <text x="60" y1="125" class="label">uid (PK)</text>
+  <text x="60" y1="140" class="label">email</text>
+  <text x="60" y1="155" class="label">name</text>
+  <text x="60" y1="170" class="label">role</text>
+  <text x="60" y1="185" class="label">firebaseUid</text>
+
+  <!-- Customers Collection -->
+  <rect x="280" y="70" width="180" height="130" rx="6" fill="#fed7aa" class="box"/>
+  <text x="370" y="95" text-anchor="middle" class="section" font-weight="bold">customers</text>
+  <line x1="290" y1="110" x2="450" y2="110" stroke="#fb923c" stroke-width="1"/>
+  <text x="290" y1="125" class="label">uid (PK)</text>
+  <text x="290" y1="140" class="label">name</text>
+  <text x="290" y1="155" class="label">phone, email</text>
+  <text x="290" y1="170" class="label">profileImage</text>
+  <text x="290" y1="185" class="label">status</text>
+
+  <!-- Employees Collection -->
+  <rect x="510" y="70" width="180" height="130" rx="6" fill="#fed7aa" class="box"/>
+  <text x="600" y="95" text-anchor="middle" class="section" font-weight="bold">employees</text>
+  <line x1="520" y1="110" x2="680" y2="110" stroke="#fb923c" stroke-width="1"/>
+  <text x="520" y1="125" class="label">uid (PK)</text>
+  <text x="520" y1="140" class="label">name, phone</text>
+  <text x="520" y1="155" class="label">email</text>
+  <text x="520" y1="170" class="label">role, department</text>
+  <text x="520" y1="185" class="label">status</text>
+
+  <!-- Jobs Collection -->
+  <rect x="770" y="70" width="180" height="180" rx="6" fill="#fed7aa" class="box"/>
+  <text x="860" y="95" text-anchor="middle" class="section" font-weight="bold">jobs</text>
+  <line x1="780" y1="110" x2="940" y2="110" stroke="#fb923c" stroke-width="1"/>
+  <text x="780" y1="125" class="label">jobId (PK)</text>
+  <text x="780" y1="140" class="label">bookingId (FK)</text>
+  <text x="780" y1="155" class="label">customerId (FK)</text>
+  <text x="780" y1="170" class="label">serviceType</text>
+  <text x="780" y1="185" class="label">status</text>
+  <text x="780" y1="200" class="label">assignedTo</text>
+  <text x="780" y1="215" class="label">total, tax</text>
+  <text x="780" y1="230" class="label">paymentStatus</text>
+
+  <!-- Bookings Collection -->
+  <rect x="50" y="250" width="180" height="150" rx="6" fill="#fed7aa" class="box"/>
+  <text x="140" y="275" text-anchor="middle" class="section" font-weight="bold">bookings</text>
+  <line x1="60" y1="290" x2="220" y2="290" stroke="#fb923c" stroke-width="1"/>
+  <text x="60" y1="305" class="label">id (PK)</text>
+  <text x="60" y1="320" class="label">customerId (FK)</text>
+  <text x="60" y1="335" class="label">orderId</text>
+  <text x="60" y1="350" class="label">serviceId</text>
+  <text x="60" y1="365" class="label">locationId</text>
+  <text x="60" y1="380" class="label">total</text>
+  <text x="60" y1="395" class="label">status</text>
+
+  <!-- Catalog Product Collection -->
+  <rect x="280" y="250" width="180" height="150" rx="6" fill="#fed7aa" class="box"/>
+  <text x="370" y="275" text-anchor="middle" class="section" font-weight="bold">catalog_product</text>
+  <line x1="290" y1="290" x2="450" y2="290" stroke="#fb923c" stroke-width="1"/>
+  <text x="290" y1="305" class="label">id (PK)</text>
+  <text x="290" y1="320" class="label">sku</text>
+  <text x="290" y1="335" class="label">name</text>
+  <text x="290" y1="350" class="label">category</text>
+  <text x="290" y1="365" class="label">price</text>
+  <text x="290" y1="380" class="label">status</text>
+
+  <!-- Invoices Collection -->
+  <rect x="510" y="250" width="180" height="120" rx="6" fill="#fed7aa" class="box"/>
+  <text x="600" y="275" text-anchor="middle" class="section" font-weight="bold">invoices</text>
+  <line x1="520" y1="290" x2="680" y2="290" stroke="#fb923c" stroke-width="1"/>
+  <text x="520" y1="305" class="label">id (PK)</text>
+  <text x="520" y1="320" class="label">bookingId (FK)</text>
+  <text x="520" y1="335" class="label">customerId (FK)</text>
+  <text x="520" y1="350" class="label">items</text>
+  <text x="520" y1="365" class="label">total, pdfUrl</text>
+
+  <!-- Services Collection -->
+  <rect x="770" y="280" width="180" height="120" rx="6" fill="#fed7aa" class="box"/>
+  <text x="860" y="305" text-anchor="middle" class="section" font-weight="bold">services</text>
+  <line x1="780" y1="320" x2="940" y2="320" stroke="#fb923c" stroke-width="1"/>
+  <text x="780" y1="335" class="label">id (PK)</text>
+  <text x="780" y1="350" class="label">name, key</text>
+  <text x="780" y1="365" class="label">description</text>
+  <text x="780" y1="380" class="label">tree (nested)</text>
+
+  <!-- Relationships -->
+  <line x1="230" y1="150" x2="280" y2="150" stroke="#94a3b8" stroke-width="2"/>
+  <polygon points="280,150 270,145 270,155" fill="#94a3b8"/>
+  <text x="255" y="140" class="sublabel">1:*</text>
+
+  <line x1="460" y1="150" x2="510" y2="150" stroke="#94a3b8" stroke-width="2"/>
+  <polygon points="510,150 500,145 500,155" fill="#94a3b8"/>
+
+  <line x1="650" y1="150" x2="770" y2="150" stroke="#94a3b8" stroke-width="2"/>
+  <polygon points="770,150 760,145 760,155" fill="#94a3b8"/>
+
+  <line x1="230" y1="320" x2="280" y2="300" stroke="#94a3b8" stroke-width="2"/>
+  <polygon points="280,300 270,295 280,290" fill="#94a3b8"/>
+
+  <!-- SDUI Layouts -->
+  <rect x="50" y="440" width="280" height="80" rx="6" fill="#fed7aa" class="box"/>
+  <text x="190" y="465" text-anchor="middle" class="section" font-weight="bold">sdui_layouts</text>
+  <text x="60" y="485" class="label">id, name, layoutType</text>
+  <text x="60" y="500" class="label">config (JSON), status</text>
+
+  <rect x="380" y="440" width="280" height="80" rx="6" fill="#fed7aa" class="box"/>
+  <text x="520" y="465" text-anchor="middle" class="section" font-weight="bold">Legacy Collections (Deleted)</text>
+  <text x="390" y="485" class="sublabel">Banners, Bookings, Configurations</text>
+  <text x="390" y="500" class="sublabel">Locations, Offers, Orders</text>
+
+  <!-- Legend -->
+  <rect x="700" y="450" width="250" height="150" rx="6" fill="#fff" stroke="#334155"/>
+  <text x="825" y="470" text-anchor="middle" class="section">Legend</text>
+  <rect x="720" y="490" width="20" height="10" fill="#fed7aa"/>
+  <text x="750" y="500" class="label">Active Collection</text>
+  <rect x="720" y="510" width="20" height="10" fill="#f1f5f9" stroke="#94a3b8"/>
+  <text x="750" y="520" class="label">Legacy (Deleted)</text>
+  <line x1="720" y1="545" x2="750" y2="545" stroke="#94a3b8" stroke-width="2"/>
+  <polygon points="750,545 745,540 745,550" fill="#94a3b8"/>
+  <text x="760" y="550" class="label">Relationship</text>
+
+  <!-- Footer -->
+  <rect x="50" y="660" width="900" height="30" fill="#1e293b"/>
+  <text x="500" y="680" text-anchor="middle" fill="white" class="sublabel">Schema Version: 2026-05-09 | 9 Active Collections | Generated from Firestore Analysis</text>
+</svg>

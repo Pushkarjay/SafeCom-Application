@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600">
+  <defs>
+    <style>
+      .title { font-family: sans-serif; font-size: 24px; font-weight: bold; fill: #0f172a; }
+      .section { font-family: sans-serif; font-size: 16px; font-weight: bold; fill: #1e293b; }
+      .label { font-family: sans-serif; font-size: 12px; fill: #1e293b; }
+      .sublabel { font-family: sans-serif; font-size: 10px; fill: #64748b; }
+      .box { stroke: #334155; stroke-width: 1.5px; }
+    </style>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4285f4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a56db;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="600" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" class="title">SafeCom - Backend Architecture</text>
+
+  <!-- Client Layer -->
+  <rect x="50" y="80" width="200" height="120" rx="6" fill="url(#blueGrad)" class="box"/>
+  <text x="150" y="110" text-anchor="middle" fill="white" class="label" font-weight="bold">Customer APK</text>
+  <text x="150" y="130" text-anchor="middle" fill="white" class="sublabel">Flutter/Riverpod</text>
+  <text x="150" y="150" text-anchor="middle" fill="white" class="sublabel">API calls</text>
+  <text x="150" y="170" text-anchor="middle" fill="white" class="sublabel">Bearer Token</text>
+
+  <rect x="270" y="80" width="200" height="120" rx="6" fill="url(#blueGrad)" class="box"/>
+  <text x="370" y="110" text-anchor="middle" fill="white" class="label" font-weight="bold">Employee APK</text>
+  <text x="370" y="130" text-anchor="middle" fill="white" class="sublabel">Flutter/Riverpod</text>
+  <text x="370" y="150" text-anchor="middle" fill="white" class="sublabel">Job Management</text>
+  <text x="370" y="170" text-anchor="middle" fill="white" class="sublabel">Location Services</text>
+
+  <rect x="490" y="80" width="200" height="120" rx="6" fill="#34a853" class="box"/>
+  <text x="590" y="110" text-anchor="middle" fill="white" class="label" font-weight="bold">Admin Web</text>
+  <text x="590" y="130" text-anchor="middle" fill="white" class="sublabel">React/Vite/TS</text>
+  <text x="590" y="150" text-anchor="middle" fill="white" class="sublabel">Catalog Admin</text>
+  <text x="590" y="170" text-anchor="middle" fill="white" class="sublabel">Analytics</text>
+
+  <!-- Express Server Box -->
+  <rect x="50" y="250" width="640" height="280" rx="8" fill="#fff" stroke="#ea4335" stroke-width="2"/>
+  <text x="370" y="280" text-anchor="middle" class="section" fill="#ea4335" font-weight="bold">Express.js + TypeScript Backend</text>
+
+  <!-- Middleware Layer -->
+  <rect x="70" y="300" width="600" height="50" rx="4" fill="#fbbc04" class="box"/>
+  <text x="370" y="330" text-anchor="middle" class="label" font-weight="bold">🛡️ Middleware: firebaseAuth | Helmet | CORS | Morgan | JSON Parser</text>
+
+  <!-- Routes -->
+  <rect x="70" y="365" width="140" height="50" rx="4" fill="#9c27b0" class="box"/>
+  <text x="140" y="395" text-anchor="middle" fill="white" class="label">/api/auth</text>
+
+  <rect x="220" y="365" width="140" height="50" rx="4" fill="#9c27b0" class="box"/>
+  <text x="290" y="395" text-anchor="middle" fill="white" class="label">/api/jobs</text>
+
+  <rect x="370" y="365" width="140" height="50" rx="4" fill="#9c27b0" class="box"/>
+  <text x="440" y="395" text-anchor="middle" fill="white" class="label">/api/bookings</text>
+
+  <rect x="520" y="365" width="140" height="50" rx="4" fill="#9c27b0" class="box"/>
+  <text x="590" y="395" text-anchor="middle" fill="white" class="label">/api/payments</text>
+
+  <!-- Services -->
+  <rect x="70" y="430" width="140" height="50" rx="4" fill="#00bcd4" class="box"/>
+  <text x="140" y="455" text-anchor="middle" class="label">firestore.ts</text>
+
+  <rect x="220" y="430" width="140" height="50" rx="4" fill="#00bcd4" class="box"/>
+  <text x="290" y="455" text-anchor="middle" class="label">notificationService</text>
+
+  <rect x="370" y="430" width="140" height="50" rx="4" fill="#00bcd4" class="box"/>
+  <text x="440" y="455" text-anchor="middle" class="label">catalogService</text>
+
+  <rect x="520" y="430" width="140" height="50" rx="4" fill="#00bcd4" class="box"/>
+  <text x="590" y="455" text-anchor="middle" class="label">razorpay.ts</text>
+
+  <!-- Arrows from clients -->
+  <line x1="150" y1="200" x2="150" y2="250" stroke="#6b7280" stroke-width="2"/>
+  <polygon points="150,250 145,240 155,240" fill="#6b7280"/>
+
+  <line x1="370" y1="200" x2="370" y2="250" stroke="#6b7280" stroke-width="2"/>
+  <polygon points="370,250 365,240 375,240" fill="#6b7280"/>
+
+  <line x1="590" y1="200" x2="590" y2="250" stroke="#6b7280" stroke-width="2"/>
+  <polygon points="590,250 585,240 595,240" fill="#6b7280"/>
+
+  <!-- Firebase Side -->
+  <rect x="750" y="250" width="380" height="280" rx="8" fill="#fff" stroke="#fbbc04" stroke-width="2"/>
+  <text x="940" y="280" text-anchor="middle" class="section" fill="#d97706" font-weight="bold">Firebase Platform</text>
+
+  <rect x="770" y="310" width="340" height="40" rx="4" fill="#fbbc04" class="box"/>
+  <text x="940" y="335" text-anchor="middle" class="label" font-weight="bold">🔑 Firebase Auth - ID Token Verification</text>
+
+  <rect x="770" y="360" width="340" height="40" rx="4" fill="#fbbc04" class="box"/>
+  <text x="940" y="385" text-anchor="middle" class="label" font-weight="bold">💾 Firestore - 9 Collections</text>
+
+  <rect x="770" y="410" width="340" height="40" rx="4" fill="#fbbc04" class="box"/>
+  <text x="940" y="435" text-anchor="middle" class="label" font-weight="bold">📦 Cloud Storage - Images, PDFs</text>
+
+  <rect x="770" y="460" width="340" height="40" rx="4" fill="#fbbc04" class="box"/>
+  <text x="940" y="485" text-anchor="middle" class="label" font-weight="bold">📨 Cloud Messaging - Push Notifications</text>
+
+  <!-- External Services -->
+  <rect x="750" y="80" width="380" height="140" rx="8" fill="#fff" stroke="#607d8b" stroke-width="2"/>
+  <text x="940" y="110" text-anchor="middle" class="section" fill="#607d8b" font-weight="bold">External Services</text>
+
+  <rect x="770" y="130" width="340" height="30" rx="4" fill="#607d8b" class="box"/>
+  <text x="940" y="150" text-anchor="middle" fill="white" class="label">💳 Razorpay Payment Gateway</text>
+
+  <rect x="770" y="170" width="340" height="30" rx="4" fill="#607d8b" class="box"/>
+  <text x="940" y="190" text-anchor="middle" fill="white" class="label">🗺️ Google Maps API</text>
+
+  <!-- Arrows -->
+  <line x1="250" y1="200" x2="750" y2="80" stroke="#6b7280" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="490" y1="200" x2="750" y2="80" stroke="#6b7280" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="690" y1="200" x2="750" y2="80" stroke="#6b7280" stroke-width="1" stroke-dasharray="4"/>
+
+  <line x1="700" y1="390" x2="750" y2="390" stroke="#6b7280" stroke-width="2"/>
+  <polygon points="750,390 740,385 740,395" fill="#6b7280"/>
+
+  <!-- Footer -->
+  <rect x="50" y="560" width="1100" height="35" fill="#1e293b"/>
+  <text x="600" y="582" text-anchor="middle" fill="white" class="sublabel">Architecture: 7/10 | Routes: 17 | Services: 8 | Collections: 9 | Generated: 2026-05-09</text>
+</svg>
