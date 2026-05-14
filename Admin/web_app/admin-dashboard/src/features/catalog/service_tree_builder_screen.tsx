@@ -495,6 +495,18 @@ export default function ServiceTreeBuilderScreen() {
     return nodes.reduce((sum, n) => n.isLeaf ? sum + 1 : sum + countLeaves(n.children), 0)
   }
 
+  function countRealLeaves(nodes: TreeNode[]): number {
+    return nodes.reduce((sum, n) => {
+      if (n.isLeaf && n.productId) return sum + 1
+      if (!n.isLeaf && !n.isField) return sum + countRealLeaves(n.children)
+      return sum
+    }, 0)
+  }
+
+  function countBranches(nodes: TreeNode[]): number {
+    return nodes.filter(n => !n.isLeaf && !n.isField).length
+  }
+
   /// Collect all leaf-level product nodes from a setup's product slots
   function collectAllProducts(products: ProductSlot[]): TreeNode[] {
     const result: TreeNode[] = []
@@ -530,7 +542,7 @@ export default function ServiceTreeBuilderScreen() {
       const nodePath = [...currentPath, node.key]
       const nodeId = `${catKey}::${setupKey}::${nodePath.join('::')}::d${depth}`
 
-      if (node.isLeaf) {
+      if (node.isLeaf && !node.isField) {
         // ── LEAF ROW: shows product details ──
         const depthClass = depth <= 4 ? `depth-${depth}` : 'depth-4'
         rows.push(
@@ -551,10 +563,10 @@ export default function ServiceTreeBuilderScreen() {
             <td className="num">{fmt(node.price * node.defaultQty)}</td>
             <td>
               <div className="ib-actions">
-                {node.renderType && (
-                  <span className={`ib-badge ${node.renderType === 'list' ? 'primary' : 'secondary'}`} title={`Render: ${node.renderType}${node.renderType === 'list' && node.collectiveValidation ? ', collective' : ''}`}>
-                    {node.renderType === 'list' ? 'LIST' : 'OPT'}
-                  </span>
+                {node.renderType === 'list' ? (
+                  <span className="ib-badge primary" title="LIST render mode — qty steppers with collective validation">LIST</span>
+                ) : (
+                  <span className="ib-badge secondary" title="OPT render mode — modal selection">OPT</span>
                 )}
                 {node.dependsOn && (
                   <span className="ib-badge" style={{ background: '#fef3c7', color: '#92400e' }} title={`Depends on: ${node.dependsOn}`}>
@@ -623,9 +635,12 @@ export default function ServiceTreeBuilderScreen() {
                 <div className="product-main" style={{ paddingLeft: indent }}>
                   <span className="product-name">
                     <span className={`ib-chevron ${branchOpen ? 'open' : ''}`} style={{ fontSize: '10px', marginRight: '6px' }}>▶</span>
-                    📂 {node.key} <span className="ib-badge" style={{ fontSize: '10px' }}>{countLeaves(node.children)} leaves</span>
+                    📂 {node.key}
+                    {node.renderType === 'list' && <span className="ib-badge primary" style={{ marginLeft: 4, fontSize: '10px' }}>LIST</span>}
+                    <span className="ib-badge" style={{ fontSize: '10px', marginLeft: 4 }}>{countRealLeaves(node.children)} cameras</span>
+                    {node.dependsOn && <span className="ib-badge" style={{ background: '#fef3c7', color: '#92400e', marginLeft: 4, fontSize: '10px' }}>🔗 {node.dependsOn}</span>}
                   </span>
-                  <span className="product-id">Branch — {node.children.length} children at this level</span>
+                  <span className="product-id">{countBranches(node.children) > 0 ? `${countBranches(node.children)} branches` : 'Branch'}</span>
                 </div>
               </button>
             </td>
@@ -834,9 +849,8 @@ export default function ServiceTreeBuilderScreen() {
                                               <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, [slot.key, opt.key], 'defaultQty', opt.defaultQty)}>{opt.defaultQty}</button></td>
                                               <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, [slot.key, opt.key], 'minQty', opt.minQty)}>{opt.minQty}</button></td>
                                               <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, [slot.key, opt.key], 'maxQty', opt.maxQty)}>{opt.maxQty}</button></td>
-                                              <td className="num total">{fmt(opt.price * opt.defaultQty)}</td>
-<td>
-                                              <td colSpan={100}>
+<td className="num total">{fmt(opt.price * opt.defaultQty)}</td>
+                                              <td>
                                                 <div className="ib-actions">
                                                   {opt.renderType && (
                                                     <span className={`ib-badge ${opt.renderType === 'list' ? 'primary' : 'secondary'}`}>{opt.renderType === 'list' ? 'LIST' : 'OPT'}</span>
@@ -852,7 +866,6 @@ export default function ServiceTreeBuilderScreen() {
                                                   <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire product">🗑️</button>
                                                 </div>
                                               </td>
-                                            </td>
                                             </tr>
                                           )
                                         }
@@ -881,8 +894,7 @@ export default function ServiceTreeBuilderScreen() {
                                             <td className="num">—</td>
                                             <td className="num">—</td>
                                             <td className="num total">{fmt(slot.options[0]?.price * (slot.options[0]?.defaultQty || 1) || 0)}</td>
-<td>
-                                              <td colSpan={100}>
+                                              <td>
                                                 <div className="ib-actions">
                                                   <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product option">+ Option</button>
                                                   <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
@@ -892,8 +904,7 @@ export default function ServiceTreeBuilderScreen() {
                                                   <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
                                                 </div>
                                               </td>
-                                              </td>
-                                          </tr>,
+                                            </tr>,
                                           ...(clubOpen ? renderTreeNodes(slot.options, 1, cat.key, setup.key, [slot.key]) : [])
                                         ]
                                       })}
@@ -981,21 +992,21 @@ export default function ServiceTreeBuilderScreen() {
               <p className="hint-text">Select a product whose quantity this product should auto-map from:</p>
               {showDepModal.node.dependsOn && (
                 <div className="dependency-current">
-                  Currently depends on: <strong>{showDepModal.node.dependsOn}</strong>
+                  Currently depends on KEY: <strong>{showDepModal.node.dependsOn}</strong>
                   <button className="secondary-btn" style={{ marginLeft: 8 }} onClick={() => { const m = showDepModal; setShowDepModal(null); removeDependency(m.categoryKey, m.setupKey, m.nodePath) }}>Remove</button>
                 </div>
               )}
               <div className="dep-product-list" style={{ maxHeight: 400, overflowY: 'auto' }}>
-                {showDepModal.siblings.filter(s => s.key !== showDepModal.node.key && s.isLeaf && s.productId).map(sib => (
+                {showDepModal.siblings.filter(s => s.key !== showDepModal.node.key && s.isLeaf && !s.isField && s.productId).map(sib => (
                   <label key={sib.key} className="dep-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}>
                     <input type="radio" name="dep-target" value={sib.key}
                       checked={showDepModal.node.dependsOn === sib.key}
                       onChange={() => saveDependency(sib.key)} />
                     <span style={{ fontWeight: 600, flex: 1 }}>{sib.displayLabel || sib.productName || sib.key}</span>
-                    <span style={{ color: '#64748b', fontSize: 12 }}>₹{sib.price}</span>
+                    <span style={{ color: '#64748b', fontSize: 11 }}>PID: {sib.productId} · KEY: {sib.key}</span>
                   </label>
                 ))}
-                {showDepModal.siblings.filter(s => s.key !== showDepModal.node.key && s.isLeaf && s.productId).length === 0 && (
+                {showDepModal.siblings.filter(s => s.key !== showDepModal.node.key && s.isLeaf && !s.isField && s.productId).length === 0 && (
                   <p className="hint-text" style={{ padding: 16 }}>No other products available in this scope to depend on.</p>
                 )}
               </div>

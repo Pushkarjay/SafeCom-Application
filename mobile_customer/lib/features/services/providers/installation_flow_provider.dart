@@ -13,18 +13,19 @@ class InvoiceLineItem {
   final int maxQty;
   final Map<String, String> selectedVariants;
 
-  /// If this product slot has clubbed options, the full tree is stored here.
   final bool isClubbed;
   final List<ClubbedOption> clubbedOptions;
   final ClubbedOption? selectedOption;
 
-  /// Phase 1.1 — render type fields
-  /// 'option' = classic popup, 'list' = grouped qty block rendered inline
   final String renderType;
-  /// If true, this item belongs to a LIST group and its qty is validated collectively
   final bool isListChild;
-  /// The key of the LIST group this item belongs to (null if not a list child)
   final String? listGroupKey;
+  final String? listGroupLabel;
+
+  /// parentProductKey = top-level mappedProduct.productKey this item belongs to
+  final String parentProductKey;
+  /// dependsOn = productKey that controls this item's quantity (if any)
+  final String? dependsOn;
 
   const InvoiceLineItem({
     required this.key,
@@ -41,6 +42,9 @@ class InvoiceLineItem {
     this.renderType = 'option',
     this.isListChild = false,
     this.listGroupKey,
+    this.listGroupLabel,
+    required this.parentProductKey,
+    this.dependsOn,
   });
 
   double get amount => unitPrice * quantity;
@@ -61,6 +65,9 @@ class InvoiceLineItem {
     String? renderType,
     bool? isListChild,
     String? listGroupKey,
+    String? listGroupLabel,
+    String? parentProductKey,
+    String? dependsOn,
   }) {
     return InvoiceLineItem(
       key: key ?? this.key,
@@ -77,11 +84,13 @@ class InvoiceLineItem {
       renderType: renderType ?? this.renderType,
       isListChild: isListChild ?? this.isListChild,
       listGroupKey: listGroupKey ?? this.listGroupKey,
+      listGroupLabel: listGroupLabel ?? this.listGroupLabel,
+      parentProductKey: parentProductKey ?? this.parentProductKey,
+      dependsOn: dependsOn ?? this.dependsOn,
     );
   }
 }
 
-/// Represents a LIST group header — holds display info and collective validation params.
 class InvoiceListGroup {
   final String key;
   final String label;
@@ -104,8 +113,9 @@ class InstallationFlowState {
   final String? selectedCategoryId;
   final String? selectedGroupId;
   final List<InvoiceLineItem> items;
-  /// Phase 1.1 — list groups (for LIST renderType blocks)
   final List<InvoiceListGroup> listGroups;
+  /// Tracks which LIST branch is selected for clubbed products (productKey -> branchOptionKey)
+  final Map<String, String> selectedBranch;
 
   const InstallationFlowState({
     required this.isLoading,
@@ -114,6 +124,7 @@ class InstallationFlowState {
     this.selectedGroupId,
     this.items = const [],
     this.listGroups = const [],
+    this.selectedBranch = const {},
   });
 
   double get totalAmount => items.fold(0, (sum, item) => sum + item.amount);
@@ -135,14 +146,12 @@ class InstallationFlowState {
         );
   }
 
-  /// Returns the sum of quantities of all list children in the given group.
   int listGroupTotal(String groupKey) {
     return items
         .where((i) => i.isListChild && i.listGroupKey == groupKey)
         .fold(0, (sum, i) => sum + i.quantity);
   }
 
-  /// Returns true if all LIST groups pass collective validation.
   bool get allListGroupsValid {
     for (final group in listGroups) {
       if (!group.collectiveValidation) continue;
@@ -159,6 +168,7 @@ class InstallationFlowState {
     String? selectedGroupId,
     List<InvoiceLineItem>? items,
     List<InvoiceListGroup>? listGroups,
+    Map<String, String>? selectedBranch,
   }) {
     return InstallationFlowState(
       isLoading: isLoading ?? this.isLoading,
@@ -167,6 +177,7 @@ class InstallationFlowState {
       selectedGroupId: selectedGroupId ?? this.selectedGroupId,
       items: items ?? this.items,
       listGroups: listGroups ?? this.listGroups,
+      selectedBranch: selectedBranch ?? this.selectedBranch,
     );
   }
 }
@@ -198,6 +209,17 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     _buildItemsFromGroup();
   }
 
+  void selectClubbedBranch(String productKey, String branchOptionKey) {
+    state = state.copyWith(
+      selectedBranch: Map.fromEntries([
+        for (var e in state.selectedBranch.entries)
+          if (e.key != productKey) e,
+        MapEntry(productKey, branchOptionKey),
+      ]),
+    );
+    _buildItemsFromGroup();
+  }
+
   void _buildItemsFromGroup() {
     final group = state.selectedGroup;
     if (group == null) return;
@@ -206,90 +228,194 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     final listGroups = <InvoiceListGroup>[];
 
     for (final mappedProduct in group.mappedProducts) {
-      if (mappedProduct.renderType == 'list' && mappedProduct.clubbedOptions.isNotEmpty) {
-        final groupKey = mappedProduct.productKey;
-        listGroups.add(InvoiceListGroup(
-          key: groupKey,
-          label: mappedProduct.displayLabel ?? mappedProduct.productKey,
-          minQty: mappedProduct.minQty,
-          maxQty: mappedProduct.maxQty,
-          collectiveValidation: mappedProduct.collectiveValidation,
-        ));
-        final leaves = _collectLeaves(mappedProduct.clubbedOptions);
-        for (final leaf in leaves) {
-          items.add(InvoiceLineItem(
-            key: '${groupKey}__${leaf.optionKey}',
-            name: leaf.label,
-            unitPrice: leaf.price,
-            quantity: 0,
-            canEditQuantity: leaf.dependsOn == null,
-            minQty: 0,
-            maxQty: leaf.maxQty,
-            renderType: 'list',
-            isListChild: true,
-            listGroupKey: groupKey,
-          ));
+      final clubbedOpts = mappedProduct.clubbedOptions;
+
+      if (clubbedOpts.isNotEmpty) {
+        // ── Clubbed product with LIST branches → mutual-exclusive branch selection ──
+        if (mappedProduct.isClubbed) {
+          final listBranches = clubbedOpts
+              .where((opt) => !opt.isLeaf && opt.renderType == 'list')
+              .toList();
+          if (listBranches.isNotEmpty) {
+            var selectedBranchKey = state.selectedBranch[mappedProduct.productKey];
+            if (selectedBranchKey == null ||
+                !listBranches.any((b) => b.optionKey == selectedBranchKey)) {
+              selectedBranchKey = listBranches.first.optionKey;
+            }
+
+            // Only ONE listGroup for the selected branch
+            final selBranch =
+                listBranches.firstWhere((b) => b.optionKey == selectedBranchKey);
+            final groupKey =
+                '${mappedProduct.productKey}__${selBranch.optionKey}';
+            listGroups.add(InvoiceListGroup(
+              key: groupKey,
+              label: selBranch.label,
+              minQty: selBranch.minQty,
+              maxQty: mappedProduct.maxQty,
+              collectiveValidation: selBranch.collectiveValidation,
+            ));
+
+            // Only add leaves from the selected branch
+            final selLeaves = _collectLeaves([selBranch]);
+            for (final leaf in selLeaves) {
+              final leafKey = '${groupKey}__${leaf.optionKey}';
+              items.add(InvoiceLineItem(
+                key: leafKey,
+                name: leaf.label,
+                unitPrice: leaf.price,
+                quantity: 0,
+                canEditQuantity: leaf.dependsOn == null,
+                minQty: 0,
+                maxQty: leaf.maxQty,
+                renderType: 'list',
+                isListChild: true,
+                listGroupKey: groupKey,
+                listGroupLabel: selBranch.label,
+                parentProductKey: mappedProduct.productKey,
+                dependsOn: leaf.dependsOn,
+              ));
+            }
+
+            // Exclude leaves that belong to any LIST branch from regular option items
+            final Set<String> branchLeafKeys = <String>{};
+            for (final branch in listBranches) {
+              final branchLeaves = _collectLeaves([branch]);
+              for (final leaf in branchLeaves) {
+                branchLeafKeys.add('${leaf.productId}||${leaf.optionKey}');
+              }
+            }
+            final nonListLeaves = clubbedOpts.where((opt) {
+              if (!opt.isLeaf) return false;
+              final leafId = '${opt.productId}||${opt.optionKey}';
+              return !branchLeafKeys.contains(leafId);
+            }).toList();
+            for (final leaf in nonListLeaves) {
+              items.add(InvoiceLineItem(
+                key: '${mappedProduct.productKey}__${leaf.optionKey}',
+                name: leaf.label,
+                unitPrice: leaf.price,
+                quantity: 0,
+                canEditQuantity: leaf.dependsOn == null,
+                minQty: 0,
+                maxQty: leaf.maxQty,
+                renderType: 'option',
+                parentProductKey: mappedProduct.productKey,
+                dependsOn: leaf.dependsOn,
+              ));
+            }
+            continue;
+          }
         }
-        continue;
+
+        // ── Product with renderType=='list' (flat LIST) ──
+        if (mappedProduct.renderType == 'list' && clubbedOpts.isNotEmpty) {
+          final groupKey = mappedProduct.productKey;
+          listGroups.add(InvoiceListGroup(
+            key: groupKey,
+            label: mappedProduct.displayLabel ?? mappedProduct.productKey,
+            minQty: mappedProduct.minQty,
+            maxQty: mappedProduct.maxQty,
+            collectiveValidation: mappedProduct.collectiveValidation,
+          ));
+          final leaves = _collectLeaves(clubbedOpts);
+          for (final leaf in leaves) {
+            final leafKey = '${groupKey}__${leaf.optionKey}';
+            items.add(InvoiceLineItem(
+              key: leafKey,
+              name: leaf.label,
+              unitPrice: leaf.price,
+              quantity: 0,
+              canEditQuantity: leaf.dependsOn == null,
+              minQty: 0,
+              maxQty: leaf.maxQty,
+              renderType: 'list',
+              isListChild: true,
+              listGroupKey: groupKey,
+              listGroupLabel: mappedProduct.displayLabel ?? mappedProduct.productKey,
+              parentProductKey: mappedProduct.productKey,
+              dependsOn: leaf.dependsOn,
+            ));
+          }
+          continue;
+        }
+
+        // ── Regular clubbed product (OPTION — drill-down selector) ──
+        if (mappedProduct.isClubbed && clubbedOpts.isNotEmpty) {
+          final firstLeaf = _findFirstLeaf(clubbedOpts);
+          items.add(InvoiceLineItem(
+            key: mappedProduct.productKey,
+            name: firstLeaf?.productName ?? mappedProduct.product.productName,
+            unitPrice: firstLeaf?.price ?? mappedProduct.product.basePrice,
+            quantity: firstLeaf?.defaultQty ?? mappedProduct.defaultQty,
+            canEditQuantity: mappedProduct.dependsOn == null &&
+                (firstLeaf?.minQty ?? mappedProduct.minQty) !=
+                    (firstLeaf?.maxQty ?? mappedProduct.maxQty),
+            minQty: firstLeaf?.minQty ?? mappedProduct.minQty,
+            maxQty: firstLeaf?.maxQty ?? mappedProduct.maxQty,
+            isClubbed: true,
+            clubbedOptions: clubbedOpts,
+            selectedOption: firstLeaf,
+            renderType: 'option',
+            parentProductKey: mappedProduct.productKey,
+            dependsOn: mappedProduct.dependsOn,
+          ));
+          continue;
+        }
       }
 
-      if (mappedProduct.isClubbed && mappedProduct.clubbedOptions.isNotEmpty) {
-        final firstLeaf = _findFirstLeaf(mappedProduct.clubbedOptions);
-        items.add(InvoiceLineItem(
-          key: mappedProduct.productKey,
-          name: firstLeaf?.productName ?? mappedProduct.product.productName,
-          unitPrice: firstLeaf?.price ?? mappedProduct.product.basePrice,
-          quantity: firstLeaf?.defaultQty ?? mappedProduct.defaultQty,
-          canEditQuantity: mappedProduct.dependsOn == null && (firstLeaf?.minQty ?? mappedProduct.minQty) != (firstLeaf?.maxQty ?? mappedProduct.maxQty),
-          minQty: firstLeaf?.minQty ?? mappedProduct.minQty,
-          maxQty: firstLeaf?.maxQty ?? mappedProduct.maxQty,
-          isClubbed: true,
-          clubbedOptions: mappedProduct.clubbedOptions,
-          selectedOption: firstLeaf,
-          renderType: 'option',
-        ));
-        continue;
-      }
-
+      // ── Non-clubbed product ──
       items.add(InvoiceLineItem(
         key: mappedProduct.productId,
         name: mappedProduct.product.productName,
         unitPrice: mappedProduct.product.basePrice,
         quantity: mappedProduct.defaultQty,
-        canEditQuantity: mappedProduct.dependsOn == null && mappedProduct.minQty != mappedProduct.maxQty,
+        canEditQuantity: mappedProduct.dependsOn == null &&
+            mappedProduct.minQty != mappedProduct.maxQty,
         minQty: mappedProduct.minQty,
         maxQty: mappedProduct.maxQty,
         renderType: 'option',
+        parentProductKey: mappedProduct.productKey,
+        dependsOn: mappedProduct.dependsOn,
       ));
     }
 
-    // Build dependency map
-    final depMap = <String, List<String>>{};
-    for (final mp in group.mappedProducts) {
-      if (mp.dependsOn != null) {
-        depMap.putIfAbsent(mp.dependsOn!, () => []).add(mp.productId);
+    // Build dependency map from dependsOn fields
+    _dependencyMap = {};
+    for (final item in items) {
+      if (item.dependsOn != null) {
+        _dependencyMap.putIfAbsent(item.dependsOn!, () => []).add(item.key);
       }
     }
-    _dependencyMap = depMap;
-    _applyDependencies(items);
 
+    _applyDependencies(items);
     state = state.copyWith(items: items, listGroups: listGroups);
   }
 
   void _applyDependencies([List<InvoiceLineItem>? items]) {
     final target = items ?? state.items;
+
+    // Build parentProductKey -> items map for aggregation
+    final parentMap = <String, List<InvoiceLineItem>>{};
+    for (final item in target) {
+      parentMap.putIfAbsent(item.parentProductKey, () => []).add(item);
+    }
+
+    // For each dependency group, sum quantities from ALL source items (same parentProductKey)
     for (final entry in _dependencyMap.entries) {
       final sourceKey = entry.key;
       final depKeys = entry.value;
-      final source = target.where((i) => i.key == sourceKey || i.key == '${sourceKey}').firstOrNull;
-      if (source == null) continue;
+      // Source items are those whose parentProductKey matches the dependency key
+      final sourceItems = parentMap[sourceKey] ?? [];
+      final totalQty = sourceItems.fold(0, (sum, i) => sum + i.quantity);
       for (final depKey in depKeys) {
         final idx = target.indexWhere((i) => i.key == depKey);
         if (idx >= 0) {
-          target[idx] = target[idx].copyWith(quantity: source.quantity, canEditQuantity: false);
+          target[idx] = target[idx].copyWith(quantity: totalQty, canEditQuantity: false);
         }
       }
     }
+
     if (items == null) state = state.copyWith(items: target);
   }
 

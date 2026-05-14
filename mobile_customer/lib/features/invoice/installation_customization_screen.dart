@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
+import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
 import 'package:mobile_customer/features/home/widgets/location_header.dart';
@@ -105,10 +106,13 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
 
-              // ── OPTION variant selectors ──
-              ...variantSections,
+               // ── OPTION variant selectors ──
+               ...variantSections,
 
-              // ── LIST group blocks ──
+               // ── Branch selector for clubbed products with LIST branches ──
+               ..._buildBranchSelectors(context, ref, group),
+
+               // ── LIST group blocks ──
               if (listGroupWidgets.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 ...listGroupWidgets,
@@ -290,7 +294,50 @@ class InstallationCustomizationScreen extends ConsumerWidget {
     return '${item.name} ($variantStr)';
   }
 
-  String _currency(double value) => 'Rs ${value.toStringAsFixed(0)}';
+   String _currency(double value) => 'Rs ${value.toStringAsFixed(0)}';
+
+  List<Widget> _buildBranchSelectors(BuildContext context, WidgetRef ref, InstallationGroup group) {
+    final List<Widget> selectors = [];
+
+    for (final mappedProduct in group.mappedProducts) {
+      if (!mappedProduct.isClubbed || mappedProduct.clubbedOptions.isEmpty) continue;
+
+      final listBranches = mappedProduct.clubbedOptions
+          .where((opt) => !opt.isLeaf && opt.renderType == 'list')
+          .toList();
+      if (listBranches.isEmpty) continue;
+
+      final flow = ref.read(installationFlowProvider);
+      final selectedKey = flow.selectedBranch[mappedProduct.productKey] ?? listBranches.first.optionKey;
+
+      selectors.add(
+        _OptionSection(
+          title: mappedProduct.product.productName,
+          child: Wrap(
+            spacing: 8,
+            children: listBranches.map((branch) {
+              final isSelected = branch.optionKey == selectedKey;
+              return ChoiceChip(
+                label: Text(branch.label),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) {
+                    ref.read(installationFlowProvider.notifier).selectClubbedBranch(
+                          mappedProduct.productKey,
+                          branch.optionKey,
+                        );
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        ),
+      );
+      selectors.add(const SizedBox(height: 10));
+    }
+
+    return selectors;
+  }
 }
 
 class _OptionSection extends StatelessWidget {
