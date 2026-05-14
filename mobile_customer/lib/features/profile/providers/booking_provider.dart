@@ -10,6 +10,7 @@ class BookingModel {
   final String id;
   final String serviceType;
   final double totalAmount;
+  final double amountPaid;
   final String status;
   final DateTime createdAt;
   final DateTime? scheduledAt;
@@ -20,6 +21,7 @@ class BookingModel {
     required this.id,
     required this.serviceType,
     required this.totalAmount,
+    required this.amountPaid,
     required this.status,
     required this.createdAt,
     this.scheduledAt,
@@ -28,11 +30,12 @@ class BookingModel {
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
+    final invoice = json['invoice'] as Map<String, dynamic>?;
     return BookingModel(
       id: json['bookingId'] as String? ?? json['id'] as String? ?? '',
       serviceType: json['serviceType'] as String? ?? 'Service',
-      totalAmount: (json['invoice']?['grandTotal'] ?? json['amount'] ?? 0.0)
-          .toDouble(),
+      totalAmount: ((invoice?['grandTotal'] ?? json['totalAmount'] ?? 0.0) as num).toDouble(),
+      amountPaid: ((json['amountPaid'] ?? invoice?['advanceAmount'] ?? 0.0) as num).toDouble(),
       status: json['status'] as String? ?? 'pending',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),

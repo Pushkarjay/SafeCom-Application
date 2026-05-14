@@ -69,7 +69,7 @@ class BookingDetailScreen extends StatelessWidget {
                   ),
                   _InfoTile(
                     label: 'Amount Paid',
-                    value: '₹${booking.totalAmount.toStringAsFixed(2)}',
+                    value: '₹${booking.amountPaid.toStringAsFixed(2)}',
                     icon: Icons.payments_outlined,
                   ),
                   const SizedBox(height: 24),
