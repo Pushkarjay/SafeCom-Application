@@ -808,21 +808,22 @@ export default function ServiceTreeBuilderScreen() {
                                               <td className="num"><button className="link-btn" onClick={() => editQty(cat.key, setup.key, [slot.key, opt.key], 'maxQty', opt.maxQty)}>{opt.maxQty}</button></td>
                                               <td className="num total">{fmt(opt.price * opt.defaultQty)}</td>
 <td>
-                                              <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add option">+ Option</button>
-                                              <button className="icon-btn" onClick={() => {
-                                                const fieldName = prompt('Enter field name:')
-                                                if (!fieldName || !serviceId) return
-                                                const type = prompt('Enter type (string, number, boolean, map):', 'string')
-                                                if (!type) return
-                                                let val: any = ''
-                                                if (type === 'number') val = 0
-                                                if (type === 'boolean') val = false
-                                                if (type === 'map') val = {}
-                                                adminDatasource.serviceUpdateDynamicField(serviceId!, cat.key, setup.key, [...[slot.key], fieldName], val).then(() => loadData())
-                                              }} title="Add dynamic field">+ Field</button>
-                                              <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], opt, collectAllProducts(setup.products))} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
-                                              <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
-                                              <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
+                                              <td colSpan={100}>
+                                                <div className="ib-actions">
+                                                  {opt.renderType && (
+                                                    <span className={`ib-badge ${opt.renderType === 'list' ? 'primary' : 'secondary'}`}>{opt.renderType === 'list' ? 'LIST' : 'OPT'}</span>
+                                                  )}
+                                                  {opt.dependsOn && (
+                                                    <span className="ib-badge" style={{ background: '#fef3c7', color: '#92400e' }} title={`Depends on: ${opt.dependsOn}`}>🔗 {opt.dependsOn}</span>
+                                                  )}
+                                                  <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product option">+ Option</button>
+                                                  <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                                                  <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], opt, collectAllProducts(setup.products))} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
+                                                  <button className="icon-btn" onClick={() => editRenderConfig(cat.key, setup.key, [slot.key], opt)} title="Configure render type (OPT/LIST)" style={{ color: '#10b981' }}>⚙️</button>
+                                                  <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Rename">✏️</button>
+                                                  <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire product">🗑️</button>
+                                                </div>
+                                              </td>
                                             </td>
                                             </tr>
                                           )
@@ -853,21 +854,16 @@ export default function ServiceTreeBuilderScreen() {
                                             <td className="num">—</td>
                                             <td className="num total">{fmt(slot.options[0]?.price * (slot.options[0]?.defaultQty || 1) || 0)}</td>
 <td>
-                                                <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add option">+ Option</button>
-                                                <button className="icon-btn" onClick={() => {
-                                                  const fieldName = prompt('Enter field name:')
-                                                  if (!fieldName || !serviceId) return
-                                                  const type = prompt('Enter type (string, number, boolean, map):', 'string')
-                                                  if (!type) return
-                                                  let val: any = ''
-                                                  if (type === 'number') val = 0
-                                                  if (type === 'boolean') val = false
-                                                  if (type === 'map') val = {}
-                                                  adminDatasource.serviceUpdateDynamicField(serviceId!, cat.key, setup.key, [...[slot.key], fieldName], val).then(() => loadData())
-                                                }} title="Add dynamic field">+ Field</button>
-                                                <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], slot.options[0], collectAllProducts(setup.products))} title="Map dependency" style={{ color: '#d97706' }}>🔗 Depends On</button>
-                                                <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
-                                                <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
+                                              <td colSpan={100}>
+                                                <div className="ib-actions">
+                                                  <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product option">+ Option</button>
+                                                  <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                                                  <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], slot.options[0], collectAllProducts(setup.products))} title="Map dependency" style={{ color: '#d97706' }}>🔗 Depends On</button>
+                                                  <button className="icon-btn" onClick={() => editRenderConfig(cat.key, setup.key, [slot.key], { ...slot.options[0], key: slot.key })} title="Configure render type (OPT/LIST)" style={{ color: '#10b981' }}>⚙️</button>
+                                                  <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
+                                                  <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
+                                                </div>
+                                              </td>
                                               </td>
                                           </tr>,
                                           ...(clubOpen ? renderTreeNodes(slot.options, 1, cat.key, setup.key, [slot.key]) : [])
