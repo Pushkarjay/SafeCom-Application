@@ -49,6 +49,7 @@
 .ib-badge.secondary { background: #f3e8ff; color: #7c3aed; }
 .ib-badge.club { background: #fef3c7; color: #92400e; margin-left: 6px; }
 .ib-badge.primary { background: #dcfce7; color: #16a34a; }
+.ib-badge.dep { background: #ffedd5; color: #c2410c; }
 
 /* Header with actions */
 .ib-header-actions {
@@ -101,15 +102,43 @@
 .ib-setup-body { padding: 12px 16px 16px; }
 
 /* ─── Product Table ─── */
+.ib-product-table { width: 100%; border-collapse: collapse; }
+.ib-product-table th {
+  text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #9ca3af; padding: 6px 8px; border-bottom: 1px solid #e5e7eb;
+}
 .ib-product-table th.num,
 .ib-product-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .ib-product-table td.total { font-weight: 700; color: #059669; }
+.ib-product-table td, .ib-product-table th { padding: 8px; }
+.ib-product-table td:last-child { min-width: 320px; }
 .ib-total-row td { border-top: 2px solid #e5e7eb; padding-top: 10px; }
+
+/* Action buttons row — clean flex layout */
+.ib-actions {
+  display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
+}
+.ib-actions .icon-btn, .ib-actions .link-btn {
+  font-size: 12px; white-space: nowrap; padding: 4px 6px;
+  border-radius: 6px; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 2px;
+}
+.ib-actions .icon-btn:hover, .ib-actions .link-btn:hover {
+  background: #f1f5f9;
+}
+.ib-actions .badge-group {
+  display: inline-flex; align-items: center; gap: 2px; margin-right: 4px;
+}
 
 /* Clubbed rows */
 .ib-clubbed-header-row { background: #fefbeb; }
 .ib-club-option-row { background: #fffdf5; }
 .ib-club-option-row td:first-child { border-left: 3px solid #f59e0b; }
+
+/* Product main cell */
+.product-main { display: flex; flex-direction: column; gap: 1px; }
+.product-name { font-weight: 600; font-size: 13px; color: #1f2937; }
+.product-id { font-size: 11px; color: #9ca3af; }
 
 /* ─── Product Search Modal ─── */
 .ib-search-modal { max-height: 80vh; display: flex; flex-direction: column; }
@@ -139,6 +168,40 @@
 .ib-sr-meta { font-size: 12px; color: #9ca3af; }
 .ib-sr-price { font-weight: 700; color: #059669; font-size: 14px; white-space: nowrap; }
 
+/* ─── Render Config Modal ─── */
+.render-config-modal { max-width: 480px; }
+.render-config-field { margin-bottom: 16px; }
+.render-config-field label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.render-config-field select, .render-config-field input {
+  width: 100%; padding: 10px 12px; border: 1px solid #d1d5db;
+  border-radius: 8px; font-size: 14px; box-sizing: border-box;
+}
+.render-config-field select:focus, .render-config-field input:focus {
+  outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+
+/* ─── Dependency Modal ─── */
+.dep-modal-search {
+  margin-bottom: 12px;
+}
+.dep-modal-search input {
+  width: 100%; padding: 10px 12px; border: 1px solid #d1d5db;
+  border-radius: 8px; font-size: 14px; box-sizing: border-box;
+}
+.dep-modal-search input:focus { outline: none; border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,.1); }
+.dep-product-list { max-height: 400px; overflow-y: auto; }
+.dep-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 8px; cursor: pointer; transition: background 0.1s;
+  border-bottom: 1px solid #f3f4f6;
+}
+.dep-item:hover { background: #fffbeb; }
+.dep-item.selected { background: #fef3c7; }
+.dep-item .dep-info { flex: 1; }
+.dep-item .dep-name { font-weight: 600; font-size: 13px; color: #1f2937; }
+.dep-item .dep-meta { font-size: 11px; color: #9ca3af; }
+.dep-item .dep-price { font-weight: 700; color: #059669; font-size: 13px; }
+
 /* Empty */
 .ib-empty { padding: 16px; text-align: center; color: #9ca3af; font-size: 14px; }
 .ib-empty-state {
@@ -150,6 +213,7 @@
 @media (max-width: 768px) {
   .ib-stats-bar { grid-template-columns: repeat(2, 1fr); }
   .ib-category-header, .ib-setup-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ib-product-table td:last-child { min-width: 200px; }
 }
 
 .link-btn {
