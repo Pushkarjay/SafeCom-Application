@@ -14,10 +14,17 @@ class InvoiceLineItem {
   final Map<String, String> selectedVariants;
 
   /// If this product slot has clubbed options, the full tree is stored here.
-  /// The customer must drill-down to select a leaf.
   final bool isClubbed;
   final List<ClubbedOption> clubbedOptions;
-  final ClubbedOption? selectedOption; // The leaf node the customer chose
+  final ClubbedOption? selectedOption;
+
+  /// Phase 1.1 — render type fields
+  /// 'option' = classic popup, 'list' = grouped qty block rendered inline
+  final String renderType;
+  /// If true, this item belongs to a LIST group and its qty is validated collectively
+  final bool isListChild;
+  /// The key of the LIST group this item belongs to (null if not a list child)
+  final String? listGroupKey;
 
   const InvoiceLineItem({
     required this.key,
@@ -31,6 +38,9 @@ class InvoiceLineItem {
     this.isClubbed = false,
     this.clubbedOptions = const [],
     this.selectedOption,
+    this.renderType = 'option',
+    this.isListChild = false,
+    this.listGroupKey,
   });
 
   double get amount => unitPrice * quantity;
@@ -48,6 +58,9 @@ class InvoiceLineItem {
     List<ClubbedOption>? clubbedOptions,
     ClubbedOption? selectedOption,
     bool clearSelectedOption = false,
+    String? renderType,
+    bool? isListChild,
+    String? listGroupKey,
   }) {
     return InvoiceLineItem(
       key: key ?? this.key,
@@ -61,8 +74,28 @@ class InvoiceLineItem {
       isClubbed: isClubbed ?? this.isClubbed,
       clubbedOptions: clubbedOptions ?? this.clubbedOptions,
       selectedOption: clearSelectedOption ? null : (selectedOption ?? this.selectedOption),
+      renderType: renderType ?? this.renderType,
+      isListChild: isListChild ?? this.isListChild,
+      listGroupKey: listGroupKey ?? this.listGroupKey,
     );
   }
+}
+
+/// Represents a LIST group header — holds display info and collective validation params.
+class InvoiceListGroup {
+  final String key;
+  final String label;
+  final int minQty;
+  final int maxQty;
+  final bool collectiveValidation;
+
+  const InvoiceListGroup({
+    required this.key,
+    required this.label,
+    required this.minQty,
+    required this.maxQty,
+    this.collectiveValidation = true,
+  });
 }
 
 class InstallationFlowState {
@@ -71,6 +104,8 @@ class InstallationFlowState {
   final String? selectedCategoryId;
   final String? selectedGroupId;
   final List<InvoiceLineItem> items;
+  /// Phase 1.1 — list groups (for LIST renderType blocks)
+  final List<InvoiceListGroup> listGroups;
 
   const InstallationFlowState({
     required this.isLoading,
@@ -78,6 +113,7 @@ class InstallationFlowState {
     this.selectedCategoryId,
     this.selectedGroupId,
     this.items = const [],
+    this.listGroups = const [],
   });
 
   double get totalAmount => items.fold(0, (sum, item) => sum + item.amount);
@@ -99,12 +135,30 @@ class InstallationFlowState {
         );
   }
 
+  /// Returns the sum of quantities of all list children in the given group.
+  int listGroupTotal(String groupKey) {
+    return items
+        .where((i) => i.isListChild && i.listGroupKey == groupKey)
+        .fold(0, (sum, i) => sum + i.quantity);
+  }
+
+  /// Returns true if all LIST groups pass collective validation.
+  bool get allListGroupsValid {
+    for (final group in listGroups) {
+      if (!group.collectiveValidation) continue;
+      final total = listGroupTotal(group.key);
+      if (total < group.minQty || total > group.maxQty) return false;
+    }
+    return true;
+  }
+
   InstallationFlowState copyWith({
     bool? isLoading,
     InstallationPricingContract? config,
     String? selectedCategoryId,
     String? selectedGroupId,
     List<InvoiceLineItem>? items,
+    List<InvoiceListGroup>? listGroups,
   }) {
     return InstallationFlowState(
       isLoading: isLoading ?? this.isLoading,
@@ -112,6 +166,7 @@ class InstallationFlowState {
       selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
       selectedGroupId: selectedGroupId ?? this.selectedGroupId,
       items: items ?? this.items,
+      listGroups: listGroups ?? this.listGroups,
     );
   }
 }
@@ -148,11 +203,43 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     final group = state.selectedGroup;
     if (group == null) return;
 
-    final items = group.mappedProducts.map((mappedProduct) {
+    final items = <InvoiceLineItem>[];
+    final listGroups = <InvoiceListGroup>[];
+
+    for (final mappedProduct in group.mappedProducts) {
+      // ─── LIST render mode: each leaf child gets its own qty stepper
+      if (mappedProduct.renderType == 'list' && mappedProduct.clubbedOptions.isNotEmpty) {
+        final groupKey = mappedProduct.productKey;
+        listGroups.add(InvoiceListGroup(
+          key: groupKey,
+          label: mappedProduct.displayLabel ?? mappedProduct.productKey,
+          minQty: mappedProduct.minQty,
+          maxQty: mappedProduct.maxQty,
+          collectiveValidation: mappedProduct.collectiveValidation,
+        ));
+        // Flatten all leaves of the LIST tree into individual line items
+        final leaves = _collectLeaves(mappedProduct.clubbedOptions);
+        for (final leaf in leaves) {
+          items.add(InvoiceLineItem(
+            key: '${groupKey}__${leaf.optionKey}',
+            name: leaf.label,
+            unitPrice: leaf.price,
+            quantity: 0, // start at 0 for LIST items
+            canEditQuantity: true,
+            minQty: 0,
+            maxQty: leaf.maxQty,
+            renderType: 'list',
+            isListChild: true,
+            listGroupKey: groupKey,
+          ));
+        }
+        continue;
+      }
+
+      // ─── OPTION render mode: clubbed popup OR single product
       if (mappedProduct.isClubbed && mappedProduct.clubbedOptions.isNotEmpty) {
-        // For clubbed products: find the first leaf to use as default
         final firstLeaf = _findFirstLeaf(mappedProduct.clubbedOptions);
-        return InvoiceLineItem(
+        items.add(InvoiceLineItem(
           key: mappedProduct.productKey,
           name: firstLeaf?.productName ?? mappedProduct.product.productName,
           unitPrice: firstLeaf?.price ?? mappedProduct.product.basePrice,
@@ -163,10 +250,13 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
           isClubbed: true,
           clubbedOptions: mappedProduct.clubbedOptions,
           selectedOption: firstLeaf,
-        );
+          renderType: 'option',
+        ));
+        continue;
       }
+
       // Normal non-clubbed product
-      return InvoiceLineItem(
+      items.add(InvoiceLineItem(
         key: mappedProduct.productId,
         name: mappedProduct.product.productName,
         unitPrice: mappedProduct.product.basePrice,
@@ -174,10 +264,24 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
         canEditQuantity: mappedProduct.minQty != mappedProduct.maxQty,
         minQty: mappedProduct.minQty,
         maxQty: mappedProduct.maxQty,
-      );
-    }).toList();
+        renderType: 'option',
+      ));
+    }
 
-    state = state.copyWith(items: items);
+    state = state.copyWith(items: items, listGroups: listGroups);
+  }
+
+  /// Collect all leaf nodes from a ClubbedOption tree (depth-first).
+  List<ClubbedOption> _collectLeaves(List<ClubbedOption> options) {
+    final leaves = <ClubbedOption>[];
+    for (final opt in options) {
+      if (opt.isLeaf) {
+        leaves.add(opt);
+      } else {
+        leaves.addAll(_collectLeaves(opt.children));
+      }
+    }
+    return leaves;
   }
 
   /// Walk the tree and return the first leaf node found (depth-first).
@@ -231,6 +335,35 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
       return item.copyWith(quantity: safeQty);
     }).toList();
 
+    state = state.copyWith(items: updatedItems);
+  }
+
+  /// Phase 1.1 — LIST mode: increment a list child, enforcing collective max.
+  void incrementListChild(String itemKey, String groupKey) {
+    final group = state.listGroups.firstWhere(
+      (g) => g.key == groupKey,
+      orElse: () => InvoiceListGroup(key: groupKey, label: groupKey, minQty: 0, maxQty: 999),
+    );
+    final currentTotal = state.listGroupTotal(groupKey);
+    if (group.collectiveValidation && currentTotal >= group.maxQty) return; // blocked by collective max
+
+    final updatedItems = state.items.map((item) {
+      if (item.key != itemKey) return item;
+      final next = item.quantity + 1;
+      if (next > item.maxQty) return item;
+      return item.copyWith(quantity: next);
+    }).toList();
+    state = state.copyWith(items: updatedItems);
+  }
+
+  /// Phase 1.1 — LIST mode: decrement a list child (minimum 0).
+  void decrementListChild(String itemKey) {
+    final updatedItems = state.items.map((item) {
+      if (item.key != itemKey) return item;
+      final next = item.quantity - 1;
+      if (next < 0) return item;
+      return item.copyWith(quantity: next);
+    }).toList();
     state = state.copyWith(items: updatedItems);
   }
 

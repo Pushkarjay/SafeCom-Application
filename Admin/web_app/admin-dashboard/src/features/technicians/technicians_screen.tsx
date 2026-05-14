@@ -100,7 +100,7 @@ export default function TechniciansScreen() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
           />
-          <button className="add-button" onClick={() => navigate('/technicians/new')}>➕ Add Technician</button>
+          <button className="primary-btn small" onClick={() => navigate('/technicians/new')}>+ Add Technician</button>
         </div>
       </div>
 
@@ -153,6 +153,14 @@ export default function TechniciansScreen() {
                     <button className="action-link" onClick={() => navigate(`/technicians/${tech.id}/edit`)}>
                       Edit
                     </button>
+                    <button className="icon-btn danger" onClick={async () => {
+                      if (!confirm(`Delete technician "${tech.name}"?`)) return
+                      setIsLoading(true)
+                      const token = await useAuthStore.getState().getIdToken()
+                      await fetch(`${getApiBaseUrl()}/technicians/${tech.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+                      setTechnicians(technicians.filter(t => t.id !== tech.id))
+                      setIsLoading(false)
+                    }} title="Delete technician">🗑️</button>
                   </td>
                 </tr>
               ))}

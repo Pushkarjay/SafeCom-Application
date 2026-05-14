@@ -6,6 +6,9 @@ import '../../../core/config/api_config.dart';
 
 class AuthService {
   static const String baseUrl = ApiConfig.baseUrl;
+  // Use the Web Client ID from google-services.json (client_type: 3)
+  static const String googleClientId = '177425757120-8qjlgdfeen9tf3n58r5ctfnilnnvc88u.apps.googleusercontent.com';
+  
   final Dio _dio;
 
   AuthService(this._dio);
@@ -16,7 +19,12 @@ class AuthService {
     try {
       // ignore: avoid_print
       print('01: Starting Google Sign-In...');
-      final googleUser = await GoogleSignIn().signIn();
+      
+      final googleSignIn = GoogleSignIn(
+        clientId: googleClientId,
+      );
+      
+      final googleUser = await googleSignIn.signIn();
       // ignore: avoid_print
       print('02: googleUser: $googleUser');
       if (googleUser == null) {

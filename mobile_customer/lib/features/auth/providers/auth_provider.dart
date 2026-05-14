@@ -56,6 +56,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     FirebaseAuth.instance.authStateChanges().listen((user) {
       // Invalidate SDUI cache on auth state change
       invalidateSduiCache();
+      
+      // If Firebase says we're logged out but our state says we're logged in, sync it
+      if (user == null && state.isAuthenticated) {
+        logout();
+      }
     });
   }
 

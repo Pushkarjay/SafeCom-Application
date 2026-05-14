@@ -56,6 +56,10 @@ class LocationNotifier extends StateNotifier<LocationState> {
           ),
         );
 
+  Future<bool> hasPermission() async {
+    return _service.isPermissionGranted();
+  }
+
   Future<bool> requestAndFetchLocation() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {

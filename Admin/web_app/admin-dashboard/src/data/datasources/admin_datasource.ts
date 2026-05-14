@@ -376,6 +376,34 @@ export class AdminDatasource {
     }
   }
 
+  async serviceRenameNode(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], newName: string): Promise<void> {
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node/rename`, {
+        method: 'POST',
+        body: JSON.stringify({ nodePath, newName })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/rename`, {
+        method: 'POST',
+        body: JSON.stringify({ nodePath, newName })
+      })
+    }
+  }
+
+  async serviceRenameCategory(serviceId: string, categoryKey: string, newName: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/rename`, {
+      method: 'POST',
+      body: JSON.stringify({ newName })
+    })
+  }
+
+  async serviceRenameSetup(serviceId: string, categoryKey: string, setupKey: string, newName: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/rename`, {
+      method: 'POST',
+      body: JSON.stringify({ newName })
+    })
+  }
+
   async serviceUpdateQuantities(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], quantities: { defaultQty?: number; minQty?: number; maxQty?: number }): Promise<void> {
     if (!setupKey || setupKey === '') {
       await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node/quantities`, {

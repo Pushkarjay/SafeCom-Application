@@ -61,6 +61,12 @@ interface TreeNode {
   rigid: boolean;
   // Branch fields
   children: TreeNode[];
+  // Render control fields (Phase 1.1 — renderType system)
+  renderType?: 'option' | 'list';       // default: 'option'
+  selectionType?: 'single' | 'multi';   // for renderType=option
+  collectiveValidation?: boolean;        // for renderType=list: sum(children.qty) must be within [minQty,maxQty]
+  displayLabel?: string;                 // human-readable label override
+  mandatory?: boolean;                   // default: true
 }
 
 function extractTree(
@@ -130,7 +136,13 @@ function extractTree(
         maxQty: Number(obj['max q'] ?? 999),
         available: obj.available !== false,
         rigid: obj.rigid === true,
-        children: []
+        children: [],
+        // Render control — pass-through from Firestore
+        renderType: (obj.renderType as 'option' | 'list' | undefined) ?? 'option',
+        selectionType: (obj.selectionType as 'single' | 'multi' | undefined),
+        collectiveValidation: obj.collectiveValidation === true,
+        displayLabel: obj.displayLabel ? String(obj.displayLabel) : undefined,
+        mandatory: obj.mandatory !== false,
       });
     } else {
       const children = extractTree(obj, productMap);
@@ -148,7 +160,13 @@ function extractTree(
         maxQty: 999,
         available: true,
         rigid: false,
-        children
+        children,
+        // Render control — pass-through from Firestore (branch nodes can also carry renderType)
+        renderType: (obj.renderType as 'option' | 'list' | undefined) ?? 'option',
+        selectionType: (obj.selectionType as 'single' | 'multi' | undefined),
+        collectiveValidation: obj.collectiveValidation === true,
+        displayLabel: obj.displayLabel ? String(obj.displayLabel) : undefined,
+        mandatory: obj.mandatory !== false,
       });
     }
   }
@@ -573,6 +591,53 @@ installationAdminRouter.post(
     } catch (error) {
       console.error('[INSTALL-ADMIN] POST club-existing error:', error);
       res.status(500).json({ success: false, error: 'Failed to club existing products' });
+    }
+  }
+);
+
+// ─── PATCH /…/setup/:setupKey/node/render-config — Set renderType, selectionType, collectiveValidation
+installationAdminRouter.patch(
+  '/category/:categoryKey/setup/:setupKey/node/render-config',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const { categoryKey, setupKey } = req.params;
+      const { nodePath, renderType, selectionType, collectiveValidation, displayLabel, mandatory } = req.body as {
+        nodePath?: string[];
+        renderType?: 'option' | 'list';
+        selectionType?: 'single' | 'multi';
+        collectiveValidation?: boolean;
+        displayLabel?: string;
+        mandatory?: boolean;
+      };
+
+      if (!Array.isArray(nodePath) || nodePath.length === 0) {
+        return res.status(400).json({ success: false, error: 'nodePath array is required' });
+      }
+      if (renderType && renderType !== 'option' && renderType !== 'list') {
+        return res.status(400).json({ success: false, error: 'renderType must be "option" or "list"' });
+      }
+
+      const db = getDb();
+      const updates: Record<string, unknown> = {};
+      const basePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+
+      if (renderType !== undefined)          updates[`${basePath}.renderType`] = renderType;
+      if (selectionType !== undefined)       updates[`${basePath}.selectionType`] = selectionType;
+      if (collectiveValidation !== undefined) updates[`${basePath}.collectiveValidation`] = collectiveValidation;
+      if (displayLabel !== undefined)        updates[`${basePath}.displayLabel`] = displayLabel;
+      if (mandatory !== undefined)           updates[`${basePath}.mandatory`] = mandatory;
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ success: false, error: 'No render config fields provided' });
+      }
+
+      await db.collection(SERVICE_COLLECTION).doc('Installation').update(updates);
+      res.json({ success: true, message: 'Render config updated', path: nodePath, renderType });
+    } catch (error) {
+      console.error('[INSTALL-ADMIN] PATCH render-config error:', error);
+      res.status(500).json({ success: false, error: 'Failed to update render config' });
     }
   }
 );

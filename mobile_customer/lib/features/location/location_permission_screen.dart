@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
+import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 
 class LocationPermissionScreen extends ConsumerWidget {
@@ -68,8 +69,15 @@ class LocationPermissionScreen extends ConsumerWidget {
                           final ok = await ref
                               .read(locationProvider.notifier)
                               .requestAndFetchLocation();
+                          
                           if (context.mounted) {
-                            context.go(AppRoutes.home);
+                            final isAuthenticated = ref.read(authProvider).isAuthenticated;
+                            // If authenticated go home, else go to login
+                            if (isAuthenticated) {
+                              context.go(AppRoutes.home);
+                            } else {
+                              context.go(AppRoutes.login);
+                            }
                           }
                           if (!ok && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(

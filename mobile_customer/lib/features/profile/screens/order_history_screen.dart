@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/profile/providers/booking_provider.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 import 'package:mobile_customer/core/utils/error_handler.dart';
@@ -197,7 +199,7 @@ class _BookingCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          // TODO: Navigate to booking detail screen
+          context.push(AppRoutes.bookingDetail, extra: booking);
         },
         child: Padding(
           padding: const EdgeInsets.all(16),

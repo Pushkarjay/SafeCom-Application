@@ -220,6 +220,12 @@ export default function PaymentsScreen() {
                         ↗️
                       </button>
                     )}
+                    <button className="icon-btn danger" onClick={async () => {
+                      if (!confirm(`Delete payment "${payment.transactionId}"?`)) return
+                      const token = await useAuthStore.getState().getIdToken()
+                      await fetch(`${getApiBaseUrl()}/payments/${payment.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+                      window.location.reload()
+                    }} title="Delete payment">🗑️</button>
                   </td>
                 </tr>
               ))}

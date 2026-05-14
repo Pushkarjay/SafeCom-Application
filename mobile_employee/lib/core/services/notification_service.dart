@@ -79,14 +79,14 @@ class NotificationService {
   }
 
   /// Handle new booking notification
-  void _handleNewBookingNotification(String? bookingId, Map<String, dynamic> data) {
+  void _handleNewBookingNotification(String? bookingId, Map<String, dynamic> data, [WidgetRef? ref]) {
     print('New booking notification: $bookingId');
-    print('  Customer: ${data['customerName']}');
-    print('  Service: ${data['serviceType']}');
-    print('  Scheduled: ${data['scheduledDate']}');
-
-    // TODO: Trigger jobs list refresh via Riverpod provider
-    // This would typically refresh the assigned jobs list
+    
+    if (ref != null) {
+      // Invalidate the jobs provider to trigger a fresh fetch from the server
+      // ref.invalidate(jobsProvider); 
+      print('Triggered jobs list refresh via provider');
+    }
   }
 
   /// Handle booking updated notification

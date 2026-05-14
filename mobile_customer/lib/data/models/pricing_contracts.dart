@@ -175,6 +175,10 @@ class MappedProduct {
   final MasterProduct product;
   final bool isClubbed;
   final List<ClubbedOption> clubbedOptions;
+  // Phase 1.1 — render type (inherited from top-level product slot node)
+  final String renderType;          // 'option' | 'list'
+  final bool collectiveValidation;  // true: validate sum of children collectively
+  final String? displayLabel;
 
   const MappedProduct({
     required this.productId,
@@ -185,6 +189,9 @@ class MappedProduct {
     required this.product,
     this.isClubbed = false,
     this.clubbedOptions = const [],
+    this.renderType = 'option',
+    this.collectiveValidation = false,
+    this.displayLabel,
   });
 
   factory MappedProduct.fromJson(Map<String, dynamic> json) {
@@ -201,6 +208,9 @@ class MappedProduct {
       clubbedOptions: clubbedJson
           .map((e) => ClubbedOption.fromJson(e as Map<String, dynamic>))
           .toList(growable: false),
+      renderType: (json['renderType'] as String?) ?? 'option',
+      collectiveValidation: json['collectiveValidation'] as bool? ?? false,
+      displayLabel: json['displayLabel'] as String?,
     );
   }
 }
@@ -224,6 +234,12 @@ class ClubbedOption {
   final bool rigid;
   final bool isLeaf;
   final List<ClubbedOption> children;
+  // Phase 1.1 — render type system
+  final String renderType;           // 'option' | 'list'
+  final String? selectionType;       // 'single' | 'multi' (for renderType=option)
+  final bool collectiveValidation;   // true: sum(children.qty) validated collectively
+  final String? displayLabel;        // human-readable override for key name
+  final bool mandatory;
 
   const ClubbedOption({
     required this.optionKey,
@@ -238,7 +254,15 @@ class ClubbedOption {
     required this.rigid,
     this.isLeaf = true,
     this.children = const [],
+    this.renderType = 'option',
+    this.selectionType,
+    this.collectiveValidation = false,
+    this.displayLabel,
+    this.mandatory = true,
   });
+
+  /// The label shown to the user — uses displayLabel if set, else optionKey.
+  String get label => displayLabel?.isNotEmpty == true ? displayLabel! : optionKey;
 
   factory ClubbedOption.fromJson(Map<String, dynamic> json) {
     final childrenJson = json['children'] as List<dynamic>? ?? [];
@@ -257,6 +281,11 @@ class ClubbedOption {
       children: childrenJson
           .map((c) => ClubbedOption.fromJson(c as Map<String, dynamic>))
           .toList(growable: false),
+      renderType: (json['renderType'] as String?) ?? 'option',
+      selectionType: json['selectionType'] as String?,
+      collectiveValidation: json['collectiveValidation'] as bool? ?? false,
+      displayLabel: json['displayLabel'] as String?,
+      mandatory: json['mandatory'] as bool? ?? true,
     );
   }
 }

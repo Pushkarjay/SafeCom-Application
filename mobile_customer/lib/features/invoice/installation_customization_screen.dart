@@ -9,6 +9,7 @@ import 'package:mobile_customer/features/location/providers/location_provider.da
 import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
 import 'package:mobile_customer/widgets/common/clubbed_product_selector.dart';
+import 'package:mobile_customer/widgets/common/list_product_group_widget.dart';
 
 class InstallationCustomizationScreen extends ConsumerWidget {
   const InstallationCustomizationScreen({super.key});
@@ -28,13 +29,17 @@ class InstallationCustomizationScreen extends ConsumerWidget {
       );
     }
 
-    // Build variant option sections based on mapped products
+    // ── Build variant option sections (OPTION render mode only) ──
     final variantSections = <Widget>[];
     for (final mappedProduct in group.mappedProducts) {
+      // Skip LIST render mode products — they're rendered as ListProductGroupWidget below
+      if (mappedProduct.renderType == 'list') continue;
+
       final product = mappedProduct.product;
       for (final variant in product.variants) {
         final currentSelection = flow.items
-            .firstWhere((item) => item.key == mappedProduct.productId,
+            .firstWhere(
+                (item) => item.key == mappedProduct.productId,
                 orElse: () => flow.items.first)
             .selectedVariants[variant.variantId];
 
@@ -46,10 +51,13 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               children: variant.options.map((option) {
                 return ChoiceChip(
                   label: Text(option),
-                  selected: currentSelection == option || (currentSelection == null && variant.options.first == option),
+                  selected: currentSelection == option ||
+                      (currentSelection == null &&
+                          variant.options.first == option),
                   onSelected: (selected) {
                     if (selected) {
-                      flowNotifier.updateVariant(mappedProduct.productId, variant.variantId, option);
+                      flowNotifier.updateVariant(
+                          mappedProduct.productId, variant.variantId, option);
                     }
                   },
                 );
@@ -60,6 +68,19 @@ class InstallationCustomizationScreen extends ConsumerWidget {
         variantSections.add(const SizedBox(height: 10));
       }
     }
+
+    // ── LIST groups (Phase 1.1) ──
+    final listGroupWidgets =
+        flow.listGroups.map((lg) => ListProductGroupWidget(group: lg)).toList();
+
+    // ── Separate OPTION and LIST items for the price breakdown table ──
+    final optionItems = flow.items.where((i) => !i.isListChild).toList();
+    final listItems =
+        flow.items.where((i) => i.isListChild && i.quantity > 0).toList();
+    final allItems = [...optionItems, ...listItems];
+
+    // Proceed is gated on all LIST groups passing collective validation
+    final canProceed = flow.allListGroupsValid;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Customize Invoice')),
@@ -83,8 +104,18 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                     ),
               ),
               const SizedBox(height: 14),
+
+              // ── OPTION variant selectors ──
               ...variantSections,
-              const SizedBox(height: 16),
+
+              // ── LIST group blocks ──
+              if (listGroupWidgets.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                ...listGroupWidgets,
+                const SizedBox(height: 8),
+              ],
+
+              // ── Price Breakdown ──
               Text(
                 'Price Breakdown',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -93,20 +124,39 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               InvoiceTable(
-                rows: flow.items
+                rows: allItems
                     .map(
                       (item) => InvoiceTableRowData(
                         product: _buildItemWidget(context, ref, item),
                         unitPrice: item.unitPrice,
-                        quantityWidget: QuantityStepper(
-                          quantity: item.quantity,
-                          onIncrement: item.canEditQuantity
-                              ? () => flowNotifier.incrementQuantity(item.key)
-                              : null,
-                          onDecrement: item.canEditQuantity
-                              ? () => flowNotifier.decrementQuantity(item.key)
-                              : null,
-                        ),
+                        quantityWidget: item.isListChild
+                            // LIST children show a static qty badge (stepper is in the group block above)
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${item.quantity}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF0A84FF),
+                                  ),
+                                ),
+                              )
+                            : QuantityStepper(
+                                quantity: item.quantity,
+                                onIncrement: item.canEditQuantity
+                                    ? () =>
+                                        flowNotifier.incrementQuantity(item.key)
+                                    : null,
+                                onDecrement: item.canEditQuantity
+                                    ? () =>
+                                        flowNotifier.decrementQuantity(item.key)
+                                    : null,
+                              ),
                         amount: item.amount,
                       ),
                     )
@@ -144,21 +194,30 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               ),
             ),
             FilledButton(
-              onPressed: () {
-                ref.read(activeOrderProvider.notifier).setSummary(
-                      ActiveOrderSummary(
-                        serviceName: category.name,
-                        packageLabel: group.name,
-                        estimatedTotal: flow.totalAmount,
-                        items: flow.items.map((i) => ActiveOrderLineItem(
-                          name: _buildItemName(i),
-                          quantity: i.quantity,
-                          unitPrice: i.unitPrice,
-                        )).toList(),
-                      ),
-                    );
-                context.push(AppRoutes.scheduling);
-              },
+              onPressed: canProceed
+                  ? () {
+                      ref.read(activeOrderProvider.notifier).setSummary(
+                            ActiveOrderSummary(
+                              serviceName: category.name,
+                              packageLabel: group.name,
+                              estimatedTotal: flow.totalAmount,
+                              items: allItems
+                                  .map((i) => ActiveOrderLineItem(
+                                        name: _buildItemName(i),
+                                        quantity: i.quantity,
+                                        unitPrice: i.unitPrice,
+                                      ))
+                                  .toList(),
+                            ),
+                          );
+                      context.push(AppRoutes.scheduling);
+                    }
+                  : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: canProceed
+                    ? const Color(0xFF0A84FF)
+                    : const Color(0xFFCBD5E1),
+              ),
               child: const Text('Proceed'),
             ),
           ],
@@ -167,9 +226,8 @@ class InstallationCustomizationScreen extends ConsumerWidget {
     );
   }
 
-  /// For clubbed products, show a tappable widget that opens the drill-down popup.
-  /// For normal products, show the name with variant info.
-  Widget _buildItemWidget(BuildContext context, WidgetRef ref, InvoiceLineItem item) {
+  Widget _buildItemWidget(
+      BuildContext context, WidgetRef ref, InvoiceLineItem item) {
     if (item.isClubbed) {
       return GestureDetector(
         onTap: () async {
@@ -179,7 +237,9 @@ class InstallationCustomizationScreen extends ConsumerWidget {
             options: item.clubbedOptions,
           );
           if (selected != null) {
-            ref.read(installationFlowProvider.notifier).selectClubbedOption(item.key, selected);
+            ref
+                .read(installationFlowProvider.notifier)
+                .selectClubbedOption(item.key, selected);
           }
         },
         child: Row(
@@ -198,7 +258,8 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF93C5FD), width: 0.5),
+                border:
+                    Border.all(color: const Color(0xFF93C5FD), width: 0.5),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,

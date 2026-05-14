@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
-import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
+import 'package:mobile_customer/features/location/providers/location_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -19,15 +19,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _startupTimer = Timer(const Duration(milliseconds: 1200), () {
+    _startupTimer = Timer(const Duration(milliseconds: 1200), () async {
+      if (!mounted) return;
+
+      // Phase 1.4 — Guest First Architecture:
+      // Always go to home. Auth is only required at payment.
+      // If location permission was already granted, fetch it silently in background.
+      final locationNotifier = ref.read(locationProvider.notifier);
+      final hasPermission = await locationNotifier.hasPermission();
+      if (hasPermission && mounted) {
+        // Non-blocking — fire and forget
+        locationNotifier.requestAndFetchLocation();
+      }
+
       if (mounted) {
-        final authState = ref.read(authProvider);
-        // If user is already authenticated, go to home; otherwise to location permission
-        if (authState.isAuthenticated) {
-          context.go(AppRoutes.home);
-        } else {
-          context.go(AppRoutes.locationPermission);
-        }
+        context.go(AppRoutes.home);
       }
     });
   }

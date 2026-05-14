@@ -21,6 +21,8 @@ import 'package:mobile_customer/features/auth/screens/login_screen.dart';
 import 'package:mobile_customer/features/auth/screens/phone_auth_screen.dart';
 import 'package:mobile_customer/features/profile/screens/profile_screen.dart';
 import 'package:mobile_customer/features/profile/screens/order_history_screen.dart';
+import 'package:mobile_customer/features/profile/screens/booking_detail_screen.dart';
+import 'package:mobile_customer/features/profile/providers/booking_provider.dart';
 import 'package:mobile_customer/features/services/accessories_screen.dart';
 import 'package:mobile_customer/features/services/amc_plan_screen.dart';
 import 'package:mobile_customer/features/services/maintenance_package_screen.dart';
@@ -35,29 +37,37 @@ import 'package:mobile_customer/features/splash/splash_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
-  
+
   return GoRouter(
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
-      // Protect routes that require authentication
-      final loggingIn = state.uri.path == AppRoutes.login ||
-          state.uri.path == AppRoutes.phoneAuth ||
-          state.uri.path == AppRoutes.locationPermission ||
-          state.uri.path == AppRoutes.locationPicker ||
-          state.uri.path == AppRoutes.splash;
-      
-      // If not logged in and trying to access a protected route, redirect to login
-      if (!authState.isAuthenticated && !loggingIn) {
+      // Phase 1.4 — Guest First Architecture:
+      // Only these routes require authentication.
+      // Everything else (browse, invoice, scheduling, recommendations) is public.
+      const authRequiredRoutes = {
+        AppRoutes.payment,
+        AppRoutes.confirmation,
+        AppRoutes.profile,
+        AppRoutes.orderHistory,
+        AppRoutes.bookingDetail,
+      };
+
+      final path = state.uri.path;
+      final requiresAuth =
+          authRequiredRoutes.any((r) => path.startsWith(r));
+
+      if (!authState.isAuthenticated && requiresAuth) {
+        // Redirect to login; after login GoRouter will restore the original route
         return AppRoutes.login;
       }
-      
-      // If logged in and trying to access login screen, redirect to home
-      if (authState.isAuthenticated && 
-          (state.uri.path == AppRoutes.login || state.uri.path == AppRoutes.phoneAuth)) {
+
+      // Logged-in users don't need to see the login screen
+      if (authState.isAuthenticated &&
+          (path == AppRoutes.login || path == AppRoutes.phoneAuth)) {
         return AppRoutes.home;
       }
-      
-      return null; // No redirect needed
+
+      return null;
     },
     routes: [
       GoRoute(
@@ -95,6 +105,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.orderHistory,
         builder: (context, state) => const OrderHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.bookingDetail,
+        builder: (context, state) {
+          final booking = state.extra as BookingModel;
+          return BookingDetailScreen(booking: booking);
+        },
       ),
       GoRoute(
         path: AppRoutes.productsDiscovery,

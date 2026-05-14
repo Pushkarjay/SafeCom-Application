@@ -102,7 +102,7 @@ export default function JobsScreen() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
           />
-          <button className="add-button" onClick={() => navigate('/jobs/new')}>➕ Create Job</button>
+          <button className="primary-btn small" onClick={() => navigate('/jobs/new')}>+ Create Job</button>
         </div>
       </div>
 
@@ -155,6 +155,12 @@ export default function JobsScreen() {
                         Edit
                       </button>
                     )}
+                    <button className="icon-btn danger" onClick={async () => {
+                      if (!confirm(`Delete job "${job.id}"?`)) return
+                      const token = await useAuthStore.getState().getIdToken()
+                      await fetch(`${getApiBaseUrl()}/jobs/${job.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+                      window.location.reload()
+                    }} title="Delete job">🗑️</button>
                   </td>
                 </tr>
               ))}

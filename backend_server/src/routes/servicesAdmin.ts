@@ -553,52 +553,47 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/branch', auth
   } catch (error) { res.status(500).json({ success: false, error: 'Failed to create branch' }); }
 });
 
-// POST /config/:serviceId/category/:categoryKey/node (add product node at category level, no setup)
-servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+// POST /config/:serviceId/category/:categoryKey/node/rename (rename node at category level)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node/rename', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
     const categoryKey = String(req.params.categoryKey);
-    const { nodePath, productId, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; productId: string; defaultQty?: number; minQty?: number; maxQty?: number; };
+    const { nodePath, newName } = req.body as { nodePath: string[]; newName: string; };
+    
+    if (!nodePath || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath required' });
+    if (!newName?.trim()) return res.status(400).json({ success: false, error: 'newName required' });
     
     const db = getDb();
-    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
-    const parentName = nodePath[nodePath.length - 1];
-    const optionKey = `${parentName} Option ${Date.now().toString().slice(-4)}`;
-
-    const optionData = {
-      'Deafult q': defaultQty ?? 1,
-      'Price': productRef,
-      [`${optionKey} ID`]: productRef,
-      'available': true,
-      'max q': maxQty ?? 50,
-      'min q': minQty ?? 0,
-      'rigid': false
-    };
-
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
-      [`${categoryKey}.${nodePath.join('.')}.${optionKey}`]: optionData
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    
+    await db.runTransaction(async (transaction) => {
+       const doc = await transaction.get(serviceRef);
+       if (!doc.exists) throw new Error('Service not found');
+       
+       const data = doc.data()!;
+       let target = data[categoryKey];
+       if (!target) throw new Error('Category not found');
+       
+       for (const p of nodePath) {
+          if (target[p] === undefined) throw new Error(`Node path not found`);
+          target = target[p];
+       }
+       
+       const parentPath = nodePath.slice(0, -1);
+       const oldName = nodePath[nodePath.length - 1];
+       
+       const firestoreParentPath = parentPath.length > 0 ? `${categoryKey}.${parentPath.join('.')}` : categoryKey;
+       
+       transaction.update(serviceRef, {
+         [`${firestoreParentPath}.${newName}`]: target,
+         [`${firestoreParentPath}.${oldName}`]: FieldValue.delete()
+       });
     });
-    res.json({ success: true, message: `Node added at category level` });
-  } catch (error: any) {
-    console.error('[SERVICES-ADMIN] POST node (category) error:', error?.message || error);
-    res.status(500).json({ success: false, error: 'Failed to add node' });
-  }
-});
-
-// DELETE /config/:serviceId/category/:categoryKey/node (delete node at category level)
-servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const serviceId = String(req.params.serviceId);
-    const categoryKey = String(req.params.categoryKey);
-    const path = JSON.parse(req.query.path as string) as string[];
-    if (!Array.isArray(path) || path.length === 0) return res.status(400).json({ success: false, error: 'path required' });
     
-    const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${path.join('.')}`]: FieldValue.delete() });
-    res.json({ success: true, message: 'Node deleted' });
+    res.json({ success: true, message: `Node renamed to ${newName}` });
   } catch (error: any) {
-    console.error('[SERVICES-ADMIN] DELETE node (category) error:', error?.message || error);
-    res.status(500).json({ success: false, error: 'Failed to delete node' });
+    console.error('[SERVICES-ADMIN] POST node rename error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to rename node' });
   }
 });
 
@@ -740,9 +735,113 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/setup/:setup
     const db = getDb();
     await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${nodePath.join('.')}`]: value });
     res.json({ success: true, message: 'Field updated' });
-  } catch (error: any) {
-    console.error('[SERVICES-ADMIN] PATCH dynamic-field error:', error?.message || error);
+  } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to update field' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/node/rename
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/node/rename', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { nodePath, newName } = req.body as { nodePath: string[]; newName: string; };
+    
+    if (!nodePath || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath required' });
+    if (!newName?.trim()) return res.status(400).json({ success: false, error: 'newName required' });
+    
+    const db = getDb();
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    
+    await db.runTransaction(async (transaction) => {
+       const doc = await transaction.get(serviceRef);
+       if (!doc.exists) throw new Error('Service not found');
+       
+       const data = doc.data()!;
+       let target = data[categoryKey]?.[setupKey];
+       if (!target) throw new Error('Setup not found');
+       
+       for (const p of nodePath) {
+          if (target[p] === undefined) throw new Error(`Node path not found`);
+          target = target[p];
+       }
+       
+       const parentPath = nodePath.slice(0, -1);
+       const oldName = nodePath[nodePath.length - 1];
+       
+       const firestoreParentPath = parentPath.length > 0 ? `${categoryKey}.${setupKey}.${parentPath.join('.')}` : `${categoryKey}.${setupKey}`;
+       
+       transaction.update(serviceRef, {
+         [`${firestoreParentPath}.${newName}`]: target,
+         [`${firestoreParentPath}.${oldName}`]: FieldValue.delete()
+       });
+    });
+    
+    res.json({ success: true, message: `Node renamed to ${newName}` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST node rename error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to rename node' });
+  }
+});
+
+
+// POST /config/:serviceId/category/:categoryKey/rename
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/rename', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { newName } = req.body as { newName: string; };
+    if (!newName?.trim()) return res.status(400).json({ success: false, error: 'newName required' });
+    
+    const db = getDb();
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    
+    await db.runTransaction(async (transaction) => {
+       const doc = await transaction.get(serviceRef);
+       if (!doc.exists) throw new Error('Service not found');
+       const data = doc.data()!;
+       const categoryData = data[categoryKey];
+       if (!categoryData) throw new Error('Category not found');
+       
+       transaction.update(serviceRef, {
+         [newName]: categoryData,
+         [categoryKey]: FieldValue.delete()
+       });
+    });
+    res.json({ success: true, message: `Category renamed to ${newName}` });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed to rename category' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/rename
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/rename', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { newName } = req.body as { newName: string; };
+    if (!newName?.trim()) return res.status(400).json({ success: false, error: 'newName required' });
+    
+    const db = getDb();
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    
+    await db.runTransaction(async (transaction) => {
+       const doc = await transaction.get(serviceRef);
+       if (!doc.exists) throw new Error('Service not found');
+       const data = doc.data()!;
+       const setupData = data[categoryKey]?.[setupKey];
+       if (!setupData) throw new Error('Setup not found');
+       
+       transaction.update(serviceRef, {
+         [`${categoryKey}.${newName}`]: setupData,
+         [`${categoryKey}.${setupKey}`]: FieldValue.delete()
+       });
+    });
+    res.json({ success: true, message: `Setup renamed to ${newName}` });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed to rename setup' });
   }
 });
 

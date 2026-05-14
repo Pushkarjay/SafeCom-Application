@@ -80,9 +80,10 @@ export default function CustomersScreen() {
       <div className="screen-header">
         <h1>Customers Management</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <input 
-            type="text" 
-            placeholder="Search customers..." 
+          <button className="primary-btn" onClick={() => navigate('/customers/new')}>+ Add Customer</button>
+          <input
+            type="text"
+            placeholder="Search customers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
@@ -137,6 +138,12 @@ export default function CustomersScreen() {
                     <button className="action-link" onClick={() => navigate(`/customers/${customer.id}/edit`)}>
                       Edit
                     </button>
+                    <button className="icon-btn danger" onClick={async () => {
+                      if (!confirm(`Delete customer "${customer.name}"?`)) return
+                      const token = await useAuthStore.getState().getIdToken()
+                      await fetch(`${getApiBaseUrl()}/customers/${customer.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+                      window.location.reload()
+                    }} title="Delete customer">🗑️</button>
                   </td>
                 </tr>
               ))}

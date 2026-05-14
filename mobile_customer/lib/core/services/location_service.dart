@@ -59,6 +59,12 @@ class LocationService {
     return permission;
   }
 
+  Future<bool> isPermissionGranted() async {
+    final permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
   Future<String> fetchCurrentAddress() async {
     final position = await fetchCurrentPosition();
     return reverseGeocode(position.latitude, position.longitude);
