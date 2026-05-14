@@ -30,6 +30,8 @@ interface TreeNode {
   collectiveValidation?: boolean
   displayLabel?: string
   mandatory?: boolean
+  // Dependency engine (Phase 1.5) — auto-map quantity from another product
+  dependsOn?: string | null
 }
 
 interface ProductSlot {
@@ -162,6 +164,14 @@ export default function ServiceTreeBuilderScreen() {
   const [selectedForClubbing, setSelectedForClubbing] = useState<Record<string, Set<string>>>({})
   const [sortField, setSortField] = useState<'productName' | 'price' | 'defaultQty' | 'key'>('key')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  // Dependency engine modal
+  const [showDepModal, setShowDepModal] = useState<{
+    categoryKey: string
+    setupKey: string
+    nodePath: string[]
+    node: TreeNode
+    siblings: TreeNode[]
+  } | null>(null)
 
   const loadData = useCallback(async () => {
     if (!firebaseUser || !serviceId) return
@@ -432,6 +442,31 @@ export default function ServiceTreeBuilderScreen() {
     finally { setSaving(false) }
   }
 
+  const editDependency = (catKey: string, setupKey: string, nodePath: string[], node: TreeNode, siblings: TreeNode[]) => {
+    setShowDepModal({ categoryKey: catKey, setupKey, nodePath, node, siblings })
+  }
+
+  const saveDependency = async (targetKey: string) => {
+    if (!showDepModal || !serviceId) return
+    setSaving(true)
+    try {
+      await adminDatasource.serviceUpdateDependency(serviceId, showDepModal.categoryKey, showDepModal.setupKey, showDepModal.nodePath, targetKey)
+      setShowDepModal(null)
+      await loadData()
+    } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
+    finally { setSaving(false) }
+  }
+
+  const removeDependency = async (catKey: string, setupKey: string, nodePath: string[]) => {
+    if (!serviceId || !confirm('Remove this product\'s dependency mapping?')) return
+    setSaving(true)
+    try {
+      await adminDatasource.serviceRemoveDependency(serviceId, catKey, setupKey, nodePath)
+      await loadData()
+    } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
+    finally { setSaving(false) }
+  }
+
   const editPrice = async (productId: string, current: number) => {
     const v = prompt(`Edit price for ${productId} in master catalog:`, String(current))
     if (v === null) return
@@ -500,8 +535,14 @@ export default function ServiceTreeBuilderScreen() {
                     {node.renderType === 'list' ? 'LIST' : 'OPT'}
                   </span>
                 )}
+                {node.dependsOn && (
+                  <span className="ib-badge" style={{ background: '#fef3c7', color: '#92400e' }} title={`Depends on: ${node.dependsOn}`}>
+                    🔗 {node.dependsOn}
+                  </span>
+                )}
                 <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey: setupKey, nodePath })} title="Add product option">+ Option</button>
                 <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                <button className="link-btn" onClick={() => editDependency(catKey, setupKey, nodePath, node, nodes)} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
                 <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename">✏️</button>
                 <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this option">✕</button>
@@ -880,6 +921,44 @@ export default function ServiceTreeBuilderScreen() {
           onClose={() => setShowClubSearch(null)}
           onSelect={(p) => addClubOption(showClubSearch.categoryKey, showClubSearch.setupKey, showClubSearch.nodePath, p)}
         />
+      )}
+
+      {/* Dependency Modal — map this product's qty to another product's qty */}
+      {showDepModal && (
+        <div className="modal-overlay" onClick={() => setShowDepModal(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🔗 Depends On — "{showDepModal.node.displayLabel || showDepModal.node.productName || showDepModal.node.key}"</h2>
+              <button className="icon-btn" onClick={() => setShowDepModal(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="hint-text">Select a product whose quantity this product should auto-map from:</p>
+              {showDepModal.node.dependsOn && (
+                <div className="dependency-current">
+                  Currently depends on: <strong>{showDepModal.node.dependsOn}</strong>
+                  <button className="secondary-btn" style={{ marginLeft: 8 }} onClick={() => { const m = showDepModal; setShowDepModal(null); removeDependency(m.categoryKey, m.setupKey, m.nodePath) }}>Remove</button>
+                </div>
+              )}
+              <div className="dep-product-list" style={{ maxHeight: 400, overflowY: 'auto' }}>
+                {showDepModal.siblings.filter(s => s.key !== showDepModal.node.key && s.isLeaf && s.productId).map(sib => (
+                  <label key={sib.key} className="dep-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}>
+                    <input type="radio" name="dep-target" value={sib.key}
+                      checked={showDepModal.node.dependsOn === sib.key}
+                      onChange={() => saveDependency(sib.key)} />
+                    <span style={{ fontWeight: 600, flex: 1 }}>{sib.displayLabel || sib.productName || sib.key}</span>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>₹{sib.price}</span>
+                  </label>
+                ))}
+                {showDepModal.siblings.filter(s => s.key !== showDepModal.node.key && s.isLeaf && s.productId).length === 0 && (
+                  <p className="hint-text" style={{ padding: 16 }}>No other products available in this scope to depend on.</p>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="secondary-btn" onClick={() => setShowDepModal(null)}>Done</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

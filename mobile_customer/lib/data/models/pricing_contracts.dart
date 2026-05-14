@@ -179,6 +179,8 @@ class MappedProduct {
   final String renderType;          // 'option' | 'list'
   final bool collectiveValidation;  // true: validate sum of children collectively
   final String? displayLabel;
+  // Phase 1.5 — dependency engine: auto-map quantity from another product
+  final String? dependsOn;          // product key of the parent product this depends on
 
   const MappedProduct({
     required this.productId,
@@ -192,6 +194,7 @@ class MappedProduct {
     this.renderType = 'option',
     this.collectiveValidation = false,
     this.displayLabel,
+    this.dependsOn,
   });
 
   factory MappedProduct.fromJson(Map<String, dynamic> json) {
@@ -211,6 +214,7 @@ class MappedProduct {
       renderType: (json['renderType'] as String?) ?? 'option',
       collectiveValidation: json['collectiveValidation'] as bool? ?? false,
       displayLabel: json['displayLabel'] as String?,
+      dependsOn: json['dependsOn'] as String?,
     );
   }
 }
@@ -240,6 +244,8 @@ class ClubbedOption {
   final bool collectiveValidation;   // true: sum(children.qty) validated collectively
   final String? displayLabel;        // human-readable override for key name
   final bool mandatory;
+  // Phase 1.5 — dependency engine
+  final String? dependsOn;           // product key this leaf's quantity depends on
 
   const ClubbedOption({
     required this.optionKey,
@@ -259,6 +265,7 @@ class ClubbedOption {
     this.collectiveValidation = false,
     this.displayLabel,
     this.mandatory = true,
+    this.dependsOn,
   });
 
   /// The label shown to the user — uses displayLabel if set, else optionKey.
@@ -286,6 +293,7 @@ class ClubbedOption {
       collectiveValidation: json['collectiveValidation'] as bool? ?? false,
       displayLabel: json['displayLabel'] as String?,
       mandatory: json['mandatory'] as bool? ?? true,
+      dependsOn: json['dependsOn'] as String?,
     );
   }
 }

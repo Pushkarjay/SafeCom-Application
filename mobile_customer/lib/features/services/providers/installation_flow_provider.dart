@@ -171,27 +171,26 @@ class InstallationFlowState {
   }
 }
 
+// ─── Notifier ──────────────────────────────────────────────────
 class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
-  final PricingRepository _repository;
+  final PricingRepository _repo;
+  Map<String, List<String>> _dependencyMap = {};
 
-  InstallationFlowNotifier(this._repository)
-      : super(const InstallationFlowState(isLoading: true)) {
+  InstallationFlowNotifier(this._repo) : super(InstallationFlowState(isLoading: true)) {
     _loadConfig();
   }
 
   Future<void> _loadConfig() async {
-    state = state.copyWith(isLoading: true);
     try {
-      final config = await _repository.getInstallationPricing();
-      state = state.copyWith(isLoading: false, config: config);
+      final config = await _repo.getInstallationPricing();
+      state = InstallationFlowState(isLoading: false, config: config);
     } catch (e) {
-      // In a real app, handle error
-      state = state.copyWith(isLoading: false);
+      state = InstallationFlowState(isLoading: false);
     }
   }
 
   void selectCategory(String categoryId) {
-    state = state.copyWith(selectedCategoryId: categoryId, selectedGroupId: null, items: []);
+    state = state.copyWith(selectedCategoryId: categoryId, selectedGroupId: null, items: [], listGroups: []);
   }
 
   void selectGroup(String groupId) {
@@ -207,7 +206,6 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     final listGroups = <InvoiceListGroup>[];
 
     for (final mappedProduct in group.mappedProducts) {
-      // ─── LIST render mode: each leaf child gets its own qty stepper
       if (mappedProduct.renderType == 'list' && mappedProduct.clubbedOptions.isNotEmpty) {
         final groupKey = mappedProduct.productKey;
         listGroups.add(InvoiceListGroup(
@@ -217,15 +215,14 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
           maxQty: mappedProduct.maxQty,
           collectiveValidation: mappedProduct.collectiveValidation,
         ));
-        // Flatten all leaves of the LIST tree into individual line items
         final leaves = _collectLeaves(mappedProduct.clubbedOptions);
         for (final leaf in leaves) {
           items.add(InvoiceLineItem(
             key: '${groupKey}__${leaf.optionKey}',
             name: leaf.label,
             unitPrice: leaf.price,
-            quantity: 0, // start at 0 for LIST items
-            canEditQuantity: true,
+            quantity: 0,
+            canEditQuantity: leaf.dependsOn == null,
             minQty: 0,
             maxQty: leaf.maxQty,
             renderType: 'list',
@@ -236,7 +233,6 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
         continue;
       }
 
-      // ─── OPTION render mode: clubbed popup OR single product
       if (mappedProduct.isClubbed && mappedProduct.clubbedOptions.isNotEmpty) {
         final firstLeaf = _findFirstLeaf(mappedProduct.clubbedOptions);
         items.add(InvoiceLineItem(
@@ -244,7 +240,7 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
           name: firstLeaf?.productName ?? mappedProduct.product.productName,
           unitPrice: firstLeaf?.price ?? mappedProduct.product.basePrice,
           quantity: firstLeaf?.defaultQty ?? mappedProduct.defaultQty,
-          canEditQuantity: (firstLeaf?.minQty ?? mappedProduct.minQty) != (firstLeaf?.maxQty ?? mappedProduct.maxQty),
+          canEditQuantity: mappedProduct.dependsOn == null && (firstLeaf?.minQty ?? mappedProduct.minQty) != (firstLeaf?.maxQty ?? mappedProduct.maxQty),
           minQty: firstLeaf?.minQty ?? mappedProduct.minQty,
           maxQty: firstLeaf?.maxQty ?? mappedProduct.maxQty,
           isClubbed: true,
@@ -255,23 +251,48 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
         continue;
       }
 
-      // Normal non-clubbed product
       items.add(InvoiceLineItem(
         key: mappedProduct.productId,
         name: mappedProduct.product.productName,
         unitPrice: mappedProduct.product.basePrice,
         quantity: mappedProduct.defaultQty,
-        canEditQuantity: mappedProduct.minQty != mappedProduct.maxQty,
+        canEditQuantity: mappedProduct.dependsOn == null && mappedProduct.minQty != mappedProduct.maxQty,
         minQty: mappedProduct.minQty,
         maxQty: mappedProduct.maxQty,
         renderType: 'option',
       ));
     }
 
+    // Build dependency map
+    final depMap = <String, List<String>>{};
+    for (final mp in group.mappedProducts) {
+      if (mp.dependsOn != null) {
+        depMap.putIfAbsent(mp.dependsOn!, () => []).add(mp.productId);
+      }
+    }
+    _dependencyMap = depMap;
+    _applyDependencies(items);
+
     state = state.copyWith(items: items, listGroups: listGroups);
   }
 
-  /// Collect all leaf nodes from a ClubbedOption tree (depth-first).
+  void _applyDependencies([List<InvoiceLineItem>? items]) {
+    final target = items ?? state.items;
+    for (final entry in _dependencyMap.entries) {
+      final sourceKey = entry.key;
+      final depKeys = entry.value;
+      final source = target.where((i) => i.key == sourceKey || i.key == '${sourceKey}').firstOrNull;
+      if (source == null) continue;
+      for (final depKey in depKeys) {
+        final idx = target.indexWhere((i) => i.key == depKey);
+        if (idx >= 0) {
+          target[idx] = target[idx].copyWith(quantity: source.quantity, canEditQuantity: false);
+        }
+      }
+    }
+    if (items == null) state = state.copyWith(items: target);
+  }
+
   List<ClubbedOption> _collectLeaves(List<ClubbedOption> options) {
     final leaves = <ClubbedOption>[];
     for (final opt in options) {
@@ -284,7 +305,6 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     return leaves;
   }
 
-  /// Walk the tree and return the first leaf node found (depth-first).
   ClubbedOption? _findFirstLeaf(List<ClubbedOption> options) {
     for (final opt in options) {
       if (opt.isLeaf) return opt;
@@ -294,7 +314,54 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     return null;
   }
 
-  /// Called when the customer selects a leaf from the nested popup.
+  void incrementQuantity(String itemKey) {
+    _updateQuantity(itemKey, isIncrement: true);
+  }
+
+  void decrementQuantity(String itemKey) {
+    _updateQuantity(itemKey, isIncrement: false);
+  }
+
+  void _updateQuantity(String itemKey, {required bool isIncrement}) {
+    final updatedItems = state.items.map((item) {
+      if (item.key != itemKey || !item.canEditQuantity) return item;
+      final nextQty = isIncrement ? item.quantity + 1 : item.quantity - 1;
+      final safeQty = nextQty.clamp(item.minQty, item.maxQty);
+      return item.copyWith(quantity: safeQty);
+    }).toList();
+    _applyDependencies(updatedItems);
+    state = state.copyWith(items: updatedItems);
+  }
+
+  void incrementListChild(String itemKey, String groupKey) {
+    final group = state.listGroups.firstWhere(
+      (g) => g.key == groupKey,
+      orElse: () => InvoiceListGroup(key: groupKey, label: groupKey, minQty: 0, maxQty: 999),
+    );
+    final currentTotal = state.listGroupTotal(groupKey);
+    if (group.collectiveValidation && currentTotal >= group.maxQty) return;
+
+    final updatedItems = state.items.map((item) {
+      if (item.key != itemKey) return item;
+      final next = item.quantity + 1;
+      if (next > item.maxQty) return item;
+      return item.copyWith(quantity: next);
+    }).toList();
+    _applyDependencies(updatedItems);
+    state = state.copyWith(items: updatedItems);
+  }
+
+  void decrementListChild(String itemKey) {
+    final updatedItems = state.items.map((item) {
+      if (item.key != itemKey) return item;
+      final next = item.quantity - 1;
+      if (next < 0) return item;
+      return item.copyWith(quantity: next);
+    }).toList();
+    _applyDependencies(updatedItems);
+    state = state.copyWith(items: updatedItems);
+  }
+
   void selectClubbedOption(String itemKey, ClubbedOption selectedLeaf) {
     final updatedItems = state.items.map((item) {
       if (item.key == itemKey && item.isClubbed) {
@@ -310,60 +377,7 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
       }
       return item;
     }).toList();
-    state = state.copyWith(items: updatedItems);
-  }
-
-  void incrementQuantity(String itemKey) {
-    _updateQuantity(itemKey, isIncrement: true);
-  }
-
-  void decrementQuantity(String itemKey) {
-    _updateQuantity(itemKey, isIncrement: false);
-  }
-
-  void _updateQuantity(String itemKey, {required bool isIncrement}) {
-    final updatedItems = state.items.map((item) {
-      if (item.key != itemKey || !item.canEditQuantity) {
-        return item;
-      }
-
-      final nextQty = isIncrement ? item.quantity + 1 : item.quantity - 1;
-      final safeQty = nextQty < item.minQty
-          ? item.minQty
-          : (nextQty > item.maxQty ? item.maxQty : nextQty);
-
-      return item.copyWith(quantity: safeQty);
-    }).toList();
-
-    state = state.copyWith(items: updatedItems);
-  }
-
-  /// Phase 1.1 — LIST mode: increment a list child, enforcing collective max.
-  void incrementListChild(String itemKey, String groupKey) {
-    final group = state.listGroups.firstWhere(
-      (g) => g.key == groupKey,
-      orElse: () => InvoiceListGroup(key: groupKey, label: groupKey, minQty: 0, maxQty: 999),
-    );
-    final currentTotal = state.listGroupTotal(groupKey);
-    if (group.collectiveValidation && currentTotal >= group.maxQty) return; // blocked by collective max
-
-    final updatedItems = state.items.map((item) {
-      if (item.key != itemKey) return item;
-      final next = item.quantity + 1;
-      if (next > item.maxQty) return item;
-      return item.copyWith(quantity: next);
-    }).toList();
-    state = state.copyWith(items: updatedItems);
-  }
-
-  /// Phase 1.1 — LIST mode: decrement a list child (minimum 0).
-  void decrementListChild(String itemKey) {
-    final updatedItems = state.items.map((item) {
-      if (item.key != itemKey) return item;
-      final next = item.quantity - 1;
-      if (next < 0) return item;
-      return item.copyWith(quantity: next);
-    }).toList();
+    _applyDependencies(updatedItems);
     state = state.copyWith(items: updatedItems);
   }
 

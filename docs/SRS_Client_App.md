@@ -206,3 +206,8 @@ This screen allows the user to build their order dynamically.
 - **Clubbed Product Selection:** When configuring an installation, certain products (like cameras) may contain deeply nested "clubbed options". The customer app must preserve this hierarchical structure instead of flattening it.
 - **Recursive Drill-down:** Customers must be presented with a recursive drill-down selection popup (`ClubbedProductSelector`) that allows them to navigate through sub-categories (branches) to select specific variant combinations (leaf nodes).
 - **Interactive Invoices:** The dynamic invoice table must support interactive elements, rendering a "Change" button next to clubbed products to trigger the nested selection flow.
+- **Dependency Engine (2026-05-14):** Products can be configured with `dependsOn` relationships, where one product's quantity is auto-mapped from another product's quantity. The customer app must:
+  - Disable manual editing for dependent products (set `canEditQuantity = false`)
+  - Auto-calculate and update dependent quantities when the source product's quantity changes
+  - Support recursive dependency resolution (changes cascade to all dependents)
+- **Admin-Controlled Dependencies:** The admin dashboard's Installation Builder provides a "🔗 Depends On" button on leaf products, allowing admins to link any product's quantity to another product in the same scope (setup/option group). The relationship is stored as an additive `dependsOn` field in Firestore without changing the existing schema.

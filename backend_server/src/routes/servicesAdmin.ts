@@ -698,6 +698,35 @@ servicesAdminRouter.patch(
   }
 );
 
+// ─── PATCH /config/:serviceId/category/:categoryKey/node/dependency
+servicesAdminRouter.patch(
+  '/config/:serviceId/category/:categoryKey/node/dependency',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const serviceId = String(req.params.serviceId);
+      const categoryKey = String(req.params.categoryKey);
+      const { nodePath, dependsOn } = req.body as { nodePath?: string[]; dependsOn?: string | null };
+
+      if (!Array.isArray(nodePath) || nodePath.length === 0) {
+        return res.status(400).json({ success: false, error: 'nodePath array is required' });
+      }
+
+      const db = getDb();
+      const basePath = `${categoryKey}.${nodePath.join('.')}`;
+      const updates: Record<string, unknown> = {};
+      updates[`${basePath}.dependsOn`] = dependsOn || null;
+
+      await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+      res.json({ success: true, message: 'Dependency updated', path: nodePath, dependsOn });
+    } catch (error: unknown) {
+      console.error('[SERVICES-ADMIN] PATCH dependency (category) error:', error instanceof Error ? error.message : error);
+      res.status(500).json({ success: false, error: 'Failed to update dependency' });
+    }
+  }
+);
+
 // POST /config/:serviceId/category/:categoryKey/setup/:setupKey/branch (add empty branch node at setup level)
 servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/branch', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
@@ -986,6 +1015,36 @@ servicesAdminRouter.patch(
     } catch (error: unknown) {
       console.error('[SERVICES-ADMIN] PATCH render-config error:', error instanceof Error ? error.message : error);
       res.status(500).json({ success: false, error: 'Failed to update render config' });
+    }
+  }
+);
+
+// ─── PATCH /config/:serviceId/category/:categoryKey/setup/:setupKey/node/dependency
+servicesAdminRouter.patch(
+  '/config/:serviceId/category/:categoryKey/setup/:setupKey/node/dependency',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const serviceId = String(req.params.serviceId);
+      const categoryKey = String(req.params.categoryKey);
+      const setupKey = String(req.params.setupKey);
+      const { nodePath, dependsOn } = req.body as { nodePath?: string[]; dependsOn?: string | null };
+
+      if (!Array.isArray(nodePath) || nodePath.length === 0) {
+        return res.status(400).json({ success: false, error: 'nodePath array is required' });
+      }
+
+      const db = getDb();
+      const basePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+      const updates: Record<string, unknown> = {};
+      updates[`${basePath}.dependsOn`] = dependsOn || null;
+
+      await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+      res.json({ success: true, message: 'Dependency updated', path: nodePath, dependsOn });
+    } catch (error: unknown) {
+      console.error('[SERVICES-ADMIN] PATCH dependency error:', error instanceof Error ? error.message : error);
+      res.status(500).json({ success: false, error: 'Failed to update dependency' });
     }
   }
 );

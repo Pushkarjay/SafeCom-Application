@@ -446,6 +446,34 @@ export class AdminDatasource {
     }
   }
 
+  async serviceUpdateDependency(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], dependsOn: string): Promise<void> {
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node/dependency`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, dependsOn })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/dependency`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, dependsOn })
+      })
+    }
+  }
+
+  async serviceRemoveDependency(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[]): Promise<void> {
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node/dependency`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, dependsOn: null })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/dependency`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, dependsOn: null })
+      })
+    }
+  }
+
   async serviceAddBranch(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], branchName: string): Promise<void> {
     if (!setupKey || setupKey === '') {
       await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/branch`, {
