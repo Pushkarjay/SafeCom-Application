@@ -16,6 +16,8 @@ import 'package:mobile_customer/features/location/providers/location_provider.da
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
 
+  static const double bookingAmount = 100.0;
+
   @override
   ConsumerState<PaymentScreen> createState() => _PaymentScreenState();
 }
@@ -265,7 +267,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     try {
       final checkoutOrder = await ref.read(razorpayPaymentServiceProvider).createOrder(
-            amountRupees: bookingAmount, // Pay only the minimum booking charge now
+            amountRupees: PaymentScreen.bookingAmount, // Pay only the minimum booking charge now
             serviceName: activeOrder.serviceName,
             packageLabel: activeOrder.packageLabel,
             customerId: customer?.id,
@@ -345,7 +347,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     final activeOrder = ref.watch(activeOrderProvider);
     final booking = ref.watch(bookingFlowProvider);
-    const bookingAmount = 100.0;
+    const bookingAmount = PaymentScreen.bookingAmount;
     
     final taxAmount = (activeOrder?.estimatedTotal ?? 0) * 0.18; // 18% GST estimate
     final grandTotal = (activeOrder?.estimatedTotal ?? 0) + taxAmount;
