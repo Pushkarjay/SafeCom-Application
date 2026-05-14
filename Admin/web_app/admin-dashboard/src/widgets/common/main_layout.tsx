@@ -5,11 +5,11 @@ import './main_layout.css'
 const SERVICE_ITEMS = [
   { key: 'Installation', label: 'Installation', icon: '🔧', builder: true },
   { key: 'Maintenance', label: 'Maintenance', icon: '⚙️', builder: true },
-  { key: 'Repair', label: 'Camera Repair', icon: '📷', builder: true },
-  { key: 'Amc', label: 'AMC Plans', icon: '📋', builder: true },
+  { key: 'Camera_Repair', label: 'Camera Repair', icon: '📷', builder: true },
+  { key: 'AMC', label: 'AMC Plans', icon: '📋', builder: true },
   { key: 'accessories', label: 'Accessories', icon: '🔌', builder: false, path: '/catalog/accessories' },
-  { key: 'upgrade', label: 'Upgrade', icon: '⬆️', builder: false, path: '/catalog/upgrade' },
-  { key: 'recommendations', label: 'Recommendations', icon: '💡', builder: false, path: '/catalog/recommendations' },
+  { key: 'Camera_System_Upgrade', label: 'Upgrade', icon: '⬆️', builder: true },
+  { key: 'Recommendation_Addons', label: 'Recommendations', icon: '💡', builder: true },
   { key: 'services', label: 'Services', icon: '📦', builder: false, path: '/catalog/services' },
 ]
 
