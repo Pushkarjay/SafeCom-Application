@@ -296,61 +296,59 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
     }
 
     const data = maintenanceDoc.data() || {};
-    const maintenanceTypes = Object.keys(data);
-    const itemTemplates: Array<{ key: string; name: string; unitPrice: number; baseQuantity: number; multiplyByVisitCount: boolean; canEditQuantity: boolean }> = [];
-
     const productSnapshot = await db.collection(PRODUCT_COLLECTION).get();
     const productMap = new Map<string, Record<string, unknown>>();
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
-    const added = new Set<string>();
-    for (const type of maintenanceTypes) {
-      const plans = data[type] as Record<string, unknown> | undefined;
-      if (!plans) continue;
-      for (const [planName, planData] of Object.entries(plans)) {
-        if (!MAINTENANCE_PLAN_VISITS[planName]) continue;
-        const planMap = planData as Record<string, unknown>;
-        for (const [productKey, optionMap] of Object.entries(planMap)) {
-          const optionMappings = optionMap as Record<string, unknown>;
-          const option = Object.values(optionMappings)[0] as Record<string, unknown> | undefined;
-          if (!option) continue;
-          const productRef = extractProductRef(option);
-          if (!productRef) continue;
-          const product = productMap.get(productRef.id);
+    const categories = Object.entries(data).map(([categoryKey, setups]) => {
+      const groups = Object.entries(setups as Record<string, unknown>).map(([setupName, productMapEntry]) => {
+        const groupProducts = productMapEntry as Record<string, unknown>;
+        const mappedProducts: Array<{
+          productKey: string;
+          productId: string;
+          defaultQty: number;
+          minQty: number;
+          maxQty: number;
+          product: Record<string, unknown>;
+          isClubbed: boolean;
+          clubbedOptions: ClubbedOption[];
+        }> = [];
+        for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
+          const optionMappings = optionMapEntry as Record<string, unknown>;
+          const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
+          const isClubbed = clubbedOptions.length > 1;
+          const firstOption = clubbedOptions[0];
+          if (!firstOption) continue;
+          const product = productMap.get(firstOption.productId);
           if (!product) continue;
-          const name = (product.name ?? '').toString();
-          if (!name || added.has(name)) continue;
-          if (!MAINTENANCE_EDITABLE_ITEMS.has(name) && !MAINTENANCE_FIXED_ITEMS.has(name)) continue;
-          const baseQuantity = Number(option['Deafult q'] ?? 1);
-          itemTemplates.push({
-            key: toKey(name),
-            name,
-            unitPrice: Number(product.price ?? 0),
-            baseQuantity,
-            multiplyByVisitCount: MAINTENANCE_FIXED_ITEMS.has(name),
-            canEditQuantity: MAINTENANCE_EDITABLE_ITEMS.has(name)
+          mappedProducts.push({
+            productKey,
+            productId: firstOption.productId,
+            defaultQty: firstOption.defaultQty,
+            minQty: firstOption.minQty,
+            maxQty: firstOption.maxQty,
+            product: normalizeProduct(firstOption.productId, product),
+            isClubbed,
+            clubbedOptions
           });
-          added.add(name);
         }
-      }
-    }
-
-    const maintenanceTypeEntries = maintenanceTypes.map((type) => ({
-      id: toKey(type),
-      name: type,
-      icon: MAINTENANCE_ICON_MAP[type] || 'settings_suggest_outlined'
-    }));
-
-    const planVisits = Object.entries(MAINTENANCE_PLAN_VISITS).reduce<Record<string, number>>((acc, [planName, count]) => {
-      acc[planName.replace(/\s+Plan$/i, '')] = count;
-      return acc;
-    }, {});
-
-    res.json({
-      maintenanceTypes: maintenanceTypeEntries,
-      planVisits,
-      itemTemplates
+        return {
+          id: toKey(setupName),
+          name: setupName,
+          description: '',
+          mappedProducts
+        };
+      });
+      return {
+        id: toKey(categoryKey),
+        name: categoryKey,
+        description: '',
+        imageUrl: '',
+        groups
+      };
     });
+
+    res.json({ name: 'Maintenance', categories });
   } catch (error) {
     console.error('Error fetching maintenance config:', error);
     res.status(500).json({ error: 'Failed to fetch maintenance config' });

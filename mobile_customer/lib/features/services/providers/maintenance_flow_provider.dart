@@ -2,228 +2,180 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/data_providers.dart';
 import 'package:mobile_customer/data/repositories/pricing_repository.dart';
-
-class MaintenanceItem {
-  final String key;
-  final String name;
-  final double unitPrice;
-  final int quantity;
-  final bool canEditQuantity;
-
-  const MaintenanceItem({
-    required this.key,
-    required this.name,
-    required this.unitPrice,
-    required this.quantity,
-    this.canEditQuantity = true,
-  });
-
-  double get amount => unitPrice * quantity;
-
-  MaintenanceItem copyWith({
-    String? name,
-    double? unitPrice,
-    int? quantity,
-    bool? canEditQuantity,
-  }) {
-    return MaintenanceItem(
-      key: key,
-      name: name ?? this.name,
-      unitPrice: unitPrice ?? this.unitPrice,
-      quantity: quantity ?? this.quantity,
-      canEditQuantity: canEditQuantity ?? this.canEditQuantity,
-    );
-  }
-}
+import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
 
 class MaintenanceFlowState {
+  final InstallationPricingContract? contract;
+  final InstallationCategory? selectedCategory;
+  final InstallationGroup? selectedGroup;
+  final List<InvoiceLineItem> items;
+  final List<InvoiceListGroup> listGroups;
+  final double totalAmount;
+  final bool allListGroupsValid;
   final bool isLoading;
-  final String selectedType;
-  final String selectedPackage;
-  final List<MaintenanceItem> items;
-  final Map<String, int> planVisits;
-  final List<MaintenanceTypeEntry> maintenanceTypes;
-  final List<MaintenanceContractItem> itemTemplatesRaw;
+  final String? error;
 
-  const MaintenanceFlowState({
-    required this.isLoading,
-    required this.selectedType,
-    required this.selectedPackage,
-    required this.items,
-    required this.planVisits,
-    required this.maintenanceTypes,
-    required this.itemTemplatesRaw,
+  MaintenanceFlowState({
+    this.contract,
+    this.selectedCategory,
+    this.selectedGroup,
+    this.items = const [],
+    this.listGroups = const [],
+    this.totalAmount = 0,
+    this.allListGroupsValid = true,
+    this.isLoading = false,
+    this.error,
   });
 
-  double get totalAmount => items.fold(0, (sum, item) => sum + item.amount);
-
-  List<String> get availablePackages => planVisits.keys.toList();
-
   MaintenanceFlowState copyWith({
+    InstallationPricingContract? contract,
+    InstallationCategory? selectedCategory,
+    InstallationGroup? selectedGroup,
+    List<InvoiceLineItem>? items,
+    List<InvoiceListGroup>? listGroups,
+    double? totalAmount,
+    bool? allListGroupsValid,
     bool? isLoading,
-    String? selectedType,
-    String? selectedPackage,
-    List<MaintenanceItem>? items,
-    Map<String, int>? planVisits,
-    List<MaintenanceTypeEntry>? maintenanceTypes,
-    List<MaintenanceContractItem>? itemTemplatesRaw,
+    String? error,
   }) {
     return MaintenanceFlowState(
-      isLoading: isLoading ?? this.isLoading,
-      selectedType: selectedType ?? this.selectedType,
-      selectedPackage: selectedPackage ?? this.selectedPackage,
+      contract: contract ?? this.contract,
+      selectedCategory: selectedCategory ?? this.selectedCategory,
+      selectedGroup: selectedGroup ?? this.selectedGroup,
       items: items ?? this.items,
-      planVisits: planVisits ?? this.planVisits,
-      maintenanceTypes: maintenanceTypes ?? this.maintenanceTypes,
-      itemTemplatesRaw: itemTemplatesRaw ?? this.itemTemplatesRaw,
+      listGroups: listGroups ?? this.listGroups,
+      totalAmount: totalAmount ?? this.totalAmount,
+      allListGroupsValid: allListGroupsValid ?? this.allListGroupsValid,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
     );
   }
 }
 
 class MaintenanceFlowNotifier extends StateNotifier<MaintenanceFlowState> {
-  final PricingRepository _repository;
-  MaintenancePricingContract _contract = _fallbackContract;
+  final PricingRepository _repo;
 
-  MaintenanceFlowNotifier(this._repository)
-      : super(
-          MaintenanceFlowState(
-            isLoading: true,
-            selectedType: 'Preventive Maintenance',
-            selectedPackage: 'Standard',
-            items: _buildItems(_fallbackContract, 'Standard'),
-            planVisits: _fallbackContract.planVisits,
-            maintenanceTypes: _fallbackTypes,
-            itemTemplatesRaw: _fallbackContract.itemTemplates,
-          ),
-        ) {
-    _loadContract();
+  MaintenanceFlowNotifier(this._repo) : super(MaintenanceFlowState()) {
+    _loadConfig();
   }
 
-  static final _fallbackTypes = [
-    const MaintenanceTypeEntry(id: 'preventive', name: 'Preventive Maintenance', icon: 'settings_suggest_outlined'),
-    const MaintenanceTypeEntry(id: 'fault_diagnosis', name: 'Fault Diagnosis', icon: 'troubleshoot'),
-    const MaintenanceTypeEntry(id: 'performance_tuning', name: 'Performance Tuning', icon: 'tune'),
-  ];
-
-  static const _fallbackContract = MaintenancePricingContract(
-    planVisits: {'Basic': 1, 'Standard': 2, 'Comprehensive': 4},
-    itemTemplates: [
-      MaintenanceContractItem(
-        key: 'inspection',
-        name: 'System Inspection Visit',
-        unitPrice: 799,
-        baseQuantity: 1,
-        multiplyByVisitCount: true,
-        canEditQuantity: false,
-      ),
-      MaintenanceContractItem(
-        key: 'cleaning',
-        name: 'Camera Cleaning & Refocus',
-        unitPrice: 199,
-        baseQuantity: 8,
-        multiplyByVisitCount: false,
-        canEditQuantity: true,
-      ),
-      MaintenanceContractItem(
-        key: 'healthcheck',
-        name: 'NVR/DVR Health Check',
-        unitPrice: 349,
-        baseQuantity: 1,
-        multiplyByVisitCount: false,
-        canEditQuantity: true,
-      ),
-      MaintenanceContractItem(
-        key: 'rewiring',
-        name: 'Minor Rewiring Support',
-        unitPrice: 120,
-        baseQuantity: 10,
-        multiplyByVisitCount: false,
-        canEditQuantity: true,
-      ),
-      MaintenanceContractItem(
-        key: 'labour',
-        name: 'Service Labor Charges',
-        unitPrice: 299,
-        baseQuantity: 1,
-        multiplyByVisitCount: true,
-        canEditQuantity: false,
-      ),
-    ],
-  );
-
-  Future<void> _loadContract() async {
+  Future<void> _loadConfig() async {
+    state = state.copyWith(isLoading: true, error: null);
     try {
-      final contract = await _repository.getMaintenancePricing();
-      _contract = contract;
-
-      // Parse maintenanceTypes from the response if available
-      List<MaintenanceTypeEntry> types = _contract.maintenanceTypes.isNotEmpty
-          ? _contract.maintenanceTypes
-          : _fallbackTypes;
-      
-      state = state.copyWith(
-        isLoading: false,
-        items: _buildItems(_contract, state.selectedPackage),
-        planVisits: _contract.planVisits,
-        maintenanceTypes: types,
-        itemTemplatesRaw: _contract.itemTemplates,
-      );
+      final contract = await _repo.getMaintenanceTreePricing();
+      state = state.copyWith(contract: contract, isLoading: false);
     } catch (e) {
-      // Use fallback on error
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  static List<MaintenanceItem> _buildItems(
-      MaintenancePricingContract contract, String selectedPackage) {
-    final visitCount = contract.planVisits[selectedPackage] ?? 1;
-
-    return contract.itemTemplates
-        .map(
-          (template) => MaintenanceItem(
-            key: template.key,
-            name: template.name,
-            unitPrice: template.unitPrice,
-            quantity: template.multiplyByVisitCount
-                ? template.baseQuantity * visitCount
-                : template.baseQuantity,
-            canEditQuantity: template.canEditQuantity,
-          ),
-        )
-        .toList(growable: false);
+  void selectCategory(InstallationCategory category) {
+    state = state.copyWith(
+      selectedCategory: category,
+      selectedGroup: null,
+      items: [],
+      listGroups: [],
+    );
   }
 
-  void selectType(String value) {
-    state = state.copyWith(selectedType: value);
+  void selectGroup(InstallationGroup group) {
+    state = state.copyWith(selectedGroup: group);
+    _buildItemsFromGroup(group);
   }
 
-  void selectPackage(String value) {
-    state =
-        state.copyWith(selectedPackage: value, items: _buildItems(_contract, value));
+  void _buildItemsFromGroup(InstallationGroup group) {
+    final items = <InvoiceLineItem>[];
+    final listGroups = <InvoiceListGroup>[];
+
+    for (final mp in group.mappedProducts) {
+      if (mp.isClubbed) {
+        _expandClubbed(mp, items);
+      } else if (mp.renderType == 'list') {
+        _expandListProduct(mp, items, listGroups);
+      } else {
+        items.add(InvoiceLineItem(
+          key: mp.productKey,
+          name: mp.product.productName,
+          unitPrice: mp.product.basePrice,
+          quantity: mp.defaultQty,
+          canEditQuantity: true,
+          minQty: mp.minQty,
+          maxQty: mp.maxQty,
+          renderType: mp.renderType,
+        ));
+      }
+    }
+
+    state = state.copyWith(
+      items: items,
+      listGroups: listGroups,
+      totalAmount: items.fold<double>(0.0, (s, i) => s + i.amount),
+    );
+  }
+
+  void _expandClubbed(MappedProduct mp, List<InvoiceLineItem> items) {
+    for (final opt in mp.clubbedOptions) {
+      if (opt.isLeaf) {
+        items.add(InvoiceLineItem(
+          key: opt.optionKey,
+          name: opt.productName,
+          unitPrice: opt.price,
+          quantity: opt.defaultQty,
+          canEditQuantity: !opt.rigid,
+          minQty: opt.minQty,
+          maxQty: opt.maxQty,
+          renderType: opt.renderType,
+        ));
+      }
+    }
+  }
+
+  void _expandListProduct(
+      MappedProduct mp, List<InvoiceLineItem> items, List<InvoiceListGroup> listGroups) {
+    for (final opt in mp.clubbedOptions) {
+      if (opt.isLeaf && !opt.rigid) {
+        items.add(InvoiceLineItem(
+          key: opt.optionKey,
+          name: opt.productName,
+          unitPrice: opt.price,
+          quantity: opt.defaultQty,
+          canEditQuantity: true,
+          minQty: opt.minQty,
+          maxQty: opt.maxQty,
+          renderType: 'list',
+          isListChild: true,
+        ));
+      }
+    }
   }
 
   void incrementQuantity(String key) {
-    _updateQuantity(key, isIncrement: true);
+    state = state.copyWith(
+      items: state.items.map((i) {
+        if (i.key == key && i.quantity < i.maxQty) {
+          return i.copyWith(quantity: i.quantity + 1);
+        }
+        return i;
+      }).toList(),
+      totalAmount: state.items.fold<double>(0.0, (prev, item) => prev + item.amount),
+    );
   }
 
   void decrementQuantity(String key) {
-    _updateQuantity(key, isIncrement: false);
-  }
-
-  void _updateQuantity(String key, {required bool isIncrement}) {
-    final updated = state.items.map((item) {
-      if (item.key != key || !item.canEditQuantity) {
-        return item;
-      }
-      final next = isIncrement ? item.quantity + 1 : item.quantity - 1;
-      return item.copyWith(quantity: next < 1 ? 1 : next);
-    }).toList();
-
-    state = state.copyWith(items: updated);
+    state = state.copyWith(
+      items: state.items.map((i) {
+        if (i.key == key && i.quantity > i.minQty) {
+          return i.copyWith(quantity: i.quantity - 1);
+        }
+        return i;
+      }).toList(),
+      totalAmount: state.items.fold<double>(0.0, (prev, item) => prev + item.amount),
+    );
   }
 }
 
 final maintenanceFlowProvider =
-    StateNotifierProvider<MaintenanceFlowNotifier, MaintenanceFlowState>(
-  (ref) => MaintenanceFlowNotifier(ref.watch(pricingRepositoryProvider)),
-);
+    StateNotifierProvider<MaintenanceFlowNotifier, MaintenanceFlowState>((ref) {
+  final repo = ref.watch(pricingRepositoryProvider);
+  return MaintenanceFlowNotifier(repo);
+});
