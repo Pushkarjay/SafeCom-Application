@@ -495,6 +495,26 @@ export default function ServiceTreeBuilderScreen() {
     return nodes.reduce((sum, n) => n.isLeaf ? sum + 1 : sum + countLeaves(n.children), 0)
   }
 
+  /// Collect all leaf-level product nodes from a setup's product slots
+  function collectAllProducts(products: ProductSlot[]): TreeNode[] {
+    const result: TreeNode[] = []
+    for (const slot of products) {
+      if (!slot.isClubbed && slot.options[0]) {
+        result.push(slot.options[0])
+      } else {
+        collectLeaves(slot.options, result)
+      }
+    }
+    return result
+  }
+
+  function collectLeaves(nodes: TreeNode[], out: TreeNode[]) {
+    for (const n of nodes) {
+      if (n.isLeaf) out.push(n)
+      else collectLeaves(n.children, out)
+    }
+  }
+
   /** Render tree nodes recursively as table rows with indentation */
   function renderTreeNodes(
     nodes: TreeNode[],
@@ -800,6 +820,7 @@ export default function ServiceTreeBuilderScreen() {
                                                 if (type === 'map') val = {}
                                                 adminDatasource.serviceUpdateDynamicField(serviceId!, cat.key, setup.key, [...[slot.key], fieldName], val).then(() => loadData())
                                               }} title="Add dynamic field">+ Field</button>
+                                              <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], opt, collectAllProducts(setup.products))} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
                                               <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
                                               <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
                                             </td>
@@ -844,6 +865,7 @@ export default function ServiceTreeBuilderScreen() {
                                                   if (type === 'map') val = {}
                                                   adminDatasource.serviceUpdateDynamicField(serviceId!, cat.key, setup.key, [...[slot.key], fieldName], val).then(() => loadData())
                                                 }} title="Add dynamic field">+ Field</button>
+                                                <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], slot.options[0], collectAllProducts(setup.products))} title="Map dependency" style={{ color: '#d97706' }}>🔗 Depends On</button>
                                                 <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
                                                 <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
                                               </td>
