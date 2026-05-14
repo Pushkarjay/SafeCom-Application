@@ -697,7 +697,16 @@ export default function ServiceTreeBuilderScreen() {
           </div>
 
           {/* Tree */}
-          <div className="ib-tree">
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+        <button className="secondary-btn small" onClick={() => {
+          const all = new Set(categories.map(c => c.key))
+          setExpandedCats(all)
+          const s = new Set<string>(); categories.forEach(c => c.setups.forEach(su => s.add(`${c.key}::${su.key}`))); setExpandedSetups(s)
+        }} title="Expand all categories and setups">▼ Expand All</button>
+        <button className="secondary-btn small" onClick={() => { setExpandedCats(new Set()); setExpandedSetups(new Set()); setExpandedClubs(new Set()) }} title="Collapse all categories and setups">▲ Collapse All</button>
+        <span style={{ color: '#9ca3af', fontSize: 12 }}>— click ▶ on any row to expand below</span>
+      </div>
+      <div className="ib-tree">
             {categories.length === 0 ? (
               <div className="ib-empty-state"><p>No categories found for {serviceId}. Click "+ Add Category" to create one.</p></div>
             ) : categories.map((cat) => {

@@ -116,18 +116,21 @@
 
 /* Action buttons row — clean flex layout */
 .ib-actions {
-  display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
+  display: inline-flex; align-items: center; gap: 4px; flex-wrap: nowrap;
+  white-space: nowrap; width: 100%;
 }
 .ib-actions .icon-btn, .ib-actions .link-btn {
   font-size: 12px; white-space: nowrap; padding: 4px 6px;
   border-radius: 6px; transition: all 0.15s;
   display: inline-flex; align-items: center; gap: 2px;
+  flex-shrink: 0; margin-right: 0;
 }
 .ib-actions .icon-btn:hover, .ib-actions .link-btn:hover {
   background: #f1f5f9;
 }
 .ib-actions .badge-group {
   display: inline-flex; align-items: center; gap: 2px; margin-right: 4px;
+  flex-shrink: 0;
 }
 
 /* Clubbed rows */
