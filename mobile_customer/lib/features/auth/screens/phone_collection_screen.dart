@@ -151,7 +151,7 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
                 const SizedBox(height: 16),
                 Center(
                   child: TextButton(
-                    onPressed: _isLoading ? null : () => context.pop(),
+                    onPressed: _isLoading ? null : () => context.go(AppRoutes.profile),
                     child: const Text(
                       'Skip for now',
                       style: TextStyle(color: Colors.white38),
