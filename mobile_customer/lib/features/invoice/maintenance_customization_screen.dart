@@ -91,7 +91,7 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
               onPressed: () {
                 ref.read(activeOrderProvider.notifier).setSummary(
                       ActiveOrderSummary(
-                        serviceName: state.selectedType,
+                        serviceName: state.selectedType ?? 'Maintenance',
                         packageLabel: '${state.selectedPackage} Plan',
                         estimatedTotal: state.totalAmount,
                         items: state.items.map((i) => ActiveOrderLineItem(

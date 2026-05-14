@@ -83,6 +83,11 @@ interface ClubbedOption {
   rigid: boolean;
   isLeaf: boolean;
   children: ClubbedOption[];
+  renderType?: string;           // 'option' | 'list'
+  selectionType?: string;        // 'single' | 'multi'
+  collectiveValidation?: boolean; // for LIST groups
+  displayLabel?: string;         // human-readable label override
+  mandatory?: boolean;           // whether customer must select
 }
 
 /**
@@ -139,7 +144,12 @@ function extractClubbedOptions(
         available: opt.available !== false,
         rigid: opt.rigid === true,
         isLeaf: true,
-        children: []
+        children: [],
+        renderType: (opt['renderType'] as string) || undefined,
+        selectionType: (opt['selectionType'] as string) || undefined,
+        collectiveValidation: Boolean(opt['collectiveValidation']),
+        displayLabel: (opt['displayLabel'] as string) || undefined,
+        mandatory: opt['mandatory'] !== false,
       });
     } else {
       // BRANCH: children are maps — recurse
@@ -156,7 +166,12 @@ function extractClubbedOptions(
         available: true,
         rigid: false,
         isLeaf: false,
-        children
+        children,
+        renderType: (opt['renderType'] as string) || undefined,
+        selectionType: (opt['selectionType'] as string) || undefined,
+        collectiveValidation: Boolean(opt['collectiveValidation']),
+        displayLabel: (opt['displayLabel'] as string) || undefined,
+        mandatory: opt['mandatory'] !== false,
       });
     }
   }
@@ -220,6 +235,18 @@ const getServiceConfig = async (serviceId: string, req: Request, res: Response) 
   }
 };
 
+/**
+ * Find the first leaf node in a ClubbedOption tree (depth-first).
+ */
+function findFirstLeafInTree(options: ClubbedOption[]): ClubbedOption | undefined {
+  for (const opt of options) {
+    if (opt.isLeaf) return opt;
+    const found = findFirstLeafInTree(opt.children);
+    if (found) return found;
+  }
+  return undefined;
+}
+
 export const getInstallationPricing = async (req: Request, res: Response) => {
   try {
     const db = getDb();
@@ -245,24 +272,32 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
           product: Record<string, unknown>;
           isClubbed: boolean;
           clubbedOptions: ClubbedOption[];
+          renderType?: string;
+          collectiveValidation?: boolean;
+          displayLabel?: string;
+          mandatory?: boolean;
         }> = [];
         for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
           const optionMappings = optionMapEntry as Record<string, unknown>;
           const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
           const isClubbed = clubbedOptions.length > 1;
-          const firstOption = clubbedOptions[0];
-          if (!firstOption) continue;
-          const product = productMap.get(firstOption.productId);
+          const firstLeaf = findFirstLeafInTree(clubbedOptions);
+          if (!firstLeaf) continue;
+          const product = productMap.get(firstLeaf.productId);
           if (!product) continue;
           mappedProducts.push({
             productKey,
-            productId: firstOption.productId,
-            defaultQty: firstOption.defaultQty,
-            minQty: firstOption.minQty,
-            maxQty: firstOption.maxQty,
-            product: normalizeProduct(firstOption.productId, product),
+            productId: firstLeaf.productId,
+            defaultQty: firstLeaf.defaultQty,
+            minQty: firstLeaf.minQty,
+            maxQty: firstLeaf.maxQty,
+            product: normalizeProduct(firstLeaf.productId, product),
             isClubbed,
-            clubbedOptions
+            clubbedOptions,
+            renderType: firstLeaf.renderType || 'option',
+            collectiveValidation: firstLeaf.collectiveValidation ?? false,
+            displayLabel: firstLeaf.displayLabel,
+            mandatory: firstLeaf.mandatory !== false,
           });
         }
         return {
@@ -312,24 +347,32 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
           product: Record<string, unknown>;
           isClubbed: boolean;
           clubbedOptions: ClubbedOption[];
+          renderType?: string;
+          collectiveValidation?: boolean;
+          displayLabel?: string;
+          mandatory?: boolean;
         }> = [];
         for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
           const optionMappings = optionMapEntry as Record<string, unknown>;
           const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
           const isClubbed = clubbedOptions.length > 1;
-          const firstOption = clubbedOptions[0];
-          if (!firstOption) continue;
-          const product = productMap.get(firstOption.productId);
+          const firstLeaf = findFirstLeafInTree(clubbedOptions);
+          if (!firstLeaf) continue;
+          const product = productMap.get(firstLeaf.productId);
           if (!product) continue;
           mappedProducts.push({
             productKey,
-            productId: firstOption.productId,
-            defaultQty: firstOption.defaultQty,
-            minQty: firstOption.minQty,
-            maxQty: firstOption.maxQty,
-            product: normalizeProduct(firstOption.productId, product),
+            productId: firstLeaf.productId,
+            defaultQty: firstLeaf.defaultQty,
+            minQty: firstLeaf.minQty,
+            maxQty: firstLeaf.maxQty,
+            product: normalizeProduct(firstLeaf.productId, product),
             isClubbed,
-            clubbedOptions
+            clubbedOptions,
+            renderType: firstLeaf.renderType || 'option',
+            collectiveValidation: firstLeaf.collectiveValidation ?? false,
+            displayLabel: firstLeaf.displayLabel,
+            mandatory: firstLeaf.mandatory !== false,
           });
         }
         return {
