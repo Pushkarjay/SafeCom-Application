@@ -22,7 +22,13 @@ class AmcPlanScreen extends ConsumerWidget {
         title: const Text('AMC Plans'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.home);
+            }
+          },
         ),
       ),
       body: amcAsync.when(

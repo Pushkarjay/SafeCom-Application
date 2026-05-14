@@ -8,8 +8,8 @@ const customerCreateSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   phone: z.string().min(4),
-  address: z.string().optional().default(''),
-  status: z.enum(['active', 'inactive']).optional(),
+  address: z.string().nullable().optional().default(''),
+  status: z.enum(['active', 'inactive']).nullable().optional(),
   totalOrders: z.number().int().nonnegative().optional(),
   totalSpent: z.number().nonnegative().optional()
 })
