@@ -159,6 +159,18 @@ export interface CanonicalBooking {
   
   /** Any special requests or notes */
   notes?: string
+
+  /** Total estimated amount for the booking */
+  totalAmount?: number
+
+  /** Amount actually paid by the customer */
+  amountPaid?: number
+
+  /** Payment gateway payment ID */
+  paymentId?: string
+
+  /** Payment gateway order ID */
+  orderId?: string
 }
 
 export type BookingStatus = 
@@ -264,6 +276,10 @@ export interface CreateBookingRequest {
   scheduledDate: string
   scheduledTimeSlot: string
   lineItems: InvoiceLineItem[]
+  totalAmount?: number
+  amountPaid?: number
+  paymentId?: string
+  orderId?: string
   notes?: string
 }
 
