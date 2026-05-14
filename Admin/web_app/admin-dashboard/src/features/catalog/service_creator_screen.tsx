@@ -70,21 +70,7 @@ export default function ServiceCreatorScreen() {
     setIsSaving(true)
     setError(null)
     try {
-      if (editingService) {
-        await adminDatasource.createService(normalizedId, form.title, form.icon)
-      } else {
-        await adminDatasource.createService(normalizedId, form.title, form.icon)
-      }
-    setIsSaving(true)
-    setError(null)
-    try {
-      if (editingService) {
-        // For now, we only update via the tree builder, 
-        // but we can add meta-update here if needed.
-        await adminDatasource.createService(form.id, form.title, form.icon)
-      } else {
-        await adminDatasource.createService(form.id, form.title, form.icon)
-      }
+      await adminDatasource.createService(normalizedId, form.title, form.icon)
       await loadData()
       setIsModalOpen(false)
     } catch (err) {
