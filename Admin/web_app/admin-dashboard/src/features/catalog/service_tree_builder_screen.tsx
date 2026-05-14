@@ -532,8 +532,9 @@ export default function ServiceTreeBuilderScreen() {
 
       if (node.isLeaf) {
         // ── LEAF ROW: shows product details ──
+        const depthClass = depth <= 4 ? `depth-${depth}` : 'depth-4'
         rows.push(
-          <tr key={nodeId} className="ib-product-row ib-club-option-row">
+          <tr key={nodeId} className={`ib-product-row ib-club-option-row ${depthClass}`}>
             <td></td>
             <td>
               <div className="product-main" style={{ paddingLeft: indent }}>
@@ -613,8 +614,9 @@ export default function ServiceTreeBuilderScreen() {
       } else {
         // ── BRANCH ROW: expandable, shows children count ──
         const branchOpen = expandedClubs.has(nodeId)
+        const depthClass = depth <= 4 ? `depth-${depth}` : 'depth-4'
         rows.push(
-          <tr key={nodeId} className="ib-product-row ib-club-option-row" style={{ background: `rgba(10,132,255,${0.02 * depth})` }}>
+          <tr key={nodeId} className={`ib-product-row ib-club-option-row ${depthClass}`} style={{ background: `rgba(10,132,255,${0.02 * depth})` }}>
             <td></td>
             <td>
               <button className="ib-club-toggle" onClick={() => toggle(expandedClubs, nodeId, setExpandedClubs)} type="button">
@@ -699,11 +701,19 @@ export default function ServiceTreeBuilderScreen() {
           {/* Tree */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
         <button className="secondary-btn small" onClick={() => {
-          const all = new Set(categories.map(c => c.key))
-          setExpandedCats(all)
-          const s = new Set<string>(); categories.forEach(c => c.setups.forEach(su => s.add(`${c.key}::${su.key}`))); setExpandedSetups(s)
-        }} title="Expand all categories and setups">▼ Expand All</button>
-        <button className="secondary-btn small" onClick={() => { setExpandedCats(new Set()); setExpandedSetups(new Set()); setExpandedClubs(new Set()) }} title="Collapse all categories and setups">▲ Collapse All</button>
+          const allCats = new Set(categories.map(c => c.key))
+          setExpandedCats(allCats)
+          const allSetups = new Set<string>()
+          const allClubs = new Set<string>()
+          categories.forEach(c => c.setups.forEach(su => {
+            const sKey = `${c.key}::${su.key}`
+            allSetups.add(sKey)
+            su.products.forEach(p => allClubs.add(`${sKey}::${p.key}`))
+          }))
+          setExpandedSetups(allSetups)
+          setExpandedClubs(allClubs)
+        }} title="Expand all categories, setups, groups, and nested options">▼ Expand All</button>
+        <button className="secondary-btn small" onClick={() => { setExpandedCats(new Set()); setExpandedSetups(new Set()); setExpandedClubs(new Set()) }} title="Collapse everything">▲ Collapse All</button>
         <span style={{ color: '#9ca3af', fontSize: 12 }}>— click ▶ on any row to expand below</span>
       </div>
       <div className="ib-tree">
@@ -756,6 +766,15 @@ export default function ServiceTreeBuilderScreen() {
                             {setupOpen && (
                               <div className="ib-setup-body">
                                 <div className="ib-section-actions">
+                                  <button className="secondary-btn small" onClick={() => {
+                                    const allClubKeys = new Set(expandedClubs)
+                                    setup.products.forEach(p => allClubKeys.add(`${cat.key}::${setup.key}::${p.key}`))
+                                    setExpandedClubs(allClubKeys)
+                                  }} title="Expand all groups and nested options">▼ Expand Below</button>
+                                  <button className="secondary-btn small" onClick={() => {
+                                    const filtered = new Set(Array.from(expandedClubs).filter(k => !k.startsWith(`${cat.key}::${setup.key}::`)))
+                                    setExpandedClubs(filtered)
+                                  }} title="Collapse all nested options">▲ Collapse Below</button>
                                   {(selectedForClubbing[sKey]?.size || 0) > 0 && (
                                     <button className="secondary-btn danger" onClick={() => bulkDeleteProducts(cat.key, setup.key)}>🗑️ Delete Selected</button>
                                   )}

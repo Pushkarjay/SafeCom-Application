@@ -133,10 +133,35 @@
   flex-shrink: 0;
 }
 
-/* Clubbed rows */
+/* Clubbed rows — depth-based visual guide */
 .ib-clubbed-header-row { background: #fefbeb; }
 .ib-club-option-row { background: #fffdf5; }
 .ib-club-option-row td:first-child { border-left: 3px solid #f59e0b; }
+
+/* Depth level 0 — outermost clubbed header */
+tr.depth-0 { background: #fff8e1; }
+tr.depth-0 > td:first-child { border-left: 3px solid #f59e0b; }
+
+/* Depth level 1 — first nested level */
+tr.depth-1 { background: #fffdf5; }
+tr.depth-1 > td:first-child { border-left: 3px solid #fb923c; }
+
+/* Depth level 2 — second nested level */
+tr.depth-2 { background: #fffbeb; }
+tr.depth-2 > td:first-child { border-left: 3px solid #fbbf24; }
+
+/* Depth level 3+ — deeper nesting */
+tr.depth-3 { background: #fefce8; }
+tr.depth-3 > td:first-child { border-left: 3px solid #facc15; }
+tr.depth-4, tr.depth-5 { background: #f5f5f4; }
+tr.depth-4 > td:first-child, tr.depth-5 > td:first-child { border-left: 3px solid #eab308; }
+
+/* Tree indentation guide lines */
+.product-main { position: relative; }
+.tree-guide {
+  display: inline-block; width: 16px; height: 100%;
+  border-right: 1px dashed #d1d5db; margin-right: 6px;
+}
 
 /* Product main cell */
 .product-main { display: flex; flex-direction: column; gap: 1px; }
