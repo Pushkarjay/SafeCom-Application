@@ -24,6 +24,12 @@ interface TreeNode {
   rigid: boolean
   // Branch fields — recursive children
   children: TreeNode[]
+  // Render control (Phase 1.2)
+  renderType?: 'option' | 'list'
+  selectionType?: 'single' | 'multi'
+  collectiveValidation?: boolean
+  displayLabel?: string
+  mandatory?: boolean
 }
 
 interface ProductSlot {
@@ -381,6 +387,51 @@ export default function ServiceTreeBuilderScreen() {
     finally { setSaving(false) }
   }
 
+  const editRenderConfig = async (catKey: string, setupKey: string, nodePath: string[], node: TreeNode) => {
+    if (!serviceId) return
+    const currentRenderType = node.renderType || 'option'
+    const currentSelectionType = node.selectionType || 'single'
+    const currentCollective = node.collectiveValidation || false
+    const currentMandatory = node.mandatory !== false
+
+    const renderTypeMap: Record<string, 'option' | 'list'> = { option: 'option', list: 'list' }
+    const selectionTypeMap: Record<string, 'single' | 'multi'> = { single: 'single', multi: 'multi' }
+
+    const renderOpts = Object.keys(renderTypeMap).join(', ')
+    const selOpts = Object.keys(selectionTypeMap).join(', ')
+
+    const choice = prompt(`Configure "${node.key}":\n1 = Render Type (current: ${currentRenderType}, options: ${renderOpts})\n2 = Selection Type (current: ${currentSelectionType}, options: ${selOpts})\n3 = Collective Validation (current: ${currentCollective})\n4 = Mandatory (current: ${currentMandatory})\n\nEnter 1, 2, 3, 4 or cancel:`)
+    if (choice === null) return
+
+    const updates: { renderType?: 'option' | 'list'; selectionType?: 'single' | 'multi'; collectiveValidation?: boolean; mandatory?: boolean } = {}
+    if (choice.includes('1')) {
+      const rt = prompt(`Render Type (${renderOpts}):`, currentRenderType)
+      if (rt && (rt === 'option' || rt === 'list')) updates.renderType = rt
+    }
+    if (choice.includes('2')) {
+      const st = prompt(`Selection Type (${selOpts}):`, currentSelectionType)
+      if (st && (st === 'single' || st === 'multi')) updates.selectionType = st
+    }
+    if (choice.includes('3')) {
+      const cv = prompt(`Collective Validation (true/false):`, String(currentCollective))
+      if (cv === 'true') updates.collectiveValidation = true
+      else if (cv === 'false') updates.collectiveValidation = false
+    }
+    if (choice.includes('4')) {
+      const m = prompt(`Mandatory (true/false):`, String(currentMandatory))
+      if (m === 'true') updates.mandatory = true
+      else if (m === 'false') updates.mandatory = false
+    }
+
+    if (Object.keys(updates).length === 0) return
+    setSaving(true)
+    try {
+      await adminDatasource.serviceUpdateRenderConfig(serviceId, catKey, setupKey, nodePath, updates)
+      await loadData()
+    } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
+    finally { setSaving(false) }
+  }
+
   const editPrice = async (productId: string, current: number) => {
     const v = prompt(`Edit price for ${productId} in master catalog:`, String(current))
     if (v === null) return
@@ -444,8 +495,14 @@ export default function ServiceTreeBuilderScreen() {
             <td className="num">{fmt(node.price * node.defaultQty)}</td>
             <td>
               <div className="ib-actions">
-                <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add product option">+ Option</button>
+                {node.renderType && (
+                  <span className={`ib-badge ${node.renderType === 'list' ? 'primary' : 'secondary'}`} title={`Render: ${node.renderType}${node.renderType === 'list' && node.collectiveValidation ? ', collective' : ''}`}>
+                    {node.renderType === 'list' ? 'LIST' : 'OPT'}
+                  </span>
+                )}
+                <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey: setupKey, nodePath })} title="Add product option">+ Option</button>
                 <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename">✏️</button>
                 <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this option">✕</button>
               </div>
@@ -519,6 +576,7 @@ export default function ServiceTreeBuilderScreen() {
                 <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add product option">+ Option</button>
                 <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename branch">✏️</button>
+                <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
                 <button className="link-btn" onClick={() => {
                    const fieldName = prompt('Enter new field name:')
                    if (!fieldName || !serviceId) return;

@@ -128,6 +128,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           scheduledDate: createBookingData['scheduledDate'] as String,
           scheduledTimeSlot: createBookingData['scheduledTimeSlot'] as String,
           lineItems: createBookingData['lineItems'] as List<Map<String, dynamic>>,
+          totalAmount: activeOrder?.estimatedTotal,
+          amountPaid: checkoutOrder.amountPaise / 100,
+          paymentId: response.paymentId,
+          orderId: checkoutOrder.orderId,
           notes: createBookingData['notes'] as String?,
         );
       } catch (bookingError) {
@@ -261,7 +265,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     try {
       final checkoutOrder = await ref.read(razorpayPaymentServiceProvider).createOrder(
-            amountRupees: activeOrder.estimatedTotal,
+            amountRupees: bookingAmount, // Pay only the minimum booking charge now
             serviceName: activeOrder.serviceName,
             packageLabel: activeOrder.packageLabel,
             customerId: customer?.id,
@@ -271,6 +275,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             notes: {
               'scheduledDate': booking.selectedDate.toIso8601String(),
               'timeSlot': booking.selectedTimeSlot,
+              'totalAmount': activeOrder.estimatedTotal.toString(),
             },
           );
 
@@ -346,7 +351,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final grandTotal = (activeOrder?.estimatedTotal ?? 0) + taxAmount;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Invoice & Payment')),
+      appBar: AppBar(
+        title: const Text('Invoice & Payment'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

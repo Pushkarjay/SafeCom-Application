@@ -2,6 +2,7 @@ class AppRoutes {
   static const splash = '/';
   static const login = '/login';
   static const phoneAuth = '/phone-auth';
+  static const phoneCollection = '/phone-collection';
   static const locationPermission = '/location-permission';
   static const locationPicker = '/location-picker';
   static const home = '/home';

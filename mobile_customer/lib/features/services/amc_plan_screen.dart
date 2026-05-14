@@ -18,7 +18,13 @@ class AmcPlanScreen extends ConsumerWidget {
     final amcAsync = ref.watch(amcPricingProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('AMC Plans')),
+      appBar: AppBar(
+        title: const Text('AMC Plans'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: amcAsync.when(
         data: (contract) {
           final plans = contract.plans;
@@ -40,9 +46,16 @@ class AmcPlanScreen extends ConsumerWidget {
                           serviceName: 'AMC Service',
                           packageLabel: plan.name,
                           estimatedTotal: plan.price,
+                          items: [
+                            ActiveOrderLineItem(
+                              name: plan.name,
+                              quantity: 1,
+                              unitPrice: plan.price,
+                            ),
+                          ],
                         ),
                       );
-                  context.push(AppRoutes.scheduling);
+                  _showAmcConfirmationSheet(context, ref, plan);
                 },
                 child: Ink(
                   padding: const EdgeInsets.all(16),
@@ -137,4 +150,70 @@ class _FallbackAmcPlans extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showAmcConfirmationSheet(BuildContext context, WidgetRef ref, AmcPlan plan) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            plan.name,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Rs ${plan.price.toStringAsFixed(0)} / year',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF0A84FF),
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'This AMC plan provides annual maintenance coverage. Want to add recommended accessories or proceed directly to scheduling?',
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push(AppRoutes.recommendation);
+            },
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Add Accessories'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push(AppRoutes.scheduling);
+            },
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Skip — Book AMC Now'),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Go Back'),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
 }

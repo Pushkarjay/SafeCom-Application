@@ -41,7 +41,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final router = GoRouter.of(context);
     try {
       await ref.read(authProvider.notifier).continueWithGoogle();
-      if (mounted) router.go(AppRoutes.home);
+      if (mounted) {
+        final authState = ref.read(authProvider);
+        if (authState.customer != null &&
+            (authState.customer!.phone.isEmpty || authState.customer!.phone == '+91')) {
+          router.go('/phone-collection');
+        } else {
+          router.go(AppRoutes.home);
+        }
+      }
     } catch (e) {
       if (mounted) {
         AppErrorHandler.showDialog(context, e);

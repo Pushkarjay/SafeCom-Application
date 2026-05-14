@@ -32,6 +32,10 @@ const bookingCreateSchema = z.object({
     category: z.string().optional(),
     variants: z.record(z.string()).optional()
   })),
+  totalAmount: z.number().nonnegative().optional(),
+  amountPaid: z.number().nonnegative().optional(),
+  paymentId: z.string().optional(),
+  orderId: z.string().optional(),
   notes: z.string().optional()
 })
 
@@ -51,6 +55,8 @@ function generateCanonicalInvoice(
   // TODO: Fetch tax configuration from backend
   const gstRate = 18 // Default 18% GST
   const taxAmount = Math.round((subtotal * gstRate) / 100 * 100) / 100
+  const grandTotal = subtotal + taxAmount
+  const advanceAmount = request.amountPaid ?? 0
   
   return {
     invoiceId: `INV-${bookingId}`,
@@ -75,12 +81,12 @@ function generateCanonicalInvoice(
       }
     ],
     totalTax: taxAmount,
-    grandTotal: subtotal + taxAmount,
+    grandTotal,
     scheduledDate: request.scheduledDate,
     scheduledTimeSlot: request.scheduledTimeSlot,
-    paymentStatus: 'pending',
-    advanceAmount: 0,
-    remainingAmount: subtotal + taxAmount,
+    paymentStatus: advanceAmount > 0 ? 'partial' : 'pending',
+    advanceAmount,
+    remainingAmount: grandTotal - advanceAmount,
     generatedAt: new Date().toISOString(),
     notes: request.notes
   }
@@ -224,10 +230,14 @@ bookingsRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticate
       scheduledDate: request.scheduledDate,
       scheduledTimeSlot: request.scheduledTimeSlot,
       invoice,
-      status: 'pending',
+      status: invoice.advanceAmount > 0 ? 'confirmed' : 'pending',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      notes: request.notes
+      notes: request.notes,
+      totalAmount: request.totalAmount,
+      amountPaid: request.amountPaid,
+      paymentId: request.paymentId,
+      orderId: request.orderId
     }
     
     // Persist booking

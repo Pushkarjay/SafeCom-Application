@@ -432,6 +432,20 @@ export class AdminDatasource {
     }
   }
 
+  async serviceUpdateRenderConfig(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], config: { renderType?: 'option' | 'list'; selectionType?: 'single' | 'multi'; collectiveValidation?: boolean; displayLabel?: string; mandatory?: boolean }): Promise<void> {
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/node/render-config`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, ...config })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/render-config`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nodePath, ...config })
+      })
+    }
+  }
+
   async serviceAddBranch(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], branchName: string): Promise<void> {
     if (!setupKey || setupKey === '') {
       await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/branch`, {
@@ -681,6 +695,58 @@ export class AdminDatasource {
 
   async deleteInvoiceTemplate(id: string): Promise<void> {
     await this.fetchJson<void>(`${BASE_URL}/catalog/invoices/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // ====== HOME CMS ======
+  async getHomeCmsBlocks(): Promise<any[]> {
+    const payload = await this.fetchJson<{ success: boolean; data: { blocks: any[] } }>(`${BASE_URL}/home-cms/admin`)
+    return payload.data?.blocks ?? []
+  }
+
+  async createHomeCmsBlock(data: { type: string; order?: number; visible?: boolean; title?: string; subtitle?: string; imageUrl?: string; ctaLabel?: string; ctaRoute?: string; expiresAt?: string }): Promise<any> {
+    return await this.fetchJson(`${BASE_URL}/home-cms`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateHomeCmsBlock(id: string, data: Partial<{ order: number; visible: boolean; title: string; subtitle: string; imageUrl: string; ctaLabel: string; ctaRoute: string; expiresAt: string }>): Promise<any> {
+    return await this.fetchJson(`${BASE_URL}/home-cms/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteHomeCmsBlock(id: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/home-cms/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // ====== SERVICEABLE AREAS ======
+  async getServiceableAreas(): Promise<any[]> {
+    const payload = await this.fetchJson<{ success: boolean; data: any[] }>(`${BASE_URL}/serviceability/areas`)
+    return payload.data ?? []
+  }
+
+  async createServiceableArea(data: { areaCode: string; areaName: string; latitude: number; longitude: number; radiusKm: number; estimatedTimeToService?: string }): Promise<any> {
+    return await this.fetchJson(`${BASE_URL}/serviceability/areas`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateServiceableArea(areaCode: string, data: Partial<{ areaName: string; latitude: number; longitude: number; radiusKm: number; estimatedTimeToService: string; active: boolean }>): Promise<any> {
+    return await this.fetchJson(`${BASE_URL}/serviceability/areas/${encodeURIComponent(areaCode)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteServiceableArea(areaCode: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/serviceability/areas/${encodeURIComponent(areaCode)}`, {
       method: 'DELETE'
     })
   }

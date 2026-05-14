@@ -79,33 +79,55 @@ class AuthNotifier extends StateNotifier<AuthState> {
           jsonDecode(customerStr) as Map<String, dynamic>,
         );
         
-        // Verify the token is still valid by checking with Firebase
-        try {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) {
-            final idToken = await user.getIdToken(/* forceRefresh */ false);
-            if (idToken == tokenStr) {
-              // Token matches current user, session is valid
-              state = AuthState(
-                customer: customer,
-                token: tokenStr,
-                isAuthenticated: true,
-                isLoading: false,
-              );
-              return;
-            }
+        // Check if Firebase still has a signed-in user
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          try {
+            final idToken = await user.getIdToken();
+            if (idToken == null) throw Exception('Null token');
+            state = AuthState(
+              customer: customer,
+              token: idToken,
+              isAuthenticated: true,
+              isLoading: false,
+            );
+            
+            // Silently refresh customer profile from backend in background
+            _refreshCustomerProfile(idToken);
+            return;
+          } catch (e) {
+            // Token refresh failed, but Firebase user is still signed in
+            // Restore session anyway with stored token
+            state = AuthState(
+              customer: customer,
+              token: tokenStr,
+              isAuthenticated: true,
+              isLoading: false,
+            );
+            return;
           }
-        } catch (e) {
-          // Token verification failed, fall through to clear session
         }
         
-        // If we reach here, token is invalid or user changed
+        // Firebase user is null, clear session
         await _clearSession();
         state = AuthState();
       }
     } catch (e) {
-      // Silently ignore session restoration errors
       state = AuthState();
+    }
+  }
+
+  Future<void> _refreshCustomerProfile(String token) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final fresh = await authService.getProfile(token, user.uid);
+      await _saveSession(token, fresh);
+      if (mounted) {
+        state = state.copyWith(customer: fresh);
+      }
+    } catch (_) {
+      // Silently ignore — cached data is fine
     }
   }
 
@@ -148,6 +170,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         isLoading: false,
       );
+      // Silently refresh profile from backend to get saved data
+      _refreshCustomerProfile(token);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -169,6 +193,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         isLoading: false,
       );
+      // Silently refresh profile from backend to get saved data
+      _refreshCustomerProfile(token);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,

@@ -59,18 +59,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Image.asset(
-                  'assets/images/safecom_logo.jpeg',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.contain,
-                ),
+              Image.asset(
+                'assets/images/safecom_logo.jpeg',
+                width: 120,
+                height: 120,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
               ),
               const SizedBox(height: 16),
               Text(

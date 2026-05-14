@@ -28,6 +28,14 @@ class _BookingConfirmationScreenState
         (activeOrder?.estimatedTotal ?? 0) - minimumPaymentAmount;
 
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go(AppRoutes.home),
+        ),
+        title: const Text('Booking Confirmed'),
+        automaticallyImplyLeading: false,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -47,14 +55,7 @@ class _BookingConfirmationScreenState
                   color: Color(0xFF16A34A),
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Booking Confirmed',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
               Text(
                 'Your service has been scheduled successfully.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(

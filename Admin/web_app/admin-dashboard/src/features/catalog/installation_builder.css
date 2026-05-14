@@ -48,6 +48,7 @@
 }
 .ib-badge.secondary { background: #f3e8ff; color: #7c3aed; }
 .ib-badge.club { background: #fef3c7; color: #92400e; margin-left: 6px; }
+.ib-badge.primary { background: #dcfce7; color: #16a34a; }
 
 /* Header with actions */
 .ib-header-actions {

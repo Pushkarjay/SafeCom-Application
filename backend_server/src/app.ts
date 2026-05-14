@@ -19,6 +19,7 @@ import { accessoriesRouter } from './routes/accessories.js'
 import { maintenancePlansRouter } from './routes/maintenance-plans.js'
 import { recommendationsRouter } from './routes/recommendations.js'
 import { sduiRouter } from './routes/sdui.js'
+import { homeCmsRouter } from './routes/homeCms.js'
 import { authenticateToken } from './middleware/auth.js'
 import { verifyFirebaseIdToken } from './middleware/firebaseAuth.js'
 import employeeRoutes from './routes/employees.js'
@@ -68,6 +69,9 @@ export function createApp() {
 
   // Public SDUI layout routes (dynamic UI, no authentication required)
   app.use('/api/sdui', sduiRouter)
+
+  // Public home CMS routes
+  app.use('/api/home-cms', homeCmsRouter)
 
   // Catalog routes - Products (partially protected)
   app.use('/api/catalog/products', productsRouter)

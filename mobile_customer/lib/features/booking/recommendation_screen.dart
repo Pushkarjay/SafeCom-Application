@@ -52,6 +52,10 @@ class RecommendationScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
         title: const Text('Recommended Accessories'),
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -60,7 +64,7 @@ class RecommendationScreen extends ConsumerWidget {
             onPressed: () {
               ref.read(selectedAccessoriesProvider.notifier).clear();
               ref.read(productSelectionProvider.notifier).clearAll();
-              context.go(AppRoutes.payment);
+              context.push(AppRoutes.payment);
             },
             child: const Text('Skip'),
           ),
@@ -357,7 +361,7 @@ class RecommendationScreen extends ConsumerWidget {
             const SizedBox(height: 12),
           ],
           FilledButton(
-            onPressed: effectiveSelectedIds.isNotEmpty ? () => context.go(AppRoutes.payment) : null,
+            onPressed: effectiveSelectedIds.isNotEmpty ? () => context.push(AppRoutes.payment) : null,
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text('Continue with Selection'),
@@ -368,7 +372,7 @@ class RecommendationScreen extends ConsumerWidget {
             onPressed: () {
               ref.read(selectedAccessoriesProvider.notifier).clear();
               ref.read(productSelectionProvider.notifier).clearAll();
-              context.go(AppRoutes.payment);
+              context.push(AppRoutes.payment);
             },
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),

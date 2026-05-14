@@ -19,6 +19,7 @@ import 'package:mobile_customer/features/location/location_permission_screen.dar
 import 'package:mobile_customer/features/location/location_picker_screen.dart';
 import 'package:mobile_customer/features/auth/screens/login_screen.dart';
 import 'package:mobile_customer/features/auth/screens/phone_auth_screen.dart';
+import 'package:mobile_customer/features/auth/screens/phone_collection_screen.dart';
 import 'package:mobile_customer/features/profile/screens/profile_screen.dart';
 import 'package:mobile_customer/features/profile/screens/order_history_screen.dart';
 import 'package:mobile_customer/features/profile/screens/booking_detail_screen.dart';
@@ -65,6 +66,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (authState.isAuthenticated &&
           (path == AppRoutes.login || path == AppRoutes.phoneAuth)) {
         return AppRoutes.home;
+      }
+
+      // After login, if user has no phone number, redirect to phone collection
+      if (authState.isAuthenticated &&
+          path != AppRoutes.phoneCollection &&
+          (authState.customer?.phone == null || authState.customer!.phone.isEmpty)) {
+        return '${AppRoutes.phoneCollection}?continue=${Uri.encodeComponent(path)}';
       }
 
       return null;
@@ -125,6 +133,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '${AppRoutes.servicePlaceholder}/:serviceId',
         builder: (context, state) => ServicePlaceholderScreen(
           serviceId: state.pathParameters['serviceId'] ?? 'service',
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.phoneCollection,
+        builder: (context, state) => PhoneCollectionScreen(
+          continueRoute: state.uri.queryParameters['continue'],
         ),
       ),
       GoRoute(

@@ -82,14 +82,20 @@ class SchedulingScreen extends ConsumerWidget {
       }
 
       if (activeOrder?.serviceName == 'Product Purchase') {
-        context.go(AppRoutes.payment);
+        context.push(AppRoutes.payment);
       } else {
         context.push(AppRoutes.recommendation);
       }
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Schedule Service')),
+      appBar: AppBar(
+        title: const Text('Schedule Service'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

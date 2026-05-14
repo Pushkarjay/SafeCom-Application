@@ -239,8 +239,10 @@ export interface FirestoreUser {
   email: string;
   displayName: string;
   role: Role;
-  createdAt: string; // ISO 8601
-  updatedAt: string; // ISO 8601
+  phone?: string;       // Phase 3.1 — supports phone-only sign-in
+  googleLinked: boolean; // Phase 3.1 — true if Google email was linked
+  createdAt: string;   // ISO 8601
+  updatedAt: string;   // ISO 8601
 }
 
 export interface FirestoreCustomer {
@@ -254,6 +256,7 @@ export interface FirestoreCustomer {
   totalSpent: number;
   registeredDate: string; // ISO 8601
   status: 'active' | 'inactive';
+  googleLinked: boolean; // Phase 3.1 — true if Google account was linked
 }
 
 export interface FirestoreEmployee {

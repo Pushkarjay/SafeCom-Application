@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/datasources/api_service.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/cart_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
+import 'package:mobile_customer/routes/app_router.dart';
 
 /// Provider that fetches all master products from the backend
 final allProductsProvider = FutureProvider<List<MasterProduct>>((ref) async {
@@ -554,8 +556,8 @@ class _CartSheet extends ConsumerWidget {
                           ),
                         );
                         
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, AppRoutes.scheduling);
+                         Navigator.pop(context);
+                         context.push(AppRoutes.scheduling);
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF0A84FF),

@@ -213,6 +213,10 @@ class ApiService {
     required String scheduledDate,
     required String scheduledTimeSlot,
     required List<Map<String, dynamic>> lineItems,
+    double? totalAmount,
+    double? amountPaid,
+    String? paymentId,
+    String? orderId,
     String? notes,
   }) async {
     try {
@@ -224,6 +228,10 @@ class ApiService {
         'scheduledDate': scheduledDate,
         'scheduledTimeSlot': scheduledTimeSlot,
         'lineItems': lineItems,
+        if (totalAmount != null) 'totalAmount': totalAmount,
+        if (amountPaid != null) 'amountPaid': amountPaid,
+        if (paymentId != null) 'paymentId': paymentId,
+        if (orderId != null) 'orderId': orderId,
         if (notes != null) 'notes': notes,
       });
       return response.data as Map<String, dynamic>;

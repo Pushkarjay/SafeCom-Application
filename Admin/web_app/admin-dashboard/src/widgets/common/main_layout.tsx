@@ -16,6 +16,11 @@ const SERVICE_ITEMS = [
 const CATALOG_ITEMS = [
   { key: 'products', label: 'Products', icon: '📦', path: '/catalog/products' },
   { key: 'services', label: 'Services', icon: '🛠️', path: '/catalog/services' },
+  { key: 'home-cms', label: 'Home CMS', icon: '🏠', path: '/catalog/home-cms' },
+]
+
+const SETTINGS_ITEMS = [
+  { key: 'serviceable-areas', label: 'Serviceable Areas', icon: '📍', path: '/settings/serviceable-areas' },
 ]
 
 export default function MainLayout() {
@@ -137,6 +142,21 @@ export default function MainLayout() {
                 <span className="nav-icon">{item.icon}</span>
                 <span className="service-label">{item.label}</span>
                 <span className="nav-arrow">→</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Settings Section */}
+          <div className="nav-section services">
+            <p className="section-title">SETTINGS</p>
+            {SETTINGS_ITEMS.map(item => (
+              <button
+                key={item.key}
+                className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+                onClick={() => navigate(item.path)}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span className="service-label">{item.label}</span>
               </button>
             ))}
           </div>

@@ -53,9 +53,7 @@ class ProductSelectionNotifier extends StateNotifier<Map<String, ProductSelectio
     if (variants.isEmpty) return true; // no variants means simple product
     final selections = getSelections(product.id);
     for (final variant in variants) {
-      if (variant.required) {
-        if (!selections.containsKey(variant.variantId)) return false;
-      }
+      if (variant.required && !selections.containsKey(variant.variantId)) return false;
     }
     return true;
   }

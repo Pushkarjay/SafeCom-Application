@@ -9,6 +9,10 @@ import {
   getFirestoreUserByUid,
   getCustomerByFirebaseUid,
   getEmployeeByFirebaseUid,
+  getFirestoreUserByPhone,
+  getFirestoreUserByEmail,
+  mergeFirestoreUserAccounts,
+  updateCustomerPhone,
 } from '../services/userService.js';
 
 const router = Router();
@@ -35,8 +39,31 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
   const finalEmail = email || (phone ? `${phone}@safecom.local` : '');
 
   try {
-    // Create/update the central users collection document
-    const firestoreUser = await upsertFirestoreUser(uid, finalEmail, displayName, role);
+    // ── PHASE 3.1: Account Merge Logic ─────────────────────────────────────
+    // Check if this email or phone is already linked to a DIFFERENT Firebase UID.
+    // If so, merge accounts so the same physical person has one account.
+    const conflictUser = await getFirestoreUserByEmail(finalEmail)
+      || (phone ? await getFirestoreUserByPhone(phone) : null);
+
+    if (conflictUser && conflictUser.uid !== uid) {
+      // Email or phone already belongs to another Firebase UID — merge!
+      await mergeFirestoreUserAccounts(uid, conflictUser.uid);
+    }
+
+    // Also check if a phone is being added to a Google-only account (vice versa).
+    // If this UID exists but has no phone, and we now have a phone, update it.
+    if (phone) {
+      const existingUser = await getFirestoreUserByUid(uid);
+      if (existingUser && !existingUser.phone && existingUser.googleLinked) {
+        // This is a Google account adding a phone number — update the phone field
+        await upsertFirestoreUser(uid, existingUser.email, displayName, role, phone);
+      }
+    }
+
+    // Create/update the central users collection document.
+    // IMPORTANT: Only pass phone if it is non-empty — never overwrite an existing
+    // phone with an empty string (e.g. when the user re-logs in via Google).
+    const firestoreUser = await upsertFirestoreUser(uid, finalEmail, displayName, role, phone || undefined);
 
     // Based on role, create or link the customer/employee document
     let linkedDoc = null;
@@ -46,6 +73,10 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
       let existingCustomer = await getCustomerByFirebaseUid(uid);
       if (existingCustomer) {
         linkedDoc = existingCustomer;
+        // Only update phone if a non-empty value is provided (never blank it out)
+        if (phone && phone.trim().length > 0) {
+          await updateCustomerPhone(uid, phone);
+        }
       } else {
         // Create new customer record
         linkedDoc = await createCustomerWithFirebaseUid(
@@ -84,6 +115,7 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
         phone,
       },
       linkedDocument: linkedDoc,
+      merged: conflictUser ? true : false,
     });
   } catch (error) {
     console.error('Error linking user:', error);
