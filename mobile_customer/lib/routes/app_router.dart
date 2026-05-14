@@ -69,9 +69,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // After login, if user has no phone number, redirect to phone collection
+      // Only for auth-required routes (payment, confirmation) and profile/settings
+      const phoneRequiredRoutes = {
+        AppRoutes.payment,
+        AppRoutes.confirmation,
+        AppRoutes.profile,
+        AppRoutes.orderHistory,
+        AppRoutes.bookingDetail,
+      };
       if (authState.isAuthenticated &&
           path != AppRoutes.phoneCollection &&
-          (authState.customer?.phone == null || authState.customer!.phone.isEmpty)) {
+          (authState.customer?.phone == null || authState.customer!.phone.isEmpty) &&
+          phoneRequiredRoutes.any((r) => path.startsWith(r))) {
         return '${AppRoutes.phoneCollection}?continue=${Uri.encodeComponent(path)}';
       }
 
