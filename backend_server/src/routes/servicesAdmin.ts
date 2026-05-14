@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../services/firestore.js';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, DocumentSnapshot } from 'firebase-admin/firestore';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 const SERVICE_COLLECTION = 'Services';
@@ -244,13 +244,30 @@ servicesAdminRouter.post('/create', authenticateToken, requireRole(['admin']), a
   }
 });
 
+/**
+ * Look up a service document by ID, case-insensitively.
+ * First tries exact match, then scans all docs for a case-insensitive match.
+ */
+async function findServiceDoc(serviceId: string): Promise<{ doc: FirebaseFirestore.DocumentSnapshot | null; actualId: string }> {
+  const db = getDb();
+  const exact = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
+  if (exact.exists) return { doc: exact, actualId: serviceId };
+
+  const snapshot = await db.collection(SERVICE_COLLECTION).get();
+  for (const doc of snapshot.docs) {
+    if (doc.id.toLowerCase() === serviceId.toLowerCase()) {
+      return { doc, actualId: doc.id };
+    }
+  }
+  return { doc: null, actualId: serviceId };
+}
+
 // GET /config/:serviceId — Get full tree for a service
 servicesAdminRouter.get('/config/:serviceId', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
-    const db = getDb();
-    const doc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
-    if (!doc.exists) return res.status(404).json({ success: false, error: 'Service not found' });
+    const { doc, actualId } = await findServiceDoc(serviceId);
+    if (!doc || !doc.exists) return res.status(404).json({ success: false, error: 'Service not found' });
 
     const data = doc.data() || {};
     // Remove metadata from the tree view
