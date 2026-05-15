@@ -238,13 +238,17 @@
 }
 
 .primary-btn {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
-.primary-btn:hover:not(:disabled) { background: var(--primary-hover); }
-.primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.primary-btn.danger { background: var(--error); }
-.primary-btn.danger:hover:not(:disabled) { background: #dc2626; }
+.primary-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+.primary-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.primary-btn.danger { background: linear-gradient(135deg, var(--error) 0%, #f87171 100%); box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2); }
+.primary-btn.danger:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3); }
 
 .secondary-btn.small {
   padding: 6px 12px;
