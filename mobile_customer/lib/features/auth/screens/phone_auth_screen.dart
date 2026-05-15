@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/core/utils/error_handler.dart';
+import 'package:mobile_customer/core/widgets/safecom_logo.dart';
 
 /// Phone OTP Authentication Screen
 /// Step 1: Enter phone number → Step 2: Enter OTP
@@ -155,13 +156,18 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
-                IconButton(
-                  onPressed: () => context.pop(),
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.zero,
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                      padding: EdgeInsets.zero,
+                    ),
+                    const Spacer(),
+                    const SafeComLogoSmall(size: 40),
+                  ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 Text(
                   _otpSent ? 'Enter OTP' : 'Phone Number',
                   style: theme.textTheme.headlineSmall?.copyWith(

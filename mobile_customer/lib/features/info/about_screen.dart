@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_customer/core/widgets/safecom_logo.dart';
 
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
@@ -41,10 +42,16 @@ class AboutScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text(
-                          '🛡️',
-                          style: TextStyle(fontSize: 40),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          'assets/images/safecom_logo_visual.jpeg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Text('🛡️', style: TextStyle(fontSize: 40)),
+                            );
+                          },
                         ),
                       ),
                     ),

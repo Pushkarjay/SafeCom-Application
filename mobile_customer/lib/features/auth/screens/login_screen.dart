@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/core/utils/error_handler.dart';
+import 'package:mobile_customer/core/widgets/safecom_logo.dart';
 
 /// Login Screen — Google Sign-In and Phone OTP only.
 /// Email/password removed per SRS §3.1.
@@ -89,33 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   Center(
                     child: Column(
                       children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                theme.colorScheme.primary,
-                                theme.colorScheme.primary.withOpacity(0.7),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.primary.withOpacity(0.4),
-                                blurRadius: 30,
-                                offset: const Offset(0, 12),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.shield_outlined,
-                            size: 40,
-                            color: Colors.white,
-                          ),
-                        ),
+                        const SafeComLogo(size: 80),
                         const SizedBox(height: 20),
                         Text(
                           'SafeCom',

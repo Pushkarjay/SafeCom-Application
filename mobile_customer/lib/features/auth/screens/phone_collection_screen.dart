@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/core/utils/error_handler.dart';
+import 'package:mobile_customer/core/widgets/safecom_logo.dart';
 
 class PhoneCollectionScreen extends ConsumerStatefulWidget {
   final String? continueRoute;
@@ -71,6 +72,10 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.go(AppRoutes.home),
         ),
+        actions: const [
+          SafeComLogoSmall(size: 40),
+          SizedBox(width: 16),
+        ],
       ),
       extendBodyBehindAppBar: true,
       body: Container(

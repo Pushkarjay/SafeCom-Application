@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
+import 'package:mobile_customer/core/widgets/safecom_logo.dart';
 
 class LocationPermissionScreen extends ConsumerWidget {
   const LocationPermissionScreen({super.key});
@@ -20,18 +21,27 @@ class LocationPermissionScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Spacer(),
-              Container(
-                height: 110,
-                width: 110,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEFF6FF),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.my_location_rounded,
-                  size: 48,
-                  color: Color(0xFF0A84FF),
-                ),
+              const SafeComLogo(size: 110),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF0A84FF)),
+                        SizedBox(width: 6),
+                        Text('Location', style: TextStyle(color: Color(0xFF0A84FF), fontSize: 12, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
               Text(
