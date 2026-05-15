@@ -55,7 +55,7 @@
 }
 
 .mp-component-item:hover { background: var(--secondary-hover); }
-.mp-component-item.active { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15); }
+.mp-component-item.active { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.15); }
 
 .mp-ci-info { display: flex; flex-direction: column; }
 .mp-ci-type { font-weight: 600; font-size: 13px; color: var(--text); }
@@ -75,7 +75,7 @@
 .mp-field { margin-bottom: 12px; }
 .mp-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
 .mp-field input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13px; font-family: inherit; color: var(--text); }
-.mp-field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+.mp-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1); }
 
 .mp-preview-area {
   flex: 1;
@@ -133,8 +133,8 @@
   transition: all var(--transition-fast);
 }
 
-.preview-component:hover { border-color: rgba(79, 70, 229, 0.3); }
-.preview-component.highlight { border-color: var(--primary); background: rgba(79, 70, 229, 0.05); }
+.preview-component:hover { border-color: rgba(217, 119, 6, 0.3); }
+.preview-component.highlight { border-color: var(--accent); background: rgba(217, 119, 6, 0.05); }
 
 .pr-location { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
 .pr-loc-icon { font-size: 20px; }
@@ -161,7 +161,7 @@
 .pr-h-list { margin: 16px 0; }
 .pr-h-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .pr-h-header span { font-weight: 700; font-size: 16px; }
-.pr-h-header button { background: none; border: none; color: var(--primary); font-weight: 600; font-size: 13px; cursor: pointer; }
+.pr-h-header button { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 13px; cursor: pointer; }
 .pr-h-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
 .pr-h-card { min-width: 140px; height: 180px; background: var(--bg); border-radius: var(--radius-xl); border: 1px solid var(--border); flex-shrink: 0; }
 

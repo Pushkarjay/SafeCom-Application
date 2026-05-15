@@ -1,28 +1,29 @@
 .main-layout {
   display: flex;
   height: 100vh;
-  background: linear-gradient(135deg, var(--bg) 0%, #eef2ff 100%);
+  background: linear-gradient(135deg, var(--bg) 0%, #fafaf9 100%);
 }
 
+/* ─── Dark Command Center Sidebar ─── */
 .sidebar {
   width: 280px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border-right: 1px solid var(--border);
+  background: linear-gradient(180deg, #1c1917 0%, #292524 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   position: fixed;
   height: 100vh;
   left: 0;
   top: 0;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04);
+  box-shadow: 6px 0 32px rgba(0, 0, 0, 0.15);
   overflow-y: auto;
   z-index: 100;
 }
 
 .sidebar-header {
   padding: 20px 18px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -31,12 +32,12 @@
 .logo-box {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, #6366f1 0%, #22C55E 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, #f59e0b 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.3);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -48,7 +49,7 @@
 }
 
 .logo-text h2 {
-  color: var(--text);
+  color: #fafaf9;
   font-size: 20px;
   margin: 0;
   font-weight: 800;
@@ -57,7 +58,7 @@
 }
 
 .logo-text p {
-  color: var(--text-muted);
+  color: #a8a29e;
   font-size: 11px;
   margin: 1px 0 0 0;
   font-weight: 600;
@@ -76,9 +77,9 @@
 .section-title {
   font-size: 10px;
   font-weight: 800;
-  color: var(--text-light);
-  letter-spacing: 1px;
-  padding: 12px 18px 6px;
+  color: #78716c;
+  letter-spacing: 1.2px;
+  padding: 14px 18px 6px;
   margin: 0;
   text-transform: uppercase;
   font-family: 'Outfit', sans-serif;
@@ -90,7 +91,7 @@
   padding: 10px 18px;
   text-align: left;
   cursor: pointer;
-  color: var(--text-secondary);
+  color: #a8a29e;
   font-size: 14px;
   font-weight: 500;
   transition: all var(--transition-fast);
@@ -106,13 +107,13 @@
 }
 
 .nav-item:hover {
-  color: var(--accent);
-  background: linear-gradient(90deg, var(--accent-light) 0%, transparent 100%);
+  color: #fafaf9;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .nav-item.active {
-  color: var(--accent);
-  background: linear-gradient(90deg, var(--accent-lighter) 0%, rgba(99, 102, 241, 0.04) 100%);
+  color: #fbbf24;
+  background: rgba(217, 119, 6, 0.12);
   font-weight: 700;
 }
 
@@ -124,8 +125,9 @@
   transform: translateY(-50%);
   width: 3px;
   height: 20px;
-  background: linear-gradient(180deg, var(--accent) 0%, #818cf8 100%);
+  background: linear-gradient(180deg, var(--accent) 0%, #f59e0b 100%);
   border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px rgba(217, 119, 6, 0.4);
 }
 
 .nav-icon {
@@ -139,25 +141,25 @@
 
 .nav-item.service-item {
   justify-content: flex-start;
-  background: linear-gradient(135deg, var(--secondary) 0%, #f8fafc 100%);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   margin: 3px 12px;
   padding: 10px 14px;
   transition: all var(--transition-normal);
 }
 
 .nav-item.service-item:hover {
-  background: linear-gradient(135deg, var(--accent-light) 0%, #ffffff 100%);
-  border-color: var(--accent);
+  background: rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.25);
   transform: translateX(3px);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .nav-item.service-item.active {
-  background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
-  border-color: var(--accent);
-  color: white;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(217, 119, 6, 0.08) 100%);
+  border-color: rgba(217, 119, 6, 0.4);
+  color: #fbbf24;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(217, 119, 6, 0.1);
 }
 
 .nav-item.service-item .service-label {
@@ -170,6 +172,7 @@
   font-size: 12px;
   opacity: 0;
   transition: all var(--transition-fast);
+  color: #fbbf24;
 }
 
 .nav-item.service-item:hover .nav-arrow,
@@ -180,8 +183,8 @@
 
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid var(--border);
-  background: linear-gradient(0deg, #ffffff 0%, #fafafa 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .admin-info {
@@ -189,26 +192,26 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: linear-gradient(135deg, var(--secondary) 0%, #f8fafc 100%);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-lg);
   margin-bottom: 12px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .admin-avatar {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, var(--accent) 0%, #22C55E 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, #f59e0b 100%);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #1c1917;
   font-weight: 800;
   font-size: 16px;
   flex-shrink: 0;
   font-family: 'Outfit', sans-serif;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
 }
 
 .admin-details { flex: 1; overflow: hidden; }
@@ -216,7 +219,7 @@
 .admin-name {
   font-size: 14px;
   font-weight: 700;
-  color: var(--text);
+  color: #fafaf9;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -225,7 +228,7 @@
 
 .admin-email {
   font-size: 11px;
-  color: var(--text-muted);
+  color: #a8a29e;
   margin: 3px 0 0 0;
   white-space: nowrap;
   overflow: hidden;
@@ -237,8 +240,8 @@
   width: 100%;
   padding: 12px;
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a8a29e;
   border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 700;
@@ -252,10 +255,10 @@
 }
 
 .logout-button:hover {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  border-color: var(--error);
-  color: #dc2626;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #fca5a5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .main-content {

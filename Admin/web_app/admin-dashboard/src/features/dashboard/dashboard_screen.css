@@ -52,13 +52,13 @@
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.06), transparent 70%);
+  background: radial-gradient(circle, rgba(217, 119, 6, 0.05), transparent 70%);
   pointer-events: none;
 }
 
 .metric-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   transform: translateY(-3px);
 }
 
@@ -70,7 +70,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-light);
+  background: var(--accent-lighter);
   border-radius: var(--radius-md);
   flex-shrink: 0;
 }
@@ -123,7 +123,7 @@
 }
 
 .action-button {
-  background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
+  background: var(--accent);
   color: white;
   border: none;
   border-radius: var(--radius-md);
@@ -137,11 +137,12 @@
   gap: 6px;
   transition: all var(--transition-fast);
   font-family: inherit;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
 }
 
 .action-button:hover {
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25);
+  background: var(--accent-hover);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.25);
   transform: translateY(-1px);
 }
 
@@ -231,7 +232,7 @@
   font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .table-row {
