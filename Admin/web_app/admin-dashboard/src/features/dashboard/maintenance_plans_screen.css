@@ -1,12 +1,7 @@
-/* Maintenance Plans Screen Styling */
-
 .maintenance-plans-screen {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 24px;
-  background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
 }
 
 .plans-header {
@@ -17,119 +12,25 @@
 
 .plans-header h1 {
   margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-}
-
-.btn-primary {
-  padding: 10px 20px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-primary:hover {
-  background-color: #45a049;
-}
-
-.btn-secondary {
-  padding: 8px 16px;
-  background-color: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.btn-secondary:hover {
-  background-color: #0b7dda;
-}
-
-.btn-danger {
-  padding: 8px 16px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.btn-danger:hover {
-  background-color: #da190b;
-}
-
-.error-banner {
-  padding: 12px 16px;
-  background-color: #ffebee;
-  color: #c62828;
-  border-left: 4px solid #c62828;
-  border-radius: 4px;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .plans-controls {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background-color: white;
-  padding: 16px;
-  border-radius: 8px;
-}
-
-.search-input {
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #2196F3;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+  background: var(--bg-card);
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
 }
 
 .frequency-filters {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.filter-chip {
-  padding: 8px 12px;
-  background-color: #e0e0e0;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.filter-chip.active {
-  background-color: #2196F3;
-  color: white;
-  font-weight: 500;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-}
-
-.empty-state {
-  background-color: white;
-  border-radius: 8px;
-  padding: 40px;
-  text-align: center;
-}
-
-.empty-state p {
-  margin: 0 0 16px 0;
-  color: #999;
 }
 
 .plans-grid {
@@ -139,23 +40,24 @@
 }
 
 .plan-card {
-  background-color: white;
-  border-radius: 8px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
   display: flex;
   flex-direction: column;
 }
 
 .plan-card:hover {
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .plan-header {
-  padding: 16px;
-  border-bottom: 1px solid #eee;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -166,29 +68,24 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  color: var(--text);
   flex: 1;
 }
 
-.plan-badges {
-  display: flex;
-  gap: 6px;
-}
+.plan-badges { display: flex; gap: 6px; }
 
 .plan-description {
-  padding: 0 16px;
+  padding: 0 20px;
   margin-top: 12px;
-  font-size: 12px;
-  color: #666;
+  font-size: 13px;
+  color: var(--text-secondary);
   line-height: 1.3;
-  max-height: 40px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .plan-details {
-  padding: 12px 16px;
-  font-size: 12px;
-  color: #666;
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -199,34 +96,12 @@
   justify-content: space-between;
 }
 
-.plan-details span {
-  font-weight: 600;
-}
-
-.badge-featured {
-  display: inline-block;
-  padding: 4px 8px;
-  background-color: #FFD700;
-  color: #333;
-  font-size: 11px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.badge-unavailable {
-  display: inline-block;
-  padding: 4px 8px;
-  background-color: #f44336;
-  color: white;
-  font-size: 11px;
-  border-radius: 4px;
-  font-weight: 600;
-}
+.plan-details span { font-weight: 600; color: var(--text); }
 
 .plan-services {
-  padding: 12px 16px;
-  background-color: #f9f9f9;
-  border-top: 1px solid #eee;
+  padding: 14px 20px;
+  background: var(--secondary);
+  border-top: 1px solid var(--border-light);
   flex: 1;
 }
 
@@ -234,24 +109,23 @@
   display: block;
   margin-bottom: 8px;
   font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .plan-services ul {
   margin: 0;
   padding-left: 20px;
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
-.plan-services li {
-  margin-bottom: 4px;
-}
+.plan-services li { margin-bottom: 4px; }
 
 .plan-actions {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid #eee;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-light);
 }
 
 .plan-actions button {
@@ -260,259 +134,10 @@
   padding: 6px;
 }
 
-/* Modal */
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  max-height: 90vh;
-  width: 90%;
-  max-width: 600px;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #eee;
-  position: sticky;
-  top: 0;
-  background-color: white;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #999;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-}
-
-.close-btn:hover {
-  color: #212121;
-}
-
-.form {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-group label {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #2196F3;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.form-group.checkbox {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-
-.form-group.checkbox input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-}
-
-.form-group.checkbox label {
-  margin: 0;
-  font-weight: 400;
-}
-
-.services-section {
-  padding: 12px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
-  border: 1px solid #eee;
-}
-
-.services-section h3 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.services-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.service-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  background-color: white;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
-  font-size: 12px;
-}
-
-.service-item strong {
-  display: block;
-}
-
-.service-item small {
-  color: #666;
-  font-size: 11px;
-}
-
-.btn-remove {
-  padding: 4px 8px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.btn-remove:hover {
-  background-color: #da190b;
-}
-
-.add-service {
-  display: flex;
-  gap: 8px;
-}
-
-.add-service select,
-.add-service input {
-  padding: 8px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
-.add-service select {
-  flex: 1;
-}
-
-.add-service input {
-  width: 60px;
-}
-
-.btn-add {
-  padding: 8px 12px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.btn-add:hover {
-  background-color: #45a049;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  border-top: 1px solid #eee;
-  justify-content: flex-end;
-  position: sticky;
-  bottom: 0;
-  background-color: white;
-}
-
-.modal-actions button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
 @media (max-width: 768px) {
-  .plans-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .modal-content {
-    width: 95%;
-  }
-
-  .add-service {
-    flex-direction: column;
-  }
-
-  .add-service select,
-  .add-service input {
-    width: 100%;
-  }
+  .plans-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 }
 
 @media (max-width: 480px) {
-  .plans-grid {
-    grid-template-columns: 1fr;
-  }
+  .plans-grid { grid-template-columns: 1fr; }
 }

@@ -1,23 +1,127 @@
-.sa-screen { padding: 24px; }
-.sa-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
-.sa-header h1 { font-size: 22px; font-weight: 800; color: #111827; margin: 0; }
-.sa-subtitle { font-size: 13px; color: #6b7280; margin-top: 4px; }
-.sa-empty { background: #fff; border: 1px dashed #d1d5db; border-radius: 12px; padding: 48px 24px; text-align: center; color: #6b7280; }
+.sa-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-.sa-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-.sa-table th { background: #f9fafb; padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid #e5e7eb; }
-.sa-table td { padding: 12px 16px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #374151; }
+.sa-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.sa-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.sa-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.sa-empty {
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.sa-table th {
+  background: var(--secondary);
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 2px solid var(--border);
+}
+
+.sa-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 .sa-table tbody tr:last-child td { border-bottom: none; }
-.sa-table tbody tr:hover { background: #f9fafb; }
+.sa-table tbody tr:hover { background: var(--bg-hover); }
+
 .sa-inactive { opacity: 0.5; }
-.sa-name { font-weight: 600; color: #111827; }
-.sa-coords { font-family: monospace; font-size: 12px; color: #6b7280; }
-.sa-badge { padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-.sa-badge.active { background: #dcfce7; color: #16a34a; }
-.sa-badge.inactive { background: #fee2e2; color: #dc2626; }
-.sa-toggle { display: flex; align-items: center; cursor: pointer; }
+
+.sa-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sa-coords {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sa-badge {
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sa-badge.active { background: var(--success-bg); color: var(--success-text); }
+.sa-badge.inactive { background: var(--error-bg); color: var(--error-text); }
+
+.sa-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
 .sa-toggle input { display: none; }
-.sa-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.sa-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; }
-.sa-form label input { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
-.sa-form label input:focus { outline: none; border-color: #2563eb; }
+
+.sa-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.sa-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sa-form label input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+}
+
+.sa-form label input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
