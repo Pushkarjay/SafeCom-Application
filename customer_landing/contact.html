@@ -19,7 +19,7 @@
       a{color:var(--ember);text-decoration:none;-webkit-tap-highlight-color:transparent}
       .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(248,246,242,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
       .topbar-brand{display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none}
-      .topbar-mark{width:30px;height:30px;background:var(--primary);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
+      .topbar-logo{width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0}
       .topbar-name{font-weight:700;font-size:16px;letter-spacing:-0.02em}
       .topbar-name span{color:var(--ink-muted);font-weight:400}
       .topbar a[href="index.html"]{font-size:14px;font-weight:500;color:var(--ink-muted)}
@@ -102,7 +102,7 @@
   <body>
     <header class="topbar">
       <a href="index.html" class="topbar-brand">
-        <div class="topbar-mark">S</div>
+        <img src="images/logo-visual.jpeg" alt="SafeCom" class="topbar-logo" />
         <div class="topbar-name">SafeCom <span>Patna</span></div>
       </a>
       <a href="index.html" style="font-size:14px;color:var(--ink-muted);font-weight:500;">Home</a>

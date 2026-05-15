@@ -62,10 +62,8 @@
 
       .topbar-brand { display: flex; align-items: center; gap: 8px; }
 
-      .topbar-mark {
-        width: 30px; height: 30px; background: var(--primary); border-radius: 7px;
-        display: flex; align-items: center; justify-content: center;
-        color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0;
+      .topbar-logo {
+        width: 30px; height: 30px; border-radius: 7px; object-fit: cover; flex-shrink: 0;
       }
 
       .topbar-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
@@ -393,7 +391,7 @@
     <!-- ─── TOP BAR ─── -->
     <header class="topbar">
       <div class="topbar-brand">
-        <div class="topbar-mark">S</div>
+        <img src="images/logo-visual.jpeg" alt="SafeCom" class="topbar-logo" />
         <div class="topbar-name">SafeCom <span>Patna</span></div>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
