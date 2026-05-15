@@ -164,6 +164,53 @@
         color: #ffdf92;
       }
 
+      .policy-links {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .policy-links a {
+        display: block;
+        padding: 14px 18px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 12px;
+        color: #fff;
+        text-decoration: none;
+        transition: background 0.2s;
+        border: 1px solid rgba(255,255,255,0.15);
+      }
+
+      .policy-links a:hover {
+        background: rgba(255,255,255,0.2);
+      }
+
+      .contact-float {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 100;
+      }
+
+      .contact-float a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 24px;
+        background: #1b3cff;
+        color: white;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 600;
+        box-shadow: 0 8px 24px rgba(27,60,255,0.4);
+        transition: transform 0.2s;
+      }
+
+      .contact-float a:hover {
+        transform: translateY(-2px);
+      }
+
       footer {
         padding: 30px 8vw 50px;
         font-size: 14px;
@@ -210,7 +257,10 @@
         <span class="pill">SafeCom Customer App</span>
         <h1>Book home services. Pay in the app.</h1>
       </div>
-      <a class="cta fade-in delay-1" href="mailto:pushkarjay.ajay1@gmail.com">Contact Developer</a>
+      <div class="fade-in delay-1" style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a class="cta" href="contact.html">Contact Us</a>
+        <a class="cta" href="mailto:pushkarjay.ajay1@gmail.com" style="background:var(--lagoon);">Email Dev</a>
+      </div>
     </header>
 
     <section class="hero">
@@ -245,12 +295,17 @@
     </section>
 
     <section class="section">
-      <h2>Customer policies</h2>
+      <h2>Legal & Policies</h2>
       <div class="policy">
-        <p id="privacy"><strong>Privacy Policy</strong> — We only collect data needed to fulfil bookings and process payments. We do not sell personal data.</p>
-        <p id="terms"><strong>Terms of Service</strong> — By booking a service, you agree to pricing, scheduled visits, and technician availability.</p>
-        <p id="refund"><strong>Refunds</strong> — If a service cannot be delivered, we will process a refund back to the original payment method within 5-7 business days.</p>
-        <p><strong>Support</strong> — Email <a href="mailto:pushkarjay.ajay1@gmail.com">pushkarjay.ajay1@gmail.com</a> or call <a href="tel:+918210164935">+91 8210164935</a>.</p>
+        <p>SafeCom complies with India's <strong>Digital Personal Data Protection Act, 2023</strong> and <strong>Google Play Store requirements</strong>. View our full policies:</p>
+        <div class="policy-links">
+          <a href="privacy-policy.html">🔒 Privacy Policy</a>
+          <a href="terms-of-service.html">📋 Terms of Service</a>
+          <a href="refund-policy.html">💰 Refund Policy</a>
+          <a href="data-collection.html">📊 Data Collection</a>
+          <a href="account-deletion.html">🗑️ Delete Account</a>
+          <a href="contact.html">📞 Contact Support</a>
+        </div>
       </div>
     </section>
 
@@ -258,8 +313,9 @@
       <h2>Business details</h2>
       <div class="grid">
         <div class="card">
-          <h3>Business name</h3>
-          <p>SafeCom Services</p>
+          <h3>Business contact</h3>
+          <p><a href="mailto:safecom.patna@gmail.com">safecom.patna@gmail.com</a></p>
+          <p><a href="tel:+9109113768350">+91 091137 68350</a></p>
         </div>
         <div class="card">
           <h3>Service area</h3>
@@ -273,8 +329,7 @@
         <div class="card">
           <h3>Developer contact</h3>
           <p>Pushkarjay Ajay</p>
-          <p><a href="mailto:pushkarjay.ajay1@gmail.com">pushkarjay.ajay1@gmail.com</a></p>
-          <p><a href="tel:+918210164935">+91 8210164935</a></p>
+          <p><a href="mailto:play@pixxel.space">play@pixxel.space</a></p>
         </div>
         <div class="card">
           <h3>LinkedIn</h3>
@@ -285,8 +340,12 @@
       </div>
     </section>
 
+    <div class="contact-float">
+      <a href="contact.html">💬 Contact Us</a>
+    </div>
+
     <footer>
-      SafeCom Customer App • Payments powered by Razorpay • Launching soon
+      SafeCom Customer App • Payments powered by Razorpay • <a href="privacy-policy.html">Privacy</a> • <a href="terms-of-service.html">Terms</a> • © 2026 SafeCom Services
     </footer>
   </body>
 </html>

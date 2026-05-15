@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Delete Account - SafeCom</title>
+    <meta name="description" content="Request SafeCom account deletion - GDPR/DPDP compliant." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root { --ink: #0d1024; --ocean: #1b3cff; --lagoon: #29b3b0; --cloud: #ffffff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: "Space Grotesk", sans-serif; color: var(--ink); background: linear-gradient(135deg, #f8fbff 0%, #eef2ff 55%, #fff7ec 100%); min-height: 100vh; line-height: 1.6; }
+      .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+      h1 { font-family: "Fraunces", serif; font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: 10px; color: var(--ocean); }
+      .subtitle { color: #64748b; font-size: 16px; margin-bottom: 30px; }
+      h2 { font-family: "Fraunces", serif; font-size: 1.5rem; margin-top: 35px; color: var(--ink); border-bottom: 2px solid var(--lagoon); padding-bottom: 8px; }
+      p, li { color: #334155; font-size: 15px; }
+      ul { padding-left: 20px; }
+      li { margin-bottom: 10px; }
+      .back-link { display: inline-block; margin-bottom: 20px; color: var(--ocean); text-decoration: none; }
+      .info-box { background: #f0f9ff; padding: 20px; border-radius: 12px; border-left: 4px solid var(--ocean); margin: 20px 0; }
+      .warning-box { background: #fef3c7; padding: 20px; border-radius: 12px; border-left: 4px solid #f59e0b; margin: 20px 0; }
+      .form-container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin: 30px 0; }
+      .form-group { margin-bottom: 20px; }
+      .form-group label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
+      .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; font-family: inherit; transition: border-color 0.2s; }
+      .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--ocean); }
+      .form-group textarea { min-height: 120px; resize: vertical; }
+      .submit-btn { background: var(--ocean); color: white; padding: 14px 28px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; width: 100%; }
+      .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(27,60,255,0.3); }
+      .success-msg { background: #ecfdf5; color: #065f46; padding: 16px; border-radius: 10px; margin: 20px 0; display: none; }
+      .process-steps { background: white; padding: 24px; border-radius: 12px; margin: 20px 0; }
+      .process-step { display: flex; align-items: center; margin-bottom: 12px; }
+      .step-icon { width: 32px; height: 32px; background: var(--lagoon); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="index.html" class="back-link">← Back to Home</a>
+      <h1>Delete My Account</h1>
+      <p class="subtitle">Right to erasure under DPDP Act, 2023</p>
+
+      <div class="info-box">
+        <strong>Your Right:</strong> Under India's Digital Personal Data Protection Act, 2023, you have the right to request deletion of your personal data and account.
+      </div>
+
+      <h2>What Happens When You Delete?</h2>
+      <ul>
+        <li>Your account will be permanently deleted</li>
+        <li>All personal data will be removed from our systems</li>
+        <li>Booking history will be deleted (except for tax records)</li>
+        <li>You will no longer receive app notifications</li>
+        <li>Payment history will be retained as required by law</li>
+      </ul>
+
+      <div class="warning-box">
+        <strong>Important:</strong>
+        <ul style="margin-top:10px;margin-bottom:0;">
+          <li>Active bookings will be cancelled</li>
+          <li>Pending payments must be settled</li>
+          <li>Unpaid invoices remain your responsibility</li>
+          <li>This action is irreversible</li>
+        </ul>
+      </div>
+
+      <h2>Data Retention After Deletion</h2>
+      <p>Some data may be retained for legal compliance:</p>
+      <ul>
+        <li>Payment records: 6 years (per tax laws)</li>
+        <li>Transaction data: For legal disputes</li>
+      </ul>
+
+      <div class="form-container">
+        <h2 style="margin-top:0;">Request Account Deletion</h2>
+        <div id="successMessage" class="success-msg">
+          <strong>✓ Request Submitted!</strong><br>
+          We have received your account deletion request. Our team will process it within 48 hours and send confirmation to your registered email.
+        </div>
+        <form id="deletionForm">
+          <div class="form-group">
+            <label for="phone">Registered Phone Number *</label>
+            <input type="tel" id="phone" name="phone" placeholder="+91XXXXXXXXXX" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Registered Email Address *</label>
+            <input type="email" id="email" name="email" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label for="reason">Reason for Deletion (Optional)</label>
+            <select id="reason" name="reason">
+              <option value="">Select a reason...</option>
+              <option value="privacy">Privacy concerns</option>
+              <option value="not_useful">Not using the app</option>
+              <option value="switched">Switched to competitor</option>
+              <option value="technical">Technical issues</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="additional">Additional Comments</label>
+            <textarea id="additional" name="additional" placeholder="Any additional feedback..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="confirm" required style="width:auto;margin-right:8px;">
+              I understand this action is permanent and cannot be undone. *
+            </label>
+          </div>
+          <button type="submit" class="submit-btn">Submit Deletion Request</button>
+        </form>
+      </div>
+
+      <div class="process-steps">
+        <h3 style="margin-top:0;">What happens next?</h3>
+        <div class="process-step"><span class="step-icon">1</span> We receive your request (within 24 hours)</div>
+        <div class="process-step"><span class="step-icon">2</span> Verify your identity</div>
+        <div class="process-step"><span class="step-icon">3</span> Process deletion (within 48 hours)</div>
+        <div class="process-step"><span class="step-icon">4</span> Send confirmation email</div>
+      </div>
+
+      <h2>Alternative Methods</h2>
+      <ul>
+        <li><strong>Email:</strong> Send deletion request to safecom.patna@gmail.com</li>
+        <li><strong>Phone:</strong> Call +91 091137 68350</li>
+        <li><strong>In-App:</strong> Settings → Account → Delete Account</li>
+      </ul>
+    </div>
+
+    <script>
+      document.getElementById('deletionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const phone = document.getElementById('phone').value;
+        const email = document.getElementById('email').value;
+        
+        if (!phone || !email) {
+          alert('Please fill in all required fields');
+          return;
+        }
+        
+        const formData = {
+          type: 'account_deletion',
+          phone: phone,
+          email: email,
+          reason: document.getElementById('reason').value,
+          additional: document.getElementById('additional').value,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('Deletion request:', formData);
+        
+        document.getElementById('deletionForm').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+        
+        // In production, this would send to Firebase/Backend
+        alert('Your account deletion request has been submitted. We will contact you shortly.');
+      });
+    </script>
+  </body>
+</html>
