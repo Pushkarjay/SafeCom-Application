@@ -59,10 +59,10 @@
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, var(--text) 0%, #374151 100%);
-  color: var(--text-inverse);
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.2);
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
 }
 
 .catalog-toolbar {

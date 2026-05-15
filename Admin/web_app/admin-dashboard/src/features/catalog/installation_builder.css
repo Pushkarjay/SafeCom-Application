@@ -17,7 +17,7 @@
 
 .ib-stat.highlight {
   background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent-lighter) 100%);
-  border-color: #a5b4fc;
+  border-color: #fbbf24;
 }
 
 .ib-stat-value { font-size: 20px; font-weight: 700; color: var(--text); }
@@ -38,7 +38,7 @@
   font-size: 11px; font-weight: 600;
   background: var(--info-bg); color: var(--info-text);
 }
-.ib-badge.secondary { background: #f3e8ff; color: #7c3aed; }
+.ib-badge.secondary { background: var(--accent-light); color: var(--accent-dark); }
 .ib-badge.club { background: var(--warning-bg); color: var(--warning-text); margin-left: 6px; }
 .ib-badge.primary { background: var(--success-bg); color: var(--success-text); }
 .ib-badge.dep { background: #ffedd5; color: #c2410c; }
@@ -56,7 +56,7 @@
   border-radius: var(--radius-lg); overflow: hidden;
   transition: box-shadow 0.2s ease;
 }
-.ib-category-card.open { box-shadow: 0 4px 12px rgba(0,0,0,.06); border-color: #c7d2fe; }
+.ib-category-card.open { box-shadow: 0 4px 12px rgba(0,0,0,.06);   border-color: #fde68a; }
 
 .ib-category-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -78,7 +78,7 @@
   border: 1px solid var(--border); border-radius: 10px;
   overflow: hidden; transition: box-shadow 0.15s ease;
 }
-.ib-setup-card.open { border-color: #a5b4fc; box-shadow: 0 2px 8px rgba(99,102,241,.08); }
+.ib-setup-card.open { border-color: #fbbf24; box-shadow: 0 2px 8px rgba(217,119,6,.08); }
 
 .ib-setup-header {
   display: flex; align-items: center; justify-content: space-between;

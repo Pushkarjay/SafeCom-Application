@@ -52,10 +52,11 @@ export default function MainLayout() {
 
   return (
     <div className="main-layout">
+      <div className="grain-overlay" />
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo-box">
-            <img src="https://firebasestorage.googleapis.com/v0/b/safecom-application-01.appspot.com/o/logos%2Fsafecom_logo_v1_1.jpeg?alt=media" alt="SafeCom" className="logo-img" />
+            <span className="logo-emoji">🛡️</span>
           </div>
           <div className="logo-text">
             <h2>SafeCom</h2>
