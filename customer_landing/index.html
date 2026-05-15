@@ -3,349 +3,809 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SafeCom Customer App</title>
-    <meta
-      name="description"
-      content="SafeCom Customer App for booking and paying for home services in-app."
-    />
+    <title>SafeCom — Home Services, CCTV & Repairs, Patna</title>
+    <meta name="description" content="SafeCom connects Patna with verified technicians for CCTV installation, computer repair, and home services. Book through our app." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --ink: #0d1024;
-        --sky: #f4f7ff;
-        --sun: #ffb457;
-        --ocean: #1b3cff;
-        --lagoon: #29b3b0;
-        --cloud: #ffffff;
-        --shadow: rgba(9, 13, 42, 0.12);
+        --page: #F8F6F2;
+        --surface: #FFFFFF;
+        --ink: #1C1C1E;
+        --ink-muted: #6B6B7B;
+        --primary: #1A3C3C;
+        --primary-light: #2A5C5C;
+        --ember: #D4783C;
+        --ember-hover: #E8884C;
+        --gold: #C4A87C;
+        --border: #E8E4DE;
+        --shadow: 0 2px 8px rgba(26,60,60,0.06), 0 8px 24px rgba(26,60,60,0.04);
+        --shadow-hover: 0 4px 16px rgba(26,60,60,0.10), 0 12px 32px rgba(26,60,60,0.06);
+        --radius: 16px;
+        --radius-sm: 10px;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
 
       body {
-        margin: 0;
-        font-family: "Space Grotesk", "Sora", sans-serif;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background: var(--page);
         color: var(--ink);
-        background: radial-gradient(circle at 20% 10%, rgba(255, 180, 87, 0.25), transparent 45%),
-          radial-gradient(circle at 80% 20%, rgba(41, 179, 176, 0.25), transparent 40%),
-          linear-gradient(135deg, #f8fbff 0%, #eef2ff 55%, #fff7ec 100%);
         min-height: 100vh;
-        overflow-x: hidden;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
       }
 
-      .glow {
-        position: absolute;
-        inset: auto auto -120px -120px;
-        width: 320px;
-        height: 320px;
-        background: radial-gradient(circle, rgba(27, 60, 255, 0.35), transparent 70%);
-        filter: blur(10px);
-        pointer-events: none;
+      h1, h2, h3, h4 {
+        font-family: "Playfair Display", serif;
+        font-weight: 700;
+        line-height: 1.15;
+        color: var(--ink);
       }
 
-      header {
-        padding: 40px 8vw 20px;
+      a { color: var(--ember); text-decoration: none; }
+      a:hover { color: var(--ember-hover); }
+
+      /* ─── Container ─── */
+      .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+      /* ─── Top Bar ─── */
+      .topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 20px;
+        padding: 16px 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        border-bottom: 1px solid var(--border);
       }
 
-      .brand {
+      .topbar-brand {
         display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .pill {
-        display: inline-flex;
         align-items: center;
         gap: 10px;
-        padding: 8px 14px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.7);
-        box-shadow: 0 12px 24px var(--shadow);
-        font-size: 14px;
-        font-weight: 600;
-        letter-spacing: 0.02em;
       }
 
-      h1 {
-        font-family: "Fraunces", "Georgia", serif;
-        font-size: clamp(2.6rem, 4vw, 4.4rem);
-        margin: 0;
-        line-height: 1.02;
-      }
-
-      .hero {
-        position: relative;
-        padding: 30px 8vw 60px;
-        display: grid;
-        gap: 40px;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        align-items: center;
-      }
-
-      .hero-card {
-        background: var(--cloud);
-        border-radius: 28px;
-        padding: 28px;
-        box-shadow: 0 30px 60px rgba(14, 23, 70, 0.1);
-        display: grid;
-        gap: 16px;
-      }
-
-      .hero-card strong {
-        font-size: 18px;
-      }
-
-      .cta {
-        display: inline-flex;
+      .topbar-mark {
+        width: 32px;
+        height: 32px;
+        background: var(--primary);
+        border-radius: 8px;
+        display: flex;
         align-items: center;
         justify-content: center;
-        padding: 12px 20px;
+        color: #fff;
+        font-weight: 700;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .topbar-name {
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+      }
+
+      .topbar-name span { color: var(--ink-muted); font-weight: 400; }
+
+      .topbar-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .topbar-links a {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink-muted);
+        transition: color 0.2s;
+      }
+
+      .topbar-links a:hover { color: var(--ink); }
+
+      .topbar-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        background: var(--ember);
+        color: #fff !important;
         border-radius: 999px;
-        background: var(--ocean);
-        color: white;
         font-weight: 600;
-        text-decoration: none;
-        box-shadow: 0 12px 24px rgba(27, 60, 255, 0.3);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        font-size: 14px;
+        transition: background 0.2s, transform 0.2s;
       }
 
-      .cta:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 18px 30px rgba(27, 60, 255, 0.35);
+      .topbar-btn:hover { background: var(--ember-hover); transform: translateY(-1px); }
+
+      /* ─── Hero ─── */
+      .hero {
+        padding: 80px 24px 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+        align-items: center;
       }
 
-      .section {
-        padding: 10px 8vw 70px;
+      .hero-label {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 20px;
+        background: rgba(196,168,124,0.12);
+        padding: 4px 14px;
+        border-radius: 999px;
       }
 
-      .section h2 {
-        font-family: "Fraunces", "Georgia", serif;
-        font-size: clamp(1.8rem, 3vw, 2.4rem);
+      .hero h1 {
+        font-size: clamp(2.8rem, 5vw, 4.2rem);
+        font-weight: 700;
         margin-bottom: 20px;
       }
 
-      .grid {
-        display: grid;
-        gap: 18px;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      .hero h1 i {
+        font-style: italic;
+        color: var(--primary);
       }
 
-      .card {
-        background: var(--cloud);
-        border-radius: 20px;
-        padding: 18px;
-        box-shadow: 0 20px 40px rgba(14, 23, 70, 0.08);
+      .hero p {
+        font-size: 17px;
+        color: var(--ink-muted);
+        max-width: 480px;
+        margin-bottom: 32px;
+        line-height: 1.7;
       }
 
-      .card h3 {
-        margin-top: 0;
-      }
-
-      .policy {
-        background: #0d1024;
-        color: #f7f6ff;
-        border-radius: 26px;
-        padding: 26px;
-        box-shadow: 0 25px 45px rgba(9, 13, 42, 0.2);
-      }
-
-      .policy a {
-        color: #ffdf92;
-      }
-
-      .policy-links {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 12px;
-        margin-top: 16px;
-      }
-
-      .policy-links a {
-        display: block;
-        padding: 14px 18px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 12px;
-        color: #fff;
-        text-decoration: none;
-        transition: background 0.2s;
-        border: 1px solid rgba(255,255,255,0.15);
-      }
-
-      .policy-links a:hover {
-        background: rgba(255,255,255,0.2);
-      }
-
-      .contact-float {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        z-index: 100;
-      }
-
-      .contact-float a {
+      .hero-actions {
         display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .btn-primary {
+        display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 14px 24px;
-        background: #1b3cff;
-        color: white;
+        padding: 14px 28px;
+        background: var(--primary);
+        color: #fff;
+        border: none;
         border-radius: 999px;
-        text-decoration: none;
         font-weight: 600;
-        box-shadow: 0 8px 24px rgba(27,60,255,0.4);
-        transition: transform 0.2s;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 12px rgba(26,60,60,0.2);
+        text-decoration: none;
       }
 
-      .contact-float a:hover {
+      .btn-primary:hover {
+        background: var(--primary-light);
         transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(26,60,60,0.25);
+        color: #fff;
       }
 
-      footer {
-        padding: 30px 8vw 50px;
+      .btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 28px;
+        background: transparent;
+        color: var(--ink);
+        border: 2px solid var(--border);
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+        text-decoration: none;
+      }
+
+      .btn-outline:hover {
+        border-color: var(--primary);
+        background: rgba(26,60,60,0.04);
+      }
+
+      .hero-visual {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+
+      .hero-shield {
+        width: 200px;
+        height: 200px;
+        background: var(--surface);
+        border-radius: 50%;
+        box-shadow: var(--shadow-hover);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 80px;
+        position: relative;
+      }
+
+      .hero-shield::after {
+        content: '';
+        position: absolute;
+        inset: -12px;
+        border-radius: 50%;
+        border: 2px dashed var(--border);
+        animation: spin 30s linear infinite;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .hero-badge {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: var(--ember);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(212,120,60,0.3);
+      }
+
+      /* ─── Section Headers ─── */
+      .section-header {
+        text-align: center;
+        margin-bottom: 48px;
+      }
+
+      .section-header h2 {
+        font-size: clamp(2rem, 3vw, 2.8rem);
+        margin-bottom: 12px;
+      }
+
+      .section-header p {
+        color: var(--ink-muted);
+        font-size: 16px;
+        max-width: 560px;
+        margin: 0 auto;
+      }
+
+      .section-header .overline {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 12px;
+        display: block;
+      }
+
+      /* ─── Services ─── */
+      .services {
+        padding: 60px 24px 80px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .service-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .service-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 28px;
+        box-shadow: var(--shadow);
+        transition: box-shadow 0.3s, transform 0.3s;
+        border: 1px solid var(--border);
+      }
+
+      .service-card:hover {
+        box-shadow: var(--shadow-hover);
+        transform: translateY(-4px);
+      }
+
+      .service-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(26,60,60,0.06);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 16px;
+      }
+
+      .service-card h3 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .service-card p {
+        color: var(--ink-muted);
         font-size: 14px;
-        color: rgba(13, 16, 36, 0.65);
+        line-height: 1.6;
       }
 
-      .fade-in {
+      /* ─── How It Works ─── */
+      .how {
+        padding: 60px 24px 80px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .how-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        position: relative;
+      }
+
+      .how-grid::before {
+        content: '';
+        position: absolute;
+        top: 40px;
+        left: calc(16.67% + 16px);
+        right: calc(16.67% + 16px);
+        height: 2px;
+        background: linear-gradient(to right, var(--border), var(--gold), var(--border));
+        z-index: 0;
+      }
+
+      .how-step {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      .how-num {
+        width: 56px;
+        height: 56px;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--primary);
+        margin: 0 auto 20px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .how-step h3 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .how-step p {
+        color: var(--ink-muted);
+        font-size: 14px;
+        line-height: 1.6;
+        max-width: 260px;
+        margin: 0 auto;
+      }
+
+      /* ─── Business Info ─── */
+      .business {
+        padding: 60px 24px 80px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+      }
+
+      .info-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+      }
+
+      .info-card h3 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--gold);
+        margin-bottom: 12px;
+      }
+
+      .info-card .info-value {
+        font-size: 15px;
+        line-height: 1.6;
+        color: var(--ink);
+      }
+
+      .info-card .info-value a {
+        color: var(--ember);
+        font-weight: 500;
+      }
+
+      .info-card .info-value a:hover { color: var(--ember-hover); }
+
+      /* ─── Policies ─── */
+      .policies {
+        padding: 60px 24px 80px;
+        background: var(--primary);
+        color: #fff;
+        margin-top: 20px;
+      }
+
+      .policies .wrap { max-width: 1200px; margin: 0 auto; }
+
+      .policies .section-header h2 { color: #fff; }
+      .policies .section-header p { color: rgba(255,255,255,0.7); }
+      .policies .section-header .overline { color: var(--gold); }
+
+      .policy-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+      }
+
+      .policy-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px 20px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: var(--radius-sm);
+        color: rgba(255,255,255,0.9);
+        font-size: 14px;
+        font-weight: 500;
+        transition: background 0.2s, transform 0.2s;
+      }
+
+      .policy-link:hover {
+        background: rgba(255,255,255,0.14);
+        transform: translateY(-2px);
+        color: #fff;
+      }
+
+      .policy-link span { font-size: 20px; flex-shrink: 0; }
+
+      /* ─── Footer ─── */
+      .footer {
+        padding: 40px 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        border-top: 1px solid var(--border);
+        font-size: 14px;
+        color: var(--ink-muted);
+      }
+
+      .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+
+      .footer-links a {
+        color: var(--ink-muted);
+        font-size: 13px;
+      }
+
+      .footer-links a:hover { color: var(--ink); }
+
+      /* ─── WhatsApp Floating ─── */
+      .wa-float {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        z-index: 999;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 12px;
+      }
+
+      .wa-bubble {
+        background: #fff;
+        border-radius: 16px 16px 16px 4px;
+        padding: 14px 18px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+        font-size: 14px;
+        max-width: 240px;
+        line-height: 1.5;
+        color: var(--ink);
         opacity: 0;
         transform: translateY(10px);
-        animation: fadeUp 0.7s ease forwards;
+        animation: waIn 0.4s ease 0.5s forwards;
+        position: relative;
       }
 
-      .fade-in.delay-1 {
-        animation-delay: 0.15s;
+      .wa-bubble strong { color: #25D366; }
+
+      @keyframes waIn { to { opacity: 1; transform: translateY(0); } }
+
+      .wa-btn {
+        width: 60px;
+        height: 60px;
+        background: #25D366;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 20px rgba(37,211,102,0.35);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        border: none;
+        flex-shrink: 0;
+        text-decoration: none;
       }
 
-      .fade-in.delay-2 {
-        animation-delay: 0.3s;
+      .wa-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 8px 28px rgba(37,211,102,0.45);
       }
 
-      @keyframes fadeUp {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+      .wa-btn svg {
+        width: 28px;
+        height: 28px;
+        fill: #fff;
+      }
+
+      /* ─── Animations ─── */
+      .fade-up {
+        opacity: 0;
+        transform: translateY(24px);
+        animation: fadeUp 0.6s ease forwards;
+      }
+
+      .fade-up.d1 { animation-delay: 0.1s; }
+      .fade-up.d2 { animation-delay: 0.2s; }
+      .fade-up.d3 { animation-delay: 0.3s; }
+      .fade-up.d4 { animation-delay: 0.4s; }
+      .fade-up.d5 { animation-delay: 0.5s; }
+
+      @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+      /* ─── Responsive ─── */
+      @media (max-width: 900px) {
+        .hero { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+        .hero p { margin: 0 auto 32px; }
+        .hero-actions { justify-content: center; }
+        .hero-visual { order: -1; }
+        .how-grid { grid-template-columns: 1fr; gap: 24px; }
+        .how-grid::before { display: none; }
+        .how-step { display: flex; gap: 20px; text-align: left; align-items: flex-start; }
+        .how-num { margin: 0; flex-shrink: 0; }
+        .how-step p { margin: 0; }
       }
 
       @media (max-width: 640px) {
-        header {
-          flex-direction: column;
-          align-items: flex-start;
-        }
+        .topbar-links a:not(.topbar-btn) { display: none; }
+        .topbar { padding: 12px 16px; }
+        .hero { padding: 40px 16px 40px; }
+        .services, .how, .business, .policies { padding: 40px 16px; }
+        .service-grid, .info-grid { grid-template-columns: 1fr; }
+      }
 
-        .hero {
-          padding-top: 10px;
-        }
+      /* ─── Dismiss bubble ─── */
+      .wa-close {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0 0 0 8px;
       }
     </style>
   </head>
   <body>
-    <div class="glow"></div>
-    <header>
-      <div class="brand fade-in">
-        <span class="pill">SafeCom Customer App</span>
-        <h1>Book home services. Pay in the app.</h1>
+
+    <!-- ─── Top Bar ─── -->
+    <header class="topbar">
+      <div class="topbar-brand">
+        <div class="topbar-mark">S</div>
+        <div class="topbar-name">SafeCom <span>Patna</span></div>
       </div>
-      <div class="fade-in delay-1" style="display:flex;gap:12px;flex-wrap:wrap;">
-        <a class="cta" href="contact.html">Contact Us</a>
-        <a class="cta" href="mailto:pushkarjay.ajay1@gmail.com" style="background:var(--lagoon);">Email Dev</a>
-      </div>
+      <nav class="topbar-links">
+        <a href="#services">Services</a>
+        <a href="#business">Contact</a>
+        <a href="contact.html">Support</a>
+        <a href="contact.html" class="topbar-btn">Get in Touch</a>
+      </nav>
     </header>
 
+    <!-- ─── Hero ─── -->
     <section class="hero">
-      <div class="hero-card fade-in delay-1">
-        <strong>App Status</strong>
-        <p>Android & iOS builds are in active development. Public release is coming soon.</p>
-        <p>Payments are collected in-app through Razorpay’s secure checkout.</p>
+      <div class="fade-up">
+        <div class="hero-label">Patna's trusted service platform</div>
+        <h1>Security &amp; home services.<br><i>Built for trust.</i></h1>
+        <p>
+          From CCTV installation to computer repairs — SafeCom connects you with verified
+          technicians in Patna. Book, track, and pay, all from one app.
+        </p>
+        <div class="hero-actions">
+          <a href="contact.html" class="btn-primary">Book a Service</a>
+          <a href="tel:+9109113768350" class="btn-outline">Call +91 091137 68350</a>
+        </div>
       </div>
-      <div class="hero-card fade-in delay-2">
-        <strong>What SafeCom does</strong>
-        <p>We connect customers with verified technicians for appliance repair, maintenance, and home services.</p>
-        <p>Customers pay only after reviewing the job summary inside the app.</p>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>How payments work</h2>
-      <div class="grid">
-        <div class="card">
-          <h3>1. Book a service</h3>
-          <p>Select a service package and preferred time slot in the SafeCom Customer App.</p>
-        </div>
-        <div class="card">
-          <h3>2. Confirm & pay</h3>
-          <p>Razorpay checkout opens inside the app with UPI, cards, and netbanking options.</p>
-        </div>
-        <div class="card">
-          <h3>3. Get instant receipt</h3>
-          <p>We verify the payment and issue a digital receipt in-app and via email.</p>
-        </div>
+      <div class="hero-visual fade-up d2">
+        <div class="hero-shield">&#128737;&#65039;</div>
+        <div class="hero-badge">4.9 &#9733; on Justdial</div>
       </div>
     </section>
 
-    <section class="section">
-      <h2>Legal & Policies</h2>
-      <div class="policy">
-        <p>SafeCom complies with India's <strong>Digital Personal Data Protection Act, 2023</strong> and <strong>Google Play Store requirements</strong>. View our full policies:</p>
-        <div class="policy-links">
-          <a href="privacy-policy.html">🔒 Privacy Policy</a>
-          <a href="terms-of-service.html">📋 Terms of Service</a>
-          <a href="refund-policy.html">💰 Refund Policy</a>
-          <a href="data-collection.html">📊 Data Collection</a>
-          <a href="account-deletion.html">🗑️ Delete Account</a>
-          <a href="contact.html">📞 Contact Support</a>
-        </div>
+    <!-- ─── Services ─── -->
+    <section class="services" id="services">
+      <div class="section-header fade-up">
+        <span class="overline">What we do</span>
+        <h2>Services we offer</h2>
+        <p>From surveillance to systems — complete tech solutions for your home and office.</p>
       </div>
-    </section>
-
-    <section class="section">
-      <h2>Business details</h2>
-      <div class="grid">
-        <div class="card">
-          <h3>Business contact</h3>
-          <p><a href="mailto:safecom.patna@gmail.com">safecom.patna@gmail.com</a></p>
-          <p><a href="tel:+9109113768350">+91 091137 68350</a></p>
+      <div class="service-grid">
+        <div class="service-card fade-up d1">
+          <div class="service-icon">&#128247;</div>
+          <h3>CCTV Sales &amp; Installation</h3>
+          <p>High-definition surveillance cameras with professional installation and on-site configuration.</p>
         </div>
-        <div class="card">
-          <h3>Service area</h3>
-          <p>Patna, Bihar (initial launch area)</p>
+        <div class="service-card fade-up d2">
+          <div class="service-icon">&#128187;</div>
+          <h3>Computer Repair &amp; Services</h3>
+          <p>Desktop and laptop diagnostics, hardware repair, OS installation, and performance upgrades.</p>
         </div>
-        <div class="card">
-          <h3>Headquarters</h3>
-          <p>Road no 1, phase- 01 Vit Vibagh Colony, Maurya Path, Khapura, Patna, Bihar 800014, IN</p>
-          <p>25.595833, 85.084474</p>
+        <div class="service-card fade-up d3">
+          <div class="service-icon">&#127961;&#65039;</div>
+          <h3>Home &amp; Office Networking</h3>
+          <p>Wi-Fi setup, structured cabling, router configuration, and complete network security audits.</p>
         </div>
-        <div class="card">
-          <h3>Developer contact</h3>
-          <p>Pushkarjay Ajay</p>
-          <p><a href="mailto:play@pixxel.space">play@pixxel.space</a></p>
+        <div class="service-card fade-up d1">
+          <div class="service-icon">&#128424;</div>
+          <h3>Printer Services</h3>
+          <p>Printer repair, toner replacement, network printing setup, and regular maintenance contracts.</p>
         </div>
-        <div class="card">
-          <h3>LinkedIn</h3>
-          <p><a href="https://www.linkedin.com/company/safecomindia/?originalSubdomain=in">SafeCom India</a></p>
-          <p><a href="https://www.linkedin.com/in/shakti-k/">Owner: Shakti Kumar</a></p>
-          <p><a href="https://www.linkedin.com/in/pushkarjay">Developer: Pushkarjay Ajay</a></p>
+        <div class="service-card fade-up d2">
+          <div class="service-icon">&#128736;&#65039;</div>
+          <h3>Annual Maintenance Contracts</h3>
+          <p>Comprehensive AMC plans for your security systems, computers, and network infrastructure.</p>
+        </div>
+        <div class="service-card fade-up d3">
+          <div class="service-icon">&#128640;</div>
+          <h3>System Upgrades &amp; Customization</h3>
+          <p>Hardware upgrades, custom PC builds, server setup, and software configuration tailored to you.</p>
         </div>
       </div>
     </section>
 
-    <div class="contact-float">
-      <a href="contact.html">💬 Contact Us</a>
+    <!-- ─── How It Works ─── -->
+    <section class="how">
+      <div class="section-header fade-up">
+        <span class="overline">Simple process</span>
+        <h2>How it works</h2>
+        <p>Three easy steps to get your service booked and completed.</p>
+      </div>
+      <div class="how-grid">
+        <div class="how-step fade-up d1">
+          <div class="how-num">1</div>
+          <h3>Book a service</h3>
+          <p>Choose your service, pick a time slot, and confirm your booking in the SafeCom app.</p>
+        </div>
+        <div class="how-step fade-up d2">
+          <div class="how-num">2</div>
+          <h3>Confirm &amp; pay</h3>
+          <p>Secure checkout via Razorpay — UPI, cards, and netbanking all accepted.</p>
+        </div>
+        <div class="how-step fade-up d3">
+          <div class="how-num">3</div>
+          <h3>Service delivered</h3>
+          <p>A verified technician arrives at your doorstep. Get a digital receipt in-app and via email.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Business Info ─── -->
+    <section class="business" id="business">
+      <div class="section-header fade-up">
+        <span class="overline">Get in touch</span>
+        <h2>Contact &amp; business details</h2>
+        <p>Reach out for queries, bookings, or support.</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-card fade-up d1">
+          <h3>Call / WhatsApp</h3>
+          <div class="info-value">
+            <a href="tel:+9109113768350">+91 091137 68350</a><br>
+            <span style="font-size:13px;color:var(--ink-muted);">Mon–Sat, 9 AM – 7 PM</span>
+          </div>
+        </div>
+        <div class="info-card fade-up d2">
+          <h3>Email</h3>
+          <div class="info-value">
+            <strong>Business:</strong> <a href="mailto:safecom.patna@gmail.com">safecom.patna@gmail.com</a><br>
+            <strong>Developer:</strong> <a href="mailto:pushkarjay.ajay1@gmail.com">pushkarjay.ajay1@gmail.com</a>
+          </div>
+        </div>
+        <div class="info-card fade-up d3">
+          <h3>Address</h3>
+          <div class="info-value">
+            Bailey Rd, near Passport Office<br>
+            Ashokpuri, Chowrah, Khajpura<br>
+            Patna, Bihar 800014
+          </div>
+        </div>
+        <div class="info-card fade-up d4">
+          <h3>Links</h3>
+          <div class="info-value">
+            <a href="https://www.justdial.com/Patna/Safecom-Opp-To-Bailey-Road-Pillar-No25-Khajpura/0612PX612-X612-210310010005-L3E2_BZDET" target="_blank">Justdial Reviews</a><br>
+            <a href="https://play.google.com/store/apps/details?id=com.safecom.customer" target="_blank">Google Play Store</a><br>
+            <a href="https://www.linkedin.com/company/safecomindia" target="_blank">LinkedIn</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Policies ─── -->
+    <section class="policies">
+      <div class="wrap">
+        <div class="section-header fade-up">
+          <span class="overline">Your rights</span>
+          <h2>Legal &amp; policies</h2>
+          <p>SafeCom complies with India's DPDP Act, 2023 and Google Play Store requirements.</p>
+        </div>
+        <div class="policy-grid">
+          <a href="privacy-policy.html" class="policy-link fade-up d1"><span>&#128274;</span> Privacy Policy</a>
+          <a href="terms-of-service.html" class="policy-link fade-up d2"><span>&#128196;</span> Terms of Service</a>
+          <a href="refund-policy.html" class="policy-link fade-up d3"><span>&#128176;</span> Refund Policy</a>
+          <a href="data-collection.html" class="policy-link fade-up d4"><span>&#128202;</span> Data Collection</a>
+          <a href="account-deletion.html" class="policy-link fade-up d5"><span>&#128465;&#65039;</span> Delete Account</a>
+          <a href="contact.html" class="policy-link fade-up d1"><span>&#128222;</span> Contact Support</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Footer ─── -->
+    <footer class="footer">
+      <span>&copy; 2026 SafeCom Services</span>
+      <div class="footer-links">
+        <a href="privacy-policy.html">Privacy</a>
+        <a href="terms-of-service.html">Terms</a>
+        <a href="contact.html">Support</a>
+        <a href="https://play.google.com/store/apps/details?id=com.safecom.customer" target="_blank">Play Store</a>
+      </div>
+    </footer>
+
+    <!-- ─── WhatsApp Floating ─── -->
+    <div class="wa-float" id="waFloat">
+      <div class="wa-bubble" id="waBubble">
+        <strong>&#128172; Chat with us</strong><br>
+        Got questions? We're here to help.
+        <button class="wa-close" onclick="document.getElementById('waBubble').style.display='none'">&times;</button>
+      </div>
+      <a class="wa-btn"
+         href="https://wa.me/9109113768350?text=This+enquiry+is+via+website"
+         target="_blank"
+         rel="noopener noreferrer"
+         aria-label="Chat on WhatsApp">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+      </a>
     </div>
 
-    <footer>
-      SafeCom Customer App • Payments powered by Razorpay • <a href="privacy-policy.html">Privacy</a> • <a href="terms-of-service.html">Terms</a> • © 2026 SafeCom Services
-    </footer>
   </body>
 </html>
