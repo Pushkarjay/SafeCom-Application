@@ -56,7 +56,7 @@ export default function MainLayout() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo-box">
-            <img src="/logo.jpeg" alt="SafeCom" className="logo-img" />
+            <img src="/logo-visual.jpeg" alt="SafeCom" className="logo-img" />
           </div>
           <div className="logo-text">
             <h2>SafeCom</h2>

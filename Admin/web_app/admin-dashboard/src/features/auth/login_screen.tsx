@@ -29,6 +29,9 @@ export default function LoginScreen() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
+          <div className="login-logo">
+            <img src="/logo-visual.jpeg" alt="SafeCom" />
+          </div>
           <h1>SafeCom Admin</h1>
           <p>Dashboard</p>
         </div>
