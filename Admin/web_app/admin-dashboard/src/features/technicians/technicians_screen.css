@@ -3,3 +3,9 @@
   flex-direction: column;
   gap: 0;
 }
+
+.technicians-screen .screen-header h1 {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}

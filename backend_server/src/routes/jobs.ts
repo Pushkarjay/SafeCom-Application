@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { queryCollection, getDocument, createDocument, updateDocument, getCollection, getDb } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument, getCollection, getDb } from '../services/firestore.js'
 import { sendPushNotification } from '../services/notificationService.js'
 import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
 import { Query, QueryDocumentSnapshot } from 'firebase-admin/firestore'
@@ -59,7 +59,7 @@ jobsRouter.get('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequ
       )
     }
     // Filter by status
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== 'all') {
       jobs = jobs.filter((job: any) => job.status === statusFilter)
     }
     
@@ -87,6 +87,51 @@ jobsRouter.get('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequ
         code: 'JOBS_FETCH_FAILED',
         message: 'Failed to fetch jobs'
       },
+      timestamp: new Date().toISOString()
+    })
+  }
+})
+
+/**
+ * POST /jobs - Create a new job
+ */
+jobsRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+  const jobCreateSchema = z.object({
+    customerId: z.string().min(1),
+    serviceType: z.string().min(1),
+    amount: z.number().nonnegative(),
+    scheduledDate: z.string().optional(),
+    technicianId: z.string().optional(),
+    notes: z.string().optional(),
+    status: z.string().optional().default('pending')
+  })
+
+  const parsed = jobCreateSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Invalid job payload', details: parsed.error.flatten() },
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  try {
+    const docId = await createDocument('jobs', {
+      ...parsed.data,
+      status: parsed.data.status || 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })
+    return res.status(201).json({
+      success: true,
+      data: { id: docId, ...parsed.data },
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Firestore create job failed:', error)
+    return res.status(500).json({
+      success: false,
+      error: { code: 'JOB_CREATE_FAILED', message: 'Failed to create job' },
       timestamp: new Date().toISOString()
     })
   }
@@ -142,13 +187,25 @@ jobsRouter.post('/:id/pickup', verifyFirebaseIdToken, async (req: FirebaseAuthen
       updatedAt: new Date().toISOString()
     })
     
-    // Also update booking status
+    // Also update booking status and copy full invoice to job
     if (job.bookingId) {
-      await updateDocument('bookings', job.bookingId, {
-        status: 'assigned',
-        assignedEmployeeId: employeeId,
-        updatedAt: new Date().toISOString()
-      })
+      const bookingSnap = await db.collection('bookings').where('bookingId', '==', job.bookingId).limit(1).get()
+      if (!bookingSnap.empty) {
+        const bookingDocId = bookingSnap.docs[0].id
+        const bookingData = bookingSnap.docs[0].data()
+        await updateDocument('bookings', bookingDocId, {
+          status: 'assigned',
+          assignedEmployeeId: employeeId,
+          updatedAt: new Date().toISOString()
+        })
+        // Copy full invoice from booking to job
+        if (bookingData.invoice) {
+          await updateDocument('jobs', docId, {
+            invoice: bookingData.invoice,
+            updatedAt: new Date().toISOString()
+          })
+        }
+      }
     }
     
     const updated = await getDocument<CanonicalJob>('jobs', docId)
@@ -169,12 +226,13 @@ jobsRouter.post('/:id/pickup', verifyFirebaseIdToken, async (req: FirebaseAuthen
 })
 
 /**
- * GET /jobs/:id - Get single job
+ * GET /jobs/:id - Get single job (by jobId field)
  */
 jobsRouter.get('/:id', async (req, res) => {
   try {
-    const job = await getDocument<CanonicalJob>('jobs', req.params.id)
-    if (!job) {
+    const db = getDb()
+    const jobSnap = await db.collection('jobs').where('jobId', '==', req.params.id).limit(1).get()
+    if (jobSnap.empty) {
       return res.status(404).json({
         success: false,
         error: {
@@ -184,6 +242,8 @@ jobsRouter.get('/:id', async (req, res) => {
         timestamp: new Date().toISOString()
       } as ApiResponse<never>)
     }
+    const doc = jobSnap.docs[0]
+    const job = { jobId: doc.id, ...doc.data() } as CanonicalJob
     
     return res.json({
       success: true,
@@ -204,6 +264,25 @@ jobsRouter.get('/:id', async (req, res) => {
 })
 
 /**
+ * DELETE /jobs/:id - Delete a job
+ */
+jobsRouter.delete('/:id', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+  try {
+    const db = getDb()
+    const jobId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
+    const jobSnap = await db.collection('jobs').where('jobId', '==', jobId).limit(1).get()
+    if (jobSnap.empty) {
+      return res.status(404).json({ success: false, error: { code: 'JOB_NOT_FOUND', message: 'Job not found' } })
+    }
+    await deleteDocument('jobs', jobSnap.docs[0].id)
+    return res.json({ success: true, message: 'Job deleted' })
+  } catch (error) {
+    console.error('Firestore delete job failed:', error)
+    return res.status(500).json({ success: false, error: { code: 'JOB_DELETE_FAILED', message: 'Failed to delete job' } })
+  }
+})
+
+/**
  * PATCH /jobs/:id - Update job (assignment, status, completion)
  */
 jobsRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
@@ -214,7 +293,13 @@ jobsRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
       name: z.string(),
       phone: z.string()
     }).optional(),
-    notes: z.string().optional()
+    notes: z.string().optional(),
+    customerId: z.string().optional(),
+    serviceType: z.string().optional(),
+    amount: z.number().nonnegative().optional(),
+    scheduledDate: z.string().optional(),
+    completedDate: z.string().optional(),
+    technicianId: z.string().optional()
   })
 
   const parsed = jobUpdateSchema.safeParse(req.body)
@@ -231,13 +316,23 @@ jobsRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
   }
 
   try {
-  const jobId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
-    await updateDocument('jobs', jobId, {
+    const db = getDb()
+    const jobId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
+    const jobSnap = await db.collection('jobs').where('jobId', '==', jobId).limit(1).get()
+    if (jobSnap.empty) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'JOB_NOT_FOUND', message: 'Job not found' },
+        timestamp: new Date().toISOString()
+      })
+    }
+    const docId = jobSnap.docs[0].id
+    await updateDocument('jobs', docId, {
       ...parsed.data,
       updatedAt: new Date().toISOString()
     })
     
-    const updated = await getDocument<CanonicalJob>('jobs', jobId)
+    const updated = await getDocument<CanonicalJob>('jobs', docId)
     
     return res.json({
       success: true,
@@ -280,8 +375,18 @@ jobsRouter.post('/:id/complete', verifyFirebaseIdToken, async (req, res) => {
    }
 
    try {
-   const jobId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
-    await updateDocument('jobs', jobId, {
+    const db = getDb()
+    const jobId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0]
+    const jobSnap = await db.collection('jobs').where('jobId', '==', jobId).limit(1).get()
+    if (jobSnap.empty) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'JOB_NOT_FOUND', message: 'Job not found' },
+        timestamp: new Date().toISOString()
+      })
+    }
+    const docId = jobSnap.docs[0].id
+    await updateDocument('jobs', docId, {
       status: 'completed',
       completionNotes: parsed.data.notes,
       actualAmount: parsed.data.actualAmount,
@@ -290,14 +395,18 @@ jobsRouter.post('/:id/complete', verifyFirebaseIdToken, async (req, res) => {
       updatedAt: new Date().toISOString()
     })
 
-    // Also update the associated booking
-    const job = await getDocument<CanonicalJob>('jobs', jobId)
+      // Also update the associated booking
+      const job = await getDocument<CanonicalJob>('jobs', docId)
       if (job && job.bookingId) {
-         await updateDocument('bookings', job.bookingId, {
+        const bookingSnap = await db.collection('bookings').where('bookingId', '==', job.bookingId).limit(1).get()
+        if (!bookingSnap.empty) {
+          const bookingDocId = bookingSnap.docs[0].id
+          await updateDocument('bookings', bookingDocId, {
             status: 'completed',
             completedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
-         })
+          })
+        }
       }
 
       return res.json({

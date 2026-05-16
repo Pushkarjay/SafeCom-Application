@@ -40,6 +40,13 @@
   padding: 24px 28px;
   box-shadow: var(--shadow-sm);
   margin-bottom: 20px;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+.customer-card:hover,
+.technician-card:hover,
+.job-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .card-section {
@@ -53,8 +60,9 @@
   margin: 0;
   font-size: 24px;
   color: var(--text);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-family: 'DM Serif Display', serif;
 }
 
 .card-section .status-badge { margin-left: auto; }
@@ -75,14 +83,14 @@
   margin-bottom: 24px;
 }
 
-.info-item { display: flex; flex-direction: column; }
+.info-item { display: flex; flex-direction: column; padding: 8px 0; }
 
 .info-item label {
   font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-weight: 700;
 }
 
@@ -90,15 +98,16 @@
   margin: 0;
   font-size: 15px;
   color: var(--text);
-  font-weight: 600;
+  font-weight: 500;
 }
 
-.info-item p.amount { font-weight: 800; color: var(--success); }
+.info-item p.amount { font-weight: 700; color: var(--success); font-variant-numeric: tabular-nums; }
 
 .info-item .link-text {
   color: var(--accent);
   cursor: pointer;
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .info-item .link-text:hover { color: var(--accent-hover); }
@@ -116,14 +125,22 @@
   padding: 16px;
   background: var(--secondary);
   border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+.stat:hover {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-value {
   display: block;
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 400;
   color: var(--success);
   margin-bottom: 4px;
+  font-family: 'DM Serif Display', serif;
+  line-height: 1.1;
 }
 
 .stat-label {
@@ -143,8 +160,9 @@
   margin: 0 0 12px 0;
   font-size: 16px;
   color: var(--text);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-family: 'DM Serif Display', serif;
 }
 
 .skills-list {
@@ -176,8 +194,9 @@
   margin: 0 0 16px 0;
   color: var(--text);
   font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-family: 'DM Serif Display', serif;
 }
 
 .info-pair {
@@ -190,12 +209,12 @@
 
 .info-pair span:first-child {
   color: var(--text-muted);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 13px;
 }
 
 .info-pair p { margin: 0; color: var(--text); }
-.info-pair a { color: var(--accent); text-decoration: underline; }
+.info-pair a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
 
 .jobs-tab, .payments-tab { overflow-x: auto; }
 
@@ -231,8 +250,9 @@
   margin: 0 0 12px 0;
   font-size: 16px;
   color: var(--text);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-family: 'DM Serif Display', serif;
 }
 
 .status-actions { margin-top: 16px; }
@@ -288,8 +308,9 @@
   margin: 0 0 12px 0;
   font-size: 16px;
   color: var(--text);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-family: 'DM Serif Display', serif;
 }
 
 .notes-text {
@@ -312,8 +333,9 @@
   margin: 0 0 16px 0;
   font-size: 16px;
   color: var(--text);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-family: 'DM Serif Display', serif;
 }
 
 .timeline {

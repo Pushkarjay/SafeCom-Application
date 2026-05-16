@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { DashboardMetrics } from '@data/models/admin_models'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -35,6 +36,7 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardScreen() {
+  const navigate = useNavigate()
   const { data: metrics, isLoading, error } = useAuthenticatedData<DashboardMetrics | null>(
     async () => {
       const data = await adminDatasource.getDashboardMetrics()
@@ -138,10 +140,10 @@ export default function DashboardScreen() {
         <div className="dashboard-section">
           <h2>Quick Actions</h2>
           <div className="actions-grid">
-            <button className="action-button">
+            <button className="action-button" onClick={() => navigate('/technicians/new')}>
               <span>➕</span> Add Technician
             </button>
-            <button className="action-button">
+            <button className="action-button" onClick={() => navigate('/jobs/new')}>
               <span>➕</span> Create Job
             </button>
             <button className="action-button" onClick={() => setShowReports(!showReports)}>

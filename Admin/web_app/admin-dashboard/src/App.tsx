@@ -43,9 +43,13 @@ function App() {
             <Route path="/customers/:id" element={<CustomerDetailScreen />} />
             <Route path="/customers/:id/edit" element={<CustomerFormScreen />} />
             <Route path="/technicians" element={<TechniciansScreen />} />
+            <Route path="/technicians/new" element={<TechnicianDetailScreen />} />
             <Route path="/technicians/:id" element={<TechnicianDetailScreen />} />
+            <Route path="/technicians/:id/edit" element={<TechnicianDetailScreen />} />
             <Route path="/jobs" element={<JobsScreen />} />
+            <Route path="/jobs/new" element={<JobDetailScreen />} />
             <Route path="/jobs/:id" element={<JobDetailScreen />} />
+            <Route path="/jobs/:id/edit" element={<JobDetailScreen />} />
             <Route path="/payments" element={<PaymentsScreen />} />
             <Route path="/catalog/builder/:serviceId" element={<InstallationBuilderScreen />} />
             <Route path="/catalog/services" element={<ServiceCreatorScreen />} />

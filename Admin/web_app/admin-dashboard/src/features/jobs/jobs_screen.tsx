@@ -147,11 +147,11 @@ export default function JobsScreen() {
                   </td>
                   <td>{job.technicianId ? job.technicianId : '—'}</td>
                   <td className="actions-cell">
-                    <button className="action-link" onClick={() => navigate(`/jobs/${job.id}`)}>
+                    <button className="action-link" onClick={() => job.id && navigate(`/jobs/${job.id}`)}>
                       View
                     </button>
                     {job.status === 'pending' && (
-                      <button className="action-link" onClick={() => navigate(`/jobs/${job.id}/edit`)}>
+                      <button className="action-link" onClick={() => job.id && navigate(`/jobs/${job.id}/edit`)}>
                         Edit
                       </button>
                     )}

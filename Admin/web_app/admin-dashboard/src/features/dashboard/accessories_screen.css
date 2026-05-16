@@ -13,8 +13,10 @@
 .accessories-header h1 {
   margin: 0;
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text);
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.02em;
 }
 
 .accessories-controls {
@@ -45,12 +47,12 @@
   overflow: hidden;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .accessory-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
 }
 
 .acc-image {
@@ -70,8 +72,10 @@
 .acc-info h3 {
   margin: 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--text);
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.01em;
 }
 
 .acc-info p {
@@ -102,7 +106,7 @@
 .acc-actions {
   display: flex;
   gap: 8px;
-  padding-top: 12px;
+  padding-top: 14px;
   border-top: 1px solid var(--border-light);
 }
 
@@ -122,8 +126,10 @@
 .services-section h3 {
   margin: 0 0 12px 0;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--text);
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.01em;
 }
 
 .services-list {

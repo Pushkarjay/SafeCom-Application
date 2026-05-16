@@ -80,30 +80,30 @@ export class AdminDatasource {
       phone: String(item.phone || ''),
       skills: Array.isArray(item.skills) ? item.skills.map(String) : [],
       location: String(item.location || ''),
-      totalJobs: Number(item.totalJobs || 0),
+      totalJobs: Number(item.totalJobs || item.completedJobs || 0),
       rating: Number(item.rating || 0),
-      status: String(item.status || 'available') as 'available' | 'on-job' | 'inactive',
-      joiningDate: String(item.joiningDate || item.createdAt || new Date().toISOString())
+      status: (item.status === 'active' ? 'available' : item.status === 'inactive' ? 'inactive' : 'available') as 'available' | 'on-job' | 'inactive',
+      joiningDate: String(item.joinDate || item.joiningDate || item.createdAt || new Date().toISOString())
     }))
   }
 
   async getJobs(status: string | null = null, page: number = 1, limit: number = 10): Promise<Job[]> {
     const url = new URL(`${BASE_URL}/jobs`)
-    if (status) url.searchParams.set('status', status)
+    if (status && status !== 'all') url.searchParams.set('status', status)
     url.searchParams.set('page', String(page))
     url.searchParams.set('limit', String(limit))
     const payload = await this.fetchJson<any>(url.toString())
     const jobs = Array.isArray(payload) ? payload : (payload.data || [])
     return jobs.map((item: any) => ({
-      id: String(item.id || ''),
-      customerId: String(item.customerId || ''),
-      technicianId: item.technicianId ? String(item.technicianId) : null,
+      id: String(item.jobId || item.id || ''),
+      customerId: String(item.customer?.customerId || item.customerId || ''),
+      technicianId: item.assignedTo?.employeeId ? String(item.assignedTo.employeeId) : (item.technicianId ? String(item.technicianId) : null),
       serviceType: String(item.serviceType || 'installation') as Job['serviceType'],
       status: String(item.status || 'pending') as Job['status'],
-      amount: Number(item.amount || 0),
+      amount: Number(item.actualAmount || item.amount || 0),
       scheduledDate: String(item.scheduledDate || new Date().toISOString()),
-      completedDate: item.completedDate ? String(item.completedDate) : null,
-      notes: String(item.notes || '')
+      completedDate: String(item.completedAt || item.completedDate || '') || null,
+      notes: String(item.completionNotes || item.notes || '')
     }))
   }
 
@@ -116,8 +116,9 @@ export class AdminDatasource {
       const remainingAmount = Number(item.remainingAmount || Math.max(0, amount - paidAmount))
       const timestamp = String(item.timestamp || item.createdAt || new Date().toISOString())
 
+      const paymentId = item.paymentId || item.id || ''
       return {
-        id: String(item.id || ''),
+        id: String(paymentId),
         customerId: String(item.customerId || ''),
         customerName: String(item.customerName || item.customerId || ''),
         jobId: String(item.jobId || ''),
@@ -125,10 +126,10 @@ export class AdminDatasource {
         paidAmount,
         remainingAmount,
         status: String(item.status || 'pending') as 'pending' | 'partial' | 'completed' | 'failed',
-        paymentMethod: String(item.paymentMethod || 'cash'),
-        transactionId: String(item.transactionId || item.id || ''),
-        createdAt: String(item.createdAt || timestamp),
-        updatedAt: String(item.updatedAt || timestamp)
+        paymentMethod: String(item.paymentMethod || 'razorpay'),
+        transactionId: String(item.transactionId || item.paymentId || item.id || ''),
+        createdAt: String(item.createdAt || item.timestamp || timestamp),
+        updatedAt: String(item.updatedAt || item.timestamp || timestamp)
       }
     })
   }
@@ -575,6 +576,27 @@ export class AdminDatasource {
       method: 'PATCH',
       body: JSON.stringify(data)
     })
+  }
+
+  async getJob(id: string): Promise<Job | null> {
+    try {
+      const payload = await this.fetchJson<any>(`${BASE_URL}/jobs/${id}`)
+      const item = payload.data || payload
+      if (!item) return null
+      return {
+        id: String(item.jobId || item.id || ''),
+        customerId: String(item.customer?.customerId || item.customerId || ''),
+        technicianId: item.assignedTo?.employeeId ? String(item.assignedTo.employeeId) : (item.technicianId ? String(item.technicianId) : null),
+        serviceType: String(item.serviceType || 'installation') as Job['serviceType'],
+        status: String(item.status || 'pending') as Job['status'],
+        amount: Number(item.actualAmount || item.amount || 0),
+        scheduledDate: String(item.scheduledDate || new Date().toISOString()),
+        completedDate: String(item.completedAt || item.completedDate || '') || null,
+        notes: String(item.completionNotes || item.notes || '')
+      }
+    } catch {
+      return null
+    }
   }
 
   async createJob(data: Partial<Job>): Promise<Job> {

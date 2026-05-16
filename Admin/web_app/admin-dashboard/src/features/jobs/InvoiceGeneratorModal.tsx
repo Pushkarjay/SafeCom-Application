@@ -9,17 +9,101 @@ interface InvoiceGeneratorModalProps {
 export default function InvoiceGeneratorModal({ job, onClose }: InvoiceGeneratorModalProps) {
   const [isGenerating, setIsGenerating] = useState(false)
 
-  const handleGenerate = () => {
+  const handlePrint = () => {
     setIsGenerating(true)
-    setTimeout(() => {
+    const taxAmount = job.amount * 0.18
+    const subtotal = job.amount - taxAmount
+    const invoiceNo = `INV-${job.id.substring(0, 8).toUpperCase()}`
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      alert('Please allow pop-ups to print the invoice.')
       setIsGenerating(false)
-      // In a real application, this would download a PDF or print the HTML
-      alert('Invoice PDF generated successfully! (Mocked)')
+      return
+    }
+
+    printWindow.document.write(`
+      <html>
+      <head>
+        <title>Invoice ${invoiceNo}</title>
+        <style>
+          @page { margin: 20mm; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; margin: 0; padding: 40px; }
+          .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
+          .company h1 { margin: 0; font-size: 24px; color: #1e293b; }
+          .company p { margin: 4px 0; color: #64748b; font-size: 14px; }
+          .invoice-title { text-align: right; }
+          .invoice-title h2 { margin: 0; font-size: 20px; color: #1e293b; }
+          .invoice-title p { margin: 4px 0; color: #64748b; font-size: 14px; }
+          .bill-to { margin-bottom: 32px; }
+          .bill-to p { margin: 2px 0; font-size: 14px; color: #334155; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+          th { border-bottom: 2px solid #e2e8f0; padding: 10px 8px; text-align: left; color: #64748b; font-size: 12px; text-transform: uppercase; }
+          td { border-bottom: 1px solid #e2e8f0; padding: 12px 8px; font-size: 14px; color: #334155; }
+          td:last-child, th:last-child { text-align: right; }
+          .totals { width: 300px; margin-left: auto; }
+          .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; color: #64748b; }
+          .totals .row.total { border-top: 2px solid #1e293b; padding-top: 12px; font-weight: bold; font-size: 18px; color: #1e293b; }
+          .footer { text-align: center; margin-top: 48px; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+          hr { border: none; border-top: 1px dashed #cbd5e1; margin: 32px 0; }
+          .print-info { text-align: center; color: #94a3b8; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="company">
+            <h1>SafeCom Services</h1>
+            <p>123 Tech Park, Sector 4</p>
+            <p>New Delhi, India</p>
+          </div>
+          <div class="invoice-title">
+            <h2>INVOICE</h2>
+            <p>#${invoiceNo}</p>
+            <p>Date: ${new Date().toLocaleDateString('en-IN')}</p>
+          </div>
+        </div>
+
+        <div class="bill-to">
+          <p><strong>Bill To:</strong></p>
+          <p>Customer ID: ${job.customerId}</p>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>#</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>${job.serviceType.charAt(0).toUpperCase() + job.serviceType.slice(1)} Service${job.notes ? ' — ' + job.notes : ''}</td>
+              <td>1</td>
+              <td>₹${subtotal.toFixed(2)}</td>
+              <td>₹${subtotal.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <div class="row"><span>Subtotal</span><span>₹${subtotal.toFixed(2)}</span></div>
+          <div class="row"><span>Tax (18% GST)</span><span>₹${taxAmount.toFixed(2)}</span></div>
+          <div class="row total"><span>Total</span><span>₹${job.amount.toFixed(2)}</span></div>
+        </div>
+
+        <hr>
+        <div class="print-info">This is a computer-generated invoice.</div>
+      </body>
+      </html>
+    `)
+
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+      setIsGenerating(false)
       onClose()
-    }, 1500)
+    }, 500)
   }
 
-  // Generate a mocked canonical invoice view based on the job details
   const taxAmount = job.amount * 0.18
   const subtotal = job.amount - taxAmount
 
@@ -86,8 +170,8 @@ export default function InvoiceGeneratorModal({ job, onClose }: InvoiceGenerator
         </div>
         <div className="modal-footer">
           <button className="secondary-btn" onClick={onClose}>Cancel</button>
-          <button className="primary-btn" onClick={handleGenerate} disabled={isGenerating}>
-            {isGenerating ? 'Generating PDF...' : 'Download PDF'}
+          <button className="primary-btn" onClick={handlePrint} disabled={isGenerating}>
+            {isGenerating ? 'Opening Print Dialog...' : 'Download PDF'}
           </button>
         </div>
       </div>

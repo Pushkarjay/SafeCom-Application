@@ -14,9 +14,11 @@
 
 .sa-header h1 {
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 400;
   color: var(--text);
   margin: 0;
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.02em;
 }
 
 .sa-subtitle {
@@ -36,34 +38,44 @@
 
 .sa-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border);
+  transition: box-shadow var(--transition-fast);
+}
+.sa-table:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 .sa-table th {
-  background: var(--secondary);
-  padding: 12px 16px;
+  background: var(--bg-subtle);
+  padding: 14px 16px;
   text-align: left;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: .04em;
-  border-bottom: 2px solid var(--border);
+  letter-spacing: .06em;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
 }
 
 .sa-table td {
-  padding: 12px 16px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--border-light);
   font-size: 14px;
   color: var(--text-secondary);
+  transition: background var(--transition-fast);
 }
 
+.sa-table tbody tr { transition: background var(--transition-fast); }
 .sa-table tbody tr:last-child td { border-bottom: none; }
-.sa-table tbody tr:hover { background: var(--bg-hover); }
+.sa-table tbody tr:hover { background: rgba(217, 119, 6, 0.04); }
+.sa-table tbody tr:nth-child(even) { background: var(--bg-subtle); }
 
 .sa-inactive { opacity: 0.5; }
 
@@ -106,22 +118,28 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .sa-form label input {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   font-size: 14px;
   font-family: inherit;
   color: var(--text);
+  background: var(--bg-card);
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-inner);
 }
 
 .sa-form label input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1), var(--shadow-inner);
+  background: #ffffff;
 }

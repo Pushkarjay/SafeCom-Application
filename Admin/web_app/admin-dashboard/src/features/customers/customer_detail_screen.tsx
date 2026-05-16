@@ -68,6 +68,8 @@ export default function CustomerDetailScreen() {
 
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0)
   const completedJobs = jobs.filter(j => j.status === 'completed').length
+  const computedOrders = jobs.length
+  const computedSpent = totalAmount
 
   return (
     <div className="detail-screen">
@@ -102,11 +104,11 @@ export default function CustomerDetailScreen() {
             </div>
             <div className="info-item">
               <label>Total Orders</label>
-              <p className="amount">{customer.totalOrders}</p>
+              <p className="amount">{computedOrders || customer.totalOrders}</p>
             </div>
             <div className="info-item">
               <label>Total Spent</label>
-              <p className="amount">₹{customer.totalSpent.toLocaleString()}</p>
+              <p className="amount">₹{(computedSpent || customer.totalSpent).toLocaleString()}</p>
             </div>
             <div className="info-item">
               <label>Registered Date</label>
@@ -179,11 +181,11 @@ export default function CustomerDetailScreen() {
               </div>
               <div className="info-pair">
                 <span>Total Orders:</span>
-                <p>{customer.totalOrders}</p>
+                <p>{computedOrders || customer.totalOrders}</p>
               </div>
               <div className="info-pair">
                 <span>Lifetime Value:</span>
-                <p className="amount">₹{customer.totalSpent.toLocaleString()}</p>
+              <p className="amount">₹{(computedSpent || customer.totalSpent).toLocaleString()}</p>
               </div>
             </div>
           </div>

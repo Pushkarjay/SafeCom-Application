@@ -14,8 +14,10 @@
 .services-header h1 {
   margin: 0;
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text);
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.02em;
 }
 
 .category-filters {
@@ -40,12 +42,12 @@
   padding: 20px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .service-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
 }
 
 .service-header {
@@ -59,8 +61,10 @@
 .service-header h3 {
   margin: 0 0 4px 0;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--text);
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.01em;
 }
 
 .service-desc {
@@ -84,6 +88,7 @@
   background: var(--secondary);
   border-radius: var(--radius-md);
   margin-bottom: 12px;
+  border: 1px solid var(--border-light);
 }
 
 .detail-row {
@@ -127,6 +132,7 @@
   background: var(--secondary);
   border-radius: var(--radius-md);
   margin-bottom: 12px;
+  border: 1px solid var(--border-light);
 }
 
 .addons-section strong {
@@ -153,8 +159,9 @@
 .service-actions {
   display: flex;
   gap: 8px;
-  padding-top: 12px;
+  padding-top: 14px;
   border-top: 1px solid var(--border-light);
+  margin-top: 4px;
 }
 
 .service-actions .btn-secondary,

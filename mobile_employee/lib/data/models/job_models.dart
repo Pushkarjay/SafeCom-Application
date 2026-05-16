@@ -175,7 +175,10 @@ class AssignedJob {
   final String status;
   final double estimatedAmount;
   final String? notes;
-  final CanonicalInvoice? invoice; // NEW: Full invoice data from backend
+  final String? completionNotes;
+  final double actualAmount;
+  final double collectedAmount;
+  final CanonicalInvoice? invoice;
 
   AssignedJob({
     required this.id,
@@ -190,6 +193,9 @@ class AssignedJob {
     required this.status,
     required this.estimatedAmount,
     this.notes,
+    this.completionNotes,
+    this.actualAmount = 0,
+    this.collectedAmount = 0,
     this.invoice,
   });
 
@@ -211,6 +217,9 @@ class AssignedJob {
           (json['amount'] as num?)?.toDouble() ??
           0.0,
       notes: json['notes'],
+      completionNotes: json['completionNotes'],
+      actualAmount: (json['actualAmount'] as num?)?.toDouble() ?? 0,
+      collectedAmount: (json['collectedAmount'] as num?)?.toDouble() ?? 0,
       invoice: json['invoice'] != null ? CanonicalInvoice.fromJson(json['invoice'] as Map<String, dynamic>) : null,
     );
   }
@@ -229,6 +238,9 @@ class AssignedJob {
       'status': status,
       'estimated_amount': estimatedAmount,
       'notes': notes,
+      'completionNotes': completionNotes,
+      'actualAmount': actualAmount,
+      'collectedAmount': collectedAmount,
       if (invoice != null) 'invoice': invoice!.toJson(),
     };
   }

@@ -15,11 +15,13 @@
 .catalog-header h1 {
   margin: 0;
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 400;
   background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.02em;
 }
 
 .catalog-subtitle {
@@ -72,8 +74,12 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 16px 20px;
+  padding: 18px 20px;
   margin-bottom: 20px;
+  transition: all var(--transition-fast);
+}
+.catalog-toolbar:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 .toolbar-group {
@@ -148,6 +154,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 24px;
+  transition: all var(--transition-fast);
 }
 
 .placeholder-card h3 {
@@ -155,6 +162,9 @@
   margin-bottom: 8px;
   font-size: 18px;
   color: var(--text);
+  font-weight: 400;
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.01em;
 }
 
 .placeholder-card p {
@@ -170,32 +180,40 @@
 
 .catalog-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .catalog-table th {
   text-align: left;
-  padding: 12px 16px;
-  font-size: 12px;
+  padding: 14px 16px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  background: var(--secondary);
-  border-bottom: 2px solid var(--border);
-  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .catalog-table td {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border-light);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
   font-size: 14px;
   color: var(--text-secondary);
+  transition: background var(--transition-fast);
 }
 
 .catalog-table tbody tr {
   transition: background var(--transition-fast);
+  position: relative;
 }
-.catalog-table tbody tr:hover { background: var(--bg-hover); }
+.catalog-table tbody tr:hover { background: rgba(217, 119, 6, 0.04); }
+.catalog-table tbody tr:nth-child(even) { background: var(--bg-subtle); }
+.catalog-table tbody tr:nth-child(even):hover { background: rgba(217, 119, 6, 0.06); }
 
 .catalog-table tbody tr:last-child td { border-bottom: none; }
 
@@ -311,26 +329,32 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .form-grid input,
 .form-grid select {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   font-size: 14px;
   font-family: inherit;
   color: var(--text);
+  background: var(--bg-card);
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-inner);
 }
 
 .form-grid input:focus,
 .form-grid select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1), var(--shadow-inner);
+  background: #ffffff;
 }
 
 @media (max-width: 1024px) {

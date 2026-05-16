@@ -147,10 +147,10 @@ export default function TechniciansScreen() {
                     </span>
                   </td>
                   <td className="actions-cell">
-                    <button className="action-link" onClick={() => navigate(`/technicians/${tech.id}`)}>
+                    <button className="action-link" onClick={() => tech.id && navigate(`/technicians/${tech.id}`)}>
                       View
                     </button>
-                    <button className="action-link" onClick={() => navigate(`/technicians/${tech.id}/edit`)}>
+                    <button className="action-link" onClick={() => tech.id && navigate(`/technicians/${tech.id}/edit`)}>
                       Edit
                     </button>
                     <button className="icon-btn danger" onClick={async () => {

@@ -104,10 +104,59 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                 ],
               ),
             const SizedBox(height: 16),
+            if (widget.job.completionNotes != null)
+              _buildInfoCard(
+                context,
+                'Completion Notes',
+                [
+                  Text(widget.job.completionNotes!),
+                ],
+              ),
+            if (widget.job.status == 'completed' && widget.job.actualAmount > 0)
+              _buildInfoCard(
+                context,
+                'Settlement',
+                [
+                  _buildInfoRow('Actual Amount', 'Rs ${widget.job.actualAmount.toStringAsFixed(0)}'),
+                  _buildInfoRow('Collected', 'Rs ${widget.job.collectedAmount.toStringAsFixed(0)}'),
+                  _buildInfoRow('Pending', 'Rs ${(widget.job.actualAmount - widget.job.collectedAmount).toStringAsFixed(0)}'),
+                ],
+              ),
+            const SizedBox(height: 16),
             if (widget.job.invoice != null)
               _buildInvoiceCard(context, widget.job.invoice!),
             const SizedBox(height: 16),
-            if (widget.job.status == 'pending')
+            if (widget.job.status == 'assigned')
+              Column(
+                children: [
+                  FilledButton.icon(
+                    onPressed: () async {
+                      try {
+                        await ref.read(jobsApiDatasourceProvider).startJob(widget.job.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Job started!')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to start job: $e')),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Start Job'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            if (widget.job.status != 'completed' && widget.job.status != 'cancelled')
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

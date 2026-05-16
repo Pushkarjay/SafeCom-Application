@@ -23,23 +23,26 @@ class JobsApiDatasource {
            final List data = body['data'] as List;
            
            return data.map<AssignedJob>((json) {
-             final map = <String, dynamic>{
-               'id': json['jobId'] ?? json['id'] ?? '',
-               'customer_id': json['customer']?['customerId'] ?? json['customerId'] ?? '',
-               'customerName': json['customer']?['name'] ?? 'Customer',
-               'customerPhone': json['customer']?['phone'] ?? '',
-               'service_type': json['serviceType'] ?? '',
-               'location': json['location']?['address'] ?? json['location'] ?? '',
-               'latitude': (json['location']?['latitude'] as num?)?.toDouble() ?? 0.0,
-               'longitude': (json['location']?['longitude'] as num?)?.toDouble() ?? 0.0,
-               'scheduled_date_time': _parseScheduledDate(json['scheduledDate']),
-               'status': json['status'] ?? 'pending',
-               'estimated_amount': (json['invoice']?['grandTotal'] as num?)?.toDouble() ?? 0.0,
-               'notes': json['notes'] ?? '',
-               if (json['invoice'] != null) 'invoice': json['invoice'],
-             };
-             return AssignedJob.fromJson(map);
-           }).toList();
+              final map = <String, dynamic>{
+                'id': json['jobId'] ?? json['id'] ?? '',
+                'customer_id': json['customer']?['customerId'] ?? json['customerId'] ?? '',
+                'customerName': json['customer']?['name'] ?? 'Customer',
+                'customerPhone': json['customer']?['phone'] ?? '',
+                'service_type': json['serviceType'] ?? '',
+                'location': json['location']?['address'] ?? json['location'] ?? '',
+                'latitude': (json['location']?['latitude'] as num?)?.toDouble() ?? 0.0,
+                'longitude': (json['location']?['longitude'] as num?)?.toDouble() ?? 0.0,
+                'scheduled_date_time': _parseScheduledDate(json['scheduledDate']),
+                'status': json['status'] ?? 'pending',
+                'estimated_amount': (json['invoice']?['grandTotal'] as num?)?.toDouble() ?? 0.0,
+                'notes': json['notes'] ?? '',
+                'completionNotes': json['completionNotes'],
+                'actualAmount': (json['actualAmount'] as num?)?.toDouble() ?? 0,
+                'collectedAmount': (json['collectedAmount'] as num?)?.toDouble() ?? 0,
+                if (json['invoice'] != null) 'invoice': json['invoice'],
+              };
+              return AssignedJob.fromJson(map);
+            }).toList();
         }
         return [];
       } else {
@@ -62,19 +65,22 @@ class JobsApiDatasource {
            
            return data.map<AssignedJob>((json) {
              final map = <String, dynamic>{
-               'id': json['jobId'] ?? json['id'] ?? '',
-               'customer_id': json['customer']?['customerId'] ?? json['customerId'] ?? '',
-               'customerName': json['customer']?['name'] ?? 'Customer',
-               'customerPhone': json['customer']?['phone'] ?? '',
-               'service_type': json['serviceType'] ?? '',
-               'location': json['location']?['address'] ?? json['location'] ?? '',
-               'latitude': (json['location']?['latitude'] as num?)?.toDouble() ?? 0.0,
-               'longitude': (json['location']?['longitude'] as num?)?.toDouble() ?? 0.0,
-               'scheduled_date_time': _parseScheduledDate(json['scheduledDate']),
-               'status': json['status'] ?? 'pending',
-               'estimated_amount': (json['invoice']?['grandTotal'] as num?)?.toDouble() ?? 0.0,
-               'notes': json['notes'] ?? '',
-               if (json['invoice'] != null) 'invoice': json['invoice'],
+                'id': json['jobId'] ?? json['id'] ?? '',
+                'customer_id': json['customer']?['customerId'] ?? json['customerId'] ?? '',
+                'customerName': json['customer']?['name'] ?? 'Customer',
+                'customerPhone': json['customer']?['phone'] ?? '',
+                'service_type': json['serviceType'] ?? '',
+                'location': json['location']?['address'] ?? json['location'] ?? '',
+                'latitude': (json['location']?['latitude'] as num?)?.toDouble() ?? 0.0,
+                'longitude': (json['location']?['longitude'] as num?)?.toDouble() ?? 0.0,
+                'scheduled_date_time': _parseScheduledDate(json['scheduledDate']),
+                'status': json['status'] ?? 'pending',
+                'estimated_amount': (json['invoice']?['grandTotal'] as num?)?.toDouble() ?? 0.0,
+                'notes': json['notes'] ?? '',
+                'completionNotes': json['completionNotes'],
+                'actualAmount': (json['actualAmount'] as num?)?.toDouble() ?? 0,
+                'collectedAmount': (json['collectedAmount'] as num?)?.toDouble() ?? 0,
+                if (json['invoice'] != null) 'invoice': json['invoice'],
              };
              return AssignedJob.fromJson(map);
            }).toList();

@@ -69,25 +69,37 @@ class WorkCompletionScreen extends StatelessWidget {
                     _buildSummaryRow(
                       context,
                       'Completion Notes',
-                      completion.completionNotes,
+                      completion.completionNotes.isNotEmpty
+                          ? completion.completionNotes
+                          : 'No notes provided',
                     ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Settlement Summary',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            Card(
+              color: Colors.blue.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    _buildAmountRow(context, 'Actual Amount', completion.actualAmount, Colors.black87),
                     const Divider(),
-                    _buildSummaryRow(
-                      context,
-                      'Actual Amount',
-                      'Rs ${completion.actualAmount.toStringAsFixed(0)}',
-                    ),
+                    _buildAmountRow(context, 'Amount Collected', completion.collectedAmount, Colors.green.shade700),
                     const Divider(),
-                    _buildSummaryRow(
-                      context,
-                      'Amount Collected',
-                      'Rs ${completion.collectedAmount.toStringAsFixed(0)}',
-                    ),
-                    const Divider(),
-                    _buildSummaryRow(
+                    _buildAmountRow(
                       context,
                       'Pending Amount',
-                      'Rs ${(completion.actualAmount - completion.collectedAmount).toStringAsFixed(0)}',
+                      completion.actualAmount - completion.collectedAmount,
+                      (completion.actualAmount - completion.collectedAmount) > 0
+                          ? Colors.red.shade700
+                          : Colors.green.shade700,
                     ),
                   ],
                 ),
@@ -129,6 +141,25 @@ class WorkCompletionScreen extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmountRow(BuildContext context, String label, double amount, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            'Rs ${amount.toStringAsFixed(0)}',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: color,
                 ),
           ),
         ],

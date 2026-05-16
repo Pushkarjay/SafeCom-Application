@@ -628,7 +628,7 @@ export default function ServiceTreeBuilderScreen() {
         const branchOpen = expandedClubs.has(nodeId)
         const depthClass = depth <= 4 ? `depth-${depth}` : 'depth-4'
         rows.push(
-          <tr key={nodeId} className={`ib-product-row ib-club-option-row ${depthClass}`} style={{ background: `rgba(10,132,255,${0.02 * depth})` }}>
+          <tr key={nodeId} className={`ib-product-row ib-club-option-row ${depthClass}`}>
             <td></td>
             <td>
               <button className="ib-club-toggle" onClick={() => toggle(expandedClubs, nodeId, setExpandedClubs)} type="button">

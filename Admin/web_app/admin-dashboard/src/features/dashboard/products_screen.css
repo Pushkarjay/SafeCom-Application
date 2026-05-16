@@ -14,8 +14,10 @@
 .products-header h1 {
   margin: 0;
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text);
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.02em;
 }
 
 .products-controls {
@@ -46,12 +48,12 @@
   overflow: hidden;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .product-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
 }
 
 .product-image {
@@ -78,9 +80,11 @@
 .product-header h3 {
   margin: 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--text);
   flex: 1;
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.01em;
 }
 
 .product-description {
@@ -116,6 +120,7 @@
   padding: 10px;
   background: var(--secondary);
   border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
 }
 
 .variants-section strong {
@@ -140,7 +145,7 @@
   display: flex;
   gap: 8px;
   margin-top: 4px;
-  padding-top: 12px;
+  padding-top: 14px;
   border-top: 1px solid var(--border-light);
 }
 

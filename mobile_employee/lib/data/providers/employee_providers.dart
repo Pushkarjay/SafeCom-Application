@@ -12,12 +12,17 @@ final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(ref.watch(dioProvider));
 });
 
+final authStateProvider = StreamProvider<User?>((ref) {
+  final auth = FirebaseAuth.instance;
+  return auth.authStateChanges();
+});
+
 final activeEmployeeIdProvider = Provider<String>((ref) {
   if (kIsWeb) {
     return 'TECH001';
   }
   final user = FirebaseAuth.instance.currentUser;
-  return user?.uid ?? 'TECH001';
+  return user?.uid ?? '';
 });
 
 final employeeDatasourceProvider = Provider<EmployeeDatasource>((ref) {

@@ -134,7 +134,7 @@ export default function ServiceCreatorScreen() {
                       </span>
                     </td>
                     <td>
-                      <button className="icon-btn" onClick={() => navigate(`/catalog/builder/${s.id}`)}>Builder</button>
+                      <button className="icon-btn" onClick={() => s.id && navigate(`/catalog/builder/${s.id}`)}>Builder</button>
                       <button className="icon-btn" onClick={() => openForm(s)}>Edit Meta</button>
                       <button className="icon-btn danger" onClick={() => handleDelete(s.id)}>Delete</button>
                     </td>

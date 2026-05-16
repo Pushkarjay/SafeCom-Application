@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@core/services/auth_service'
+import { useTheme } from '@core/services/theme_service'
 import './main_layout.css'
 
 const SERVICE_ITEMS = [
@@ -28,6 +29,8 @@ export default function MainLayout() {
   const location = useLocation()
   const admin = useAuthStore((state) => state.admin)
   const logout = useAuthStore((state) => state.logout)
+
+  const { theme, toggleTheme } = useTheme()
 
   const handleLogout = async () => {
     await logout()
@@ -178,6 +181,11 @@ export default function MainLayout() {
       </aside>
 
       <main className="main-content">
+        <div className="theme-toggle">
+          <button onClick={toggleTheme} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+        </div>
         <Outlet />
       </main>
     </div>

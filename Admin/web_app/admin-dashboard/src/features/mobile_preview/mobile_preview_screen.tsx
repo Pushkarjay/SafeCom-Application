@@ -228,6 +228,7 @@ function ComponentRenderer({ component }: { component: SduiComponent }) {
           {[1,2,3,4,5,6].map(n => <div key={n} className="pr-grid-item"><div className="pr-gi-box" /><div className="pr-gi-label">Service {n}</div></div>)}
         </div>
       )
+    case 'horizontal_recommendations':
     case 'horizontal_services':
     case 'horizontal_products':
       return (
@@ -248,6 +249,16 @@ function ComponentRenderer({ component }: { component: SduiComponent }) {
               <div className="pr-ann-text"><strong>{item.title}</strong><p>{item.body}</p></div>
             </div>
           ))}
+        </div>
+      )
+    case 'info_card':
+      return (
+        <div className="pr-info-card" style={{ backgroundColor: data.backgroundColor || '#F8FAFC', color: data.textColor || '#334155' }}>
+          {data.icon && <span className="pr-ic-icon">{data.icon === 'info_outline' ? 'ℹ️' : data.icon === 'warning_amber_rounded' ? '⚠️' : data.icon === 'info' ? 'ℹ️' : '📌'}</span>}
+          <div className="pr-ic-text">
+            <strong>{data.title}</strong>
+            {data.subtitle && <p>{data.subtitle}</p>}
+          </div>
         </div>
       )
     case 'spacer':

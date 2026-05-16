@@ -591,7 +591,10 @@ export default function CatalogScreen() {
               <div key={section} className="catalog-table-wrapper" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <h3 style={{ margin: 0, textTransform: 'capitalize' }}>{section} Pricing</h3>
-                  <button className="icon-btn" onClick={() => navigate(`/catalog/builder/${section === 'installation' ? 'Installation' : section.charAt(0).toUpperCase() + section.slice(1)}`)}>Configure Tree</button>
+                  <button className="icon-btn" onClick={() => {
+  const serviceMap: Record<string, string> = { installation: 'Installation', maintenance: 'Maintenance', repair: 'Camera_Repair', amc: 'AMC' }
+  navigate(`/catalog/builder/${serviceMap[section] || section}`)
+}}>Configure Tree</button>
                 </div>
                 <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', maxHeight: '400px', overflowY: 'auto' }}>
                   <pre style={{ fontSize: '11px', color: '#475569', margin: 0 }}>{JSON.stringify(pricingData[section as keyof PricingSet] || { message: 'Data loading...' }, null, 2)}</pre>

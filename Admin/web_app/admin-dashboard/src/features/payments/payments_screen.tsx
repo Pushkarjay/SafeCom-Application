@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
 import { getApiBaseUrl } from '@core/config/api'
@@ -21,6 +22,7 @@ export interface Payment {
 }
 
 export default function PaymentsScreen() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [sortField, setSortField] = useState<keyof Payment>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
@@ -116,32 +118,32 @@ export default function PaymentsScreen() {
         <div className="payments-stats">
           <div className="stat-card">
             <p className="stat-label">Total Amount</p>
-            <p className="stat-value">₹{(totalAmount / 100).toLocaleString()}</p>
+            <p className="stat-value">₹{(totalAmount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
           </div>
           <div className="stat-card">
             <p className="stat-label">Paid</p>
-            <p className="stat-value stat-positive">₹{(totalPaid / 100).toLocaleString()}</p>
+            <p className="stat-value stat-positive">₹{(totalPaid / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
           </div>
           <div className="stat-card">
             <p className="stat-label">Pending</p>
-            <p className="stat-value stat-warning">₹{(totalPending / 100).toLocaleString()}</p>
+            <p className="stat-value stat-warning">₹{(totalPending / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
       </div>
       
-      <div style={{ padding: '0 24px', marginBottom: '20px', display: 'flex', gap: '10px' }}>
+      <div className="payments-toolbar">
         <input 
           type="text" 
+          className="search-input"
           placeholder="Search by ID or Customer..." 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '300px' }}
         />
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="bulk-actions" style={{ padding: '8px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <span style={{ fontSize: '14px', fontWeight: '500' }}>{selectedIds.size} selected</span>
+        <div className="bulk-actions">
+          <span>{selectedIds.size} selected</span>
           <button className="secondary-btn danger" onClick={handleBulkDelete} disabled={isLoading}>Delete Selected</button>
         </div>
       )}
@@ -182,15 +184,15 @@ export default function PaymentsScreen() {
           <table className="payments-table">
             <thead>
               <tr>
-                <th style={{ width: '40px' }}><input type="checkbox" checked={processedPayments.length > 0 && selectedIds.size === processedPayments.length} onChange={toggleSelectAll} /></th>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('transactionId')}>Transaction ID {sortField === 'transactionId' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('customerName')}>Customer {sortField === 'customerName' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('amount')}>Amount {sortField === 'amount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('paidAmount')}>Paid {sortField === 'paidAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('remainingAmount')}>Remaining {sortField === 'remainingAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>Status {sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('paymentMethod')}>Payment Method {sortField === 'paymentMethod' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('createdAt')}>Date {sortField === 'createdAt' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="checkbox-col"><input type="checkbox" checked={processedPayments.length > 0 && selectedIds.size === processedPayments.length} onChange={toggleSelectAll} /></th>
+                <th className="sortable" onClick={() => handleSort('transactionId')}>Transaction ID {sortField === 'transactionId' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="sortable" onClick={() => handleSort('customerName')}>Customer {sortField === 'customerName' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="sortable" onClick={() => handleSort('amount')}>Amount {sortField === 'amount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="sortable" onClick={() => handleSort('paidAmount')}>Paid {sortField === 'paidAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="sortable" onClick={() => handleSort('remainingAmount')}>Remaining {sortField === 'remainingAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="sortable" onClick={() => handleSort('status')}>Status {sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="sortable" onClick={() => handleSort('paymentMethod')}>Payment Method {sortField === 'paymentMethod' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="sortable" onClick={() => handleSort('createdAt')}>Date {sortField === 'createdAt' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -205,22 +207,36 @@ export default function PaymentsScreen() {
                       <p className="customer-id">ID: {payment.customerId}</p>
                     </div>
                   </td>
-                  <td>₹{(payment.amount / 100).toLocaleString()}</td>
-                  <td className="amount-paid">₹{(payment.paidAmount / 100).toLocaleString()}</td>
-                  <td className="amount-remaining">₹{(payment.remainingAmount / 100).toLocaleString()}</td>
+                  <td className="amount-cell">₹{(payment.amount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  <td className="amount-paid">₹{(payment.paidAmount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  <td className="amount-remaining">₹{(payment.remainingAmount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                   <td>{getStatusBadge(payment.status)}</td>
                   <td>{payment.paymentMethod}</td>
                   <td>{new Date(payment.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button className="action-btn view-btn" title="View Details">
+                  <td className="actions-cell">
+                    <button className="action-btn" title="View Customer" onClick={() => navigate(`/customers/${payment.customerId}`)}>
                       👁️
                     </button>
                     {payment.status !== 'completed' && (
-                      <button className="action-btn edit-btn" title="Request Payment">
+                      <button className="action-btn edit-btn" title="Request Payment" onClick={async () => {
+                        if (!confirm(`Request payment of ₹${(payment.remainingAmount / 100).toLocaleString()} for ${payment.customerName}?`)) return
+                        try {
+                          const token = await useAuthStore.getState().getIdToken()
+                          await fetch(`${getApiBaseUrl()}/payments/${payment.id}/request`, {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ amount: payment.remainingAmount })
+                          })
+                          window.location.reload()
+                        } catch (err) {
+                          console.error(err)
+                          alert('Failed to request payment')
+                        }
+                      }}>
                         ↗️
                       </button>
                     )}
-                    <button className="icon-btn danger" onClick={async () => {
+                    <button className="action-btn danger" onClick={async () => {
                       if (!confirm(`Delete payment "${payment.transactionId}"?`)) return
                       const token = await useAuthStore.getState().getIdToken()
                       await fetch(`${getApiBaseUrl()}/payments/${payment.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
