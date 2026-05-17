@@ -119,8 +119,9 @@ function isComponentVisible(
     if (!areaCode || !visibility.areaCodes.includes(areaCode)) return false
   }
 
-  // Serviceability check
+  // Serviceability checks
   if (visibility.requireServiceable && !isServiceable) return false
+  if (visibility.hideWhenServiceable && isServiceable) return false
 
   // Date range check
   const now = new Date()
@@ -192,7 +193,7 @@ function defaultHomeLayout(): SduiComponent[] {
         icon: 'local_offer_outlined',
         backgroundColor: '#111827',
       },
-      visibility: { featureFlag: 'show_promo_banner' },
+      visibility: { featureFlag: 'show_promo_banner', requireServiceable: true },
     },
     {
       id: 'home_not_serviceable_notice',
@@ -204,7 +205,7 @@ function defaultHomeLayout(): SduiComponent[] {
         backgroundColor: '#FEF2F2',
         textColor: '#991B1B',
       },
-      visibility: { requireServiceable: false },
+      visibility: { hideWhenServiceable: true },
     },
     {
       id: 'home_spacer_5',

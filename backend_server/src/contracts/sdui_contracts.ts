@@ -24,6 +24,9 @@ export interface SduiVisibility {
   /** Only show if user location is serviceable */
   requireServiceable?: boolean
 
+  /** Hide when user location is serviceable (show only in non-serviceable areas) */
+  hideWhenServiceable?: boolean
+
   /** Only show for these user roles */
   roles?: string[]
 

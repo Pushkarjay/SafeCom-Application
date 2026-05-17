@@ -82,8 +82,8 @@ sduiAdminRouter.post('/layouts/:id/reset', authenticateToken, requireRole(['admi
       { id: `${id}_spacer_3`, type: 'spacer', data: { height: 18 } },
       { id: `${id}_products_banner`, type: 'banner', data: { title: 'Browse All Products', subtitle: 'Explore our complete catalog with search & filters', gradientColors: ['#0A84FF', '#1E40AF'], icon: 'arrow_forward_rounded' }, action: { type: 'navigate', route: '/products-discovery' }, visibility: { featureFlag: 'show_products_discovery' } },
       { id: `${id}_spacer_4`, type: 'spacer', data: { height: 12 } },
-      { id: `${id}_promo_banner`, type: 'promo_banner', data: { title: 'Get 10% OFF on your first installation', subtitle: 'Use code SAFECOM10 at checkout.', icon: 'local_offer_outlined', backgroundColor: '#111827' }, visibility: { featureFlag: 'show_promo_banner' } },
-      { id: `${id}_not_serviceable_notice`, type: 'info_card', data: { title: 'Service not available in your area', subtitle: 'We currently serve Patna city and nearby areas. We\'re expanding soon!', icon: 'info_outline', backgroundColor: '#FEF2F2', textColor: '#991B1B' }, visibility: { requireServiceable: false } },
+      { id: `${id}_promo_banner`, type: 'promo_banner', data: { title: 'Get 10% OFF on your first installation', subtitle: 'Use code SAFECOM10 at checkout.', icon: 'local_offer_outlined', backgroundColor: '#111827' }, visibility: { featureFlag: 'show_promo_banner', requireServiceable: true } },
+      { id: `${id}_not_serviceable_notice`, type: 'info_card', data: { title: 'Service not available in your area', subtitle: 'We currently serve Patna city and nearby areas. We\'re expanding soon!', icon: 'info_outline', backgroundColor: '#FEF2F2', textColor: '#991B1B' }, visibility: { hideWhenServiceable: true } },
       { id: `${id}_spacer_5`, type: 'spacer', data: { height: 12 } },
       { id: `${id}_announcements`, type: 'announcements_list', data: {
           title: 'Latest Updates',
