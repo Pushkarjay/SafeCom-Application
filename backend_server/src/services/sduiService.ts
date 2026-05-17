@@ -33,24 +33,29 @@ interface ServiceArea {
   estimatedTimeToService: string
 }
 
-const SERVICEABLE_AREAS: ServiceArea[] = [
-  {
-    areaCode: 'PATNA_CORE',
-    areaName: 'Patna City Core',
-    latitude: 25.5941,
-    longitude: 85.1376,
-    radiusKm: 5,
-    estimatedTimeToService: '2-4 hours',
-  },
-  {
-    areaCode: 'PATNA_METRO',
-    areaName: 'Patna Metropolitan',
-    latitude: 25.5941,
-    longitude: 85.1376,
-    radiusKm: 15,
-    estimatedTimeToService: '4-8 hours',
-  },
-]
+async function fetchActiveAreas(): Promise<ServiceArea[]> {
+  try {
+    const db = getDb()
+    const snap = await db.collection('serviceable_areas').where('active', '==', true).get()
+    return snap.docs.map((doc) => {
+      const d = doc.data()
+      return {
+        areaCode: doc.id,
+        areaName: d.areaName || '',
+        latitude: d.latitude || 0,
+        longitude: d.longitude || 0,
+        radiusKm: d.radiusKm || 0,
+        estimatedTimeToService: d.estimatedTimeToService || '2-4 hours',
+      }
+    })
+  } catch {
+    // Fallback defaults if Firestore fails
+    return [
+      { areaCode: 'PATNA_CORE', areaName: 'Patna City Core', latitude: 25.5941, longitude: 85.1376, radiusKm: 5, estimatedTimeToService: '2-4 hours' },
+      { areaCode: 'PATNA_METRO', areaName: 'Patna Metropolitan', latitude: 25.5941, longitude: 85.1376, radiusKm: 15, estimatedTimeToService: '4-8 hours' },
+    ]
+  }
+}
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
@@ -62,9 +67,9 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-function resolveServiceArea(lat?: number, lng?: number): ServiceArea | null {
+function resolveServiceArea(lat: number | undefined, lng: number | undefined, areas: ServiceArea[]): ServiceArea | null {
   if (lat == null || lng == null) return null
-  for (const area of SERVICEABLE_AREAS) {
+  for (const area of areas) {
     if (haversineDistance(area.latitude, area.longitude, lat, lng) <= area.radiusKm) {
       return area
     }
@@ -343,8 +348,9 @@ export async function getScreenLayout(
   lng?: number,
   _userId?: string
 ): Promise<SduiLayoutResponse> {
-  // 1. Resolve location
-  const serviceArea = resolveServiceArea(lat, lng)
+  // 1. Resolve location from Firestore-backed areas
+  const areas = await fetchActiveAreas()
+  const serviceArea = resolveServiceArea(lat, lng, areas)
   const isServiceable = serviceArea !== null
   const areaCode = serviceArea?.areaCode ?? null
 

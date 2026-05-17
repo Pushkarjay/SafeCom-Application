@@ -1,9 +1,12 @@
 import { Router, Request, Response } from 'express'
 import { z } from 'zod'
+import { getDb } from '../services/firestore.js'
 import { authenticateToken, requireRole } from '../middleware/auth.js'
 import type { ServiceabilityCheckRequest, ServiceabilityCheckResponse, ApiResponse } from '../contracts/canonical_contracts.js'
 
 export const serviceabilityRouter = Router()
+
+const COLLECTION = 'serviceable_areas'
 
 interface ServiceableArea {
   areaCode: string
@@ -12,67 +15,34 @@ interface ServiceableArea {
   longitude: number
   radiusKm: number
   estimatedTimeToService: string
-  active?: boolean
+  active: boolean
 }
 
-/**
- * In-memory store (Phase 1.3 — replace with Firestore in production)
- * TODO: Move to database configuration
- */
-let SERVICEABLE_AREAS: ServiceableArea[] = [
-  {
-    areaCode: 'PATNA_CORE',
-    areaName: 'Patna City Core',
-    latitude: 25.5941,
-    longitude: 85.1376,
-    radiusKm: 5,
-    estimatedTimeToService: '2-4 hours',
-    active: true
-  },
-  {
-    areaCode: 'PATNA_METRO',
-    areaName: 'Patna Metropolitan',
-    latitude: 25.5941,
-    longitude: 85.1376,
-    radiusKm: 15,
-    estimatedTimeToService: '4-8 hours',
-    active: true
-  }
-]
-
-/**
- * Helper: Calculate distance between two coordinates (Haversine formula)
- */
-function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371 // Earth's radius in km
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLon = ((lon2 - lon1) * Math.PI) / 180
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+async function fetchAllAreas(): Promise<ServiceableArea[]> {
+  try {
+    const db = getDb()
+    const snap = await db.collection(COLLECTION).get()
+    return snap.docs.map((doc) => {
+      const d = doc.data() as ServiceableArea
+      return { ...d, areaCode: doc.id }
+    })
+  } catch {
+    return []
+  }
 }
 
 /**
  * POST /serviceability/check - Check if location is serviceable
- * 
- * Request body:
- * {
- *   latitude: number,
- *   longitude: number,
- *   serviceType?: string  // Optional filter
- * }
- * 
- * Response: ServiceabilityCheckResponse
  */
 serviceabilityRouter.post('/check', async (req, res) => {
   const schema = z.object({
@@ -86,21 +56,17 @@ serviceabilityRouter.post('/check', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({
       success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid request parameters'
-      },
+      error: { code: 'VALIDATION_ERROR', message: 'Invalid request parameters' },
       timestamp: new Date().toISOString()
     } as ApiResponse<never>)
   }
 
   try {
     const { latitude, longitude } = parsed.data
+    const areas = await fetchAllAreas()
 
-    // Find matching active service area
-    for (const area of SERVICEABLE_AREAS.filter(a => a.active !== false)) {
-      const distance = calculateDistance(area.latitude, area.longitude, latitude, longitude)
-
+    for (const area of areas.filter(a => a.active !== false)) {
+      const distance = haversineDistance(area.latitude, area.longitude, latitude, longitude)
       if (distance <= area.radiusKm) {
         return res.json({
           success: true,
@@ -118,7 +84,6 @@ serviceabilityRouter.post('/check', async (req, res) => {
       }
     }
 
-    // No matching area found
     return res.status(400).json({
       success: true,
       data: {
@@ -131,39 +96,24 @@ serviceabilityRouter.post('/check', async (req, res) => {
     console.error('Serviceability check failed:', error)
     return res.status(500).json({
       success: false,
-      error: {
-        code: 'SERVICEABILITY_CHECK_FAILED',
-        message: 'Failed to check service availability'
-      },
+      error: { code: 'SERVICEABILITY_CHECK_FAILED', message: 'Failed to check service availability' },
       timestamp: new Date().toISOString()
     } as ApiResponse<never>)
   }
 })
 
 /**
- * GET /serviceability/areas - Get all serviceable areas (admin only)
+ * GET /serviceability/areas - Get all serviceable areas
  */
 serviceabilityRouter.get('/areas', async (req: Request, res: Response) => {
   try {
+    const areas = await fetchAllAreas()
     const activeOnly = req.query.active === 'true'
-    const areas = activeOnly
-      ? SERVICEABLE_AREAS.filter(a => a.active !== false)
-      : SERVICEABLE_AREAS
-    return res.json({
-      success: true,
-      data: areas,
-      timestamp: new Date().toISOString()
-    })
+    const filtered = activeOnly ? areas.filter(a => a.active !== false) : areas
+    return res.json({ success: true, data: filtered, timestamp: new Date().toISOString() })
   } catch (error) {
     console.error('Failed to fetch areas:', error)
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: 'AREAS_FETCH_FAILED',
-        message: 'Failed to retrieve service areas'
-      },
-      timestamp: new Date().toISOString()
-    })
+    return res.status(500).json({ success: false, error: 'Failed to retrieve service areas', timestamp: new Date().toISOString() })
   }
 })
 
@@ -172,20 +122,15 @@ serviceabilityRouter.get('/areas', async (req: Request, res: Response) => {
  */
 serviceabilityRouter.post('/areas', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
-    const { areaCode, areaName, latitude, longitude, radiusKm, estimatedTimeToService } = req.body as {
-      areaCode: string
-      areaName: string
-      latitude: number
-      longitude: number
-      radiusKm: number
-      estimatedTimeToService: string
-    }
-
+    const { areaCode, areaName, latitude, longitude, radiusKm, estimatedTimeToService } = req.body
     if (!areaCode || !areaName || latitude === undefined || longitude === undefined || !radiusKm) {
       return res.status(400).json({ success: false, error: 'areaCode, areaName, latitude, longitude, radiusKm are required' })
     }
 
-    if (SERVICEABLE_AREAS.some(a => a.areaCode === areaCode)) {
+    const db = getDb()
+    const docRef = db.collection(COLLECTION).doc(areaCode)
+    const snap = await docRef.get()
+    if (snap.exists) {
       return res.status(409).json({ success: false, error: 'Area code already exists' })
     }
 
@@ -198,8 +143,7 @@ serviceabilityRouter.post('/areas', authenticateToken, requireRole(['admin']), a
       estimatedTimeToService: estimatedTimeToService || '2-4 hours',
       active: true
     }
-
-    SERVICEABLE_AREAS.push(newArea)
+    await docRef.set(newArea)
     return res.json({ success: true, data: newArea, message: 'Serviceable area added' })
   } catch (error) {
     console.error('Failed to add area:', error)
@@ -212,23 +156,27 @@ serviceabilityRouter.post('/areas', authenticateToken, requireRole(['admin']), a
  */
 serviceabilityRouter.patch('/areas/:areaCode', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
-    const { areaCode } = req.params
-    const idx = SERVICEABLE_AREAS.findIndex(a => a.areaCode === areaCode)
+    const areaCode = String(req.params.areaCode)
+    const db = getDb()
+    const docRef = db.collection(COLLECTION).doc(areaCode)
+    const snap = await docRef.get()
 
-    if (idx === -1) {
+    if (!snap.exists) {
       return res.status(404).json({ success: false, error: 'Area not found' })
     }
 
-    const { areaName, latitude, longitude, radiusKm, estimatedTimeToService, active } = req.body as Partial<ServiceableArea>
+    const allowed = ['areaName', 'latitude', 'longitude', 'radiusKm', 'estimatedTimeToService', 'active']
+    const updates: Record<string, unknown> = {}
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key]
+    }
 
-    if (areaName !== undefined) SERVICEABLE_AREAS[idx].areaName = areaName
-    if (latitude !== undefined) SERVICEABLE_AREAS[idx].latitude = latitude
-    if (longitude !== undefined) SERVICEABLE_AREAS[idx].longitude = longitude
-    if (radiusKm !== undefined) SERVICEABLE_AREAS[idx].radiusKm = radiusKm
-    if (estimatedTimeToService !== undefined) SERVICEABLE_AREAS[idx].estimatedTimeToService = estimatedTimeToService
-    if (active !== undefined) SERVICEABLE_AREAS[idx].active = active
+    if (Object.keys(updates).length > 0) {
+      await docRef.update(updates)
+    }
 
-    return res.json({ success: true, data: SERVICEABLE_AREAS[idx], message: 'Area updated' })
+    const updated = await docRef.get()
+    return res.json({ success: true, data: { areaCode, ...updated.data() }, message: 'Area updated' })
   } catch (error) {
     console.error('Failed to update area:', error)
     return res.status(500).json({ success: false, error: 'Failed to update serviceable area' })
@@ -240,14 +188,16 @@ serviceabilityRouter.patch('/areas/:areaCode', authenticateToken, requireRole(['
  */
 serviceabilityRouter.delete('/areas/:areaCode', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
-    const { areaCode } = req.params
-    const idx = SERVICEABLE_AREAS.findIndex(a => a.areaCode === areaCode)
+    const areaCode = String(req.params.areaCode)
+    const db = getDb()
+    const docRef = db.collection(COLLECTION).doc(areaCode)
+    const snap = await docRef.get()
 
-    if (idx === -1) {
+    if (!snap.exists) {
       return res.status(404).json({ success: false, error: 'Area not found' })
     }
 
-    SERVICEABLE_AREAS.splice(idx, 1)
+    await docRef.delete()
     return res.json({ success: true, message: 'Area deleted' })
   } catch (error) {
     console.error('Failed to delete area:', error)
