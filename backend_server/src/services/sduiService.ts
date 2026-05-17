@@ -11,7 +11,6 @@
  * 2. Hardcoded default layouts (fallback)
  */
 
-import { getFirestore } from 'firebase-admin/firestore'
 import type {
   SduiComponent,
   SduiFeatureFlag,
@@ -19,6 +18,7 @@ import type {
   SduiScreenMeta,
   SduiVisibility,
 } from '../contracts/sdui_contracts.js'
+import { getDb } from '../services/firestore.js'
 
 // ============================================
 // SERVICEABILITY (reuse logic from serviceability route)
@@ -78,7 +78,7 @@ function resolveServiceArea(lat?: number, lng?: number): ServiceArea | null {
 
 async function getFeatureFlags(): Promise<SduiFeatureFlag[]> {
   try {
-    const db = getFirestore()
+    const db = getDb()
     const snap = await db.collection('sdui_feature_flags').get()
     if (snap.empty) return defaultFeatureFlags()
     return snap.docs.map((doc) => ({ key: doc.id, ...doc.data() }) as SduiFeatureFlag)
@@ -234,6 +234,11 @@ function defaultHomeLayout(): SduiComponent[] {
         ]
       },
     },
+    {
+      id: 'home_spacer_6',
+      type: 'spacer',
+      data: { height: 12 },
+    },
   ]
 }
 
@@ -248,6 +253,89 @@ function defaultScreenMeta(): SduiScreenMeta {
 // ============================================
 // PUBLIC API
 // ============================================
+
+async function fetchCmsBlocks(): Promise<SduiComponent[]> {
+  try {
+    const db = getDb()
+    const now = new Date().toISOString()
+    const snapshot = await db
+      .collection('home_cms')
+      .orderBy('order', 'asc')
+      .get()
+
+    if (snapshot.empty) return []
+
+    return snapshot.docs
+      .map((doc) => {
+        const data = doc.data() as Record<string, unknown>
+        if (data.visible === false) return null
+        if (data.expiresAt && data.expiresAt <= now) return null
+
+        const blockType = String(data.type || 'banner')
+        const title = String(data.title || '')
+        const subtitle = String(data.subtitle || '')
+        const ctaLabel = String(data.ctaLabel || '')
+        const ctaRoute = String(data.ctaRoute || '')
+        const imageUrl = String(data.imageUrl || '')
+
+        const action = ctaLabel && ctaRoute
+          ? { type: 'navigate' as const, route: ctaRoute }
+          : undefined
+
+        // Convert CMS block types to native SDUI component types
+        // that the Flutter SduiComponentRegistry already supports
+        switch (blockType) {
+          case 'banner':
+            return {
+              id: `cms_banner_${doc.id}`,
+              type: 'banner',
+              data: {
+                title,
+                subtitle,
+                gradientColors: ['#0A84FF', '#1E40AF'],
+                icon: 'arrow_forward_rounded',
+              },
+              action,
+            } as SduiComponent
+
+          case 'promo':
+            return {
+              id: `cms_promo_${doc.id}`,
+              type: 'promo_banner',
+              data: {
+                title,
+                subtitle,
+                icon: 'local_offer_outlined',
+                backgroundColor: '#111827',
+              },
+              action,
+            } as SduiComponent
+
+          case 'update':
+            return {
+              id: `cms_update_${doc.id}`,
+              type: 'info_card',
+              data: {
+                title,
+                subtitle,
+                icon: 'info_outline',
+                backgroundColor: '#FEF2F2',
+                textColor: '#991B1B',
+              },
+              action,
+            } as SduiComponent
+
+          default:
+            // category_grid and featured are data-driven from service_catalog,
+            // so CMS blocks of these types are not injected into SDUI
+            return null
+        }
+      })
+      .filter((c): c is SduiComponent => c !== null)
+  } catch {
+    return []
+  }
+}
 
 export async function getScreenLayout(
   screen: string,
@@ -264,7 +352,6 @@ export async function getScreenLayout(
   const flagsList = await getFeatureFlags()
   const flagsMap = new Map<string, boolean>()
   for (const f of flagsList) {
-    // If flag has area restriction, check against resolved area
     if (f.areaCodes && f.areaCodes.length > 0) {
       flagsMap.set(f.key, f.enabled && (areaCode !== null && f.areaCodes.includes(areaCode)))
     } else {
@@ -277,7 +364,7 @@ export async function getScreenLayout(
   let meta: SduiScreenMeta
 
   try {
-    const db = getFirestore()
+    const db = getDb()
     const doc = await db.collection('sdui_layouts').doc(screen).get()
     if (doc.exists) {
       const data = doc.data()!
@@ -306,6 +393,16 @@ export async function getScreenLayout(
     if (c.type === 'service_grid') {
       c.data['isServiceable'] = isServiceable
       c.data['areaCode'] = areaCode
+    }
+  }
+
+  // 6. Inject CMS blocks into the home layout (insert before announcements_list)
+  if (screen === 'home') {
+    const cmsBlocks = await fetchCmsBlocks()
+    if (cmsBlocks.length > 0) {
+      const annIdx = visibleComponents.findIndex((c) => c.type === 'announcements_list')
+      const insertAt = annIdx >= 0 ? annIdx : visibleComponents.length
+      visibleComponents.splice(insertAt, 0, ...cmsBlocks)
     }
   }
 

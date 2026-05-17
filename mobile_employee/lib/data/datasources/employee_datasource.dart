@@ -7,7 +7,9 @@ class EmployeeDatasource {
   EmployeeDatasource(this._apiService);
 
   Future<EmployeeProfile> getEmployeeProfile(String employeeId) async {
-    final response = await _apiService.get('/employees/$employeeId');
+    // Use /me endpoint when no specific employeeId is passed (looks up by Firebase UID)
+    final endpoint = employeeId.isEmpty ? '/employees/me' : '/employees/$employeeId';
+    final response = await _apiService.get(endpoint);
     if (response.statusCode == 200 && response.data is Map) {
       return EmployeeProfile.fromJson(Map<String, dynamic>.from(response.data as Map));
     }

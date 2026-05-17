@@ -530,10 +530,24 @@ export class AdminDatasource {
     return payload.data
   }
 
+  async fetchCustomerSduiView(screen: string = 'home', lat?: number, lng?: number): Promise<any> {
+    const params = new URLSearchParams({ screen })
+    if (lat !== undefined) params.set('lat', String(lat))
+    if (lng !== undefined) params.set('lng', String(lng))
+    const payload = await this.fetchJson<{ success: boolean; data: any }>(`${BASE_URL}/sdui/layout?${params}`)
+    return payload.data
+  }
+
   async saveSduiLayout(id: string, layout: any[], meta: any): Promise<void> {
     await this.fetchJson(`${BASE_URL}/catalog/sdui-admin/layouts/${id}`, {
       method: 'POST',
       body: JSON.stringify({ layout, meta })
+    })
+  }
+
+  async resetSduiLayout(id: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/sdui-admin/layouts/${id}/reset`, {
+      method: 'POST'
     })
   }
 

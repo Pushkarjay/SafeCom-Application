@@ -17,7 +17,7 @@ const SERVICE_ITEMS = [
 const CATALOG_ITEMS = [
   { key: 'products', label: 'Products', icon: '📦', path: '/catalog/products' },
   { key: 'services', label: 'Services', icon: '🛠️', path: '/catalog/services' },
-  { key: 'home-cms', label: 'Home CMS', icon: '🏠', path: '/catalog/home-cms' },
+  { key: 'mobile-preview', label: 'Mobile Preview', icon: '📱', path: '/mobile-preview' },
 ]
 
 const SETTINGS_ITEMS = [

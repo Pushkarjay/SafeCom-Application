@@ -67,7 +67,7 @@ homeCmsRouter.get('/', async (_req: Request, res: Response) => {
   }
 })
 
-// ─── Admin List ───────────────────────────────────────────────
+// ─── Admin List ─────────────────────────────────
 homeCmsRouter.get(
   '/admin',
   authenticateToken,
@@ -76,10 +76,48 @@ homeCmsRouter.get(
     try {
       const db = getDb()
       const snapshot = await db.collection(CMS_COLLECTION).orderBy('order', 'asc').get()
-      const blocks = snapshot.docs.map((doc) => ({
+      let blocks: (CmsBlock & { id: string })[] = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...(doc.data() as Omit<CmsBlock, 'id'>),
       }))
+
+      // Dedup: filter out CMS blocks whose content matches SDUI template components.
+      // The defaultHomeLayout() in sduiService.ts already includes banner, promo_banner,
+      // info_card, and announcements_list — CMS blocks with identical titles would duplicate them.
+      const templateTitles = new Set<string>()
+      try {
+        const sduiDoc = await db.collection('sdui_layouts').doc('home').get()
+        if (sduiDoc.exists) {
+          const layout = (sduiDoc.data()?.layout || []) as any[]
+          for (const c of layout) {
+            const t = c.data?.title || c.data?.text || ''
+            if (t) templateTitles.add(t.trim().toLowerCase())
+          }
+        }
+      } catch { /* best-effort dedup */ }
+
+      // Also add known default template titles as a safety net
+      const KNOWN_TEMPLATE_TITLES = [
+        'browse all products',
+        'get 10% off on your first installation',
+        'service not available in your area',
+        'latest updates',
+        'book a service',
+        'current location',
+      ]
+      for (const t of KNOWN_TEMPLATE_TITLES) templateTitles.add(t)
+
+      if (templateTitles.size > 0) {
+        const before = blocks.length
+        blocks = blocks.filter((b) => {
+          const bt = (b.title || '').trim().toLowerCase()
+          return !templateTitles.has(bt)
+        })
+        if (blocks.length < before) {
+          console.log(`[HOME-CMS] Admin dedup: filtered ${before - blocks.length} duplicate block(s) matching template content`)
+        }
+      }
+
       res.json({ success: true, data: { blocks }, timestamp: new Date().toISOString() })
     } catch (error) {
       console.error('[HOME-CMS] GET admin error:', error)
