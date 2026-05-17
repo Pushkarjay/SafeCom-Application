@@ -62,6 +62,17 @@ class _JobsHomeScreenState extends ConsumerState<JobsHomeScreen> with SingleTick
                   : Icons.dark_mode_rounded,
               size: 22,
             ),
+          ),
+          IconButton(
+            onPressed: () => context.push(AppRoutes.map),
+            icon: const Icon(Icons.map_outlined, size: 22),
+            tooltip: 'Map',
+          ),
+          IconButton(
+            onPressed: () => context.push(AppRoutes.earnings),
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 22),
+            tooltip: 'Earnings',
+          ),
             tooltip: 'Toggle theme',
           ),
         ],

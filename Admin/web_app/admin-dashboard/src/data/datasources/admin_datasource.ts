@@ -150,10 +150,17 @@ export class AdminDatasource {
   }
 
   async getCatalogAccessories(): Promise<CatalogProduct[]> {
-    const accessoriesPayload = await this.fetchJson<{ success: boolean; data: { accessories: Record<string, unknown>[] } }>(`${BASE_URL}/catalog/accessories`)
-    const items = accessoriesPayload?.data?.accessories ?? []
+    const payload = await this.fetchJson<{ items: Record<string, unknown>[] }>(`${BASE_URL}/catalog-public/accessories`)
+    const items = payload?.items ?? []
     return items.map((item) => ({
-      id: String(item.id || item.productId || item.accessoryId || ''),
+      id: String(item.productId || item.id || ''),
+      productName: String(item.productName || item.name || ''),
+      description: String(item.description || ''),
+      category: String(item.category || ''),
+      group: String(item.group || 'Accessories'),
+      basePrice: Number(item.basePrice ?? item.price ?? 0),
+      isAvailable: item.isAvailable !== false
+    }))
       name: String(item.name || ''),
       category: String(item.category || 'Accessories'),
       group: String(item.group || 'Accessories'),
@@ -211,8 +218,18 @@ export class AdminDatasource {
   }
 
   async getCatalogServices(): Promise<CatalogService[]> {
-    const payload = await this.fetchJson<{ success: boolean; data: { services: CatalogService[] } }>(`${BASE_URL}/catalog/services`)
-    return payload.data?.services || []
+    const payload = await this.fetchJson<{ services: Record<string, unknown>[] }>(`${BASE_URL}/catalog-public/services`)
+    return (payload.services ?? []).map((s) => ({
+      serviceId: String(s.id || ''),
+      serviceName: String(s.title || s.name || ''),
+      description: String(s.description || ''),
+      category: String(s.category || 'General'),
+      productIds: [],
+      basePrice: Number(s.basePrice ?? 0),
+      isAvailable: s.enabled !== false,
+      isFeatured: Boolean(s.isFeatured),
+      isRecurring: false
+    }))
   }
 
   async createCatalogService(data: Partial<CatalogService>): Promise<CatalogService> {

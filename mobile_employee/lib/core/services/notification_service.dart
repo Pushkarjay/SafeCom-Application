@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
@@ -24,39 +25,39 @@ class NotificationService {
 
       // Get the FCM token for this device
       final token = await _firebaseMessaging.getToken();
-      print('FCM Token: $token');
+      debugPrint('FCM Token: $token');
 
       // Handle foreground messages (app is open)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        print('Foreground message received: ${message.notification?.title}');
+        debugPrint('Foreground message received: ${message.notification?.title}');
         _handleMessage(message);
       });
 
       // Handle background message tap (app is closed or in background)
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        print('App opened from background message: ${message.notification?.title}');
+        debugPrint('App opened from background message: ${message.notification?.title}');
         _handleMessage(message);
       });
 
       // Handle terminated state message (app was terminated)
       RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
       if (initialMessage != null) {
-        print('App launched from terminated message: ${initialMessage.notification?.title}');
+        debugPrint('App launched from terminated message: ${initialMessage.notification?.title}');
         _handleMessage(initialMessage);
       }
 
-      print('Firebase Cloud Messaging initialized successfully');
+      debugPrint('Firebase Cloud Messaging initialized successfully');
     } catch (e) {
-      print('Error initializing FCM: $e');
+      debugPrint('Error initializing FCM: $e');
     }
   }
 
   /// Handle incoming notification messages
   void _handleMessage(RemoteMessage message) {
-    print('Handling message:');
-    print('  Title: ${message.notification?.title}');
-    print('  Body: ${message.notification?.body}');
-    print('  Data: ${message.data}');
+    debugPrint('Handling message:');
+    debugPrint('  Title: ${message.notification?.title}');
+    debugPrint('  Body: ${message.notification?.body}');
+    debugPrint('  Data: ${message.data}');
 
     // Parse notification type and handle accordingly
     final notificationType = message.data['type'] ?? 'generic';
@@ -74,31 +75,31 @@ class NotificationService {
         _handleBookingCancelledNotification(bookingId, message.data);
         break;
       default:
-        print('Unknown notification type: $notificationType');
+        debugPrint('Unknown notification type: $notificationType');
     }
   }
 
   /// Handle new booking notification
   void _handleNewBookingNotification(String? bookingId, Map<String, dynamic> data, [WidgetRef? ref]) {
-    print('New booking notification: $bookingId');
+    debugPrint('New booking notification: $bookingId');
     
     if (ref != null) {
-      // Invalidate the jobs provider to trigger a fresh fetch from the server
-      // ref.invalidate(jobsProvider); 
-      print('Triggered jobs list refresh via provider');
+      // TODO: invalidate assignedJobsProvider when ref is available
+      // ref?.invalidate(assignedJobsProvider);
+      debugPrint('Triggered jobs list refresh via provider');
     }
   }
 
   /// Handle booking updated notification
   void _handleBookingUpdatedNotification(String? bookingId, Map<String, dynamic> data) {
-    print('Booking updated notification: $bookingId');
-    print('  Status: ${data['status']}');
+    debugPrint('Booking updated notification: $bookingId');
+    debugPrint('  Status: ${data['status']}');
   }
 
   /// Handle booking cancelled notification
   void _handleBookingCancelledNotification(String? bookingId, Map<String, dynamic> data) {
-    print('Booking cancelled notification: $bookingId');
-    print('  Reason: ${data['reason']}');
+    debugPrint('Booking cancelled notification: $bookingId');
+    debugPrint('  Reason: ${data['reason']}');
   }
 
   /// Get device token for push notifications
@@ -107,7 +108,7 @@ class NotificationService {
       final token = await _firebaseMessaging.getToken();
       return token;
     } catch (e) {
-      print('Error getting device token: $e');
+      debugPrint('Error getting device token: $e');
       return null;
     }
   }
@@ -116,9 +117,9 @@ class NotificationService {
   Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
-      print('Subscribed to topic: $topic');
+      debugPrint('Subscribed to topic: $topic');
     } catch (e) {
-      print('Error subscribing to topic: $e');
+      debugPrint('Error subscribing to topic: $e');
     }
   }
 
@@ -126,15 +127,15 @@ class NotificationService {
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
-      print('Unsubscribed from topic: $topic');
+      debugPrint('Unsubscribed from topic: $topic');
     } catch (e) {
-      print('Error unsubscribing from topic: $e');
+      debugPrint('Error unsubscribing from topic: $e');
     }
   }
 }
 
 /// Background message handler (runs in isolate when app is terminated)
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('Background message received: ${message.notification?.title}');
+  debugPrint('Background message received: ${message.notification?.title}');
   // Handle background messages here if needed
 }

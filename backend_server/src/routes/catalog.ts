@@ -215,18 +215,21 @@ catalogRouter.delete('/products/:id', async (req, res) => {
   }
 })
 
-// GET /catalog/accessories - Deprecated (use /catalog/accessories route)
+// GET /catalog/accessories - Deprecated (use /api/catalog/accessories route)
 catalogRouter.get('/accessories', async (_req, res) => {
+  res.setHeader('X-Deprecated', 'true')
   return res.json([])
 })
 
-// GET /catalog/services - Deprecated (use /catalog/services route)
+// GET /catalog/services - Deprecated (use /api/catalog/services route)
 catalogRouter.get('/services', async (_req, res) => {
+  res.setHeader('X-Deprecated', 'true')
   return res.json([])
 })
 
-// GET /catalog/upgrade - Deprecated (use /catalog-public/upgrade)
+// GET /catalog/upgrade - Deprecated (use /api/catalog-public/upgrade)
 catalogRouter.get('/upgrade', async (_req, res) => {
+  res.setHeader('X-Deprecated', 'true')
   return res.json([])
 })
 

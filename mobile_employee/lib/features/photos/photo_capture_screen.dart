@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 class PhotoCaptureScreen extends StatefulWidget {
@@ -351,6 +352,6 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
       'photos': _capturedPhotos.map((p) => p.path).toList(),
     };
 
-    Navigator.of(context).pop(result);
+    context.pop(result);
   }
 }

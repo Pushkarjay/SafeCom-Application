@@ -10,6 +10,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { getScreenLayout } from '../services/sduiService.js'
+import { getDb } from '../services/firestore.js'
 import type { ApiResponse } from '../contracts/canonical_contracts.js'
 import type { SduiLayoutResponse } from '../contracts/sdui_contracts.js'
 
@@ -80,11 +81,16 @@ sduiRouter.get('/layout', async (req, res) => {
  */
 sduiRouter.get('/screens', async (_req, res) => {
   try {
-    // For now, return hardcoded list of supported SDUI screens
-    const screens = [
-      { id: 'home', name: 'Home Screen', description: 'Main landing page with service grid' },
-    ]
-
+    const db = getDb()
+    const snapshot = await db.collection('sdui_layouts').select().get()
+    const screens = snapshot.docs.map(doc => ({
+      id: doc.id,
+      name: `${doc.id.charAt(0).toUpperCase() + doc.id.slice(1)} Screen`,
+      description: `Dynamic layout for ${doc.id} screen`,
+    }))
+    if (screens.length === 0) {
+      screens.push({ id: 'home', name: 'Home Screen', description: 'Main landing page with service grid' })
+    }
     return res.json({
       success: true,
       data: screens,
@@ -99,6 +105,6 @@ sduiRouter.get('/screens', async (_req, res) => {
         message: 'Failed to list SDUI screens',
       },
       timestamp: new Date().toISOString(),
-    })
+    } as ApiResponse<never>)
   }
 })

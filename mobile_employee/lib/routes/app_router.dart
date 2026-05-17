@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/models/job_models.dart';
 import 'package:mobile_employee/features/auth/login_screen.dart';
-import 'package:mobile_employee/features/auth/profile_screen.dart';
 import 'package:mobile_employee/features/auth/splash_screen.dart';
 import 'package:mobile_employee/features/jobs/job_detail_screen.dart';
 import 'package:mobile_employee/features/jobs/jobs_home_screen.dart';
@@ -58,7 +57,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.profile,
-        builder: (context, state) => const ProfileScreen(),
+        builder: (context, state) => const EmployeeProfileScreen(),
       ),
       GoRoute(
         path: AppRoutes.photoCapture,

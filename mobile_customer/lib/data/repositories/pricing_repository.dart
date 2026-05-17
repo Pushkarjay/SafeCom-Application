@@ -14,7 +14,7 @@ class PricingRepository {
     return _dataSource.getMaintenancePricing();
   }
 
-  Future<InstallationPricingContract> getMaintenanceTreePricing() {
+  Future<MaintenancePricingContract> getMaintenanceTreePricing() {
     return _dataSource.getMaintenanceTreePricing();
   }
 

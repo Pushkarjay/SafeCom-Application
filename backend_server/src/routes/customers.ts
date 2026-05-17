@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { queryCollection, getDocument, createDocument, updateDocument, getDb } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument, getDb } from '../services/firestore.js'
 import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
 import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 
@@ -19,12 +19,14 @@ const customerUpdateSchema = customerCreateSchema.partial()
 export const customersRouter = Router()
 
 // GET /customers - List all customers
-customersRouter.get('/', verifyFirebaseIdToken, async (_req, res) => {
+customersRouter.get('/', verifyFirebaseIdToken, async (req, res) => {
   try {
     const db = getDb()
-    const snapshot = await db.collection('customers').get()
-    const customers: Record<string, unknown>[] = []
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50))
 
+    const snapshot = await db.collection('customers').limit(limit).get()
+
+    const customers: Record<string, unknown>[] = []
     snapshot.forEach((doc: QueryDocumentSnapshot) => {
       const data = doc.data() as unknown as Record<string, unknown>
       customers.push({
@@ -99,5 +101,16 @@ customersRouter.patch('/:id', async (req, res) => {
   } catch (error) {
     console.error('Firestore update customer failed:', error)
     return res.status(500).json({ message: 'Failed to update customer' })
+  }
+})
+
+// DELETE /customers/:id - Delete customer
+customersRouter.delete('/:id', async (req, res) => {
+  try {
+    await deleteDocument('customers', req.params.id)
+    return res.json({ message: 'Customer deleted' })
+  } catch (error) {
+    console.error('Firestore delete customer failed:', error)
+    return res.status(500).json({ message: 'Failed to delete customer' })
   }
 })

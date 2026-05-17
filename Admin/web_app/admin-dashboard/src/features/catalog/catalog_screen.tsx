@@ -401,6 +401,14 @@ export default function CatalogScreen() {
 
       <div className="catalog-tabs fade-in">
         <button className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>Products</button>
+        <button className={`tab-btn ${activeTab === 'packages' ? 'active' : ''}`} onClick={() => setActiveTab('packages')}>Packages</button>
+        <button className={`tab-btn ${activeTab === 'addons' ? 'active' : ''}`} onClick={() => setActiveTab('addons')}>Add-ons</button>
+        <button className={`tab-btn ${activeTab === 'taxes' ? 'active' : ''}`} onClick={() => setActiveTab('taxes')}>Taxes</button>
+        <button className={`tab-btn ${activeTab === 'services' ? 'active' : ''}`} onClick={() => setActiveTab('services')}>Services</button>
+        <button className={`tab-btn ${activeTab === 'recommendations' ? 'active' : ''}`} onClick={() => setActiveTab('recommendations')}>Recommendations</button>
+        <button className={`tab-btn ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')}>Invoices</button>
+        <button className={`tab-btn ${activeTab === 'upgrade' ? 'active' : ''}`} onClick={() => setActiveTab('upgrade')}>Upgrade</button>
+        <button className={`tab-btn ${activeTab === 'pricing' ? 'active' : ''}`} onClick={() => setActiveTab('pricing')}>Pricing</button>
       </div>
 
       {error && <div className="catalog-error slide-up">{error}</div>}
@@ -587,7 +595,13 @@ export default function CatalogScreen() {
       {activeTab === 'pricing' && (
         <div className="slide-up">
           <div className="pricing-sections" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-            {['installation', 'maintenance', 'repair', 'amc'].filter(s => !pricingSection || s === pricingSection).map((section) => (
+            {['installation', 'maintenance', 'repair', 'amc'].filter(s => !pricingSection || s === pricingSection).map((section) => {
+              const data = pricingData[section as keyof PricingSet];
+              const name = (data as any)?.name;
+              const categories = (data as any)?.categories;
+              const plans = (data as any)?.plans;
+              const issues = (data as any)?.issues;
+              return (
               <div key={section} className="catalog-table-wrapper" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <h3 style={{ margin: 0, textTransform: 'capitalize' }}>{section} Pricing</h3>
@@ -596,11 +610,26 @@ export default function CatalogScreen() {
   navigate(`/catalog/builder/${serviceMap[section] || section}`)
 }}>Configure Tree</button>
                 </div>
-                <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', maxHeight: '400px', overflowY: 'auto' }}>
-                  <pre style={{ fontSize: '11px', color: '#475569', margin: 0 }}>{JSON.stringify(pricingData[section as keyof PricingSet] || { message: 'Data loading...' }, null, 2)}</pre>
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                  {!data ? (
+                    <p style={{ color: '#94a3b8', margin: 0 }}>Data loading...</p>
+                  ) : (
+                    <>
+                      {name && <p style={{ margin: '0 0 8px', fontWeight: 600, color: '#1e293b' }}>{name}</p>}
+                      {categories && <p style={{ margin: '0 0 4px', color: '#475569', fontSize: 13 }}>Categories: {categories.length}</p>}
+                      {plans && <p style={{ margin: '0 0 4px', color: '#475569', fontSize: 13 }}>Plans: {plans.length}</p>}
+                      {issues && <p style={{ margin: '0 0 4px', color: '#475569', fontSize: 13 }}>Issues: {issues.length}</p>}
+                      <details style={{ marginTop: '12px' }}>
+                        <summary style={{ cursor: 'pointer', fontSize: 12, color: '#64748b' }}>Raw Data</summary>
+                        <pre style={{ fontSize: '11px', color: '#475569', margin: '8px 0 0', maxHeight: '300px', overflowY: 'auto' }}>
+                          {JSON.stringify(data, null, 2)}
+                        </pre>
+                      </details>
+                    </>
+                  )}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { queryCollection, getDocument, createDocument } from '../services/firestore.js'
+import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument } from '../services/firestore.js'
 
 const paymentMethodSchema = z.enum(['card', 'cash', 'upi', 'bank', 'razorpay'])
 
@@ -16,10 +16,11 @@ const paymentCreateSchema = z.object({
 export const paymentsRouter = Router()
 
 // GET /payments - List all payments
-paymentsRouter.get('/', async (_req, res) => {
+paymentsRouter.get('/', async (req, res) => {
   try {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50))
     const payments = await queryCollection<Record<string, unknown>>('payments')
-    return res.json(payments)
+    return res.json(payments.slice(0, limit))
   } catch (error) {
     console.error('Firestore payments lookup failed:', error)
     return res.status(500).json({ message: 'Failed to fetch payments' })
@@ -58,5 +59,30 @@ paymentsRouter.post('/', async (req, res) => {
   } catch (error) {
     console.error('Firestore create payment failed:', error)
     return res.status(500).json({ message: 'Failed to create payment' })
+  }
+})
+
+// DELETE /payments/:id - Delete payment
+paymentsRouter.delete('/:id', async (req, res) => {
+  try {
+    await deleteDocument('payments', req.params.id)
+    return res.json({ message: 'Payment deleted' })
+  } catch (error) {
+    console.error('Firestore delete payment failed:', error)
+    return res.status(500).json({ message: 'Failed to delete payment' })
+  }
+})
+
+// POST /payments/:id/request - Request payment
+paymentsRouter.post('/:id/request', async (req, res) => {
+  try {
+    await updateDocument('payments', req.params.id, {
+      status: 'payment_requested',
+      requestedAt: new Date().toISOString()
+    })
+    return res.json({ message: 'Payment requested', paymentId: req.params.id })
+  } catch (error) {
+    console.error('Firestore payment request failed:', error)
+    return res.status(500).json({ message: 'Failed to request payment' })
   }
 })

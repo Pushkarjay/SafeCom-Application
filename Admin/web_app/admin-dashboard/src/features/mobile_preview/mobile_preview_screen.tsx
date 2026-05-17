@@ -736,7 +736,15 @@ function ComponentRenderer({ component }: { component: SduiComponent }) {
     case 'service_grid':
       return (
         <div className="pr-grid" style={{ gridTemplateColumns: `repeat(${data.columns || 3}, 1fr)` }}>
-          {[1,2,3,4,5,6].map(n => <div key={n} className="pr-grid-item"><div className="pr-gi-box" /><div className="pr-gi-label">Service {n}</div></div>)}
+          {data.items?.length
+            ? data.items.map((item: any, i: number) => (
+                <div key={i} className="pr-grid-item">
+                  <div className="pr-gi-box" style={item.icon ? { backgroundImage: `url(${item.icon})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' } : undefined} />
+                  <div className="pr-gi-label">{item.title || `Service ${i + 1}`}</div>
+                </div>
+              ))
+            : [1,2,3,4,5,6].map(n => <div key={n} className="pr-grid-item"><div className="pr-gi-box" /><div className="pr-gi-label">Service {n}</div></div>)
+          }
         </div>
       )
     case 'horizontal_recommendations':

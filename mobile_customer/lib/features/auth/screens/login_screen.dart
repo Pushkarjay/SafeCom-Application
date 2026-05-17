@@ -46,7 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         final authState = ref.read(authProvider);
         if (authState.customer != null &&
             (authState.customer!.phone.isEmpty || authState.customer!.phone == '+91')) {
-          router.go('/phone-collection');
+          router.go(AppRoutes.phoneCollection);
         } else {
           router.go(AppRoutes.home);
         }
@@ -59,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   void _handlePhone() {
-    context.push('/phone-auth');
+    context.push(AppRoutes.phoneAuth);
   }
 
   @override

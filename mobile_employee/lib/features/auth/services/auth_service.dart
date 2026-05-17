@@ -94,9 +94,7 @@ class AuthService {
     } catch (e) {
       // Log but don't fail - user is already authenticated
       // ignore: avoid_print
-      print('Warning: Failed to link user to backend: $e');
+      debugPrint('Warning: Failed to link user to backend: $e');
     }
   }
 }
-
-late AuthService authService;

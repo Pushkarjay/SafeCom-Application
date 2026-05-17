@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/models/job_models.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_employee/features/map/providers/employee_location_provider.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
@@ -514,14 +515,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return '$hrs hr ${mins > 0 ? "$mins min" : ""}';
   }
 
-  void _openMapsApp(double lat, double lng) {
-    // In a real app, this would use url_launcher to open Google Maps
-    // For now, show a snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening maps to: $lat, $lng'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  void _openMapsApp(double lat, double lng) async {
+    final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open maps for: $lat, $lng')),
+        );
+      }
+    }
   }
 }

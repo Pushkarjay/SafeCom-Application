@@ -13,4 +13,10 @@ class ApiConfig {
     'API_TIMEOUT_MS',
     defaultValue: 10000,
   );
+
+  // TODO: Fetch from backend config endpoint instead of hardcoding
+  static const double bookingAmount = 100.0;
+  static const double minimumPaymentAmount = 100.0;
+  static const double gstRate = 0.18; // 18% GST
+  static const String gstLabel = 'Estimated GST (18%)';
 }

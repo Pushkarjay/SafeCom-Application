@@ -109,7 +109,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       try {
         await ref.read(authProvider.notifier).logout();
         if (mounted) {
-          context.go('/login');
+          context.go(AppRoutes.login);
         }
       } catch (e) {
         if (mounted) {

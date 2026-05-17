@@ -129,7 +129,7 @@ class _NotLoggedIn extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, '/login'),
+            onPressed: () => context.push(AppRoutes.login),
             child: const Text('Sign In'),
           ),
         ],

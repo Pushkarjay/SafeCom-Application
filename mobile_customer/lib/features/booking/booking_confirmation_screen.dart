@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
+import 'package:mobile_customer/core/config/api_config.dart' show ApiConfig;
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 
@@ -23,7 +24,7 @@ class _BookingConfirmationScreenState
     final activeOrder = ref.watch(activeOrderProvider);
 
     // Admin-controlled minimum payment amount
-    const double minimumPaymentAmount = 100.0;
+    const double minimumPaymentAmount = ApiConfig.minimumPaymentAmount;
     final double remainingAmount =
         (activeOrder?.estimatedTotal ?? 0) - minimumPaymentAmount;
 

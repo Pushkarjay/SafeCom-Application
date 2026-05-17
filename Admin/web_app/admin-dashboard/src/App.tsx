@@ -11,7 +11,7 @@ import JobsScreen from '@features/jobs/jobs_screen'
 import JobDetailScreen from '@features/jobs/job_detail_screen'
 import PaymentsScreen from '@features/payments/payments_screen'
 import CatalogScreen from '@features/catalog/catalog_screen'
-import InstallationBuilderScreen from '@features/catalog/service_tree_builder_screen'
+import ServiceTreeBuilderScreen from '@features/catalog/service_tree_builder_screen'
 import ServiceCreatorScreen from '@features/catalog/service_creator_screen'
 import ServiceableAreasScreen from '@features/settings/serviceable_areas_screen'
 import MobilePreviewScreen from '@features/mobile_preview/mobile_preview_screen'
@@ -50,7 +50,7 @@ function App() {
             <Route path="/jobs/:id" element={<JobDetailScreen />} />
             <Route path="/jobs/:id/edit" element={<JobDetailScreen />} />
             <Route path="/payments" element={<PaymentsScreen />} />
-            <Route path="/catalog/builder/:serviceId" element={<InstallationBuilderScreen />} />
+            <Route path="/catalog/builder/:serviceId" element={<ServiceTreeBuilderScreen />} />
             <Route path="/catalog/services" element={<ServiceCreatorScreen />} />
             <Route path="/catalog/:tab" element={<CatalogRoute />} />
             <Route path="/catalog/home-cms" element={<Navigate to="/mobile-preview" replace />} />

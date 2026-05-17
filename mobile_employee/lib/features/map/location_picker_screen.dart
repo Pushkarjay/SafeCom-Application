@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:mobile_employee/features/map/providers/employee_location_provider.dart';
 
@@ -162,7 +163,7 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
         );
 
     if (mounted) {
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 

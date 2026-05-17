@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
+import 'package:mobile_customer/core/config/api_config.dart' show ApiConfig;
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/core/utils/error_handler.dart';
 import 'package:mobile_customer/data/datasources/api_service.dart';
@@ -15,8 +16,6 @@ import 'package:mobile_customer/features/location/providers/location_provider.da
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
-
-  static const double bookingAmount = 100.0;
 
   @override
   ConsumerState<PaymentScreen> createState() => _PaymentScreenState();
@@ -267,7 +266,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     try {
       final checkoutOrder = await ref.read(razorpayPaymentServiceProvider).createOrder(
-            amountRupees: PaymentScreen.bookingAmount, // Pay only the minimum booking charge now
+            amountRupees: ApiConfig.bookingAmount, // Pay only the minimum booking charge now
             serviceName: activeOrder.serviceName,
             packageLabel: activeOrder.packageLabel,
             customerId: customer?.id,
@@ -325,7 +324,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  context.push('/profile');
+                  context.push(AppRoutes.profile);
                 },
                 child: const Text('Go to Profile'),
               ),
@@ -347,9 +346,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     final activeOrder = ref.watch(activeOrderProvider);
     final booking = ref.watch(bookingFlowProvider);
-    const bookingAmount = PaymentScreen.bookingAmount;
+    const bookingAmount = ApiConfig.bookingAmount;
     
-    final taxAmount = (activeOrder?.estimatedTotal ?? 0) * 0.18; // 18% GST estimate
+    final taxAmount = (activeOrder?.estimatedTotal ?? 0) * ApiConfig.gstRate;
     final grandTotal = (activeOrder?.estimatedTotal ?? 0) + taxAmount;
 
     return Scaffold(
@@ -439,7 +438,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Estimated GST (18%)', style: TextStyle(color: Colors.grey)),
+                    Text(ApiConfig.gstLabel, style: const TextStyle(color: Colors.grey)),
                     Text('+ ${_currency(taxAmount)}', style: const TextStyle(fontWeight: FontWeight.w600)),
                   ],
                 ),
