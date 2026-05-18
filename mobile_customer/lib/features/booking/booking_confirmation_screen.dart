@@ -15,7 +15,9 @@ class BookingConfirmationScreen extends ConsumerWidget {
     final booking = ref.watch(bookingFlowProvider);
     final activeOrder = ref.watch(activeOrderProvider);
     const bookingAmount = ApiConfig.minimumPaymentAmount;
-    final remainingAmount = (activeOrder?.estimatedTotal ?? 0) - bookingAmount;
+    final productTotal = activeOrder?.estimatedTotal ?? 0;
+    final grandTotal = productTotal + bookingAmount;
+    final remainingAmount = productTotal;
     final hasItems = activeOrder != null && activeOrder.items.isNotEmpty;
 
     return Scaffold(
@@ -127,7 +129,7 @@ class BookingConfirmationScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Booking Amount Paid: Rs ${bookingAmount.toStringAsFixed(0)}',
+                        'Booking Charge Paid: Rs ${bookingAmount.toStringAsFixed(0)} (extra)',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.accent,
                           fontWeight: FontWeight.w600,
@@ -157,19 +159,31 @@ class BookingConfirmationScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      const Text('Total Amount', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                      Text('Rs ${(activeOrder?.estimatedTotal ?? 0).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      const Text('Product / Service Total', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Rs ${productTotal.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
                     ]),
                     const SizedBox(height: 6),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      const Text('Booking Amount Paid', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                      Text('Rs ${bookingAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.success)),
+                      const Text('Booking Charge', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Rs ${bookingAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
                     ]),
                     const SizedBox(height: 6),
                     const Divider(color: AppColors.borderLight),
                     const SizedBox(height: 6),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      const Text('Remaining Amount', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                      const Text('Grand Total', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.primary)),
+                      Text('Rs ${grandTotal.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.secondary)),
+                    ]),
+                    const SizedBox(height: 8),
+                    const Divider(color: AppColors.borderLight),
+                    const SizedBox(height: 8),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      const Text('Paid Now (Booking)', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Rs ${bookingAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.success)),
+                    ]),
+                    const SizedBox(height: 6),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      const Text('Remaining (Pay On-Site)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                       Text('Rs ${remainingAmount.toStringAsFixed(0)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: remainingAmount > 0 ? AppColors.secondary : AppColors.success)),
                     ]),
                   ],
@@ -206,51 +220,16 @@ class BookingConfirmationScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      '• Technician will visit the location, explain everything, and confirm the setup.\n'
-                      '• The remaining payment must be made directly to the technician before installation begins.\n'
-                      '• The technician will handle the payment via QR, card, cash, or other methods.\n'
-                      '• Work will start only after payment confirmation.',
+                      '• The Rs 100 booking charge is an extra fee added on top of the product price to confirm the visit.\n'
+                      '• The remaining product/service amount must be paid directly to the technician before work starts.\n'
+                      '• The technician will handle payment via QR, card, cash, or other methods.\n'
+                      '• Work will start only after on-site payment confirmation.',
                       style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-
-              // On-site Payment Note
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.accentLight,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.accent.withOpacity(0.15)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.payments_outlined, color: AppColors.accent, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'On-Site Payment',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'The remaining payment is handled directly with the technician at your location. '
-                      'The app currently only collects the booking amount. Full in-app payment will be available in future updates.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 24),
             ],
           ),

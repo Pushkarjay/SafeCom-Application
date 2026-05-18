@@ -306,10 +306,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     final activeOrder = ref.watch(activeOrderProvider);
     final booking = ref.watch(bookingFlowProvider);
-    const bookingAmount = ApiConfig.bookingAmount;
 
     const taxAmount = 0.0;
-    final grandTotal = activeOrder?.estimatedTotal ?? 0;
+    const bookingAmount = ApiConfig.bookingAmount;
+    final productTotal = activeOrder?.estimatedTotal ?? 0;
+    final grandTotal = productTotal + bookingAmount;
 
     return Scaffold(
       appBar: AppBar(
@@ -381,10 +382,22 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ],
 
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('Total Amount', style: TextStyle(color: AppColors.textSecondary)),
-                  Text(_currency(grandTotal), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const Text('Product / Service Total', style: TextStyle(color: AppColors.textSecondary)),
+                  Text(_currency(productTotal), style: const TextStyle(fontWeight: FontWeight.w600)),
                 ]),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  const Text('Booking Charge', style: TextStyle(color: AppColors.textSecondary)),
+                  Text(_currency(bookingAmount), style: const TextStyle(fontWeight: FontWeight.w600)),
+                ]),
+                const SizedBox(height: 6),
+                const Divider(color: AppColors.borderLight),
+                const SizedBox(height: 6),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  const Text('Grand Total', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.primary)),
+                  Text(_currency(grandTotal), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.secondary)),
+                ]),
+                const SizedBox(height: 10),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -392,7 +405,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     const SizedBox(width: 6),
                     const Expanded(
                       child: Text(
-                        'All product prices are inclusive of GST. No additional GST or extra charges are applicable.',
+                        'All product prices are inclusive of GST. Booking charge of Rs 100 is added on top and paid now.',
                         style: TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.3),
                       ),
                     ),
@@ -415,13 +428,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('Amount to Pay Now', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: AppColors.accent)),
+                  Text('Pay Now (Booking Charge)', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: AppColors.accent)),
                   Text(_currency(bookingAmount), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: AppColors.success)),
                 ]),
                 const SizedBox(height: 8),
-                const Text(
-                  'A minimum booking charge of Rs 100 is required to confirm the technician visit.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                Text(
+                  'Pay Rs ${bookingAmount.toInt()} now to confirm. Remaining Rs ${productTotal.toInt()} will be paid on-site to the technician.',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 Container(
