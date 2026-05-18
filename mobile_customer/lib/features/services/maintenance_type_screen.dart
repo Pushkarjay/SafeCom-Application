@@ -50,7 +50,7 @@ class MaintenanceTypeScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: const Color(0xFFEFF6FF),
+                    backgroundColor: AppColors.secondaryLight,
                     child: Icon(
                       _iconMap[type.icon] ?? Icons.settings_suggest_outlined,
                       color: AppColors.primary,

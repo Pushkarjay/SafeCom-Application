@@ -155,7 +155,7 @@ class _ListChildRow extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: hasQty ? const Color(0xFFEFF6FF) : Colors.transparent,
+        color: hasQty ? AppColors.secondaryLight : Colors.transparent,
         border: const Border(
           bottom: BorderSide(color: AppColors.surfaceVariant),
         ),
@@ -239,7 +239,7 @@ class _StepButton extends StatelessWidget {
         width: 30,
         height: 30,
         decoration: BoxDecoration(
-          color: enabled ? const Color(0xFFEFF6FF) : AppColors.surfaceVariant,
+          color: enabled ? AppColors.secondaryLight : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: enabled ? const Color(0xFF93C5FD) : AppColors.border,
@@ -278,14 +278,14 @@ class _TotalPill extends StatelessWidget {
             ? const Color(0xFFDCFCE7)
             : (!isValid && total > 0
                 ? const Color(0xFFFEE2E2)
-                : const Color(0xFFEFF6FF)),
+                : AppColors.secondaryLight),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: full
               ? const Color(0xFF22C55E)
               : (!isValid && total > 0
                   ? AppColors.error
-                  : const Color(0xFF93C5FD)),
+                  : AppColors.secondary.withOpacity(0.4)),
         ),
       ),
       child: Row(

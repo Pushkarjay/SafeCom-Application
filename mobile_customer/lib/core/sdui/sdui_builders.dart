@@ -404,7 +404,7 @@ Widget buildBanner(SduiComponent component, BuildContext context) {
   final gradientColors = (component.data['gradientColors'] as List?)
           ?.map((c) => _parseColor(c as String))
           .toList() ??
-      [AppColors.primary, const Color(0xFF1E40AF)];
+      [AppColors.secondaryLight, AppColors.secondary];
 
   return GestureDetector(
     onTap: () => _handleAction(context, component.action),

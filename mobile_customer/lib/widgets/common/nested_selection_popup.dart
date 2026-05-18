@@ -246,7 +246,7 @@ class _OptionTile extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: isLeaf
-                    ? const Color(0xFFEFF6FF)
+                    ? AppColors.secondaryLight
                     : const Color(0xFFF3E8FF),
                 borderRadius: BorderRadius.circular(10),
               ),

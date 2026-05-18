@@ -51,7 +51,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               runSpacing: 6,
               children: variant.options.map((option) {
                 return ChoiceChip(
-                  label: Text(option, style: const TextStyle(fontSize: 13)),
+                  label: Text(option, style: TextStyle(fontSize: 13, color: currentSelection == option || (currentSelection == null && variant.options.first == option) ? AppColors.secondary : AppColors.textPrimary)),
                   selected: currentSelection == option ||
                       (currentSelection == null && variant.options.first == option),
                   onSelected: (selected) {
@@ -59,10 +59,11 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                       flowNotifier.updateVariant(mappedProduct.productId, variant.variantId, option);
                     }
                   },
-                  selectedColor: AppColors.secondaryLight,
+                  selectedColor: AppColors.secondary.withOpacity(0.15),
                   backgroundColor: AppColors.surfaceVariant,
                   side: BorderSide(
                     color: currentSelection == option ? AppColors.secondary : AppColors.borderLight,
+                    width: currentSelection == option ? 2 : 1,
                   ),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 );
@@ -144,14 +145,14 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                             ? Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.accentLight,
+                                  color: AppColors.secondaryLight,
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   '${item.quantity}',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.accent,
+                                    color: AppColors.secondary,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -249,22 +250,22 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
             const SizedBox(width: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.accentLight,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.accent.withOpacity(0.3), width: 0.5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryLight,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 0.5),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.swap_horiz, size: 12, color: AppColors.secondary),
+                    SizedBox(width: 2),
+                    Text('Change', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.secondary)),
+                  ],
+                ),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.swap_horiz, size: 12, color: AppColors.accent),
-                  SizedBox(width: 2),
-                  Text('Change', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.accent)),
-                ],
-              ),
-            ),
           ],
         ),
       );
@@ -303,7 +304,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
             children: listBranches.map((branch) {
               final isSelected = branch.optionKey == selectedKey;
               return ChoiceChip(
-                label: Text(branch.label, style: const TextStyle(fontSize: 13)),
+                label: Text(branch.label, style: TextStyle(fontSize: 13, color: isSelected ? AppColors.secondary : AppColors.textPrimary)),
                 selected: isSelected,
                 onSelected: (selected) {
                   if (selected) {
@@ -313,9 +314,9 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                         );
                   }
                 },
-                selectedColor: AppColors.secondaryLight,
+                selectedColor: AppColors.secondary.withOpacity(0.15),
                 backgroundColor: AppColors.surfaceVariant,
-                side: BorderSide(color: isSelected ? AppColors.secondary : AppColors.borderLight),
+                side: BorderSide(color: isSelected ? AppColors.secondary : AppColors.borderLight, width: isSelected ? 2 : 1),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               );
             }).toList(),

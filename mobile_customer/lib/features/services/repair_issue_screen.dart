@@ -48,7 +48,7 @@ class RepairIssueScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   const CircleAvatar(
-                    backgroundColor: Color(0xFFEFF6FF),
+                    backgroundColor: AppColors.secondaryLight,
                     child: Icon(Icons.build_circle_outlined,
                         color: AppColors.primary),
                   ),

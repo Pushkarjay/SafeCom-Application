@@ -115,7 +115,7 @@ class RecommendationScreen extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: AppColors.secondaryLight,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.secondaryLight),
                   ),
@@ -447,7 +447,7 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
                           '${variants[i].name}: ${selections[variants[i].variantId]}',
                           style: const TextStyle(fontSize: 11),
                         ),
-                        backgroundColor: const Color(0xFFEFF6FF),
+                        backgroundColor: AppColors.secondaryLight,
                         padding: EdgeInsets.zero,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,

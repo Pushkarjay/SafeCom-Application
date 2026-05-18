@@ -321,7 +321,7 @@ class _BookingCard extends StatelessWidget {
       case 'in_progress':
       case 'in-progress':
       case 'assigned':
-        return ('IN PROGRESS', Icons.hourglass_top_outlined, const Color(0xFF3B82F6));
+        return ('IN PROGRESS', Icons.hourglass_top_outlined, AppColors.secondary);
       case 'confirmed':
         return ('CONFIRMED', Icons.thumb_up_outlined, const Color(0xFF6366F1));
       case 'cancelled':

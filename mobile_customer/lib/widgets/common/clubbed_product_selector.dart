@@ -279,7 +279,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
           color: !option.available
               ? const Color(0xFFF8F8F8)
               : isSelected
-                  ? const Color(0xFFF0F9FF)
+                  ? AppColors.secondaryLight
                   : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
@@ -358,7 +358,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F9FF),
+                color: AppColors.secondaryLight,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.folder_outlined, color: AppColors.primary, size: 20),

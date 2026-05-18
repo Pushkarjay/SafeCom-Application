@@ -290,7 +290,7 @@ class _ProductCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: AppColors.secondaryLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -581,9 +581,9 @@ class _CartSheet extends ConsumerWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: AppColors.secondaryLight,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFBFDBFE)),
+          border: Border.all(color: AppColors.secondaryLight),
         ),
         child: Icon(icon, size: 16, color: AppColors.primary),
       ),

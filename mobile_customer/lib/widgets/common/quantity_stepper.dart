@@ -21,7 +21,7 @@ class QuantityStepper extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: disabled ? AppColors.surfaceVariant : const Color(0xFFEFF6FF),
+        color: disabled ? AppColors.surfaceVariant : AppColors.secondaryLight,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
