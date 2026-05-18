@@ -121,7 +121,12 @@ export class AdminDatasource {
       amount: Number(item.actualAmount || item.amount || 0),
       scheduledDate: String(item.scheduledDate || new Date().toISOString()),
       completedDate: String(item.completedAt || item.completedDate || '') || null,
-      notes: String(item.completionNotes || item.notes || '')
+      notes: String(item.completionNotes || item.notes || ''),
+      address: item.location?.address || item.customer?.address || '',
+      latitude: item.location?.latitude || 0,
+      longitude: item.location?.longitude || 0,
+      customerName: item.customer?.name || '',
+      customerPhone: item.customer?.phone || ''
     }))
   }
 
@@ -722,7 +727,12 @@ export class AdminDatasource {
         amount: Number(item.actualAmount || item.amount || 0),
         scheduledDate: String(item.scheduledDate || new Date().toISOString()),
         completedDate: String(item.completedAt || item.completedDate || '') || null,
-        notes: String(item.completionNotes || item.notes || '')
+        notes: String(item.completionNotes || item.notes || ''),
+        address: item.location?.address || item.customer?.address || '',
+        latitude: item.location?.latitude || 0,
+        longitude: item.location?.longitude || 0,
+        customerName: item.customer?.name || '',
+        customerPhone: item.customer?.phone || ''
       }
     } catch {
       return null

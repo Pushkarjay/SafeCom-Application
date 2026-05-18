@@ -5,6 +5,7 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
+import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class SchedulingScreen extends ConsumerWidget {
@@ -15,6 +16,7 @@ class SchedulingScreen extends ConsumerWidget {
     final booking = ref.watch(bookingFlowProvider);
     final activeOrder = ref.watch(activeOrderProvider);
     final authState = ref.watch(authProvider);
+    final locationState = ref.watch(locationProvider);
     final notifier = ref.read(bookingFlowProvider.notifier);
 
     final dateOptions = List.generate(
@@ -31,6 +33,12 @@ class SchedulingScreen extends ConsumerWidget {
     ];
 
     void handleContinue() {
+      if (locationState.location == 'Fetching location...' || locationState.location.isEmpty || locationState.latitude == null) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(content: Text('Please set your delivery location first.'), behavior: SnackBarBehavior.floating),
+        );
+        return;
+      }
       if (!authState.isAuthenticated || authState.customer == null) {
         showModalBottomSheet(
           context: context,
@@ -146,6 +154,69 @@ class SchedulingScreen extends ConsumerWidget {
                 ],
               ),
             ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: locationState.latitude == null ? AppColors.error.withOpacity(0.5) : AppColors.borderLight),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        locationState.latitude == null ? Icons.location_off : Icons.location_on,
+                        color: locationState.latitude == null ? AppColors.error : AppColors.primary, size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Delivery Location',
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            locationState.location,
+                            style: TextStyle(
+                              color: locationState.latitude == null ? AppColors.error : AppColors.textPrimary,
+                              fontSize: 14, fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 2, overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push(AppRoutes.locationPicker),
+                    icon: const Icon(Icons.edit_location_alt_outlined, size: 18),
+                    label: Text(
+                      locationState.latitude == null ? 'Set Location' : 'Change',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const Text(
             'Select Date',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary),

@@ -141,9 +141,9 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
     setState(() { _isLoading = true; });
 
     await ref.read(locationProvider.notifier).setSelectedLocation(
-      address: address,
-      latitude: selected.latitude,
-      longitude: selected.longitude,
+      address,
+      selected.latitude,
+      selected.longitude,
     );
 
     if (mounted) {

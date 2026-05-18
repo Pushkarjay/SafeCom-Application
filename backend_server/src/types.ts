@@ -257,6 +257,19 @@ export interface FirestoreCustomer {
   registeredDate: string; // ISO 8601
   status: 'active' | 'inactive';
   googleLinked: boolean; // Phase 3.1 — true if Google account was linked
+  savedAddresses?: SavedAddress[];
+  defaultAddressId?: string;
+}
+
+export interface SavedAddress {
+  id: string;
+  label: string;         // e.g. "Home", "Office", "Other"
+  address: string;       // Full address string
+  latitude: number;
+  longitude: number;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FirestoreEmployee {

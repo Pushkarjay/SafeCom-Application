@@ -27,6 +27,7 @@ import usersRoutes from './routes/users.js'
 import { servicesAdminRouter } from './routes/servicesAdmin.js'
 import { sduiAdminRouter } from './routes/sduiAdmin.js'
 import { installationAdminRouter } from './routes/installationAdmin.js'
+import { addressesRouter } from './routes/addresses.js'
 
 export function createApp() {
   const app = express()
@@ -91,6 +92,7 @@ export function createApp() {
   // Protected routes (require Firebase authentication)
   app.use('/api/dashboard', verifyFirebaseIdToken, dashboardRouter)
   app.use('/api/customers', verifyFirebaseIdToken, customersRouter)
+  app.use('/api/customers', verifyFirebaseIdToken, addressesRouter)
   app.use('/api/technicians', verifyFirebaseIdToken, techniciansRouter)
   app.use('/api/jobs', verifyFirebaseIdToken, jobsRouter)
   app.use('/api/bookings', verifyFirebaseIdToken, bookingsRouter)

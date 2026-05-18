@@ -67,6 +67,11 @@ export interface Job {
   scheduledDate: string
   completedDate: string | null
   notes: string
+  address?: string
+  latitude?: number
+  longitude?: number
+  customerName?: string
+  customerPhone?: string
 }
 
 export interface Payment {

@@ -20,15 +20,15 @@ class _LocationPermissionScreenState
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      ref.read(locationProvider.notifier).requestAndFetchLocation().then((ok) {
+    Future.microtask(() async {
+      final hasPerm = await ref.read(locationProvider.notifier).hasPermission();
+      if (hasPerm && mounted) {
+        await ref.read(locationProvider.notifier).fetchLocation();
         if (mounted) {
           final isAuthenticated = ref.read(authProvider).isAuthenticated;
-          if (ok) {
-            context.go(isAuthenticated ? AppRoutes.home : AppRoutes.login);
-          }
+          context.go(isAuthenticated ? AppRoutes.home : AppRoutes.login);
         }
-      });
+      }
     });
   }
 
@@ -137,7 +137,7 @@ class _LocationPermissionScreenState
                     onPressed: locationState.isLoading
                         ? null
                         : () async {
-                            final ok = await ref
+                            await ref
                                 .read(locationProvider.notifier)
                                 .requestAndFetchLocation();
 
@@ -148,14 +148,6 @@ class _LocationPermissionScreenState
                               } else {
                                 context.go(AppRoutes.login);
                               }
-                            }
-                            if (!ok && context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Could not get exact location. You can continue and update later.'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
                             }
                           },
                     child: Text(

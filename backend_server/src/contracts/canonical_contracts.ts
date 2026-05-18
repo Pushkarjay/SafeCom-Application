@@ -70,7 +70,7 @@ export interface CanonicalInvoice {
   /** Service location (may differ from customer address) */
   serviceLocation: string
   serviceLatitude: number
-  servicelongitude: number
+  serviceLongitude: number
   
   /** All line items in invoice */
   lineItems: InvoiceLineItem[]

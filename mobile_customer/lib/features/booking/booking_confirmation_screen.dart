@@ -5,6 +5,7 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/core/config/api_config.dart' show ApiConfig;
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
+import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class BookingConfirmationScreen extends ConsumerWidget {
@@ -14,6 +15,7 @@ class BookingConfirmationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final booking = ref.watch(bookingFlowProvider);
     final activeOrder = ref.watch(activeOrderProvider);
+    final locationState = ref.watch(locationProvider);
     const bookingAmount = ApiConfig.minimumPaymentAmount;
     final productTotal = activeOrder?.estimatedTotal ?? 0;
     final grandTotal = productTotal + bookingAmount;
@@ -95,6 +97,8 @@ class BookingConfirmationScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    _infoRow(Icons.location_on_outlined, 'Location: ${locationState.location}'),
+                    const SizedBox(height: 6),
                     _infoRow(Icons.calendar_month_outlined, 'Date: ${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year}'),
                     const SizedBox(height: 6),
                     _infoRow(Icons.access_time_rounded, 'Time: ${booking.selectedTimeSlot}'),

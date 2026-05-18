@@ -25,7 +25,8 @@ export default function JobDetailScreen() {
     amount: '',
     scheduledDate: '',
     technicianId: '',
-    notes: ''
+    notes: '',
+    address: ''
   })
 
   useEffect(() => {
@@ -38,7 +39,8 @@ export default function JobDetailScreen() {
             amount: '',
             scheduledDate: new Date().toISOString().split('T')[0],
             technicianId: '',
-            notes: ''
+            notes: '',
+            address: ''
           })
         } else if (id) {
           const found = await adminDatasource.getJob(id)
@@ -95,6 +97,7 @@ export default function JobDetailScreen() {
           scheduledDate: formData.scheduledDate || new Date().toISOString(),
           technicianId: formData.technicianId || undefined,
           notes: formData.notes || undefined,
+          address: formData.address || undefined,
           status: 'pending'
         })
       })
@@ -126,7 +129,8 @@ export default function JobDetailScreen() {
         amount: parseFloat(formData.amount),
         scheduledDate: formData.scheduledDate || job.scheduledDate,
         technicianId: formData.technicianId || job.technicianId || undefined,
-        notes: formData.notes || undefined
+        notes: formData.notes || undefined,
+        address: formData.address || undefined
       })
       alert('Job updated successfully!')
       navigate('/jobs')
@@ -146,7 +150,8 @@ export default function JobDetailScreen() {
         amount: String(job.amount),
         scheduledDate: job.scheduledDate?.split('T')[0] || '',
         technicianId: job.technicianId || '',
-        notes: job.notes || ''
+        notes: job.notes || '',
+        address: job.address || ''
       })
     }
   }, [isEditMode, job])
@@ -203,6 +208,10 @@ export default function JobDetailScreen() {
               <input type="text" value={formData.technicianId} onChange={e => setFormData({ ...formData, technicianId: e.target.value })} />
             </div>
             <div className="form-group">
+              <label>Address (optional)</label>
+              <input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+            </div>
+            <div className="form-group">
               <label>Notes (optional)</label>
               <input type="text" value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} />
             </div>
@@ -250,6 +259,10 @@ export default function JobDetailScreen() {
             <div className="form-group">
               <label>Technician ID (optional)</label>
               <input type="text" value={formData.technicianId} onChange={e => setFormData({ ...formData, technicianId: e.target.value })} placeholder="e.g. TECH-001" />
+            </div>
+            <div className="form-group">
+              <label>Address (optional)</label>
+              <input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Service address..." />
             </div>
             <div className="form-group">
               <label>Notes (optional)</label>
@@ -350,6 +363,46 @@ export default function JobDetailScreen() {
             <div className="notes-section">
               <h3>Notes</h3>
               <p className="notes-text">{job!.notes}</p>
+            </div>
+          )}
+
+          {(job!.address || job!.customerName) && (
+            <div className="detail-section">
+              <h3>Service Location</h3>
+              {job!.customerName && (
+                <div className="detail-row">
+                  <label>Customer</label>
+                  <p>{job!.customerName}</p>
+                </div>
+              )}
+              {job!.customerPhone && (
+                <div className="detail-row">
+                  <label>Phone</label>
+                  <p>{job!.customerPhone}</p>
+                </div>
+              )}
+              {job!.address && (
+                <div className="detail-row">
+                  <label>Address</label>
+                  <p>{job!.address}</p>
+                </div>
+              )}
+              {job!.latitude && job!.longitude && (
+                <div className="detail-row">
+                  <label>Coordinates</label>
+                  <p>{job!.latitude}, {job!.longitude}</p>
+                </div>
+              )}
+              {job!.latitude && job!.longitude && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${job!.latitude},${job!.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="map-link"
+                >
+                  View on Google Maps
+                </a>
+              )}
             </div>
           )}
         </div>

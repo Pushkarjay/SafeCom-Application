@@ -306,6 +306,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     final activeOrder = ref.watch(activeOrderProvider);
     final booking = ref.watch(bookingFlowProvider);
+    final locationState = ref.watch(locationProvider);
 
     const taxAmount = 0.0;
     const bookingAmount = ApiConfig.bookingAmount;
@@ -319,6 +320,29 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (locationState.location == 'Fetching location...' || locationState.latitude == null)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.error.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Delivery location not set. Please go back and set your location.',
+                      style: TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -352,6 +376,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 const SizedBox(height: 20),
                 _SummaryRow(label: 'Service', value: activeOrder == null ? 'Service details unavailable' : '${activeOrder.serviceName} (${activeOrder.packageLabel})'),
                 _SummaryRow(label: 'Schedule', value: '${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year} • ${booking.selectedTimeSlot}'),
+                _SummaryRow(label: 'Location', value: locationState.location),
 
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
