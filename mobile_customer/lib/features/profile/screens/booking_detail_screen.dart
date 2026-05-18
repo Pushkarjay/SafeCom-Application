@@ -11,7 +11,10 @@ class BookingDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusInfo = _getStatusInfo(booking.status);
-    final remainingAmount = booking.totalAmount - booking.amountPaid;
+    final productTotal = booking.totalAmount;
+    final bookingCharge = booking.amountPaid;
+    final grandTotal = productTotal + bookingCharge;
+    final remainingAmount = productTotal;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -92,14 +95,20 @@ class BookingDetailScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _paymentRow('Total Amount', 'Rs ${booking.totalAmount.toStringAsFixed(0)}', AppColors.textPrimary, FontWeight.w700),
+                        _paymentRow('Product / Service Total', 'Rs ${productTotal.toStringAsFixed(0)}', AppColors.textPrimary, FontWeight.w600),
                         const SizedBox(height: 8),
-                        _paymentRow('Booking Amount Paid', 'Rs ${booking.amountPaid.toStringAsFixed(0)}', AppColors.success, FontWeight.w700),
+                        _paymentRow('Booking Charge', 'Rs ${bookingCharge.toStringAsFixed(0)}', AppColors.textPrimary, FontWeight.w600),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 8),
                           child: Divider(color: AppColors.borderLight),
                         ),
-                        _paymentRow('Remaining Amount', 'Rs ${remainingAmount.toStringAsFixed(0)}', AppColors.secondary, FontWeight.w800),
+                        _paymentRow('Grand Total', 'Rs ${grandTotal.toStringAsFixed(0)}', AppColors.primary, FontWeight.w800),
+                        const SizedBox(height: 8),
+                        const Divider(color: AppColors.borderLight),
+                        const SizedBox(height: 8),
+                        _paymentRow('Paid Now (Booking)', 'Rs ${bookingCharge.toStringAsFixed(0)}', AppColors.success, FontWeight.w700),
+                        const SizedBox(height: 8),
+                        _paymentRow('Remaining (Pay On-Site)', 'Rs ${remainingAmount.toStringAsFixed(0)}', AppColors.secondary, FontWeight.w800),
                       ],
                     ),
                   ),
