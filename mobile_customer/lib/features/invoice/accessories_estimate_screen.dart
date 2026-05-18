@@ -80,51 +80,54 @@ class _AccessoriesEstimateScreenState extends ConsumerState<AccessoriesEstimateS
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Amount Payable', style: Theme.of(context).textTheme.bodySmall),
-                  Text(
-                    'Rs ${total.toStringAsFixed(0)}',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                        ),
-                  ),
-                ],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: AppColors.border)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Amount Payable', style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      'Rs ${total.toStringAsFixed(0)}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            FilledButton(
-              onPressed: total <= 0
-                  ? null
-                  : () {
-                      ref.read(activeOrderProvider.notifier).setSummary(
-                            ActiveOrderSummary(
-                              serviceName: 'Accessories',
-                              packageLabel: 'Selected items',
-                              estimatedTotal: total,
-                              items: rows.where((r) => r.quantity > 0).map((r) => ActiveOrderLineItem(
-                                name: r.name,
-                                quantity: r.quantity,
-                                unitPrice: r.price,
-                              )).toList(),
-                            ),
-                          );
-                      context.push(AppRoutes.scheduling);
-                    },
-              child: const Text('Proceed'),
-            ),
-          ],
+              FilledButton(
+                onPressed: total <= 0
+                    ? null
+                    : () {
+                        ref.read(activeOrderProvider.notifier).setSummary(
+                              ActiveOrderSummary(
+                                serviceName: 'Accessories',
+                                packageLabel: 'Selected items',
+                                estimatedTotal: total,
+                                items: rows.where((r) => r.quantity > 0).map((r) => ActiveOrderLineItem(
+                                  name: r.name,
+                                  quantity: r.quantity,
+                                  unitPrice: r.price,
+                                )).toList(),
+                              ),
+                            );
+                        context.push(AppRoutes.scheduling);
+                      },
+                child: const Text('Proceed'),
+              ),
+            ],
+          ),
         ),
       ),
     );

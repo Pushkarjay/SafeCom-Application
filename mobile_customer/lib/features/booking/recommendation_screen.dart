@@ -317,7 +317,9 @@ class RecommendationScreen extends ConsumerWidget {
   }
 
   Widget _buildBottomSection(BuildContext context, WidgetRef ref, List<String> effectiveSelectedIds) {
-    return Container(
+    return SafeArea(
+      top: false,
+      child: Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -381,6 +383,7 @@ class RecommendationScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

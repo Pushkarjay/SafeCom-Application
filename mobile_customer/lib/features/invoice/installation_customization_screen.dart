@@ -170,57 +170,60 @@ class InstallationCustomizationScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.borderLight)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Amount Payable', style: Theme.of(context).textTheme.bodySmall),
-                  Text(
-                    _currency(flow.totalAmount),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.secondary,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.borderLight)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Amount Payable', style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      _currency(flow.totalAmount),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.secondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            FilledButton(
-              onPressed: canProceed
-                  ? () {
-                      ref.read(activeOrderProvider.notifier).setSummary(
-                            ActiveOrderSummary(
-                              serviceName: category.name,
-                              packageLabel: group.name,
-                              estimatedTotal: flow.totalAmount,
-                              items: allItems
-                                  .map((i) => ActiveOrderLineItem(
-                                        name: _buildItemName(i),
-                                        quantity: i.quantity,
-                                        unitPrice: i.unitPrice,
-                                      ))
-                                  .toList(),
-                            ),
-                          );
-                      context.push(AppRoutes.scheduling);
-                    }
-                  : null,
-              style: FilledButton.styleFrom(
-                backgroundColor: canProceed ? AppColors.primary : AppColors.border,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              FilledButton(
+                onPressed: canProceed
+                    ? () {
+                        ref.read(activeOrderProvider.notifier).setSummary(
+                              ActiveOrderSummary(
+                                serviceName: category.name,
+                                packageLabel: group.name,
+                                estimatedTotal: flow.totalAmount,
+                                items: allItems
+                                    .map((i) => ActiveOrderLineItem(
+                                          name: _buildItemName(i),
+                                          quantity: i.quantity,
+                                          unitPrice: i.unitPrice,
+                                        ))
+                                    .toList(),
+                              ),
+                            );
+                        context.push(AppRoutes.scheduling);
+                      }
+                    : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: canProceed ? AppColors.primary : AppColors.border,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Proceed', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
-              child: const Text('Proceed', style: TextStyle(fontWeight: FontWeight.w700)),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

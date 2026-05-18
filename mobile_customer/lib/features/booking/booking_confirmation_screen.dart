@@ -7,26 +7,16 @@ import 'package:mobile_customer/features/booking/providers/active_order_provider
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
-class BookingConfirmationScreen extends ConsumerStatefulWidget {
+class BookingConfirmationScreen extends ConsumerWidget {
   const BookingConfirmationScreen({super.key});
 
   @override
-  ConsumerState<BookingConfirmationScreen> createState() =>
-      _BookingConfirmationScreenState();
-}
-
-class _BookingConfirmationScreenState
-    extends ConsumerState<BookingConfirmationScreen> {
-  String _selectedPaymentOption = 'full';
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final booking = ref.watch(bookingFlowProvider);
     final activeOrder = ref.watch(activeOrderProvider);
-
-    const double minimumPaymentAmount = ApiConfig.minimumPaymentAmount;
-    final double remainingAmount =
-        (activeOrder?.estimatedTotal ?? 0) - minimumPaymentAmount;
+    const bookingAmount = ApiConfig.minimumPaymentAmount;
+    final remainingAmount = (activeOrder?.estimatedTotal ?? 0) - bookingAmount;
+    final hasItems = activeOrder != null && activeOrder.items.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -68,6 +58,7 @@ class _BookingConfirmationScreenState
               ),
               const SizedBox(height: 24),
 
+              // Service Summary Card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -105,6 +96,29 @@ class _BookingConfirmationScreenState
                     _infoRow(Icons.calendar_month_outlined, 'Date: ${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year}'),
                     const SizedBox(height: 6),
                     _infoRow(Icons.access_time_rounded, 'Time: ${booking.selectedTimeSlot}'),
+                    if (hasItems) ...[
+                      const SizedBox(height: 12),
+                      const Divider(color: AppColors.borderLight),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Products / Services',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w700, color: AppColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...activeOrder!.items.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text('${item.name} × ${item.quantity}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                            ),
+                            Text('Rs ${item.amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      )),
+                    ],
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -113,7 +127,7 @@ class _BookingConfirmationScreenState
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Booking Amount Paid: Rs ${minimumPaymentAmount.toStringAsFixed(0)}',
+                        'Booking Amount Paid: Rs ${bookingAmount.toStringAsFixed(0)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.accent,
                           fontWeight: FontWeight.w600,
@@ -125,6 +139,45 @@ class _BookingConfirmationScreenState
               ),
               const SizedBox(height: 20),
 
+              // Amount Summary
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Payment Summary',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.primary),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      const Text('Total Amount', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Rs ${(activeOrder?.estimatedTotal ?? 0).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    ]),
+                    const SizedBox(height: 6),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      const Text('Booking Amount Paid', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Rs ${bookingAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.success)),
+                    ]),
+                    const SizedBox(height: 6),
+                    const Divider(color: AppColors.borderLight),
+                    const SizedBox(height: 6),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      const Text('Remaining Amount', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                      Text('Rs ${remainingAmount.toStringAsFixed(0)}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: remainingAmount > 0 ? AppColors.secondary : AppColors.success)),
+                    ]),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Important Information
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -151,54 +204,72 @@ class _BookingConfirmationScreenState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Technician will start the work after accessories payment has been done. The service charge will be applicable and payable after work completion.',
-                      style: TextStyle(color: AppColors.warning.withOpacity(0.8), fontSize: 13, height: 1.4),
+                    const SizedBox(height: 10),
+                    const Text(
+                      '• Technician will visit the location, explain everything, and confirm the setup.\n'
+                      '• The remaining payment must be made directly to the technician before installation begins.\n'
+                      '• The technician will handle the payment via QR, card, cash, or other methods.\n'
+                      '• Work will start only after payment confirmation.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              Text(
-                'Payment Options',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 14),
-
-              _PaymentOptionCard(
-                selected: _selectedPaymentOption == 'full',
-                title: 'Pay Full Amount Now',
-                description: 'Complete full payment at service time.',
-                amount: 'Rs ${(activeOrder?.estimatedTotal ?? 0).toStringAsFixed(0)}',
-                onTap: () => setState(() => _selectedPaymentOption = 'full'),
-              ),
-              const SizedBox(height: 12),
-
-              _PaymentOptionCard(
-                selected: _selectedPaymentOption == 'partial',
-                title: 'Pay Partial & Later',
-                description: 'Pay Rs ${minimumPaymentAmount.toStringAsFixed(0)} now. Remaining Rs ${remainingAmount.toStringAsFixed(0)} after work.',
-                amount: 'Rs ${minimumPaymentAmount.toStringAsFixed(0)}',
-                onTap: () => setState(() => _selectedPaymentOption = 'partial'),
+              // On-site Payment Note
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.accentLight,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.accent.withOpacity(0.15)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.payments_outlined, color: AppColors.accent, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'On-Site Payment',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'The remaining payment is handled directly with the technician at your location. '
+                      'The app currently only collects the booking amount. Full in-app payment will be available in future updates.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.borderLight)),
-        ),
-        child: SizedBox(
-          height: 48,
-          child: FilledButton(
-            onPressed: () => context.go(AppRoutes.home),
-            child: const Text('Back to Home', style: TextStyle(fontWeight: FontWeight.w700)),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.borderLight)),
+          ),
+          child: SizedBox(
+            height: 48,
+            child: FilledButton(
+              onPressed: () => context.go(AppRoutes.home),
+              child: const Text('Back to Home', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
           ),
         ),
       ),
@@ -212,67 +283,6 @@ class _BookingConfirmationScreenState
         const SizedBox(width: 8),
         Text(text, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
       ],
-    );
-  }
-}
-
-class _PaymentOptionCard extends StatelessWidget {
-  final bool selected;
-  final String title;
-  final String description;
-  final String amount;
-  final VoidCallback onTap;
-
-  const _PaymentOptionCard({
-    required this.selected,
-    required this.title,
-    required this.description,
-    required this.amount,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.accentLight : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? AppColors.accent : AppColors.borderLight,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 22, height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: selected ? AppColors.accent : AppColors.border, width: 2),
-              ),
-              child: selected
-                  ? Center(child: Container(width: 12, height: 12, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.accent)))
-                  : null,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 4),
-                  Text(description, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(amount, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: AppColors.success)),
-          ],
-        ),
-      ),
     );
   }
 }

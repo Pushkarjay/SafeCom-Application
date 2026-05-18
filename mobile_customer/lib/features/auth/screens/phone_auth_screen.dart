@@ -149,161 +149,149 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF0F172A),
-              Color(0xFF1A2744),
-              Color(0xFF0F172A),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 16),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border, width: 0.5),
+                    ),
+                    child: IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+                    ),
+                  ),
+                  const Spacer(),
+                  const SafeComLogoSmall(size: 36),
+                ],
+              ),
+              const SizedBox(height: 32),
+              Text(
+                _otpSent ? 'Enter OTP' : 'Phone Number',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _otpSent
+                    ? 'We sent a 6-digit OTP to $_countryCode ${_phoneController.text}'
+                    : 'We\'ll send you a verification code.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 32),
+              if (!_otpSent) ...[
                 Row(
                   children: [
                     Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border, width: 0.5),
                       ),
-                      child: IconButton(
-                        onPressed: () => context.pop(),
-                        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _countryCode,
+                          dropdownColor: AppColors.surface,
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                          icon: const Icon(Icons.arrow_drop_down, color: AppColors.textMuted),
+                          items: _countryCodes.map((c) => DropdownMenuItem(
+                            value: c.$2,
+                            child: Text('${c.$1} ${c.$2}', style: const TextStyle(fontSize: 15)),
+                          )).toList(),
+                          onChanged: (v) { if (v != null) setState(() => _countryCode = v); },
+                        ),
                       ),
                     ),
-                    const Spacer(),
-                    const SafeComLogoSmall(size: 36),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildTextField(
+                        controller: _phoneController,
+                        hint: '98765 43210',
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(10),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 32),
-                Text(
-                  _otpSent ? 'Enter OTP' : 'Phone Number',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                const SizedBox(height: 24),
+                _buildPrimaryButton(
+                  label: 'Send OTP',
+                  onPressed: _isLoading ? null : _sendOtp,
+                ),
+              ] else ...[
+                _buildTextField(
+                  controller: _otpController,
+                  hint: '• • • • • •',
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildPrimaryButton(
+                  label: 'Verify & Sign In',
+                  onPressed: _isLoading ? null : _verifyOtp,
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => setState(() {
+                              _otpSent = false;
+                              _otpController.clear();
+                            }),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                    ),
+                    child: const Text('Resend OTP', style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _otpSent
-                      ? 'We sent a 6-digit OTP to $_countryCode ${_phoneController.text}'
-                      : 'We\'ll send you a verification code.',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                if (!_otpSent) ...[
-                  Row(
-                    children: [
-                      Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.12)),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _countryCode,
-                            dropdownColor: const Color(0xFF1A2744),
-                            style: const TextStyle(color: Colors.white, fontSize: 16),
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
-                            items: _countryCodes.map((c) => DropdownMenuItem(
-                              value: c.$2,
-                              child: Text('${c.$1} ${c.$2}', style: const TextStyle(fontSize: 15)),
-                            )).toList(),
-                            onChanged: (v) { if (v != null) setState(() => _countryCode = v); },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _phoneController,
-                          hint: '98765 43210',
-                          keyboardType: TextInputType.phone,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(10),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _buildPrimaryButton(
-                    label: 'Send OTP',
-                    onPressed: _isLoading ? null : _sendOtp,
-                  ),
-                ] else ...[
-                  _buildTextField(
-                    controller: _otpController,
-                    hint: '• • • • • •',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(6),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _buildPrimaryButton(
-                    label: 'Verify & Sign In',
-                    onPressed: _isLoading ? null : _verifyOtp,
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
-                                _otpSent = false;
-                                _otpController.clear();
-                              }),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.white60,
-                      ),
-                      child: const Text('Resend OTP', style: TextStyle(fontWeight: FontWeight.w500)),
-                    ),
-                  ),
-                ],
-                if (_error != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.errorLight.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: AppColors.error, size: 18),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _error!,
-                            style: const TextStyle(color: AppColors.error, fontSize: 13),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ],
-            ),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.errorLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: AppColors.error, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -320,23 +308,23 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
-      style: const TextStyle(color: Colors.white, fontSize: 18, letterSpacing: 0.5),
+      style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, letterSpacing: 0.5),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white30),
+        hintStyle: const TextStyle(color: AppColors.textMuted),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.06),
+        fillColor: AppColors.surfaceVariant,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white12),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white12),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white38, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.secondary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
@@ -349,18 +337,17 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
   }) {
     return SizedBox(
       height: 52,
-      child: ElevatedButton(
+      child: FilledButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: AppColors.primary,
-          elevation: 0,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.secondary,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: _isLoading
             ? const SizedBox(
                 height: 20, width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
             : Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
       ),

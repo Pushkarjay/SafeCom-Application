@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
+import 'package:mobile_customer/features/auth/services/auth_service.dart';
 import 'package:mobile_customer/core/widgets/safecom_logo.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
@@ -83,6 +84,29 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
 
     try {
       final customer = ref.read(authProvider).customer;
+      final customerId = customer?.id;
+      final authService = ref.read(authServiceProvider);
+
+      if (email.isNotEmpty) {
+        final emailTaken = await authService.checkEmailExists(email, excludeCustomerId: customerId);
+        if (emailTaken) {
+          if (mounted) {
+            setState(() { _isLoading = false; _error = 'This email is already linked to another account. Please use a different email or sign in with Google.'; });
+          }
+          return;
+        }
+      }
+
+      if (phone.isNotEmpty) {
+        final phoneTaken = await authService.checkPhoneExists(phone, excludeCustomerId: customerId);
+        if (phoneTaken) {
+          if (mounted) {
+            setState(() { _isLoading = false; _error = 'This phone number is already linked to another account. Please use a different number or sign in with this phone.'; });
+          }
+          return;
+        }
+      }
+
       if (customer != null) {
         final updated = customer.copyWith(name: name, email: email, phone: phone);
         await ref.read(authProvider.notifier).updateProfile(updated);
@@ -102,6 +126,7 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -109,11 +134,12 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
           padding: const EdgeInsets.only(left: 8),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border, width: 0.5),
             ),
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
               onPressed: () => context.go(AppRoutes.home),
             ),
           ),
@@ -123,156 +149,142 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
           const SizedBox(width: 16),
         ],
       ),
-      extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF0F172A),
-              Color(0xFF1A2744),
-              Color(0xFF0F172A),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 60),
-                const Text(
-                  'Complete Your Profile',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              const Text(
+                'Complete Your Profile',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'We need these details to process your service requests and keep you updated.',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'We need these details to process your service requests and keep you updated.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  height: 1.4,
                 ),
-                const SizedBox(height: 32),
-                _buildField(
-                  controller: _nameController,
-                  hint: 'John Doe',
-                  label: 'Full Name',
-                  icon: Icons.person_outline,
-                ),
-                const SizedBox(height: 16),
-                _buildField(
-                  controller: _emailController,
-                  hint: 'john@example.com',
-                  label: 'Email Address',
-                  icon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      height: 56,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.12)),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _countryCode,
-                          dropdownColor: const Color(0xFF1A2744),
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                          icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
-                          items: _countryCodes.map((c) => DropdownMenuItem(
-                            value: c.$2,
-                            child: Text('${c.$1} ${c.$2}', style: const TextStyle(fontSize: 15)),
-                          )).toList(),
-                          onChanged: (v) { if (v != null) setState(() => _countryCode = v); },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.12)),
-                        ),
-                        child: TextField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                          decoration: const InputDecoration(
-                            hintText: 'Phone number',
-                            hintStyle: TextStyle(color: Colors.white30),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          ),
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 32),
+              _buildField(
+                controller: _nameController,
+                hint: 'John Doe',
+                label: 'Full Name',
+                icon: Icons.person_outline,
+              ),
+              const SizedBox(height: 16),
+              _buildField(
+                controller: _emailController,
+                hint: 'john@example.com',
+                label: 'Email Address',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    height: 56,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.errorLight.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border, width: 0.5),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: AppColors.error, size: 18),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _countryCode,
+                        dropdownColor: AppColors.surface,
+                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                        icon: const Icon(Icons.arrow_drop_down, color: AppColors.textMuted),
+                        items: _countryCodes.map((c) => DropdownMenuItem(
+                          value: c.$2,
+                          child: Text('${c.$1} ${c.$2}', style: const TextStyle(fontSize: 15)),
+                        )).toList(),
+                        onChanged: (v) { if (v != null) setState(() => _countryCode = v); },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border, width: 0.5),
+                      ),
+                      child: TextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                        decoration: const InputDecoration(
+                          hintText: 'Phone number',
+                          hintStyle: TextStyle(color: AppColors.textMuted),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
-                      ],
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      ),
                     ),
                   ),
                 ],
-                const SizedBox(height: 28),
-                SizedBox(
-                  height: 52,
-                  child: FilledButton(
-                    onPressed: _isLoading ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20, width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                          )
-                        : const Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.errorLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton(
-                    onPressed: _isLoading ? null : () => context.go(AppRoutes.profile),
-                    style: TextButton.styleFrom(foregroundColor: Colors.white38),
-                    child: const Text('Skip for now', style: TextStyle(fontWeight: FontWeight.w500)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
+              const SizedBox(height: 28),
+              SizedBox(
+                height: 52,
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20, width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: TextButton(
+                  onPressed: _isLoading ? null : () => context.go(AppRoutes.profile),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                  child: const Text('Skip for now', style: TextStyle(fontWeight: FontWeight.w500)),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -288,20 +300,20 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(color: AppColors.border, width: 0.5),
       ),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white30),
+          hintStyle: const TextStyle(color: AppColors.textMuted),
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.white54),
-          prefixIcon: Icon(icon, color: Colors.white54),
+          labelStyle: const TextStyle(color: AppColors.textSecondary),
+          prefixIcon: Icon(icon, color: AppColors.textMuted),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),

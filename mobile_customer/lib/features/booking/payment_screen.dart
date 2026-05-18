@@ -308,8 +308,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final booking = ref.watch(bookingFlowProvider);
     const bookingAmount = ApiConfig.bookingAmount;
 
-    final taxAmount = (activeOrder?.estimatedTotal ?? 0) * ApiConfig.gstRate;
-    final grandTotal = (activeOrder?.estimatedTotal ?? 0) + taxAmount;
+    const taxAmount = 0.0;
+    final grandTotal = activeOrder?.estimatedTotal ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -381,26 +381,22 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ],
 
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('Subtotal', style: TextStyle(color: AppColors.textSecondary)),
-                  Text(_currency(activeOrder?.estimatedTotal ?? 0), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const Text('Total Amount', style: TextStyle(color: AppColors.textSecondary)),
+                  Text(_currency(grandTotal), style: const TextStyle(fontWeight: FontWeight.w600)),
                 ]),
                 const SizedBox(height: 8),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text(ApiConfig.gstLabel, style: const TextStyle(color: AppColors.textSecondary)),
-                  Text('+ ${_currency(taxAmount)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                ]),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryLight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.secondary.withOpacity(0.15)),
-                  ),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    const Text('Estimated Grand Total', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
-                    Text(_currency(grandTotal), style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.secondary)),
-                  ]),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.info_outline, size: 14, color: AppColors.textMuted),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'All product prices are inclusive of GST. No additional GST or extra charges are applicable.',
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.3),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -424,8 +420,29 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ]),
                 const SizedBox(height: 8),
                 const Text(
-                  'A minimum booking charge of Rs 100 is required to confirm the technician visit. The remaining balance will be payable after the service is successfully completed.',
+                  'A minimum booking charge of Rs 100 is required to confirm the technician visit.',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.payments_outlined, size: 16, color: AppColors.secondary),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'The remaining payment must be made directly to the technician before the work starts. The technician will handle the payment process via QR, card, cash, or other methods. Currently, the app is only used to collect the booking amount.',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

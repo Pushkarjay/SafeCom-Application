@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/core/utils/error_handler.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
+import 'package:mobile_customer/features/auth/services/auth_service.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
@@ -17,6 +18,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen>
     with SingleTickerProviderStateMixin {
   late TextEditingController _nameController;
+  late TextEditingController _emailController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
 
@@ -31,6 +33,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     super.initState();
     final customer = ref.read(authProvider).customer;
     _nameController = TextEditingController(text: customer?.name ?? '');
+    _emailController = TextEditingController(text: customer?.email ?? '');
     _phoneController = TextEditingController(text: customer?.phone ?? '');
     _addressController = TextEditingController(text: customer?.address ?? '');
 
@@ -45,6 +48,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     _animationController.dispose();
@@ -55,24 +59,66 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     setState(() => _isSaving = true);
     try {
       final customer = ref.read(authProvider).customer;
-      if (customer != null) {
-        final updated = customer.copyWith(
-          name: _nameController.text,
-          phone: _phoneController.text,
-          address: _addressController.text,
-        );
-        await ref.read(authProvider.notifier).updateProfile(updated);
+      if (customer == null) {
+        if (mounted) setState(() => _isSaving = false);
+        return;
+      }
 
-        if (mounted) {
-          setState(() { _isEditing = false; _isSaving = false; });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile updated successfully'),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+      final authService = ref.read(authServiceProvider);
+      final email = _emailController.text.trim();
+      final phone = _phoneController.text.trim();
+
+      if (email.isNotEmpty && email != customer.email) {
+        final emailTaken = await authService.checkEmailExists(email, excludeCustomerId: customer.id);
+        if (emailTaken) {
+          if (mounted) {
+            setState(() => _isSaving = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('This email is already linked to another account.'),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
         }
+      }
+
+      if (phone.isNotEmpty && phone != customer.phone) {
+        final phoneTaken = await authService.checkPhoneExists(phone, excludeCustomerId: customer.id);
+        if (phoneTaken) {
+          if (mounted) {
+            setState(() => _isSaving = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('This phone number is already linked to another account.'),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      final updated = customer.copyWith(
+        name: _nameController.text,
+        email: email,
+        phone: phone,
+        address: _addressController.text,
+      );
+      await ref.read(authProvider.notifier).updateProfile(updated);
+
+      if (mounted) {
+        setState(() { _isEditing = false; _isSaving = false; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -352,6 +398,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildTextField(_nameController, 'Full Name', Icons.person_outline),
+                          const SizedBox(height: 14),
+                          _buildTextField(_emailController, 'Email Address', Icons.email_outlined),
                           const SizedBox(height: 14),
                           _buildTextField(_phoneController, 'Phone Number', Icons.phone_outlined),
                           const SizedBox(height: 14),

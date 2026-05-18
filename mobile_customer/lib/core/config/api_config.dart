@@ -17,6 +17,6 @@ class ApiConfig {
   // TODO: Fetch from backend config endpoint instead of hardcoding
   static const double bookingAmount = 100.0;
   static const double minimumPaymentAmount = 100.0;
-  static const double gstRate = 0.18; // 18% GST
-  static const String gstLabel = 'Estimated GST (18%)';
+  static const double gstRate = 0.0; // GST inclusive in product prices
+  static const String gstLabel = 'GST';
 }

@@ -145,6 +145,48 @@ class AuthService {
     return (token: idToken ?? (throw Exception('No Firebase ID token')), customer: customer);
   }
 
+  // ─── Duplicate Checks ──────────────────────────────────────────────────────
+
+  /// Check if an email is already registered by another customer.
+  Future<bool> checkEmailExists(String email, {String? excludeCustomerId}) async {
+    try {
+      final idToken = await getFirebaseIdToken();
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (idToken != null) headers['Authorization'] = 'Bearer $idToken';
+      final response = await _dio.get(
+        '$baseUrl/users/by-email/${Uri.encodeComponent(email)}',
+        options: Options(headers: headers, sendTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final existingId = response.data['id'] as String?;
+        if (existingId != null && existingId != excludeCustomerId) return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Check if a phone number is already registered by another customer.
+  Future<bool> checkPhoneExists(String phone, {String? excludeCustomerId}) async {
+    try {
+      final idToken = await getFirebaseIdToken();
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (idToken != null) headers['Authorization'] = 'Bearer $idToken';
+      final response = await _dio.get(
+        '$baseUrl/users/by-phone/${Uri.encodeComponent(phone)}',
+        options: Options(headers: headers, sendTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final existingId = response.data['id'] as String?;
+        if (existingId != null && existingId != excludeCustomerId) return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ─── Backend Link ─────────────────────────────────────────────────────────
 
   /// Helper to get current Firebase ID token if signed in
@@ -216,7 +258,7 @@ class AuthService {
     throw Exception('Failed to fetch profile');
   }
 
-  /// Update customer profile
+  /// Update customer profile and sync the users collection.
   Future<Customer> updateProfile(
     String token,
     String customerId,
@@ -233,11 +275,23 @@ class AuthService {
         ),
       );
 
+      Customer updated;
       if (response.statusCode == 200) {
-        return Customer.fromJson(response.data as Map<String, dynamic>);
+        updated = Customer.fromJson(response.data as Map<String, dynamic>);
+      } else {
+        throw Exception('Failed to update profile');
       }
 
-      throw Exception('Failed to update profile');
+      // Sync the users collection so Firebase Auth / users doc stays in sync
+      await linkUserToBackend(
+        firebaseUid: customerId,
+        email: customer.email,
+        displayName: customer.name,
+        phone: customer.phone,
+        address: customer.address,
+      );
+
+      return updated;
     } catch (e) {
       // Fallback: return updated customer locally
       return customer;
