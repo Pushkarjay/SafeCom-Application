@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/services/providers/repair_flow_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class RepairIssueScreen extends ConsumerWidget {
   const RepairIssueScreen({super.key});
@@ -41,7 +42,7 @@ class RepairIssueScreen extends ConsumerWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: selected ? const Color(0xFF0A84FF) : const Color(0xFFE2E8F0),
+                  color: selected ? AppColors.primary : AppColors.border,
                 ),
               ),
               child: Row(
@@ -49,7 +50,7 @@ class RepairIssueScreen extends ConsumerWidget {
                   const CircleAvatar(
                     backgroundColor: Color(0xFFEFF6FF),
                     child: Icon(Icons.build_circle_outlined,
-                        color: Color(0xFF0A84FF)),
+                        color: AppColors.primary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -66,7 +67,7 @@ class RepairIssueScreen extends ConsumerWidget {
                         Text(
                           'Visit + diagnostics starts at Rs ${(issue.visitFee + issue.diagnosticFee).toStringAsFixed(0)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF64748B),
+                                color: AppColors.textSecondary,
                               ),
                         ),
                       ],

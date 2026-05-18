@@ -5,131 +5,183 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/core/widgets/safecom_logo.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
-class LocationPermissionScreen extends ConsumerWidget {
+class LocationPermissionScreen extends ConsumerStatefulWidget {
   const LocationPermissionScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LocationPermissionScreen> createState() =>
+      _LocationPermissionScreenState();
+}
+
+class _LocationPermissionScreenState
+    extends ConsumerState<LocationPermissionScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(locationProvider.notifier).requestAndFetchLocation().then((ok) {
+        if (mounted) {
+          final isAuthenticated = ref.read(authProvider).isAuthenticated;
+          if (ok) {
+            context.go(isAuthenticated ? AppRoutes.home : AppRoutes.login);
+          }
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final locationState = ref.watch(locationProvider);
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Spacer(),
-              const SafeComLogo(size: 110),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFF5F2ED),
+              Color(0xFFFFFFFF),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Spacer(),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.shadow,
+                          blurRadius: 30,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Column(
                       children: [
-                        Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF0A84FF)),
-                        SizedBox(width: 6),
-                        Text('Location', style: TextStyle(color: Color(0xFF0A84FF), fontSize: 12, fontWeight: FontWeight.w600)),
+                        const SafeComLogo(size: 100, showText: false),
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondaryLight,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.my_location_rounded, size: 14, color: AppColors.secondary),
+                              SizedBox(width: 6),
+                              Text('Location', style: TextStyle(color: AppColors.secondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Enable Location Access',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'SafeCom needs your location to show nearby services and keep your booking flow smooth.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Enable Location Access',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'SafeCom needs your location to show nearby services and keep your booking flow smooth.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: const Color(0xFF475569),
-                    ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Text(
-                  'Use "Allow while using app" on your device permission prompt.',
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: AppColors.textSecondary, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Use "Allow while using app" on your device permission prompt.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: locationState.isLoading
-                      ? null
-                      : () async {
-                          final ok = await ref
-                              .read(locationProvider.notifier)
-                              .requestAndFetchLocation();
-                          
-                          if (context.mounted) {
-                            final isAuthenticated = ref.read(authProvider).isAuthenticated;
-                            // If authenticated go home, else go to login
-                            if (isAuthenticated) {
-                              context.go(AppRoutes.home);
-                            } else {
-                              context.go(AppRoutes.login);
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: locationState.isLoading
+                        ? null
+                        : () async {
+                            final ok = await ref
+                                .read(locationProvider.notifier)
+                                .requestAndFetchLocation();
+
+                            if (context.mounted) {
+                              final isAuthenticated = ref.read(authProvider).isAuthenticated;
+                              if (isAuthenticated) {
+                                context.go(AppRoutes.home);
+                              } else {
+                                context.go(AppRoutes.login);
+                              }
                             }
-                          }
-                          if (!ok && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Could not get exact location. You can continue and update later.',
+                            if (!ok && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Could not get exact location. You can continue and update later.'),
+                                  behavior: SnackBarBehavior.floating,
                                 ),
-                              ),
-                            );
-                          }
-                        },
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
+                              );
+                            }
+                          },
                     child: Text(
-                      locationState.isLoading
-                          ? 'Fetching location...'
-                          : 'Enable Location and Continue',
+                      locationState.isLoading ? 'Fetching location...' : 'Enable Location and Continue',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
-              ),
-              if (locationState.errorMessage != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  locationState.errorMessage!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.red.shade700,
-                      ),
+                if (locationState.errorMessage != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    locationState.errorMessage!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.error),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    onPressed: () => context.go(AppRoutes.home),
+                    child: const Text('Skip for Now', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
                 ),
               ],
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => context.go(AppRoutes.home),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Text('Skip for Now'),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

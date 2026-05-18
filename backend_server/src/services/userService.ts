@@ -26,7 +26,7 @@ export const upsertFirestoreUser = async (
     displayName,
     role,
     phone: phone ?? existing?.phone ?? '',
-    googleLinked: googleLinked ?? existing?.googleLinked ?? (email.includes('@') && !email.includes('@safecom.local')),
+    googleLinked: googleLinked ?? existing?.googleLinked ?? (!email || email === ''),
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };
@@ -94,7 +94,7 @@ export const getFirestoreUserByUid = async (
 export const getFirestoreUserByEmail = async (
   email: string
 ): Promise<FirestoreUser | null> => {
-  if (!email || email.includes('@safecom.local')) return null;
+  if (!email) return null;
   const db = getDb();
   const snapshot = await db
     .collection('users')
@@ -156,7 +156,7 @@ export const mergeFirestoreUserAccounts = async (
     const primaryUser = primaryUserSnap.data() as FirestoreUser;
     const updates: Record<string, unknown> = { updatedAt: now };
     if (!primaryUser.phone && secondaryUser.phone) updates.phone = secondaryUser.phone;
-    if (primaryUser.email !== secondaryUser.email && secondaryUser.email && !secondaryUser.email.includes('@safecom.local')) {
+    if (primaryUser.email !== secondaryUser.email && secondaryUser.email) {
       updates.email = secondaryUser.email;
     }
     batch.update(primaryUserRef, updates);
@@ -262,7 +262,7 @@ export const createCustomerWithFirebaseUid = async (
     totalSpent: 0,
     registeredDate: now,
     status: 'active',
-    googleLinked: Boolean(email && !email.includes('@safecom.local')),
+    googleLinked: Boolean(email && email !== ''),
   };
 
   // Create or update customer document

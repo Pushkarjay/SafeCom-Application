@@ -64,6 +64,11 @@ interface CatalogProduct {
 // ─── Helpers ────────────────────────────────────────────────
 function fmt(n: number): string { return `₹${n.toLocaleString('en-IN')}` }
 
+/** Replace chars that break URL paths / Firestore document IDs */
+function safeKey(s: string): string {
+  return s.replace(/[:/#?&=%+]+/g, '-').replace(/\s+/g, ' ').trim()
+}
+
 function setupTotal(s: Setup): number {
   return s.products.reduce((sum, p) => {
     const opt = p.options[0]
@@ -142,6 +147,42 @@ function ProductSearchModal({ onSelect, onClose }: {
   )
 }
 
+// ─── Pending edit type ──────────────────────────────────────
+interface PendingEdit {
+  type: 'qty' | 'price' | 'renderConfig' | 'dependency' | 'dependency-remove'
+  categoryKey: string
+  setupKey: string
+  nodePath: string[]
+  updates?: Record<string, unknown>
+}
+
+// ─── Recursive tree update helper ──────────────────────────
+function updateNodeInTree(
+  nodes: TreeNode[],
+  path: string[],
+  updater: (node: TreeNode) => TreeNode
+): TreeNode[] {
+  if (path.length === 0) return nodes
+  const [key, ...rest] = path
+  return nodes.map(node => {
+    if (node.key !== key) return node
+    if (rest.length === 0) return updater(node)
+    return { ...node, children: updateNodeInTree(node.children, rest, updater) }
+  })
+}
+
+function updateProductSlot(
+  slots: ProductSlot[],
+  slotKey: string,
+  subPath: string[],
+  updater: (node: TreeNode) => TreeNode
+): ProductSlot[] {
+  return slots.map(slot => {
+    if (slot.key !== slotKey) return slot
+    return { ...slot, options: updateNodeInTree(slot.options, subPath, updater) }
+  })
+}
+
 // ─── Main Screen ────────────────────────────────────────────
 export default function ServiceTreeBuilderScreen() {
   const { serviceId } = useParams<{ serviceId: string }>()
@@ -153,6 +194,24 @@ export default function ServiceTreeBuilderScreen() {
   const [expandedSetups, setExpandedSetups] = useState<Set<string>>(new Set())
   const [expandedClubs, setExpandedClubs] = useState<Set<string>>(new Set())
   const firebaseUser = useAuthStore((state) => state.firebaseUser)
+  const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([])
+  const hasUnsavedChanges = pendingEdits.length > 0
+
+  // Clipboard for copy-paste
+  const [clipboard, setClipboard] = useState<{ type: 'setup'; label: string; data: Setup } | null>(null)
+
+  /** Collect all leaf product IDs from a setup's product slots */
+  const collectLeafIds = useCallback((slots: ProductSlot[]): string[] => {
+    const ids: string[] = []
+    const walk = (nodes: TreeNode[]) => {
+      for (const n of nodes) {
+        if (n.isLeaf && n.productId) ids.push(n.productId)
+        else walk(n.children)
+      }
+    }
+    for (const s of slots) walk(s.options)
+    return ids
+  }, [])
 
   // Modals
   const [showProductSearch, setShowProductSearch] = useState<{ categoryKey: string; setupKey: string } | null>(null)
@@ -178,11 +237,55 @@ export default function ServiceTreeBuilderScreen() {
     setIsLoading(true)
     setError(null)
     try {
+      // Save current order so ⬆⬇ arrangement survives reload
+      const catOrder = categories.map(c => c.key)
+      const setupOrder: Record<string, string[]> = {}
+      categories.forEach(c => { setupOrder[c.key] = c.setups.map(s => s.key) })
+
       const data = await adminDatasource.getServiceConfig(serviceId)
-      setCategories(data.categories as Category[])
-      if (data.categories.length > 0 && expandedCats.size === 0) {
-        setExpandedCats(new Set([String(data.categories[0].key)]))
+      // Normalize: category-level branches (from +Branch with empty setupKey)
+      // are stored as setup entries with `children` instead of `products`.
+      // Wrap them as a single clubbed ProductSlot so the tree renders correctly.
+      let normalized = (data.categories as any[]).map((cat: any) => ({
+        ...cat,
+        setups: (cat.setups || []).map((s: any) => {
+          if (!Array.isArray(s.products) && Array.isArray(s.children)) {
+            return { ...s, products: [{ key: s.key, isClubbed: true, options: s.children }] }
+          }
+          if (!Array.isArray(s.products)) {
+            return { ...s, products: [] }
+          }
+          return s
+        })
+      }))
+      // Restore previous category order (new ones appended at bottom)
+      if (catOrder.length > 0) {
+        normalized.sort((a, b) => {
+          const ai = catOrder.indexOf(a.key)
+          const bi = catOrder.indexOf(b.key)
+          if (ai === -1 && bi === -1) return 0
+          if (ai === -1) return 1
+          if (bi === -1) return -1
+          return ai - bi
+        })
+        // Restore setup order within each category
+        normalized = normalized.map((cat: any) => {
+          const saved = setupOrder[cat.key]
+          if (!saved || saved.length === 0) return cat
+          return {
+            ...cat,
+            setups: [...cat.setups].sort((a: any, b: any) => {
+              const ai = saved.indexOf(a.key)
+              const bi = saved.indexOf(b.key)
+              if (ai === -1 && bi === -1) return 0
+              if (ai === -1) return 1
+              if (bi === -1) return -1
+              return ai - bi
+            })
+          }
+        })
       }
+      setCategories(normalized as Category[])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load')
     } finally {
@@ -228,13 +331,19 @@ export default function ServiceTreeBuilderScreen() {
   // ─── CRUD Handlers ───────────────────────────────────────
   const addCategory = async () => {
     if (!newName.trim() || !serviceId) return
+    const name = safeKey(newName.trim())
+    const optimistic: Category = { key: name, name, setups: [] }
+    setCategories(prev => [...prev, optimistic])
+    setShowAddCategory(false)
+    setNewName('')
     setSaving(true)
     try {
-      await adminDatasource.serviceAddCategory(serviceId, newName.trim())
-      setShowAddCategory(false)
-      setNewName('')
+      await adminDatasource.serviceAddCategory(serviceId, name)
       await loadData()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
+    } catch (err) {
+      setCategories(prev => prev.filter(c => c.key !== name))
+      setError(err instanceof Error ? err.message : 'Failed')
+    }
     finally { setSaving(false) }
   }
 
@@ -251,13 +360,23 @@ export default function ServiceTreeBuilderScreen() {
 
   const addSetup = async (categoryKey: string) => {
     if (!newName.trim() || !serviceId) return
+    const name = safeKey(newName.trim())
+    const optimistic: Setup = { key: name, name, products: [] }
+    setCategories(prev => prev.map(cat =>
+      cat.key === categoryKey ? { ...cat, setups: [...cat.setups, optimistic] } : cat
+    ))
+    setShowAddSetup(null)
+    setNewName('')
     setSaving(true)
     try {
-      await adminDatasource.serviceAddSetup(serviceId, categoryKey, newName.trim())
-      setShowAddSetup(null)
-      setNewName('')
+      await adminDatasource.serviceAddSetup(serviceId, categoryKey, name)
       await loadData()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
+    } catch (err) {
+      setCategories(prev => prev.map(cat =>
+        cat.key === categoryKey ? { ...cat, setups: cat.setups.filter(s => s.key !== name) } : cat
+      ))
+      setError(err instanceof Error ? err.message : 'Failed')
+    }
     finally { setSaving(false) }
   }
 
@@ -340,7 +459,7 @@ export default function ServiceTreeBuilderScreen() {
     if (!name?.trim()) return
     setSaving(true)
     try {
-      await adminDatasource.serviceAddBranch(serviceId, categoryKey, setupKey, nodePath, name.trim())
+      await adminDatasource.serviceAddBranch(serviceId, categoryKey, setupKey, nodePath, safeKey(name.trim()))
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
@@ -353,7 +472,7 @@ export default function ServiceTreeBuilderScreen() {
     if (!newName?.trim() || newName === oldName) return
     setSaving(true)
     try {
-      await adminDatasource.serviceRenameNode(serviceId, categoryKey, setupKey, nodePath, newName.trim())
+      await adminDatasource.serviceRenameNode(serviceId, categoryKey, setupKey, nodePath, safeKey(newName.trim()))
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
@@ -365,7 +484,7 @@ export default function ServiceTreeBuilderScreen() {
     if (!newName?.trim() || newName === oldName) return
     setSaving(true)
     try {
-      await adminDatasource.serviceRenameCategory(serviceId, oldName, newName.trim())
+      await adminDatasource.serviceRenameCategory(serviceId, oldName, safeKey(newName.trim()))
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
@@ -377,7 +496,7 @@ export default function ServiceTreeBuilderScreen() {
     if (!newName?.trim() || newName === oldName) return
     setSaving(true)
     try {
-      await adminDatasource.serviceRenameSetup(serviceId, catKey, oldName, newName.trim())
+      await adminDatasource.serviceRenameSetup(serviceId, catKey, oldName, safeKey(newName.trim()))
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
@@ -389,12 +508,35 @@ export default function ServiceTreeBuilderScreen() {
     if (v === null) return
     const num = Number(v)
     if (isNaN(num) || num < 0) return
-    setSaving(true)
-    try {
-       await adminDatasource.serviceUpdateQuantities(serviceId, catKey, setupKey, nodePath, { [type]: num })
-       await loadData()
-    } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
-    finally { setSaving(false) }
+    // Update local state immediately
+    setCategories(prev => {
+      const slotKey = nodePath[0]
+      const subPath = nodePath.slice(1)
+      return prev.map(cat => {
+        if (cat.key !== catKey) return cat
+        if (!setupKey) return cat
+        return {
+          ...cat,
+          setups: cat.setups.map(setup => {
+            if (setup.key !== setupKey) return setup
+            return {
+              ...setup,
+              products: updateProductSlot(setup.products, slotKey, subPath, node => ({
+                ...node,
+                [type]: num
+              }))
+            }
+          })
+        }
+      })
+    })
+    // Track pending change
+    setPendingEdits(prev => {
+      const filtered = prev.filter(e =>
+        !(e.type === 'qty' && e.categoryKey === catKey && e.setupKey === setupKey && JSON.stringify(e.nodePath) === JSON.stringify(nodePath))
+      )
+      return [...filtered, { type: 'qty', categoryKey: catKey, setupKey, nodePath, updates: { [type]: num } }]
+    })
   }
 
   const editRenderConfig = async (catKey: string, setupKey: string, nodePath: string[], node: TreeNode) => {
@@ -434,12 +576,35 @@ export default function ServiceTreeBuilderScreen() {
     }
 
     if (Object.keys(updates).length === 0) return
-    setSaving(true)
-    try {
-      await adminDatasource.serviceUpdateRenderConfig(serviceId, catKey, setupKey, nodePath, updates)
-      await loadData()
-    } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
-    finally { setSaving(false) }
+    // Update local state immediately
+    setCategories(prev => {
+      const slotKey = nodePath[0]
+      const subPath = nodePath.slice(1)
+      return prev.map(cat => {
+        if (cat.key !== catKey) return cat
+        if (!setupKey) return cat
+        return {
+          ...cat,
+          setups: cat.setups.map(setup => {
+            if (setup.key !== setupKey) return setup
+            return {
+              ...setup,
+              products: updateProductSlot(setup.products, slotKey, subPath, node => ({
+                ...node,
+                ...updates
+              }))
+            }
+          })
+        }
+      })
+    })
+    // Track pending
+    setPendingEdits(prev => {
+      const filtered = prev.filter(e =>
+        !(e.type === 'renderConfig' && e.categoryKey === catKey && e.setupKey === setupKey && JSON.stringify(e.nodePath) === JSON.stringify(nodePath))
+      )
+      return [...filtered, { type: 'renderConfig', categoryKey: catKey, setupKey, nodePath, updates }]
+    })
   }
 
   const editDependency = (catKey: string, setupKey: string, nodePath: string[], node: TreeNode, siblings: TreeNode[]) => {
@@ -448,23 +613,69 @@ export default function ServiceTreeBuilderScreen() {
 
   const saveDependency = async (targetKey: string) => {
     if (!showDepModal || !serviceId) return
-    setSaving(true)
-    try {
-      await adminDatasource.serviceUpdateDependency(serviceId, showDepModal.categoryKey, showDepModal.setupKey, showDepModal.nodePath, targetKey)
-      setShowDepModal(null)
-      await loadData()
-    } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
-    finally { setSaving(false) }
+    // Update local state immediately
+    setCategories(prev => {
+      const slotKey = showDepModal.nodePath[0]
+      const subPath = showDepModal.nodePath.slice(1)
+      return prev.map(cat => {
+        if (cat.key !== showDepModal.categoryKey) return cat
+        if (!showDepModal.setupKey) return cat
+        return {
+          ...cat,
+          setups: cat.setups.map(setup => {
+            if (setup.key !== showDepModal.setupKey) return setup
+            return {
+              ...setup,
+              products: updateProductSlot(setup.products, slotKey, subPath, node => ({
+                ...node,
+                dependsOn: targetKey
+              }))
+            }
+          })
+        }
+      })
+    })
+    setShowDepModal(null)
+    // Track pending
+    setPendingEdits(prev => {
+      const filtered = prev.filter(e =>
+        !(e.type === 'dependency' && e.categoryKey === showDepModal.categoryKey && e.setupKey === showDepModal.setupKey && JSON.stringify(e.nodePath) === JSON.stringify(showDepModal.nodePath))
+      )
+      return [...filtered, { type: 'dependency', categoryKey: showDepModal.categoryKey, setupKey: showDepModal.setupKey, nodePath: showDepModal.nodePath, updates: { dependsOn: targetKey } }]
+    })
   }
 
   const removeDependency = async (catKey: string, setupKey: string, nodePath: string[]) => {
     if (!serviceId || !confirm('Remove this product\'s dependency mapping?')) return
-    setSaving(true)
-    try {
-      await adminDatasource.serviceRemoveDependency(serviceId, catKey, setupKey, nodePath)
-      await loadData()
-    } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
-    finally { setSaving(false) }
+    // Update local state immediately
+    setCategories(prev => {
+      const slotKey = nodePath[0]
+      const subPath = nodePath.slice(1)
+      return prev.map(cat => {
+        if (cat.key !== catKey) return cat
+        if (!setupKey) return cat
+        return {
+          ...cat,
+          setups: cat.setups.map(setup => {
+            if (setup.key !== setupKey) return setup
+            return {
+              ...setup,
+              products: updateProductSlot(setup.products, slotKey, subPath, node => ({
+                ...node,
+                dependsOn: null
+              }))
+            }
+          })
+        }
+      })
+    })
+    // Track pending
+    setPendingEdits(prev => {
+      const filtered = prev.filter(e =>
+        !(e.type === 'dependency' && e.categoryKey === catKey && e.setupKey === setupKey && JSON.stringify(e.nodePath) === JSON.stringify(nodePath))
+      )
+      return [...filtered, { type: 'dependency-remove', categoryKey: catKey, setupKey, nodePath }]
+    })
   }
 
   const editPrice = async (productId: string, current: number) => {
@@ -472,12 +683,105 @@ export default function ServiceTreeBuilderScreen() {
     if (v === null) return
     const num = Number(v)
     if (isNaN(num) || num < 0) return
+    // Update local state immediately (find all occurrences of this productId across the tree)
+    setCategories(prev => prev.map(cat => ({
+      ...cat,
+      setups: cat.setups.map(setup => ({
+        ...setup,
+        products: setup.products.map(slot => ({
+          ...slot,
+          options: updateNodeInTree(slot.options, [], node =>
+            node.productId === productId ? { ...node, price: num } : node
+          )
+        }))
+      }))
+    })))
+    // Track pending (mark all occurrences)
+    setPendingEdits(prev => [...prev, { type: 'price', categoryKey: '', setupKey: '', nodePath: [productId], updates: { price: num } }])
+  }
+
+  // ─── Save all pending changes to backend ────────────────
+  const saveAllChanges = async () => {
+    if (!serviceId || pendingEdits.length === 0) return
     setSaving(true)
+    setError(null)
+    let success = true
+    for (const edit of pendingEdits) {
+      try {
+        switch (edit.type) {
+          case 'qty':
+            await adminDatasource.serviceUpdateQuantities(serviceId, edit.categoryKey, edit.setupKey, edit.nodePath, edit.updates as any)
+            break
+          case 'renderConfig':
+            await adminDatasource.serviceUpdateRenderConfig(serviceId, edit.categoryKey, edit.setupKey, edit.nodePath, edit.updates as any)
+            break
+          case 'dependency':
+            await adminDatasource.serviceUpdateDependency(serviceId, edit.categoryKey, edit.setupKey, edit.nodePath, String(edit.updates?.dependsOn))
+            break
+          case 'dependency-remove':
+            await adminDatasource.serviceRemoveDependency(serviceId, edit.categoryKey, edit.setupKey, edit.nodePath)
+            break
+          case 'price':
+            await adminDatasource.installationUpdateProductPrice(edit.nodePath[0], edit.updates?.price as number)
+            break
+        }
+      } catch (err) {
+        console.error('Save failed for', edit, err)
+        success = false
+        setError(`Failed to save: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      }
+    }
+    if (success) {
+      setPendingEdits([])
+    }
+    setSaving(false)
+  }
+
+  // ─── Copy / Paste ────────────────────────────────────────
+  const copySetup = (setup: Setup) => {
+    setClipboard({ type: 'setup', label: setup.name, data: setup })
+  }
+
+  const pasteSetup = async (categoryKey: string) => {
+    if (!clipboard || !serviceId) return
+    const src = clipboard.data
+    setSaving(true)
+    setError(null)
     try {
-       await adminDatasource.installationUpdateProductPrice(productId, num)
-       await loadData()
-    } catch(err) { setError(err instanceof Error ? err.message : 'Failed') }
-    finally { setSaving(false) }
+      await adminDatasource.serviceAddSetup(serviceId, categoryKey, src.name)
+      const ids = collectLeafIds(src.products)
+      for (const id of ids) {
+        await adminDatasource.serviceAddProduct(serviceId, categoryKey, src.name, id)
+      }
+      setClipboard(null)
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to paste')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ─── Reorder helpers ─────────────────────────────────────
+  const moveCategory = (index: number, direction: 'up' | 'down') => {
+    setCategories(prev => {
+      const arr = [...prev]
+      const target = direction === 'up' ? index - 1 : index + 1
+      if (target < 0 || target >= arr.length) return prev
+      ;[arr[index], arr[target]] = [arr[target], arr[index]]
+      return arr
+    })
+  }
+
+  const moveSetup = (catKey: string, index: number, direction: 'up' | 'down') => {
+    setCategories(prev => prev.map(cat => {
+      if (cat.key !== catKey) return cat
+      const arr = [...cat.setups]
+      const target = direction === 'up' ? index - 1 : index + 1
+      if (target < 0 || target >= arr.length) return cat
+      ;[arr[index], arr[target]] = [arr[target], arr[index]]
+      return { ...cat, setups: arr }
+    }))
   }
 
   // ─── Stats ───────────────────────────────────────────────
@@ -560,7 +864,7 @@ export default function ServiceTreeBuilderScreen() {
             <td className="num"><button className="link-btn" onClick={() => editQty(catKey, setupKey, nodePath, 'defaultQty', node.defaultQty)}>{node.defaultQty}</button></td>
             <td className="num"><button className="link-btn" onClick={() => editQty(catKey, setupKey, nodePath, 'minQty', node.minQty)}>{node.minQty}</button></td>
             <td className="num"><button className="link-btn" onClick={() => editQty(catKey, setupKey, nodePath, 'maxQty', node.maxQty)}>{node.maxQty}</button></td>
-            <td className="num">{fmt(node.price * node.defaultQty)}</td>
+            <td className="num total">{fmt(node.price * node.defaultQty)}</td>
             <td>
               <div className="ib-actions">
                 {node.renderType === 'list' ? (
@@ -680,6 +984,7 @@ export default function ServiceTreeBuilderScreen() {
         }
       }
     }
+
     return rows
   }
 
@@ -695,6 +1000,15 @@ export default function ServiceTreeBuilderScreen() {
         </div>
         <div className="catalog-actions">
           <button className="primary-btn" onClick={() => { setShowAddCategory(true); setNewName('') }}>+ Add Category</button>
+          <button className="primary-btn" onClick={saveAllChanges} disabled={saving || pendingEdits.length === 0} style={{ background: '#d97706', marginLeft: 8 }}>
+            {saving ? 'Saving...' : `💾 Save Changes (${pendingEdits.length})`}
+          </button>
+          {clipboard && (
+            <span style={{ marginLeft: 12, fontSize: 12, color: '#6366f1', display: 'flex', alignItems: 'center', gap: 4 }}>
+              📋 {clipboard.label}
+              <button className="icon-btn" onClick={() => setClipboard(null)} title="Clear clipboard" style={{ fontSize: 12 }}>✕</button>
+            </span>
+          )}
         </div>
       </div>
 
@@ -734,7 +1048,7 @@ export default function ServiceTreeBuilderScreen() {
       <div className="ib-tree">
             {categories.length === 0 ? (
               <div className="ib-empty-state"><p>No categories found for {serviceId}. Click "+ Add Category" to create one.</p></div>
-            ) : categories.map((cat) => {
+            ) : categories.map((cat, catIdx) => {
               const catOpen = expandedCats.has(cat.key)
               return (
                 <div key={cat.key} className={`ib-category-card ${catOpen ? 'open' : ''}`}>
@@ -746,9 +1060,27 @@ export default function ServiceTreeBuilderScreen() {
                     </button>
                     <div className="ib-header-actions">
                       <button className="secondary-btn small" onClick={() => { setShowAddSetup(cat.key); setNewName('') }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px' }}>+ Add Setup</button>
+                      {clipboard?.type === 'setup' && (
+                        <button className="secondary-btn small" onClick={() => pasteSetup(cat.key)} disabled={saving} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#6366f1', color: '#fff' }}>📄 Paste "{clipboard.label}"</button>
+                      )}
                       <button className="secondary-btn small" onClick={() => { setShowProductSearch({ categoryKey: cat.key, setupKey: '' }); }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#10b981' }}>+ Product</button>
-                      <button className="secondary-btn small" onClick={() => addBranch(cat.key, '', [])} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
+                      <button className="secondary-btn small" onClick={async () => {
+                        const name = prompt('Enter category-level section name:');
+                        if (!name?.trim()) return;
+                        const catKey = cat.key;
+                        const safeName = safeKey(name.trim());
+                        const optimistic: Setup = { key: safeName, name: safeName, products: [] };
+                        setCategories(prev => prev.map(c =>
+                          c.key === catKey ? { ...c, setups: [...c.setups, optimistic] } : c
+                        ));
+                        try {
+                          await adminDatasource.serviceAddSetup(serviceId, cat.key, safeName);
+                          await loadData();
+                        } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
+                      }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
                       <button className="icon-btn" onClick={() => renameCategory(cat.key)} title="Rename Category" style={{ marginRight: '4px' }}>✏️</button>
+                      <button className="icon-btn" onClick={() => moveCategory(catIdx, 'up')} disabled={catIdx === 0} title="Move Up" style={{ marginRight: '2px', fontSize: '14px' }}>↑</button>
+                      <button className="icon-btn" onClick={() => moveCategory(catIdx, 'down')} disabled={catIdx === categories.length - 1} title="Move Down" style={{ marginRight: '4px', fontSize: '14px' }}>↓</button>
                       <span className="ib-category-price">{fmt(categoryTotal(cat))}</span>
                       <button className="icon-btn danger" onClick={() => deleteCategory(cat.key)} title="Delete category">🗑️</button>
                     </div>
@@ -758,7 +1090,7 @@ export default function ServiceTreeBuilderScreen() {
                     <div className="ib-category-body">
                       {cat.setups.length === 0 ? (
                         <p className="ib-empty">No setups. Click "+ Add Setup" to create one.</p>
-                      ) : cat.setups.map((setup) => {
+                      ) : cat.setups.map((setup, setupIdx) => {
                         const sKey = `${cat.key}::${setup.key}`
                         const setupOpen = expandedSetups.has(sKey)
                         return (
@@ -773,6 +1105,9 @@ export default function ServiceTreeBuilderScreen() {
                                 <button className="secondary-btn small" onClick={() => setShowProductSearch({ categoryKey: cat.key, setupKey: setup.key })} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px' }}>+ Product</button>
                                 <button className="secondary-btn small" onClick={() => addBranch(cat.key, setup.key, [])} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
                                 <button className="icon-btn" onClick={() => renameSetup(cat.key, setup.key)} title="Rename Setup" style={{ marginRight: '4px' }}>✏️</button>
+                                <button className="icon-btn" onClick={() => copySetup(setup)} title="Copy setup to clipboard" style={{ marginRight: '4px', fontSize: '13px' }}>📋</button>
+                                <button className="icon-btn" onClick={() => moveSetup(cat.key, setupIdx, 'up')} disabled={setupIdx === 0} title="Move Up" style={{ marginRight: '2px', fontSize: '14px' }}>↑</button>
+                                <button className="icon-btn" onClick={() => moveSetup(cat.key, setupIdx, 'down')} disabled={setupIdx === cat.setups.length - 1} title="Move Down" style={{ marginRight: '4px', fontSize: '14px' }}>↓</button>
                                 <span className="ib-setup-price">{fmt(setupTotal(setup))}</span>
                                 <button className="icon-btn danger" onClick={() => deleteSetup(cat.key, setup.key)} title="Delete setup">🗑️</button>
                               </div>
@@ -823,7 +1158,6 @@ export default function ServiceTreeBuilderScreen() {
                                         const optB = (b.options[0] || {}) as TreeNode
                                         let aVal: string | number = sortField === 'productName' ? (optA.productName || optA.productId || a.key) : (optA as any)[sortField] ?? a.key
                                         let bVal: string | number = sortField === 'productName' ? (optB.productName || optB.productId || b.key) : (optB as any)[sortField] ?? b.key
-                                        
                                         if (typeof aVal === 'string') aVal = aVal.toLowerCase()
                                         if (typeof bVal === 'string') bVal = bVal.toLowerCase()
                                         if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
@@ -867,8 +1201,7 @@ export default function ServiceTreeBuilderScreen() {
                                                 </div>
                                               </td>
                                             </tr>
-                                          )
-                                        }
+  )}
 
                                         // Clubbed product — render recursive tree
                                         const clubId = `${cat.key}::${setup.key}::${slot.key}`

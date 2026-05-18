@@ -11,6 +11,7 @@ import 'package:mobile_customer/features/services/providers/installation_flow_pr
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
 import 'package:mobile_customer/widgets/common/clubbed_product_selector.dart';
 import 'package:mobile_customer/widgets/common/list_product_group_widget.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class InstallationCustomizationScreen extends ConsumerWidget {
   const InstallationCustomizationScreen({super.key});
@@ -30,10 +31,8 @@ class InstallationCustomizationScreen extends ConsumerWidget {
       );
     }
 
-    // ── Build variant option sections (OPTION render mode only) ──
     final variantSections = <Widget>[];
     for (final mappedProduct in group.mappedProducts) {
-      // Skip LIST render mode products — they're rendered as ListProductGroupWidget below
       if (mappedProduct.renderType == 'list') continue;
 
       final product = mappedProduct.product;
@@ -49,18 +48,23 @@ class InstallationCustomizationScreen extends ConsumerWidget {
             title: '${product.productName} - ${variant.name}',
             child: Wrap(
               spacing: 8,
+              runSpacing: 6,
               children: variant.options.map((option) {
                 return ChoiceChip(
-                  label: Text(option),
+                  label: Text(option, style: const TextStyle(fontSize: 13)),
                   selected: currentSelection == option ||
-                      (currentSelection == null &&
-                          variant.options.first == option),
+                      (currentSelection == null && variant.options.first == option),
                   onSelected: (selected) {
                     if (selected) {
-                      flowNotifier.updateVariant(
-                          mappedProduct.productId, variant.variantId, option);
+                      flowNotifier.updateVariant(mappedProduct.productId, variant.variantId, option);
                     }
                   },
+                  selectedColor: AppColors.secondaryLight,
+                  backgroundColor: AppColors.surfaceVariant,
+                  side: BorderSide(
+                    color: currentSelection == option ? AppColors.secondary : AppColors.borderLight,
+                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 );
               }).toList(),
             ),
@@ -70,17 +74,14 @@ class InstallationCustomizationScreen extends ConsumerWidget {
       }
     }
 
-    // ── LIST groups (Phase 1.1) ──
     final listGroupWidgets =
         flow.listGroups.map((lg) => ListProductGroupWidget(group: lg)).toList();
 
-    // ── Separate OPTION and LIST items for the price breakdown table ──
     final optionItems = flow.items.where((i) => !i.isListChild).toList();
     final listItems =
         flow.items.where((i) => i.isListChild && i.quantity > 0).toList();
     final allItems = [...optionItems, ...listItems];
 
-    // Proceed is gated on all LIST groups passing collective validation
     final canProceed = flow.allListGroupsValid;
 
     return Scaffold(
@@ -100,33 +101,39 @@ class InstallationCustomizationScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               Text(
                 '${category.name} - ${group.name}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 14),
 
-               // ── OPTION variant selectors ──
-               ...variantSections,
+              ...variantSections,
+              ..._buildBranchSelectors(context, ref, group),
 
-               // ── Branch selector for clubbed products with LIST branches ──
-               ..._buildBranchSelectors(context, ref, group),
-
-               // ── LIST group blocks ──
               if (listGroupWidgets.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 ...listGroupWidgets,
                 const SizedBox(height: 8),
               ],
 
-              // ── Price Breakdown ──
-              Text(
-                'Price Breakdown',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.receipt_long_outlined, color: AppColors.secondary, size: 18),
                     ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Price Breakdown',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
               InvoiceTable(
                 rows: allItems
                     .map(
@@ -134,32 +141,25 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                         product: _buildItemWidget(context, ref, item),
                         unitPrice: item.unitPrice,
                         quantityWidget: item.isListChild
-                            // LIST children show a static qty badge (stepper is in the group block above)
                             ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: AppColors.accentLight,
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   '${item.quantity}',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF0A84FF),
+                                    color: AppColors.accent,
+                                    fontSize: 13,
                                   ),
                                 ),
                               )
                             : QuantityStepper(
                                 quantity: item.quantity,
-                                onIncrement: item.canEditQuantity
-                                    ? () =>
-                                        flowNotifier.incrementQuantity(item.key)
-                                    : null,
-                                onDecrement: item.canEditQuantity
-                                    ? () =>
-                                        flowNotifier.decrementQuantity(item.key)
-                                    : null,
+                                onIncrement: item.canEditQuantity ? () => flowNotifier.incrementQuantity(item.key) : null,
+                                onDecrement: item.canEditQuantity ? () => flowNotifier.decrementQuantity(item.key) : null,
                               ),
                         amount: item.amount,
                       ),
@@ -173,8 +173,8 @@ class InstallationCustomizationScreen extends ConsumerWidget {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          color: AppColors.surface,
+          border: Border(top: BorderSide(color: AppColors.borderLight)),
         ),
         child: Row(
           children: [
@@ -183,16 +183,13 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Amount Payable',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                  Text('Amount Payable', style: Theme.of(context).textTheme.bodySmall),
                   Text(
                     _currency(flow.totalAmount),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0A84FF),
-                        ),
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.secondary,
+                    ),
                   ),
                 ],
               ),
@@ -218,11 +215,10 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                     }
                   : null,
               style: FilledButton.styleFrom(
-                backgroundColor: canProceed
-                    ? const Color(0xFF0A84FF)
-                    : const Color(0xFFCBD5E1),
+                backgroundColor: canProceed ? AppColors.primary : AppColors.border,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Proceed'),
+              child: const Text('Proceed', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -230,8 +226,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildItemWidget(
-      BuildContext context, WidgetRef ref, InvoiceLineItem item) {
+  Widget _buildItemWidget(BuildContext context, WidgetRef ref, InvoiceLineItem item) {
     if (item.isClubbed) {
       return GestureDetector(
         onTap: () async {
@@ -241,43 +236,29 @@ class InstallationCustomizationScreen extends ConsumerWidget {
             options: item.clubbedOptions,
           );
           if (selected != null) {
-            ref
-                .read(installationFlowProvider.notifier)
-                .selectClubbedOption(item.key, selected);
+            ref.read(installationFlowProvider.notifier).selectClubbedOption(item.key, selected);
           }
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
-              child: Text(
-                item.name,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
             ),
             const SizedBox(width: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: AppColors.accentLight,
                 borderRadius: BorderRadius.circular(6),
-                border:
-                    Border.all(color: const Color(0xFF93C5FD), width: 0.5),
+                border: Border.all(color: AppColors.accent.withOpacity(0.3), width: 0.5),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.swap_horiz, size: 12, color: Color(0xFF0A84FF)),
+                  Icon(Icons.swap_horiz, size: 12, color: AppColors.accent),
                   SizedBox(width: 2),
-                  Text(
-                    'Change',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0A84FF),
-                    ),
-                  ),
+                  Text('Change', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.accent)),
                 ],
               ),
             ),
@@ -294,7 +275,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
     return '${item.name} ($variantStr)';
   }
 
-   String _currency(double value) => 'Rs ${value.toStringAsFixed(0)}';
+  String _currency(double value) => 'Rs ${value.toStringAsFixed(0)}';
 
   List<Widget> _buildBranchSelectors(BuildContext context, WidgetRef ref, InstallationGroup group) {
     final List<Widget> selectors = [];
@@ -315,10 +296,11 @@ class InstallationCustomizationScreen extends ConsumerWidget {
           title: mappedProduct.product.productName,
           child: Wrap(
             spacing: 8,
+            runSpacing: 6,
             children: listBranches.map((branch) {
               final isSelected = branch.optionKey == selectedKey;
               return ChoiceChip(
-                label: Text(branch.label),
+                label: Text(branch.label, style: const TextStyle(fontSize: 13)),
                 selected: isSelected,
                 onSelected: (selected) {
                   if (selected) {
@@ -328,6 +310,10 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                         );
                   }
                 },
+                selectedColor: AppColors.secondaryLight,
+                backgroundColor: AppColors.surfaceVariant,
+                side: BorderSide(color: isSelected ? AppColors.secondary : AppColors.borderLight),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               );
             }).toList(),
           ),
@@ -350,21 +336,20 @@ class _OptionSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           child,
         ],
       ),

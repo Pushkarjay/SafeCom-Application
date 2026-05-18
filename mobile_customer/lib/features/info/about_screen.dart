@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_customer/core/widgets/safecom_logo.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
@@ -14,14 +15,14 @@ class AboutScreen extends ConsumerWidget {
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
-            backgroundColor: const Color(0xFF0A84FF),
+            backgroundColor: AppColors.primary,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF0A84FF), Color(0xFF22C55E)],
+                    colors: [AppColors.primary, Color(0xFF22C55E)],
                   ),
                 ),
                 child: Column(
@@ -87,7 +88,7 @@ class AboutScreen extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF0A84FF),
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -153,7 +154,7 @@ class AboutScreen extends ConsumerWidget {
                           'Payments powered by Razorpay',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -161,7 +162,7 @@ class AboutScreen extends ConsumerWidget {
                           '© 2026 SafeCom Services',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -183,7 +184,7 @@ class AboutScreen extends ConsumerWidget {
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: Color(0xFF0F172A),
+        color: AppColors.primary,
       ),
     );
   }
@@ -219,7 +220,7 @@ class AboutScreen extends ConsumerWidget {
             width: 24,
             height: 24,
             decoration: const BoxDecoration(
-              color: Color(0xFF0A84FF),
+              color: AppColors.primary,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -250,7 +251,7 @@ class AboutScreen extends ConsumerWidget {
                   description,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -266,9 +267,9 @@ class AboutScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,7 +286,7 @@ class AboutScreen extends ConsumerWidget {
             content,
             style: const TextStyle(
               fontSize: 13,
-              color: Color(0xFF64748B),
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -300,7 +301,7 @@ class AboutScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -316,7 +317,7 @@ class AboutScreen extends ConsumerWidget {
               value,
               style: const TextStyle(
                 fontSize: 14,
-                color: Color(0xFF0A84FF),
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -332,7 +333,7 @@ class AboutScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,7 +342,7 @@ class AboutScreen extends ConsumerWidget {
             label,
             style: const TextStyle(
               fontSize: 12,
-              color: Color(0xFF64748B),
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 2),

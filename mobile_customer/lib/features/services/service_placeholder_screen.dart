@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class ServicePlaceholderScreen extends StatelessWidget {
   final String serviceId;
@@ -38,7 +39,7 @@ class ServicePlaceholderScreen extends StatelessWidget {
                 child: const Icon(
                   Icons.engineering_outlined,
                   size: 42,
-                  color: Color(0xFF0A84FF),
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 16),

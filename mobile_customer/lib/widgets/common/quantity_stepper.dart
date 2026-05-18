@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class QuantityStepper extends StatelessWidget {
   final int quantity;
@@ -20,7 +21,7 @@ class QuantityStepper extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: disabled ? const Color(0xFFF1F5F9) : const Color(0xFFEFF6FF),
+        color: disabled ? AppColors.surfaceVariant : const Color(0xFFEFF6FF),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -70,13 +71,13 @@ class _StepButton extends StatelessWidget {
         height: 22,
         width: 22,
         decoration: BoxDecoration(
-          color: disabled ? const Color(0xFFE2E8F0) : Colors.white,
+          color: disabled ? AppColors.border : Colors.white,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           icon,
           size: 14,
-          color: disabled ? const Color(0xFF94A3B8) : const Color(0xFF0A84FF),
+          color: disabled ? AppColors.textMuted : AppColors.primary,
         ),
       ),
     );

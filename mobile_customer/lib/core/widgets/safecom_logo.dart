@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class SafeComLogo extends StatelessWidget {
   final double size;
@@ -21,28 +22,26 @@ class SafeComLogo extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFFD97706),
-                const Color(0xFFF59E0B),
-              ],
+            gradient: const LinearGradient(
+              colors: [AppColors.secondary, Color(0xFFF59E0B)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(size * 0.24),
+            borderRadius: BorderRadius.circular(size * 0.22),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFD97706).withOpacity(0.3),
+                color: AppColors.secondary.withOpacity(0.4),
                 blurRadius: size * 0.3,
-                offset: Offset(0, size * 0.12),
+                offset: Offset(0, size * 0.1),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(size * 0.2),
+            borderRadius: BorderRadius.circular(size * 0.18),
             child: Image.asset(
               'assets/images/safecom_logo_visual.jpeg',
               fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
               errorBuilder: (context, error, stackTrace) {
                 return const Icon(
                   Icons.shield_outlined,
@@ -85,17 +84,25 @@ class SafeComLogoSmall extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
+          colors: [AppColors.secondary, Color(0xFFF59E0B)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(size * 0.24),
+        borderRadius: BorderRadius.circular(size * 0.22),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withOpacity(0.3),
+            blurRadius: size * 0.2,
+            offset: Offset(0, size * 0.08),
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(size * 0.2),
+        borderRadius: BorderRadius.circular(size * 0.18),
         child: Image.asset(
           'assets/images/safecom_logo_visual.jpeg',
           fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
           errorBuilder: (context, error, stackTrace) {
             return Icon(
               Icons.shield_outlined,

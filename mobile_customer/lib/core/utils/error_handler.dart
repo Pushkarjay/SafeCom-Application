@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dio/dio.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 /// Global error handler — maps raw Firebase/Dio errors to user-friendly messages.
 /// NEVER show raw exception strings to users.
@@ -114,7 +115,7 @@ class AppErrorHandler {
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: const Color(0xFFDC2626),
+        backgroundColor: AppColors.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 4),

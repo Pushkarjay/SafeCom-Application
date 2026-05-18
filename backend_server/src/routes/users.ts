@@ -35,8 +35,8 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
     return res.status(400).json({ message: 'Missing required fields: displayName, role' });
   }
 
-  // Use a placeholder email for phone-only sign-in
-  const finalEmail = email || (phone ? `${phone}@safecom.local` : '');
+  // Email is optional — use empty string when not provided
+  const finalEmail = email || '';
 
   try {
     // ── PHASE 3.1: Account Merge Logic ─────────────────────────────────────

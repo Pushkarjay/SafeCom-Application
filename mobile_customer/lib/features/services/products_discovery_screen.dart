@@ -7,6 +7,7 @@ import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/cart_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/routes/app_router.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 /// Provider that fetches all master products from the backend
 final allProductsProvider = FutureProvider<List<MasterProduct>>((ref) async {
@@ -63,7 +64,7 @@ class _ProductsDiscoveryScreenState
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFEF4444),
+                      color: AppColors.error,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
@@ -101,7 +102,7 @@ class _ProductsDiscoveryScreenState
                         )
                       : null,
                   filled: true,
-                  fillColor: const Color(0xFFF1F5F9),
+                  fillColor: AppColors.surfaceVariant,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -166,7 +167,7 @@ class _ProductsDiscoveryScreenState
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.search_off, size: 48, color: Color(0xFF94A3B8)),
+                          const Icon(Icons.search_off, size: 48, color: AppColors.textMuted),
                           const SizedBox(height: 16),
                           Text(
                             'No products found',
@@ -201,7 +202,7 @@ class _ProductsDiscoveryScreenState
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.cloud_off_outlined, size: 48, color: Color(0xFF94A3B8)),
+                        const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.textMuted),
                         const SizedBox(height: 16),
                         Text('Failed to load products', style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 8),
@@ -240,10 +241,10 @@ class _ProductsDiscoveryScreenState
       backgroundColor: Colors.white,
       selectedColor: const Color(0xFFEFF6FF),
       side: BorderSide(
-        color: isSelected ? const Color(0xFF0A84FF) : const Color(0xFFE2E8F0),
+        color: isSelected ? AppColors.primary : AppColors.border,
       ),
       labelStyle: TextStyle(
-        color: isSelected ? const Color(0xFF0A84FF) : const Color(0xFF0F172A),
+        color: isSelected ? AppColors.primary : AppColors.primary,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
       ),
     );
@@ -297,7 +298,7 @@ class _ProductCard extends ConsumerWidget {
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0A84FF),
+                  color: AppColors.primary,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -318,14 +319,14 @@ class _ProductCard extends ConsumerWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textSecondary,
                     ),
               ),
             const Spacer(),
             Text(
               '₹${product.basePrice.toStringAsFixed(0)}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF0A84FF),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w800,
                   ),
             ),
@@ -341,8 +342,8 @@ class _ProductCard extends ConsumerWidget {
                       icon: const Icon(Icons.check, size: 16),
                       label: const Text('In Cart', style: TextStyle(fontSize: 12)),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF16A34A),
-                        side: const BorderSide(color: Color(0xFF16A34A)),
+                        foregroundColor: AppColors.success,
+                        side: const BorderSide(color: AppColors.success),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -363,7 +364,7 @@ class _ProductCard extends ConsumerWidget {
                       icon: const Icon(Icons.add_shopping_cart, size: 16),
                       label: const Text('Add to Cart', style: TextStyle(fontSize: 12)),
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF0A84FF),
+                        backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -416,7 +417,7 @@ class _CartSheet extends ConsumerWidget {
                 if (cart.items.isNotEmpty)
                   TextButton(
                     onPressed: () => ref.read(cartProvider.notifier).clearCart(),
-                    child: const Text('Clear All', style: TextStyle(color: Color(0xFFEF4444))),
+                    child: const Text('Clear All', style: TextStyle(color: AppColors.error)),
                   ),
               ],
             ),
@@ -428,13 +429,13 @@ class _CartSheet extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.shopping_cart_outlined, size: 64, color: Color(0xFFCBD5E1)),
+                        const Icon(Icons.shopping_cart_outlined, size: 64, color: AppColors.border),
                         const SizedBox(height: 16),
                         Text('Your cart is empty',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         const Text('Browse products and add items to your cart',
-                            style: TextStyle(color: Color(0xFF94A3B8))),
+                            style: TextStyle(color: AppColors.textMuted)),
                       ],
                     ),
                   )
@@ -447,9 +448,9 @@ class _CartSheet extends ConsumerWidget {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: AppColors.background,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: AppColors.border),
                         ),
                         child: Row(
                           children: [
@@ -466,7 +467,7 @@ class _CartSheet extends ConsumerWidget {
                                   const SizedBox(height: 4),
                                   Text(
                                     '₹${item.product.basePrice.toStringAsFixed(0)} each',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                   ),
                                 ],
                               ),
@@ -501,7 +502,7 @@ class _CartSheet extends ConsumerWidget {
                               style: const TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 15,
-                                color: Color(0xFF0A84FF),
+                                color: AppColors.primary,
                               ),
                             ),
                           ],
@@ -516,7 +517,7 @@ class _CartSheet extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: SafeArea(
                 child: Column(
@@ -529,7 +530,7 @@ class _CartSheet extends ConsumerWidget {
                         Text('₹${cart.subtotal.toStringAsFixed(0)}',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF0A84FF),
+                                  color: AppColors.primary,
                                 )),
                       ],
                     ),
@@ -560,7 +561,7 @@ class _CartSheet extends ConsumerWidget {
                          context.push(AppRoutes.scheduling);
                       },
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF0A84FF),
+                        backgroundColor: AppColors.primary,
                         minimumSize: const Size(double.infinity, 52),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -590,7 +591,7 @@ class _CartSheet extends ConsumerWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: const Color(0xFFBFDBFE)),
         ),
-        child: Icon(icon, size: 16, color: const Color(0xFF0A84FF)),
+        child: Icon(icon, size: 16, color: AppColors.primary),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class PromoBanner extends StatelessWidget {
   const PromoBanner({super.key});
@@ -9,11 +10,35 @@ class PromoBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF0F172A),
+            Color(0xFF1E293B),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.local_offer_outlined, color: AppColors.secondary, size: 22),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -21,22 +46,21 @@ class PromoBanner extends StatelessWidget {
                 Text(
                   'Get 10% OFF on your first installation',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   'Use code SAFECOM10 at checkout.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
-                      ),
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          const Icon(Icons.local_offer_outlined, color: Colors.white, size: 28),
         ],
       ),
     );

@@ -6,6 +6,7 @@ import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class UpgradeEstimateScreen extends ConsumerStatefulWidget {
   final UpgradeBundle bundle;
@@ -97,7 +98,7 @@ class _UpgradeEstimateScreenState extends ConsumerState<UpgradeEstimateScreen> {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: const BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: Row(
           children: [
@@ -111,7 +112,7 @@ class _UpgradeEstimateScreenState extends ConsumerState<UpgradeEstimateScreen> {
                     'Rs ${total.toStringAsFixed(0)}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0A84FF),
+                          color: AppColors.primary,
                         ),
                   ),
                 ],

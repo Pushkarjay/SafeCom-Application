@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 /// Phase 1.1 — LIST Render Mode Widget
 ///
@@ -41,7 +42,7 @@ class ListProductGroupWidget extends ConsumerWidget {
         border: Border.all(
           color: isAtMax
               ? const Color(0xFF22C55E)
-              : (!isValid ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0)),
+              : (!isValid ? AppColors.error : AppColors.border),
           width: isAtMax || !isValid ? 1.5 : 1,
         ),
         boxShadow: [
@@ -59,10 +60,10 @@ class ListProductGroupWidget extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: AppColors.background,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               border: const Border(
-                bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                bottom: BorderSide(color: AppColors.border),
               ),
             ),
             child: Row(
@@ -75,14 +76,14 @@ class ListProductGroupWidget extends ConsumerWidget {
                         group.label,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF0F172A),
+                              color: AppColors.primary,
                             ),
                       ),
                       if (group.collectiveValidation)
                         Text(
                           'Select ${group.minQty == group.maxQty ? group.maxQty : "${group.minQty}–${group.maxQty}"}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF64748B),
+                                color: AppColors.textSecondary,
                               ),
                         ),
                     ],
@@ -111,7 +112,7 @@ class ListProductGroupWidget extends ConsumerWidget {
               child: Row(
                 children: [
                   const Icon(Icons.info_outline,
-                      size: 14, color: Color(0xFFEF4444)),
+                      size: 14, color: AppColors.error),
                   const SizedBox(width: 6),
                   Text(
                     total < group.minQty
@@ -119,7 +120,7 @@ class ListProductGroupWidget extends ConsumerWidget {
                         : 'Maximum ${group.maxQty} allowed',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFFEF4444),
+                      color: AppColors.error,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -156,7 +157,7 @@ class _ListChildRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: hasQty ? const Color(0xFFEFF6FF) : Colors.transparent,
         border: const Border(
-          bottom: BorderSide(color: Color(0xFFF1F5F9)),
+          bottom: BorderSide(color: AppColors.surfaceVariant),
         ),
       ),
       child: Row(
@@ -170,7 +171,7 @@ class _ListChildRow extends StatelessWidget {
                 fontWeight:
                     hasQty ? FontWeight.w600 : FontWeight.w400,
                 color: hasQty
-                    ? const Color(0xFF0F172A)
+                    ? AppColors.primary
                     : const Color(0xFF475569),
               ),
             ),
@@ -185,7 +186,7 @@ class _ListChildRow extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF0A84FF),
+                  color: AppColors.primary,
                 ),
               ),
             ),
@@ -205,7 +206,7 @@ class _ListChildRow extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.primary,
                   ),
                 ),
               ),
@@ -238,16 +239,16 @@ class _StepButton extends StatelessWidget {
         width: 30,
         height: 30,
         decoration: BoxDecoration(
-          color: enabled ? const Color(0xFFEFF6FF) : const Color(0xFFF1F5F9),
+          color: enabled ? const Color(0xFFEFF6FF) : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: enabled ? const Color(0xFF93C5FD) : const Color(0xFFE2E8F0),
+            color: enabled ? const Color(0xFF93C5FD) : AppColors.border,
           ),
         ),
         child: Icon(
           icon,
           size: 16,
-          color: enabled ? const Color(0xFF0A84FF) : const Color(0xFFCBD5E1),
+          color: enabled ? AppColors.primary : AppColors.border,
         ),
       ),
     );
@@ -283,7 +284,7 @@ class _TotalPill extends StatelessWidget {
           color: full
               ? const Color(0xFF22C55E)
               : (!isValid && total > 0
-                  ? const Color(0xFFEF4444)
+                  ? AppColors.error
                   : const Color(0xFF93C5FD)),
         ),
       ),
@@ -296,16 +297,16 @@ class _TotalPill extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: full
-                  ? const Color(0xFF16A34A)
+                  ? AppColors.success
                   : (!isValid && total > 0
-                      ? const Color(0xFFDC2626)
-                      : const Color(0xFF0A84FF)),
+                      ? AppColors.error
+                      : AppColors.primary),
             ),
           ),
           if (full) ...[
             const SizedBox(width: 4),
             const Icon(Icons.check_circle,
-                size: 14, color: Color(0xFF16A34A)),
+                size: 14, color: AppColors.success),
           ],
         ],
       ),

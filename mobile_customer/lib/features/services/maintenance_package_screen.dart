@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/services/providers/maintenance_flow_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class MaintenancePackageScreen extends ConsumerWidget {
   const MaintenancePackageScreen({super.key});
@@ -45,7 +46,7 @@ class MaintenancePackageScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color:
-                      selected ? const Color(0xFF0A84FF) : const Color(0xFFE2E8F0),
+                      selected ? AppColors.primary : AppColors.border,
                   width: selected ? 1.5 : 1,
                 ),
               ),
@@ -65,7 +66,7 @@ class MaintenancePackageScreen extends ConsumerWidget {
                       Text(
                         '$visitCount visit${visitCount > 1 ? 's' : ''}/year',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
+                              color: AppColors.textSecondary,
                             ),
                       ),
                     ],
@@ -74,7 +75,7 @@ class MaintenancePackageScreen extends ConsumerWidget {
                   Text(
                     'Estimated: Rs ${_estimateTotal(state, package).toStringAsFixed(0)}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: const Color(0xFF0A84FF),
+                          color: AppColors.primary,
                           fontWeight: FontWeight.w800,
                         ),
                   ),

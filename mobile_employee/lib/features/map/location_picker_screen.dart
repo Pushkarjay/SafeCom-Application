@@ -68,6 +68,24 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
     }
   }
 
+  Future<void> _useCurrentLocation() async {
+    final service = ref.read(employeeLocationServiceProvider);
+    try {
+      final position = await service.fetchCurrentPosition();
+      final address = await service.reverseGeocode(
+        position.latitude,
+        position.longitude,
+      );
+      _setSelectedLocation(LatLng(position.latitude, position.longitude), address);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not get current location')),
+        );
+      }
+    }
+  }
+
   void _setSelectedLocation(LatLng latLng, String address) {
     setState(() {
       _selectedLatLng = latLng;
@@ -174,6 +192,13 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Location'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh location',
+            onPressed: _useCurrentLocation,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -237,7 +262,6 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                     zoom: 15,
                   ),
                   onMapCreated: (controller) => _mapController = controller,
-                  myLocationButtonEnabled: true,
                   myLocationEnabled: true,
                   onTap: _handleMapTap,
                   markers: _selectedLatLng == null
@@ -256,6 +280,16 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                     alignment: Alignment.center,
                     child: CircularProgressIndicator(),
                   ),
+                Positioned(
+                  right: 16,
+                  bottom: 80,
+                  child: FloatingActionButton.small(
+                    heroTag: 'current_location',
+                    onPressed: _useCurrentLocation,
+                    backgroundColor: Colors.white,
+                    child: const Icon(Icons.my_location, color: Colors.blue),
+                  ),
+                ),
               ],
             ),
           ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class LocationPickerScreen extends ConsumerStatefulWidget {
   const LocationPickerScreen({super.key});
@@ -38,9 +39,7 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
   }
 
   Future<void> _initLocation() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() { _isLoading = true; });
 
     final locationState = ref.read(locationProvider);
     final service = ref.read(locationServiceProvider);
@@ -51,17 +50,12 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
         _setSelectedLocation(latLng, locationState.location);
       } else {
         final position = await service.fetchCurrentPosition();
-        final address = await service.reverseGeocode(
-          position.latitude,
-          position.longitude,
-        );
+        final address = await service.reverseGeocode(position.latitude, position.longitude);
         _setSelectedLocation(LatLng(position.latitude, position.longitude), address);
       }
     } catch (e) {
-      // Fallback to Patna if everything fails
       const patna = LatLng(25.5941, 85.1376);
       _setSelectedLocation(patna, 'Patna, Bihar');
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -71,10 +65,21 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
         );
       }
     } finally {
+      if (mounted) setState(() { _isLoading = false; });
+    }
+  }
+
+  Future<void> _useCurrentLocation() async {
+    final service = ref.read(locationServiceProvider);
+    try {
+      final position = await service.fetchCurrentPosition();
+      final address = await service.reverseGeocode(position.latitude, position.longitude);
+      _setSelectedLocation(LatLng(position.latitude, position.longitude), address);
+    } catch (_) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not get current location')),
+        );
       }
     }
   }
@@ -84,9 +89,7 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
       _selectedLatLng = latLng;
       _selectedAddress = address;
     });
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(latLng, 15),
-    );
+    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(latLng, 15));
   }
 
   Future<void> _handleMapTap(LatLng position) async {
@@ -96,25 +99,15 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
     });
 
     final service = ref.read(locationServiceProvider);
-    final address = await service.reverseGeocode(
-      position.latitude,
-      position.longitude,
-    );
-    if (mounted) {
-      setState(() {
-        _selectedAddress = address;
-      });
-    }
+    final address = await service.reverseGeocode(position.latitude, position.longitude);
+    if (mounted) setState(() { _selectedAddress = address; });
   }
 
   Future<void> _search() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
 
-    setState(() {
-      _isSearching = true;
-      _results = [];
-    });
+    setState(() { _isSearching = true; _results = []; });
 
     try {
       final locations = await locationFromAddress(query);
@@ -122,44 +115,22 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
       final service = ref.read(locationServiceProvider);
 
       for (final location in locations.take(5)) {
-        final address = await service.reverseGeocode(
-          location.latitude,
-          location.longitude,
-        );
-        results.add(
-          _SearchResult(
-            address: address,
-            position: LatLng(location.latitude, location.longitude),
-          ),
-        );
+        final address = await service.reverseGeocode(location.latitude, location.longitude);
+        results.add(_SearchResult(address: address, position: LatLng(location.latitude, location.longitude)));
       }
 
-      if (mounted) {
-        setState(() {
-          _results = results;
-        });
-      }
+      if (mounted) setState(() { _results = results; });
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _results = [];
-        });
-      }
+      if (mounted) setState(() { _results = []; });
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSearching = false;
-        });
-      }
+      if (mounted) setState(() { _isSearching = false; });
     }
   }
 
   void _selectResult(_SearchResult result) {
     _setSelectedLocation(result.position, result.address);
     _searchFocus.unfocus();
-    setState(() {
-      _results = [];
-    });
+    setState(() { _results = []; });
   }
 
   Future<void> _saveLocation() async {
@@ -167,52 +138,46 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
     final address = _selectedAddress;
     if (selected == null || address == null) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() { _isLoading = true; });
 
     await ref.read(locationProvider.notifier).setSelectedLocation(
-          address: address,
-          latitude: selected.latitude,
-          longitude: selected.longitude,
-        );
+      address: address,
+      latitude: selected.latitude,
+      longitude: selected.longitude,
+    );
 
     if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() { _isLoading = false; });
 
       final locationState = ref.read(locationProvider);
       if (!locationState.isServiceable) {
-         showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-               title: const Text('Out of Service Area'),
-               content: Text(locationState.serviceabilityMessage ?? 'We do not currently serve this area.'),
-               actions: [
-                  TextButton(
-                     onPressed: () {
-                        Navigator.pop(context); // Close dialog
-                        Navigator.pop(context); // Close location picker
-                     },
-                     child: const Text('Continue Anyway'),
-                  ),
-                  FilledButton(
-                     onPressed: () => Navigator.pop(context),
-                     child: const Text('Change Location'),
-                  ),
-               ],
-            ),
-         );
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Out of Service Area'),
+            content: Text(locationState.serviceabilityMessage ?? 'We do not currently serve this area.'),
+            actions: [
+              TextButton(
+                onPressed: () { Navigator.pop(context); Navigator.pop(context); },
+                child: const Text('Continue Anyway', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Change Location'),
+              ),
+            ],
+          ),
+        );
       } else {
-         Navigator.of(context).pop();
+        Navigator.of(context).pop();
       }
     }
   }
 
   Widget _buildWebLocationPanel(BuildContext context, LatLng initialPosition) {
     return Container(
-      color: const Color(0xFFF8FAFC),
+      color: AppColors.background,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
@@ -227,29 +192,28 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.map_outlined, size: 40, color: Color(0xFF0A84FF)),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Map preview on web',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryLight,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.map_outlined, size: 28, color: AppColors.secondary),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Map preview on web',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Chrome does not use the mobile map widget here. Search for an address or keep the current location and continue.',
+                    Text('Chrome does not use the mobile map widget here. Search for an address or keep the current location and continue.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      'Current area',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: Colors.grey[700],
-                          ),
+                    Text('Current area',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.textMuted),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      _selectedAddress ?? 'Tap search or use the default location below',
+                    Text(_selectedAddress ?? 'Tap search or use the default location below',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     const SizedBox(height: 16),
@@ -257,15 +221,12 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                       width: double.infinity,
                       child: FilledButton(
                         onPressed: _selectedAddress == null ? null : _saveLocation,
-                        child: const Text('Use this location'),
+                        child: const Text('Use this location', style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Default location: ${initialPosition.latitude.toStringAsFixed(4)}, ${initialPosition.longitude.toStringAsFixed(4)}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                    Text('Default location: ${initialPosition.latitude.toStringAsFixed(4)}, ${initialPosition.longitude.toStringAsFixed(4)}',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
@@ -284,6 +245,13 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Location'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.my_location_rounded),
+            tooltip: 'Refresh location',
+            onPressed: _useCurrentLocation,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -299,7 +267,7 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(
-                      icon: const Icon(Icons.send),
+                      icon: const Icon(Icons.send_rounded),
                       onPressed: _search,
                     ),
                     hintText: 'Search city, area, or address',
@@ -317,9 +285,9 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                   Container(
                     margin: const EdgeInsets.only(top: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: AppColors.borderLight),
                     ),
                     child: ListView.separated(
                       shrinkWrap: true,
@@ -344,12 +312,8 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                 : Stack(
                     children: [
                       GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: initialPosition,
-                          zoom: 15,
-                        ),
+                        initialCameraPosition: CameraPosition(target: initialPosition, zoom: 15),
                         onMapCreated: (controller) => _mapController = controller,
-                        myLocationButtonEnabled: true,
                         myLocationEnabled: true,
                         onTap: _handleMapTap,
                         markers: _selectedLatLng == null
@@ -366,33 +330,51 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
                       if (_isLoading)
                         const Align(
                           alignment: Alignment.center,
-                          child: CircularProgressIndicator(),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
+                      Positioned(
+                        right: 16,
+                        bottom: 80,
+                        child: FloatingActionButton.small(
+                          heroTag: 'current_location',
+                          onPressed: _useCurrentLocation,
+                          backgroundColor: AppColors.surface,
+                          child: const Icon(Icons.my_location, color: AppColors.secondary),
+                        ),
+                      ),
                     ],
                   ),
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+              color: AppColors.surface,
+              border: Border(top: BorderSide(color: AppColors.borderLight)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _selectedAddress ?? 'Tap on the map to drop a pin',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_rounded, color: AppColors.secondary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _selectedAddress ?? 'Tap on the map to drop a pin',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
+                  height: 48,
                   child: FilledButton(
                     onPressed: _selectedAddress == null ? null : _saveLocation,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      child: Text('Use this location'),
-                    ),
+                    child: const Text('Use this location', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],

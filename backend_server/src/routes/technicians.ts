@@ -103,7 +103,7 @@ techniciansRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthentic
       id: employeeId,
       firebaseUid: employeeId,
       name: parsed.data.name,
-      email: authEmail,
+      email: '', // Email is optional — leave empty for phone-only users
       phone: parsed.data.phone,
       location: parsed.data.location || '',
       skills: parsed.data.skills || [],
@@ -116,7 +116,7 @@ techniciansRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthentic
       updatedAt: new Date().toISOString()
     })
 
-    return res.status(201).json({ id: employeeId, ...parsed.data, authEmail, totalJobs: 0, rating: 0 })
+    return res.status(201).json({ id: employeeId, ...parsed.data, totalJobs: 0, rating: 0 })
   } catch (error) {
     console.error('Firestore create employee failed:', error)
     return res.status(500).json({ message: 'Failed to create employee' })

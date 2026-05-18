@@ -73,8 +73,6 @@ class _JobsHomeScreenState extends ConsumerState<JobsHomeScreen> with SingleTick
             icon: const Icon(Icons.account_balance_wallet_outlined, size: 22),
             tooltip: 'Earnings',
           ),
-            tooltip: 'Toggle theme',
-          ),
         ],
       ),
       body: Column(

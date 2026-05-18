@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 /// A reusable bottom-sheet popup that lets users drill-down through
 /// a recursive [ClubbedOption] tree and pick a single leaf product.
@@ -155,7 +156,7 @@ class _NestedSelectionSheetState extends State<_NestedSelectionSheet> {
                           _breadcrumbs[i].title,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: i < _breadcrumbs.length - 1
-                                ? const Color(0xFF0A84FF)
+                                ? AppColors.primary
                                 : Colors.grey.shade700,
                             fontWeight: i < _breadcrumbs.length - 1
                                 ? FontWeight.w500
@@ -222,11 +223,11 @@ class _OptionTile extends StatelessWidget {
       child: Ink(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isLeaf ? Colors.white : const Color(0xFFF8FAFC),
+          color: isLeaf ? Colors.white : AppColors.background,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color:
-                isLeaf ? const Color(0xFFE2E8F0) : const Color(0xFFDDD6FE),
+                isLeaf ? AppColors.border : const Color(0xFFDDD6FE),
             width: 1,
           ),
           boxShadow: const [
@@ -253,7 +254,7 @@ class _OptionTile extends StatelessWidget {
                 isLeaf ? Icons.inventory_2_outlined : Icons.folder_outlined,
                 size: 18,
                 color: isLeaf
-                    ? const Color(0xFF0A84FF)
+                    ? AppColors.primary
                     : const Color(0xFF8B5CF6),
               ),
             ),

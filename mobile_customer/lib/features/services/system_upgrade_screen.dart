@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/providers/data_providers.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 final upgradeCatalogProvider = FutureProvider((ref) {
   return ref.watch(pricingRepositoryProvider).getUpgradeCatalog();
@@ -26,7 +27,7 @@ class SystemUpgradeScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.upgrade_outlined, size: 48, color: Color(0xFF94A3B8)),
+                    const Icon(Icons.upgrade_outlined, size: 48, color: AppColors.textMuted),
                     const SizedBox(height: 16),
                     Text(
                       'No upgrade bundles available',
@@ -70,14 +71,14 @@ class SystemUpgradeScreen extends ConsumerWidget {
                       Text(
                         bundle.description,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
+                              color: AppColors.textSecondary,
                             ),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Rs ${bundle.price.toStringAsFixed(0)}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: const Color(0xFF0A84FF),
+                              color: AppColors.primary,
                               fontWeight: FontWeight.w800,
                             ),
                       ),
@@ -95,7 +96,7 @@ class SystemUpgradeScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.cloud_off_outlined, size: 48, color: Color(0xFF94A3B8)),
+                const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.textMuted),
                 const SizedBox(height: 16),
                 Text(
                   'Failed to load upgrade options',

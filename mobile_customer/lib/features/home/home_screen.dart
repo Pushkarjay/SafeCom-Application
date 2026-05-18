@@ -5,11 +5,8 @@ import 'package:mobile_customer/core/sdui/sdui_renderer.dart';
 import 'package:mobile_customer/features/home/fallback_home_content.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
-/// Home Screen — Server-Driven UI
-///
-/// Fetches the layout from the backend SDUI API and renders it dynamically.
-/// Falls back to [FallbackHomeContent] if the API is unreachable.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -21,27 +18,39 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: layoutAsync.when(
             data: (layout) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Show location error if any (not part of SDUI)
                 if (locationState.errorMessage != null) ...[
                   const SizedBox(height: 8),
-                  Text(
-                    locationState.errorMessage!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.red.shade700,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            locationState.errorMessage!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.error),
+                          ),
                         ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 8),
                 ],
-                // Render SDUI components
                 SduiRenderer(components: layout.layout),
               ],
             ),
             loading: () => const _HomeShimmer(),
-            error: (_, __) => const FallbackHomeContent(),
+            error: (_, _) => const FallbackHomeContent(),
           ),
         ),
       ),
@@ -50,7 +59,6 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// Shimmer/loading placeholder while SDUI layout is being fetched.
 class _HomeShimmer extends StatelessWidget {
   const _HomeShimmer();
 
@@ -59,51 +67,47 @@ class _HomeShimmer extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Location header placeholder
         Container(
           width: double.infinity,
-          height: 80,
+          height: 76,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(20),
+            color: AppColors.shimmer,
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
-        const SizedBox(height: 18),
-        // Section title placeholder
+        const SizedBox(height: 20),
         Container(
-          width: 160,
-          height: 24,
+          width: 140,
+          height: 20,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(8),
+            color: AppColors.shimmer,
+            borderRadius: BorderRadius.circular(6),
           ),
         ),
-        const SizedBox(height: 12),
-        // Service grid placeholder
+        const SizedBox(height: 14),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: 6,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.78,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.82,
           ),
           itemBuilder: (context, index) => Container(
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(18),
+              color: AppColors.shimmer,
+              borderRadius: BorderRadius.circular(16),
             ),
           ),
         ),
-        const SizedBox(height: 18),
-        // Banner placeholder
+        const SizedBox(height: 20),
         Container(
           width: double.infinity,
-          height: 80,
+          height: 76,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: AppColors.shimmer,
             borderRadius: BorderRadius.circular(16),
           ),
         ),

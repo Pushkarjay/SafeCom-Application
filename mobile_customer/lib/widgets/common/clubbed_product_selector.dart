@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 /// A recursive bottom sheet selector for deeply nested clubbed product options.
 ///
@@ -143,7 +144,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                       if (i > 0)
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Icon(Icons.chevron_right, size: 16, color: Color(0xFF94A3B8)),
+                          child: Icon(Icons.chevron_right, size: 16, color: AppColors.textMuted),
                         ),
                       GestureDetector(
                         onTap: () => _jumpTo(i),
@@ -151,8 +152,8 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: i == _navStack.length - 1
-                                ? const Color(0xFF0A84FF).withOpacity(0.1)
-                                : const Color(0xFFF1F5F9),
+                                ? AppColors.primary.withOpacity(0.1)
+                                : AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -161,8 +162,8 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                               fontSize: 12,
                               fontWeight: i == _navStack.length - 1 ? FontWeight.w700 : FontWeight.w500,
                               color: i == _navStack.length - 1
-                                  ? const Color(0xFF0A84FF)
-                                  : const Color(0xFF64748B),
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -187,10 +188,10 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                       margin: const EdgeInsets.only(right: 12),
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Color(0xFF64748B)),
+                      child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.textSecondary),
                     ),
                   ),
                 Expanded(
@@ -206,7 +207,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                         _current.hasOnlyLeaves
                             ? 'Select a product option'
                             : 'Choose a category to drill deeper',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF94A3B8)),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
                       ),
                     ],
                   ),
@@ -219,7 +220,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
           Expanded(
             child: _current.options.isEmpty
                 ? const Center(
-                    child: Text('No options available', style: TextStyle(color: Color(0xFF94A3B8))),
+                    child: Text('No options available', style: TextStyle(color: AppColors.textMuted)),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -241,13 +242,13 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: SafeArea(
                 child: FilledButton(
                   onPressed: () => widget.onLeafSelected(_selectedLeaf!),
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A84FF),
+                    backgroundColor: AppColors.primary,
                     minimumSize: const Size(double.infinity, 52),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
@@ -282,7 +283,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                   : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0A84FF) : const Color(0xFFE2E8F0),
+            color: isSelected ? AppColors.primary : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -294,7 +295,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF0A84FF) : const Color(0xFFCBD5E1),
+                  color: isSelected ? AppColors.primary : AppColors.border,
                   width: isSelected ? 7 : 2,
                 ),
               ),
@@ -309,18 +310,18 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
-                      color: option.available ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
+                      color: option.available ? AppColors.primary : AppColors.textMuted,
                     ),
                   ),
                   if (!option.available)
                     const Text(
                       'Currently unavailable',
-                      style: TextStyle(fontSize: 12, color: Color(0xFFEF4444)),
+                      style: TextStyle(fontSize: 12, color: AppColors.error),
                     ),
                   if (option.rigid)
                     const Text(
                       'Fixed quantity (cannot change)',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontStyle: FontStyle.italic),
+                      style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontStyle: FontStyle.italic),
                     ),
                 ],
               ),
@@ -330,7 +331,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
-                color: option.available ? const Color(0xFF0A84FF) : const Color(0xFF94A3B8),
+                color: option.available ? AppColors.primary : AppColors.textMuted,
               ),
             ),
           ],
@@ -349,7 +350,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
@@ -360,7 +361,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                 color: const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.folder_outlined, color: Color(0xFF0A84FF), size: 20),
+              child: const Icon(Icons.folder_outlined, color: AppColors.primary, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -369,16 +370,16 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                 children: [
                   Text(
                     option.productName.isNotEmpty ? option.productName : option.optionKey,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF0F172A)),
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.primary),
                   ),
                   Text(
                     '${option.children.length} option${option.children.length != 1 ? "s" : ""} available',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+            const Icon(Icons.chevron_right, color: AppColors.textMuted),
           ],
         ),
       ),

@@ -5,6 +5,21 @@ import 'package:mobile_employee/data/providers/employee_providers.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/core/theme/app_theme.dart';
 
+const _countryCodes = [
+  ('🇮🇳', '+91', 'India'),
+  ('🇺🇸', '+1', 'USA'),
+  ('🇬🇧', '+44', 'UK'),
+  ('🇦🇺', '+61', 'Australia'),
+  ('🇨🇦', '+1', 'Canada'),
+  ('🇦🇪', '+971', 'UAE'),
+  ('🇸🇦', '+966', 'Saudi Arabia'),
+  ('🇸🇬', '+65', 'Singapore'),
+  ('🇲🇾', '+60', 'Malaysia'),
+  ('🇧🇩', '+880', 'Bangladesh'),
+  ('🇳🇵', '+977', 'Nepal'),
+  ('🇱🇰', '+94', 'Sri Lanka'),
+];
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,6 +35,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   late Animation<Offset> _slideUp;
   bool _obscurePassword = true;
   bool _loading = false;
+  String _countryCode = '+91';
 
   @override
   void initState() {
@@ -169,14 +185,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                       parent: _animController,
                       curve: const Interval(0.2, 0.6, curve: Curves.easeOutCubic),
                     )),
-                    child: TextField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: 'Phone Number',
-                        hintText: '+91 9876543210',
-                        prefixIcon: Icon(Icons.phone_outlined, color: AppColors.textMuted, size: 20),
-                      ),
+                    child: Row(
+                      children: [
+                        Container(
+                          height: 50,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _countryCode,
+                              style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                              icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                              items: _countryCodes.map((c) => DropdownMenuItem(
+                                value: c.$2,
+                                child: Text('${c.$1} ${c.$2}'),
+                              )).toList(),
+                              onChanged: (v) { if (v != null) setState(() => _countryCode = v); },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: 'Phone Number',
+                              hintText: 'Enter number without country code',
+                              prefixIcon: Icon(Icons.phone_outlined, color: AppColors.textMuted, size: 20),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -269,8 +313,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     setState(() => _loading = true);
 
     try {
-      final raw = _phoneController.text.trim();
-      final email = raw.contains('@') ? raw : '$raw@safecom.local';
+      final raw = _phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
+      final codeDigits = _countryCode.replaceAll(RegExp(r'\D'), '');
+      final digits = raw.startsWith(codeDigits) ? raw.substring(codeDigits.length) : raw;
+      final phone = '$_countryCode$digits';
+      final email = '${phone.replaceAll(RegExp(r'\D'), '')}@safecom.local';
       final router = GoRouter.of(context);
       final authService = ref.read(authServiceProvider);
 
@@ -280,9 +327,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       if (user != null) {
         await authService.linkUserToBackend(
           firebaseUid: user.uid,
-          email: email,
-          displayName: user.displayName ?? email,
-          phone: raw,
+          email: '', // Email is optional — leave empty for phone-only users
+          displayName: user.displayName ?? 'Technician',
+          phone: phone,
           location: 'Unspecified',
         );
       }

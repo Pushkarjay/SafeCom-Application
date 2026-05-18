@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class PackageSelectionScreen extends ConsumerWidget {
   const PackageSelectionScreen({super.key});
@@ -54,8 +55,8 @@ class PackageSelectionScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF0A84FF)
-                            : const Color(0xFFE2E8F0),
+                            ? AppColors.primary
+                            : AppColors.border,
                         width: isSelected ? 1.8 : 1,
                       ),
                     ),
@@ -86,7 +87,7 @@ class PackageSelectionScreen extends ConsumerWidget {
                         Text(
                           _currency(estimatedPrice),
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: const Color(0xFF0A84FF),
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.w800,
                               ),
                         ),

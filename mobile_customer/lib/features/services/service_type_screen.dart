@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class ServiceTypeScreen extends ConsumerWidget {
   const ServiceTypeScreen({super.key});
@@ -64,7 +65,7 @@ class ServiceTypeScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.videocam_outlined,
-                        color: Color(0xFF0A84FF)),
+                        color: AppColors.primary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

@@ -5,6 +5,7 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/data_providers.dart';
 import 'package:mobile_customer/features/services/providers/product_selection_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 // Provider for selected accessories (simple products without variants)
 final selectedAccessoriesProvider =
@@ -199,7 +200,7 @@ class RecommendationScreen extends ConsumerWidget {
           color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
+            color: isSelected ? const Color(0xFF3B82F6) : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -223,7 +224,7 @@ class RecommendationScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     product.description.isNotEmpty ? product.description : 'Recommended accessory',
-                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -251,7 +252,7 @@ class RecommendationScreen extends ConsumerWidget {
           color: isComplete ? const Color(0xFFF0F9FF) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isComplete ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
+            color: isComplete ? const Color(0xFF3B82F6) : AppColors.border,
             width: isComplete ? 2 : 1,
           ),
         ),
@@ -276,12 +277,12 @@ class RecommendationScreen extends ConsumerWidget {
                   if (selectedSummary.isNotEmpty)
                     Text(
                       selectedSummary,
-                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
                   if (!isComplete)
                     const Text(
                       'Tap to customize',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                 ],
               ),
@@ -289,7 +290,7 @@ class RecommendationScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             Text(
               isComplete ? 'Change' : 'Customize',
-              style: const TextStyle(color: Color(0xFF0A84FF), fontWeight: FontWeight.w600),
+              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -320,7 +321,7 @@ class RecommendationScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -331,9 +332,9 @@ class RecommendationScreen extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +350,7 @@ class RecommendationScreen extends ConsumerWidget {
                           Text(id, style: Theme.of(context).textTheme.bodySmall),
                           const Text(
                             'Added',
-                            style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF16A34A)),
+                            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.success),
                           ),
                         ],
                       ),

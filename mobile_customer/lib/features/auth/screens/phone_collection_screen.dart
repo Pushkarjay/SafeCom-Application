@@ -4,8 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
-import 'package:mobile_customer/core/utils/error_handler.dart';
 import 'package:mobile_customer/core/widgets/safecom_logo.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
+
+const _countryCodes = [
+  ('🇮🇳', '+91', 'India'),
+  ('🇺🇸', '+1', 'USA'),
+  ('🇬🇧', '+44', 'UK'),
+  ('🇦🇺', '+61', 'Australia'),
+  ('🇨🇦', '+1', 'Canada'),
+  ('🇦🇪', '+971', 'UAE'),
+  ('🇸🇦', '+966', 'Saudi Arabia'),
+  ('🇸🇬', '+65', 'Singapore'),
+  ('🇲🇾', '+60', 'Malaysia'),
+  ('🇧🇩', '+880', 'Bangladesh'),
+  ('🇳🇵', '+977', 'Nepal'),
+  ('🇱🇰', '+94', 'Sri Lanka'),
+];
 
 class PhoneCollectionScreen extends ConsumerStatefulWidget {
   final String? continueRoute;
@@ -17,25 +32,49 @@ class PhoneCollectionScreen extends ConsumerStatefulWidget {
 }
 
 class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _isLoading = false;
   String? _error;
+  String _countryCode = '+91';
+
+  @override
+  void initState() {
+    super.initState();
+    final customer = ref.read(authProvider).customer;
+    if (customer != null) {
+      if (customer.name.isNotEmpty && customer.name != 'Customer') {
+        _nameController.text = customer.name;
+      }
+      _emailController.text = customer.email;
+      _phoneController.text = customer.phone.replaceAll(RegExp(r'^\+\d+'), '');
+    }
+  }
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
-  Future<void> _submitPhone() async {
-    final phone = _phoneController.text.trim();
-    if (phone.isEmpty) {
-      setState(() => _error = 'Please enter your phone number');
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final digits = _phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
+    final phone = '$_countryCode$digits';
+
+    if (name.isEmpty) {
+      setState(() => _error = 'Please enter your full name');
       return;
     }
-
-    final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    if (cleanPhone.length < 10) {
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _error = 'Please enter a valid email address');
+      return;
+    }
+    if (digits.isEmpty || digits.length < 7 || digits.length > 15) {
       setState(() => _error = 'Please enter a valid phone number');
       return;
     }
@@ -45,7 +84,7 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
     try {
       final customer = ref.read(authProvider).customer;
       if (customer != null) {
-        final updated = customer.copyWith(phone: cleanPhone.startsWith('+') ? cleanPhone : '+91$cleanPhone');
+        final updated = customer.copyWith(name: name, email: email, phone: phone);
         await ref.read(authProvider.notifier).updateProfile(updated);
       }
 
@@ -55,118 +94,216 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() { _isLoading = false; _error = 'Failed to save phone number. Please try again.'; });
+        setState(() { _isLoading = false; _error = 'Failed to save. Please try again.'; });
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.go(AppRoutes.home),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              onPressed: () => context.go(AppRoutes.home),
+            ),
+          ),
         ),
-        actions: const [
-          SafeComLogoSmall(size: 40),
-          SizedBox(width: 16),
+        actions: [
+          const SafeComLogoSmall(size: 36),
+          const SizedBox(width: 16),
         ],
       ),
       extendBodyBehindAppBar: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0F172A), Color(0xFF1E3A5F), Color(0xFF0F172A)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F172A),
+              Color(0xFF1A2744),
+              Color(0xFF0F172A),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Spacer(),
-                // Header
-                Text(
-                  'Almost there!',
-                  style: theme.textTheme.headlineMedium?.copyWith(
+                const SizedBox(height: 60),
+                const Text(
+                  'Complete Your Profile',
+                  style: TextStyle(
+                    fontSize: 26,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Text(
-                  'We need your phone number to contact you about service visits, OTP verification, and order updates.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white60,
+                  'We need these details to process your service requests and keep you updated.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 14,
+                    height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 40),
-                // Phone input
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withOpacity(0.15)),
-                  ),
-                  child: TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    decoration: InputDecoration(
-                      prefixText: '+91 ',
-                      prefixStyle: const TextStyle(color: Colors.white70, fontSize: 18),
-                      hintText: 'Phone number',
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                const SizedBox(height: 32),
+                _buildField(
+                  controller: _nameController,
+                  hint: 'John Doe',
+                  label: 'Full Name',
+                  icon: Icons.person_outline,
+                ),
+                const SizedBox(height: 16),
+                _buildField(
+                  controller: _emailController,
+                  hint: 'john@example.com',
+                  label: 'Email Address',
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withOpacity(0.12)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _countryCode,
+                          dropdownColor: const Color(0xFF1A2744),
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                          items: _countryCodes.map((c) => DropdownMenuItem(
+                            value: c.$2,
+                            child: Text('${c.$1} ${c.$2}', style: const TextStyle(fontSize: 15)),
+                          )).toList(),
+                          onChanged: (v) { if (v != null) setState(() => _countryCode = v); },
+                        ),
+                      ),
                     ),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d\s+]'))],
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.12)),
+                        ),
+                        child: TextField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          decoration: const InputDecoration(
+                            hintText: 'Phone number',
+                            hintStyle: TextStyle(color: Colors.white30),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          ),
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 if (_error != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _error!,
-                    style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorLight.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _isLoading ? null : _submitPhone,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A84FF),
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                const SizedBox(height: 28),
+                SizedBox(
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20, width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          )
+                        : const Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22, width: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(height: 16),
                 Center(
                   child: TextButton(
                     onPressed: _isLoading ? null : () => context.go(AppRoutes.profile),
-                    child: const Text(
-                      'Skip for now',
-                      style: TextStyle(color: Colors.white38),
-                    ),
+                    style: TextButton.styleFrom(foregroundColor: Colors.white38),
+                    child: const Text('Skip for now', style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                 ),
-                const Spacer(),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required String hint,
+    required String label,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.white, fontSize: 16),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.white30),
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white54),
+          prefixIcon: Icon(icon, color: Colors.white54),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );

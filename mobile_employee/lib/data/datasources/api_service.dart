@@ -15,15 +15,21 @@ final dioProvider = Provider<Dio>((ref) {
   // Logging
   dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, error: true));
 
-  // Attach Firebase ID token when available
+  // Attach Firebase ID token when available — keeps any explicit Authorization header set by caller
   dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return handler.next(options);
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final token = await user.getIdToken();
+      final token = await user.getIdToken();
+      options.headers['Authorization'] = 'Bearer $token';
+    } catch (_) {
+      try {
+        final token = await user.getIdToken(true);
         options.headers['Authorization'] = 'Bearer $token';
+      } catch (_) {
+        // Can't get token; don't overwrite any explicit header the caller may have set
       }
-    } catch (_) {}
+    }
     return handler.next(options);
   }));
 

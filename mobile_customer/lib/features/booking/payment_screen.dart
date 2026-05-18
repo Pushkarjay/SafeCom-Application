@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +12,7 @@ import 'package:mobile_customer/features/booking/providers/active_order_provider
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/booking/services/razorpay_payment_service.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
@@ -50,10 +50,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     if (checkoutOrder == null) {
       setState(() => _isProcessing = false);
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Payment completed but checkout session is missing.'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Payment completed but checkout session is missing.'), backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
       );
       return;
     }
@@ -80,15 +77,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       if (!mounted) return;
 
       if (!verification.verified) {
-        setState(() {
-          _isProcessing = false;
-          _checkoutOrder = null;
-        });
+        setState(() { _isProcessing = false; _checkoutOrder = null; });
         messenger.showSnackBar(
-          SnackBar(
-            content: Text(verification.message),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(verification.message), backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
         );
         return;
       }
@@ -106,9 +97,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       final createBookingData = {
         'customerId': authState.customer?.id ?? '',
         'serviceType': serviceType,
-        'serviceConfig': {
-          'packageLabel': activeOrder?.packageLabel ?? 'Standard',
-        },
+        'serviceConfig': {'packageLabel': activeOrder?.packageLabel ?? 'Standard'},
         'location': {
           'address': locationState.location,
           'latitude': locationState.latitude ?? 25.5941,
@@ -141,21 +130,17 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       if (!mounted) return;
 
-      setState(() {
-        _isProcessing = false;
-        _checkoutOrder = null;
-      });
+      setState(() { _isProcessing = false; _checkoutOrder = null; });
 
       messenger.showSnackBar(
         SnackBar(
           content: Text('Payment verified! Booking created for ${booking.selectedTimeSlot}'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating,
         ),
       );
       router.go(AppRoutes.confirmation);
     } catch (e) {
       if (!mounted) return;
-
       setState(() => _isProcessing = false);
       AppErrorHandler.showSnackbar(context, e);
     }
@@ -174,28 +159,19 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   void _handlePaymentError(PaymentFailureResponse response) {
     if (!mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() {
-      _isProcessing = false;
-      _checkoutOrder = null;
-    });
-    messenger.showSnackBar(
+    setState(() { _isProcessing = false; _checkoutOrder = null; });
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(response.message ?? 'Payment failed. Please try again.'),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
     if (!mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('External wallet selected: ${response.walletName}'),
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('External wallet selected: ${response.walletName}'), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -207,18 +183,17 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       final choice = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Sign in required'),
-          content: const Text(
-            'Please sign in before you pay. You can continue with Google or use email sign-in.',
-          ),
+          content: const Text('Please sign in before you pay.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, 'cancel'),
-              child: const Text('Cancel'),
+              child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, 'login'),
-              child: const Text('Sign In'),
+              child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w600)),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, 'google'),
@@ -229,9 +204,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       );
 
       if (choice == 'login') {
-        if (mounted) {
-          router.push(AppRoutes.login);
-        }
+        if (mounted) router.push(AppRoutes.login);
         return;
       } else if (choice == 'google') {
         try {
@@ -252,10 +225,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     if (activeOrder == null) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Booking summary is missing. Please go back and try again.'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Booking summary is missing. Please go back and try again.'), backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
       );
       return;
     }
@@ -266,7 +236,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     try {
       final checkoutOrder = await ref.read(razorpayPaymentServiceProvider).createOrder(
-            amountRupees: ApiConfig.bookingAmount, // Pay only the minimum booking charge now
+            amountRupees: ApiConfig.bookingAmount,
             serviceName: activeOrder.serviceName,
             packageLabel: activeOrder.packageLabel,
             customerId: customer?.id,
@@ -282,9 +252,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       if (!mounted) return;
 
-      setState(() {
-        _checkoutOrder = checkoutOrder;
-      });
+      setState(() { _checkoutOrder = checkoutOrder; });
 
       final options = <String, Object>{
         'key': checkoutOrder.keyId,
@@ -295,9 +263,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         'description': '${activeOrder.serviceName} - ${activeOrder.packageLabel}',
         'prefill': <String, String>{
           'contact': customer?.phone ?? '9999999999',
-          'email': customer?.email ?? 'demo@safecom.com',
+          'email': customer?.email ?? '',
         },
-        'theme': <String, String>{'color': '#0A84FF'},
+        'theme': <String, String>{'color': '#0F172A'},
         'retry': <String, bool>{'enabled': false},
         'modal': <String, bool>{'escape': true},
       };
@@ -305,28 +273,20 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       _razorpay.open(options);
     } catch (e) {
       if (!mounted) return;
+      setState(() { _isProcessing = false; _checkoutOrder = null; });
 
-      setState(() {
-        _isProcessing = false;
-        _checkoutOrder = null;
-      });
-
-      // Check for specific errors
       final errorStr = e.toString();
       if (errorStr.contains('MISSING_PHONE')) {
-        // Show dialog to add phone number
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Text('Phone Number Required'),
             content: const Text('Please add your phone number in your Profile to complete booking.'),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  context.push(AppRoutes.profile);
-                },
-                child: const Text('Go to Profile'),
+                onPressed: () { Navigator.pop(ctx); context.push(AppRoutes.profile); },
+                child: const Text('Go to Profile', style: TextStyle(fontWeight: FontWeight.w600)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -347,17 +307,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final activeOrder = ref.watch(activeOrderProvider);
     final booking = ref.watch(bookingFlowProvider);
     const bookingAmount = ApiConfig.bookingAmount;
-    
+
     final taxAmount = (activeOrder?.estimatedTotal ?? 0) * ApiConfig.gstRate;
     final grandTotal = (activeOrder?.estimatedTotal ?? 0) + taxAmount;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Invoice & Payment'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -365,40 +321,46 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderLight),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                BoxShadow(color: AppColors.shadowLight, blurRadius: 10, offset: const Offset(0, 4)),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Order Summary',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.receipt_long_outlined, color: AppColors.secondary, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Order Summary',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _SummaryRow(
-                  label: 'Service',
-                  value: activeOrder == null
-                      ? 'Service details unavailable'
-                      : '${activeOrder.serviceName} (${activeOrder.packageLabel})',
-                ),
-                _SummaryRow(
-                  label: 'Schedule',
-                  value: '${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year} • ${booking.selectedTimeSlot}',
-                ),
-                
+                const SizedBox(height: 20),
+                _SummaryRow(label: 'Service', value: activeOrder == null ? 'Service details unavailable' : '${activeOrder.serviceName} (${activeOrder.packageLabel})'),
+                _SummaryRow(label: 'Schedule', value: '${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year} • ${booking.selectedTimeSlot}'),
+
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Divider(),
+                  child: Divider(color: AppColors.borderLight),
                 ),
-                
+
                 if (activeOrder != null && activeOrder.items.isNotEmpty) ...[
                   Text(
                     'Invoice Breakdown',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 12),
                   ...activeOrder.items.map((item) => Padding(
@@ -406,87 +368,64 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          flex: 3,
-                          child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w500)),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Text('${item.quantity}x', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(_currency(item.amount), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        ),
+                        Expanded(flex: 3, child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w500))),
+                        Expanded(flex: 1, child: Text('${item.quantity}x', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted))),
+                        Expanded(flex: 2, child: Text(_currency(item.amount), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w600))),
                       ],
                     ),
                   )),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Divider(),
+                    child: Divider(color: AppColors.borderLight),
                   ),
                 ],
-                
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Subtotal', style: TextStyle(color: Colors.grey)),
-                    Text(_currency(activeOrder?.estimatedTotal ?? 0), style: const TextStyle(fontWeight: FontWeight.w600)),
-                  ],
-                ),
+
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  const Text('Subtotal', style: TextStyle(color: AppColors.textSecondary)),
+                  Text(_currency(activeOrder?.estimatedTotal ?? 0), style: const TextStyle(fontWeight: FontWeight.w600)),
+                ]),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(ApiConfig.gstLabel, style: const TextStyle(color: Colors.grey)),
-                    Text('+ ${_currency(taxAmount)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                  ],
-                ),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text(ApiConfig.gstLabel, style: const TextStyle(color: AppColors.textSecondary)),
+                  Text('+ ${_currency(taxAmount)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                ]),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Estimated Grand Total', style: TextStyle(fontWeight: FontWeight.w700)),
-                      Text(_currency(grandTotal), style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-                    ],
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.secondary.withOpacity(0.15)),
                   ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    const Text('Estimated Grand Total', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
+                    Text(_currency(grandTotal), style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.secondary)),
+                  ]),
                 ),
               ],
             ),
           ),
-          
-          const SizedBox(height: 20),
-          
+
+          const SizedBox(height: 16),
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              color: AppColors.accentLight,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.accent.withOpacity(0.15)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Amount to Pay Now',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
-                    ),
-                    Text(
-                      _currency(bookingAmount),
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFF16A34A)),
-                    ),
-                  ],
-                ),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('Amount to Pay Now', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: AppColors.accent)),
+                  Text(_currency(bookingAmount), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: AppColors.success)),
+                ]),
                 const SizedBox(height: 8),
                 const Text(
                   'A minimum booking charge of Rs 100 is required to confirm the technician visit. The remaining balance will be payable after the service is successfully completed.',
-                  style: TextStyle(color: Color(0xFF3B82F6), fontSize: 13),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
               ],
             ),
@@ -494,9 +433,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.shield_outlined, color: Colors.green, size: 20),
+              const Icon(Icons.shield_outlined, color: AppColors.success, size: 18),
               const SizedBox(width: 8),
-              Text('Secure Checkout via Razorpay', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              Text('Secure Checkout via Razorpay', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             ],
           ),
         ],
@@ -504,23 +443,18 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          color: AppColors.surface,
+          border: Border(top: BorderSide(color: AppColors.borderLight)),
         ),
         child: SafeArea(
-          child: FilledButton(
-            onPressed: _isProcessing ? null : _openRazorpayCheckout,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: SizedBox(
+            height: 48,
+            child: FilledButton(
+              onPressed: _isProcessing ? null : _openRazorpayCheckout,
+              child: _isProcessing
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Pay Rs 100 & Confirm Booking', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             ),
-            child: _isProcessing
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('Pay Rs 100 & Confirm Booking', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ),
       ),
@@ -544,8 +478,8 @@ class _SummaryRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
-            child: Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+            width: 90,
+            child: Text(label, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
           ),
           Expanded(
             child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),

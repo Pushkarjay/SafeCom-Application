@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_customer/features/profile/providers/booking_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class BookingDetailScreen extends StatelessWidget {
   final BookingModel booking;
@@ -12,14 +13,14 @@ class BookingDetailScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Booking Details',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
+        foregroundColor: AppColors.primary,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
@@ -114,7 +115,7 @@ class BookingDetailScreen extends StatelessWidget {
   (String, IconData, Color) _getStatusInfo(String status) {
     switch (status.toLowerCase()) {
       case 'completed':
-        return ('COMPLETED', Icons.check_circle, const Color(0xFF10B981));
+        return ('COMPLETED', Icons.check_circle, AppColors.success);
       case 'in_progress':
       case 'in-progress':
       case 'assigned':
@@ -122,7 +123,7 @@ class BookingDetailScreen extends StatelessWidget {
       case 'confirmed':
         return ('CONFIRMED', Icons.thumb_up, const Color(0xFF6366F1));
       case 'cancelled':
-        return ('CANCELLED', Icons.cancel, const Color(0xFFEF4444));
+        return ('CANCELLED', Icons.cancel, AppColors.error);
       case 'pending':
       default:
         return ('PENDING', Icons.schedule, const Color(0xFFF59E0B));
@@ -159,7 +160,7 @@ class _SectionHeader extends StatelessWidget {
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: Color(0xFF94A3B8),
+          color: AppColors.textMuted,
           letterSpacing: 1.1,
         ),
       ),
@@ -190,9 +191,9 @@ class _InfoTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppColors.border),
             ),
-            child: Icon(icon, size: 20, color: const Color(0xFF64748B)),
+            child: Icon(icon, size: 20, color: AppColors.textSecondary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -203,7 +204,7 @@ class _InfoTile extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -212,7 +213,7 @@ class _InfoTile extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.primary,
                   ),
                 ),
               ],

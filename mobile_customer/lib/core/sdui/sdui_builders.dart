@@ -13,6 +13,7 @@ import 'package:mobile_customer/features/home/widgets/location_header.dart';
 import 'package:mobile_customer/features/home/widgets/service_grid.dart';
 import 'package:mobile_customer/features/home/widgets/horizontal_scroll_list.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 // ============================================
 // LOCATION HEADER
@@ -208,9 +209,9 @@ Widget _buildHorizontalRecommendationCard(BuildContext context, HomeRecommendati
     child: Ink(
       width: 240,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -235,7 +236,7 @@ Widget _buildHorizontalRecommendationCard(BuildContext context, HomeRecommendati
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.primary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -248,7 +249,7 @@ Widget _buildHorizontalRecommendationCard(BuildContext context, HomeRecommendati
               rec.description,
               style: const TextStyle(
                 fontSize: 12,
-                color: Color(0xFF64748B),
+                color: AppColors.textSecondary,
                 height: 1.4,
               ),
               maxLines: 2,
@@ -263,11 +264,11 @@ Widget _buildHorizontalRecommendationCard(BuildContext context, HomeRecommendati
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF0A84FF),
+                    color: AppColors.primary,
                   ),
                 ),
                 const Icon(Icons.arrow_forward_rounded, 
-                    size: 14, color: Color(0xFF0A84FF)),
+                    size: 14, color: AppColors.primary),
               ],
             ),
           ],
@@ -315,7 +316,7 @@ Widget _buildHorizontalProductCard(BuildContext context, HomeProductItem product
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(color: AppColors.surfaceVariant),
         boxShadow: const [
           BoxShadow(
             color: Color(0x08000000),
@@ -331,7 +332,7 @@ Widget _buildHorizontalProductCard(BuildContext context, HomeProductItem product
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.background,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 image: product.imageUrl != null
                     ? DecorationImage(
@@ -355,7 +356,7 @@ Widget _buildHorizontalProductCard(BuildContext context, HomeProductItem product
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
-                    color: Color(0xFF1E293B),
+                    color: AppColors.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -366,7 +367,7 @@ Widget _buildHorizontalProductCard(BuildContext context, HomeProductItem product
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
-                    color: Color(0xFF0A84FF),
+                    color: AppColors.primary,
                   ),
                 ),
               ],
@@ -411,7 +412,7 @@ Widget buildBanner(SduiComponent component, BuildContext context) {
   final gradientColors = (component.data['gradientColors'] as List?)
           ?.map((c) => _parseColor(c as String))
           .toList() ??
-      [const Color(0xFF0A84FF), const Color(0xFF1E40AF)];
+      [AppColors.primary, const Color(0xFF1E40AF)];
 
   return GestureDetector(
     onTap: () => _handleAction(context, component.action),
@@ -620,7 +621,7 @@ Widget buildAnnouncementsList(SduiComponent component, BuildContext context) {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFF1F5F9)),
+              border: Border.all(color: AppColors.surfaceVariant),
             ),
             child: Row(
               children: [
@@ -647,7 +648,7 @@ Widget buildAnnouncementsList(SduiComponent component, BuildContext context) {
                       Text(
                         a.body,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
+                              color: AppColors.textSecondary,
                             ),
                       ),
                     ],
@@ -684,7 +685,7 @@ Color _parseColor(String hex) {
   try {
     return Color(int.parse(hex, radix: 16));
   } catch (e) {
-    return const Color(0xFF0A84FF);
+    return AppColors.primary;
   }
 }
 

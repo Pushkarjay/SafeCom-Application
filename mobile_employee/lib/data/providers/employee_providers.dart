@@ -21,8 +21,11 @@ final activeEmployeeIdProvider = Provider<String>((ref) {
   if (kIsWeb) {
     return 'TECH001';
   }
-  final user = FirebaseAuth.instance.currentUser;
-  return user?.uid ?? '';
+  final authState = ref.watch(authStateProvider);
+  final uid = authState.value?.uid;
+  if (uid != null) return uid;
+  final fallback = FirebaseAuth.instance.currentUser?.uid;
+  return fallback ?? '';
 });
 
 final employeeDatasourceProvider = Provider<EmployeeDatasource>((ref) {

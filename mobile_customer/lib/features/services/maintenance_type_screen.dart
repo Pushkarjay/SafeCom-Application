@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/services/providers/maintenance_flow_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class MaintenanceTypeScreen extends ConsumerWidget {
   const MaintenanceTypeScreen({super.key});
@@ -52,7 +53,7 @@ class MaintenanceTypeScreen extends ConsumerWidget {
                     backgroundColor: const Color(0xFFEFF6FF),
                     child: Icon(
                       _iconMap[type.icon] ?? Icons.settings_suggest_outlined,
-                      color: const Color(0xFF0A84FF),
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(width: 12),

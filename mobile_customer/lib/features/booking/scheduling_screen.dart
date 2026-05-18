@@ -5,6 +5,7 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class SchedulingScreen extends ConsumerWidget {
   const SchedulingScreen({super.key});
@@ -31,11 +32,10 @@ class SchedulingScreen extends ConsumerWidget {
 
     void handleContinue() {
       if (!authState.isAuthenticated || authState.customer == null) {
-        // Prompt user to login before continuing
         showModalBottomSheet(
           context: context,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           builder: (ctx) => Padding(
             padding: const EdgeInsets.all(24),
@@ -43,33 +43,35 @@ class SchedulingScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.lock_outline, size: 48, color: Color(0xFF0A84FF)),
+                Container(
+                  width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryLight,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.lock_outline, color: AppColors.secondary, size: 24),
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   'Sign In Required',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Please sign in or create an account to proceed with your booking.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    context.push(AppRoutes.login);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A84FF),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () { Navigator.pop(ctx); context.push(AppRoutes.login); },
+                    child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
-                  child: const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('Cancel'),
@@ -91,10 +93,6 @@ class SchedulingScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Schedule Service'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -106,31 +104,51 @@ class SchedulingScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  colors: [
+                    Color(0xFF0F172A),
+                    Color(0xFF1E293B),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+                  BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4)),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    'Selected Service',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600),
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.build_outlined, color: AppColors.secondary, size: 22),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${activeOrder.serviceName} (${activeOrder.packageLabel})',
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selected Service',
+                          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${activeOrder.serviceName} (${activeOrder.packageLabel})',
+                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           const Text(
             'Select Date',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
@@ -139,20 +157,20 @@ class SchedulingScreen extends ConsumerWidget {
               children: dateOptions.map((date) {
                 final isSelected = _isSameDate(booking.selectedDate, date);
                 return Padding(
-                  padding: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.only(right: 10),
                   child: InkWell(
                     onTap: () => notifier.selectDate(date),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Ink(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF0A84FF) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        color: isSelected ? AppColors.primary : AppColors.surface,
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF0A84FF) : const Color(0xFFE2E8F0),
+                          color: isSelected ? AppColors.primary : AppColors.borderLight,
                         ),
                         boxShadow: isSelected
-                            ? [BoxShadow(color: const Color(0xFF0A84FF).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))]
+                            ? [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]
                             : null,
                       ),
                       child: Column(
@@ -160,8 +178,8 @@ class SchedulingScreen extends ConsumerWidget {
                           Text(
                             _dayName(date),
                             style: TextStyle(
-                              color: isSelected ? Colors.white.withOpacity(0.9) : const Color(0xFF64748B),
-                              fontSize: 13,
+                              color: isSelected ? Colors.white.withOpacity(0.9) : AppColors.textSecondary,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -169,7 +187,7 @@ class SchedulingScreen extends ConsumerWidget {
                           Text(
                             '${date.day}',
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF0F172A),
+                              color: isSelected ? Colors.white : AppColors.primary,
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                             ),
@@ -182,34 +200,44 @@ class SchedulingScreen extends ConsumerWidget {
               }).toList(),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           const Text(
             'Select Time Slot',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
           for (final slot in timeSlots)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 10),
               child: InkWell(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
                 onTap: () => notifier.selectTimeSlot(slot),
-                child: Ink(
+                child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: booking.selectedTimeSlot == slot ? const Color(0xFF0A84FF) : const Color(0xFFE2E8F0),
-                      width: booking.selectedTimeSlot == slot ? 2 : 1,
+                      color: booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.borderLight,
+                      width: booking.selectedTimeSlot == slot ? 1.5 : 1,
                     ),
+                    boxShadow: booking.selectedTimeSlot == slot
+                        ? [BoxShadow(color: AppColors.secondary.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))]
+                        : null,
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.access_time_rounded,
-                        color: booking.selectedTimeSlot == slot ? const Color(0xFF0A84FF) : const Color(0xFF94A3B8),
-                        size: 20,
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: booking.selectedTimeSlot == slot ? AppColors.secondaryLight : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.access_time_rounded,
+                          color: booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.textMuted,
+                          size: 18,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -217,17 +245,17 @@ class SchedulingScreen extends ConsumerWidget {
                           slot,
                           style: TextStyle(
                             fontWeight: booking.selectedTimeSlot == slot ? FontWeight.w700 : FontWeight.w500,
-                            color: const Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
                       Container(
-                        width: 24,
-                        height: 24,
+                        width: 22,
+                        height: 22,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: booking.selectedTimeSlot == slot ? const Color(0xFF0A84FF) : const Color(0xFFCBD5E1),
+                            color: booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.border,
                             width: booking.selectedTimeSlot == slot ? 6 : 2,
                           ),
                         ),
@@ -242,21 +270,18 @@ class SchedulingScreen extends ConsumerWidget {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4)),
+            BoxShadow(color: AppColors.shadowLight, blurRadius: 10, offset: const Offset(0, -4)),
           ],
         ),
         child: SafeArea(
-          child: ElevatedButton(
-            onPressed: handleContinue,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0A84FF),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 0,
+          child: SizedBox(
+            height: 48,
+            child: ElevatedButton(
+              onPressed: handleContinue,
+              child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
-            child: const Text('Continue', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ),
       ),

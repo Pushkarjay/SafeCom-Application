@@ -8,6 +8,7 @@ import 'package:mobile_customer/features/home/widgets/location_header.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/services/providers/maintenance_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class MaintenanceCustomizationScreen extends ConsumerWidget {
   const MaintenanceCustomizationScreen({super.key});
@@ -67,7 +68,7 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: const BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: Row(
           children: [
@@ -81,7 +82,7 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
                     _currency(state.totalAmount),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0A84FF),
+                          color: AppColors.primary,
                         ),
                   ),
                 ],

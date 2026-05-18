@@ -5,6 +5,7 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/data_providers.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
+import 'package:mobile_customer/core/theme/app_theme.dart';
 
 final amcPricingProvider = FutureProvider<AmcPricingContract>((ref) {
   return ref.watch(pricingRepositoryProvider).getAmcPricing();
@@ -85,7 +86,7 @@ class AmcPlanScreen extends ConsumerWidget {
                           Text(
                             'Rs ${plan.price.toStringAsFixed(0)}',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: const Color(0xFF0A84FF),
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
@@ -95,7 +96,7 @@ class AmcPlanScreen extends ConsumerWidget {
                       Text(
                         plan.subtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
+                              color: AppColors.textSecondary,
                             ),
                       ),
                       if (plan.features.isNotEmpty) ...[
@@ -104,7 +105,7 @@ class AmcPlanScreen extends ConsumerWidget {
                               padding: const EdgeInsets.only(bottom: 4),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF16A34A)),
+                                  const Icon(Icons.check_circle_outline, size: 16, color: AppColors.success),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -140,7 +141,7 @@ class _FallbackAmcPlans extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off_outlined, size: 48, color: Color(0xFF94A3B8)),
+            const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.textMuted),
             const SizedBox(height: 16),
             Text(
               'Unable to load AMC plans',
@@ -180,7 +181,7 @@ void _showAmcConfirmationSheet(BuildContext context, WidgetRef ref, AmcPlan plan
           Text(
             'Rs ${plan.price.toStringAsFixed(0)} / year',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF0A84FF),
+                  color: AppColors.primary,
                   fontWeight: FontWeight.w700,
                 ),
           ),
