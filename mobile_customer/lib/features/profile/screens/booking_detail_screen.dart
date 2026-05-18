@@ -292,7 +292,7 @@ class BookingDetailScreen extends StatelessWidget {
       case 'in_progress':
       case 'in-progress':
       case 'assigned':
-        return ('IN PROGRESS', Icons.hourglass_top, const Color(0xFF3B82F6));
+        return ('IN PROGRESS', Icons.hourglass_top, AppColors.secondary);
       case 'confirmed':
         return ('CONFIRMED', Icons.thumb_up, const Color(0xFF6366F1));
       case 'cancelled':

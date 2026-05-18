@@ -12,8 +12,8 @@ class PromoBanner extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF0F172A),
-            Color(0xFF1E293B),
+            Color(0xFFFFF3E0),
+            Color(0xFFFFFBF5),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -21,7 +21,7 @@ class PromoBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.secondary.withOpacity(0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -46,7 +46,7 @@ class PromoBanner extends StatelessWidget {
                 Text(
                   'Get 10% OFF on your first installation',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -54,7 +54,7 @@ class PromoBanner extends StatelessWidget {
                 Text(
                   'Use code SAFECOM10 at checkout.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
                 ),

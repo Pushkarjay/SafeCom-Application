@@ -22,7 +22,7 @@ class AboutScreen extends ConsumerWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [AppColors.primary, Color(0xFF22C55E)],
+                    colors: [AppColors.primary, const Color(0xFFD4760A)],
                   ),
                 ),
                 child: Column(
@@ -97,7 +97,7 @@ class AboutScreen extends ConsumerWidget {
                     'Book home services. Pay in the app.',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Color(0xFF475569),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -201,7 +201,7 @@ class AboutScreen extends ConsumerWidget {
               text,
               style: const TextStyle(
                 fontSize: 14,
-                color: Color(0xFF475569),
+                color: AppColors.textSecondary,
               ),
             ),
           ),

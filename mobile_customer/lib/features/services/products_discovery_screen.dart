@@ -239,7 +239,7 @@ class _ProductsDiscoveryScreenState
         });
       },
       backgroundColor: Colors.white,
-      selectedColor: const Color(0xFFEFF6FF),
+      selectedColor: const Color(0xFFFFF3E0),
       side: BorderSide(
         color: isSelected ? AppColors.primary : AppColors.border,
       ),
@@ -306,8 +306,6 @@ class _ProductCard extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               product.productName,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -316,8 +314,6 @@ class _ProductCard extends ConsumerWidget {
             if (product.description.isNotEmpty)
               Text(
                 product.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -461,8 +457,6 @@ class _CartSheet extends ConsumerWidget {
                                   Text(
                                     item.product.productName,
                                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(

@@ -33,7 +33,7 @@ class ServicePlaceholderScreen extends StatelessWidget {
                 height: 88,
                 width: 88,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFEFF6FF),
+                  color: Color(0xFFFFF3E0),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -53,7 +53,7 @@ class ServicePlaceholderScreen extends StatelessWidget {
               Text(
                 'This dedicated flow is next in implementation. Dynamic packages, invoice and booking steps will be connected here.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF475569),
+                      color: AppColors.textSecondary,
                     ),
                 textAlign: TextAlign.center,
               ),

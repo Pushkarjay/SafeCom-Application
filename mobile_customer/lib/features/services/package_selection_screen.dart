@@ -77,8 +77,7 @@ class PackageSelectionScreen extends ConsumerWidget {
                               Text(
                                 group.description.isNotEmpty ? group.description : 'Base price starts at',
                                 style: Theme.of(context).textTheme.bodySmall,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+
                               ),
                             ],
                           ),

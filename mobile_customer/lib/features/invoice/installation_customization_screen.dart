@@ -246,7 +246,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
-              child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+              child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
             const SizedBox(width: 4),
             Container(

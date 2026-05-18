@@ -295,8 +295,6 @@ class _BookingCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         booking.location!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,

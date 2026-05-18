@@ -161,15 +161,13 @@ Widget _buildHorizontalServiceCard(BuildContext context, HomeServiceItem service
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF334155),
                   ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
     ),
-  );
-}
+    );
+  }
 
 // ============================================
 // HORIZONTAL RECOMMENDATIONS LIST
@@ -238,8 +236,6 @@ Widget _buildHorizontalRecommendationCard(BuildContext context, HomeRecommendati
                       fontSize: 14,
                       color: AppColors.primary,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -252,8 +248,6 @@ Widget _buildHorizontalRecommendationCard(BuildContext context, HomeRecommendati
                 color: AppColors.textSecondary,
                 height: 1.4,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
             const Spacer(),
             Row(
@@ -358,8 +352,6 @@ Widget _buildHorizontalProductCard(BuildContext context, HomeProductItem product
                     fontSize: 12,
                     color: AppColors.textPrimary,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(

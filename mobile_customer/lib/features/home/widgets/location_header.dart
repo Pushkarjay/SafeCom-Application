@@ -19,8 +19,8 @@ class LocationHeader extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF0F172A),
-            Color(0xFF1E293B),
+            Color(0xFFFFF3E0),
+            Color(0xFFFFFBF5),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -28,7 +28,7 @@ class LocationHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.15),
+            color: AppColors.secondary.withOpacity(0.15),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -53,7 +53,7 @@ class LocationHeader extends StatelessWidget {
                 Text(
                   'Current Location',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: AppColors.textSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
@@ -63,26 +63,24 @@ class LocationHeader extends StatelessWidget {
                 Text(
                   location,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: AppColors.secondary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white.withOpacity(0.15)),
+              border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
             ),
             child: TextButton(
               onPressed: onChange,
               style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.secondary,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,

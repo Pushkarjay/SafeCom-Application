@@ -181,8 +181,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFF0F172A),
-                        Color(0xFF1E293B),
+                        Color(0xFFFFF3E0),
+                        Color(0xFFFFFBF5),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -190,7 +190,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.2),
+                        color: AppColors.secondary.withOpacity(0.15),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -211,7 +211,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       const Text(
                         'Guest Profile',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
@@ -221,7 +221,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       Text(
                         'Sign in to manage bookings, track orders, and view your invoice history.',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: AppColors.textSecondary,
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -287,8 +287,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [
-                      Color(0xFF0F172A),
-                      Color(0xFF1E293B),
+                      Color(0xFFFFF3E0),
+                      Color(0xFFFFFBF5),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -296,7 +296,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.secondary.withOpacity(0.15),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -311,8 +311,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         height: 90,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(color: Colors.white.withOpacity(0.5), width: 4),
+                          color: AppColors.surface,
+                          border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 4),
                           image: customer.profileImage != null
                               ? DecorationImage(
                                   image: NetworkImage(customer.profileImage!),
@@ -336,7 +336,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     Text(
                       customer.name,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -346,7 +346,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     Text(
                       customer.email,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: AppColors.textSecondary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),

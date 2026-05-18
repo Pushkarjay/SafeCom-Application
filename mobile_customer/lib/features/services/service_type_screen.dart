@@ -61,7 +61,7 @@ class ServiceTypeScreen extends ConsumerWidget {
                     height: 42,
                     width: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: const Color(0xFFFFF3E0),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.videocam_outlined,
@@ -82,8 +82,7 @@ class ServiceTypeScreen extends ConsumerWidget {
                         Text(
                           category.description.isNotEmpty ? category.description : 'Continue with package selection and live invoice customization.',
                           style: Theme.of(context).textTheme.bodySmall,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+
                         ),
                       ],
                     ),

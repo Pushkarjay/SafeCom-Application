@@ -105,15 +105,15 @@ class SchedulingScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
-                    Color(0xFF0F172A),
-                    Color(0xFF1E293B),
+                    Color(0xFFFFF3E0),
+                    Color(0xFFFFFBF5),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4)),
+                  BoxShadow(color: AppColors.secondary.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4)),
                 ],
               ),
               child: Row(
@@ -133,12 +133,12 @@ class SchedulingScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Selected Service',
-                          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${activeOrder.serviceName} (${activeOrder.packageLabel})',
-                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),

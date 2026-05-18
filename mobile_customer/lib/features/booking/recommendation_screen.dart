@@ -117,7 +117,7 @@ class RecommendationScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                    border: Border.all(color: AppColors.secondaryLight),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,7 +127,7 @@ class RecommendationScreen extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1E40AF),
+                          color: AppColors.secondary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -135,7 +135,7 @@ class RecommendationScreen extends ConsumerWidget {
                         recommendation?.description ??
                             'These accessories are optional but recommended to optimize your service.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF1E3A8A),
+                              color: AppColors.textSecondary,
                             ),
                       ),
                     ],
@@ -197,10 +197,10 @@ class RecommendationScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
+          color: isSelected ? AppColors.secondaryLight : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF3B82F6) : AppColors.border,
+            color: isSelected ? AppColors.secondary : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -225,8 +225,6 @@ class RecommendationScreen extends ConsumerWidget {
                   Text(
                     product.description.isNotEmpty ? product.description : 'Recommended accessory',
                     style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -249,10 +247,10 @@ class RecommendationScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isComplete ? const Color(0xFFF0F9FF) : Colors.white,
+          color: isComplete ? AppColors.secondaryLight : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isComplete ? const Color(0xFF3B82F6) : AppColors.border,
+            color: isComplete ? AppColors.secondary : AppColors.border,
             width: isComplete ? 2 : 1,
           ),
         ),
