@@ -136,6 +136,64 @@ productsRouter.get(
   }
 )
 
+// POST /catalog/products - Create new product (ADMIN ONLY)
+productsRouter.post(
+  '/',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const parsed = productCreateUpdateSchema.parse(req.body);
+
+      const now = new Date().toISOString();
+      const docData: Record<string, unknown> = {
+        ...parsed,
+        name: parsed.productName,
+        price: parsed.basePrice,
+        status: parsed.isAvailable ? 'active' : 'inactive',
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const db = getDb();
+      const docRef = db.collection('catalog_product').doc();
+      await docRef.set(docData);
+
+      const normalized = {
+        productId: docRef.id,
+        productName: parsed.productName,
+        description: parsed.description ?? '',
+        category: parsed.category,
+        group: parsed.group ?? '',
+        basePrice: parsed.basePrice,
+        variants: parsed.variants ?? [],
+        pricingTiers: parsed.pricingTiers ?? undefined,
+        stock: parsed.stock ?? undefined,
+        isAvailable: parsed.isAvailable,
+        isFeatured: parsed.isFeatured ?? false,
+        imageUrl: parsed.imageUrl ?? undefined,
+        taxRate: parsed.taxRate ?? 18,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      return res.status(201).json({
+        success: true,
+        data: normalized
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: error.errors
+        });
+      }
+      next(error);
+    }
+  }
+)
+
 // PATCH /catalog/products/:id - Update product (ADMIN ONLY)
 productsRouter.patch(
   '/:id',

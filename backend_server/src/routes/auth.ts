@@ -68,12 +68,14 @@ authRouter.post('/login', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
       console.log(`[AUTH][${requestId}] Login successful for user: ${user.email}`)
       return res.json({
         success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          firebaseUid: user.firebaseUid
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            firebaseUid: user.firebaseUid
+          }
         },
         message: 'Logged in successfully'
       })
@@ -107,7 +109,9 @@ authRouter.get('/me', authenticateToken, (req: AuthenticatedRequest, res) => {
   }
   return res.json({
     success: true,
-    user: req.user,
+    data: {
+      user: req.user
+    },
     message: 'Current user profile'
   })
 })

@@ -30,10 +30,10 @@ techniciansRouter.get('/', verifyFirebaseIdToken, async (_req, res) => {
       employees.push({ id: doc.id, ...data })
     })
 
-    return res.json(employees)
+    return res.json({ success: true, data: employees })
   } catch (error) {
     console.error('Firestore employees lookup failed:', error)
-    return res.status(500).json({ message: 'Failed to fetch employees' })
+    return res.status(500).json({ success: false, message: 'Failed to fetch employees' })
   }
 })
 
@@ -42,13 +42,13 @@ techniciansRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
     const db = getDb()
     const doc = await db.collection('employees').doc(req.params.id as string).get()
     if (!doc.exists) {
-      return res.status(404).json({ message: 'Technician not found' })
+      return res.status(404).json({ success: false, message: 'Technician not found' })
     }
     const data = doc.data() as unknown as Record<string, unknown>
-    return res.json({ id: doc.id, ...data })
+    return res.json({ success: true, data: { id: doc.id, ...data } })
   } catch (error) {
     console.error('Firestore employee lookup failed:', error)
-    return res.status(500).json({ message: 'Failed to fetch employee' })
+    return res.status(500).json({ success: false, message: 'Failed to fetch employee' })
   }
 })
 
@@ -57,7 +57,7 @@ techniciansRouter.delete('/:id', verifyFirebaseIdToken, async (req: FirebaseAuth
     const db = getDb()
     const doc = await db.collection('employees').doc(req.params.id as string).get()
     if (!doc.exists) {
-      return res.status(404).json({ message: 'Technician not found' })
+      return res.status(404).json({ success: false, message: 'Technician not found' })
     }
     await deleteDocument('employees', req.params.id as string)
     try {
@@ -66,14 +66,14 @@ techniciansRouter.delete('/:id', verifyFirebaseIdToken, async (req: FirebaseAuth
     return res.json({ success: true, message: 'Technician deleted' })
   } catch (error) {
     console.error('Firestore delete employee failed:', error)
-    return res.status(500).json({ message: 'Failed to delete employee' })
+    return res.status(500).json({ success: false, message: 'Failed to delete employee' })
   }
 })
 
 techniciansRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   const parsed = employeeCreateSchema.safeParse(req.body)
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid technician payload', issues: parsed.error.flatten() })
+    return res.status(400).json({ success: false, message: 'Invalid technician payload', issues: parsed.error.flatten() })
   }
 
   const db = getDb()
@@ -92,9 +92,9 @@ techniciansRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthentic
     } catch (authErr: any) {
       console.error('Firebase Auth user creation failed:', authErr)
       if (authErr?.errorInfo?.code === 'auth/email-already-exists') {
-        return res.status(400).json({ message: 'A user with this phone already exists. Delete the existing employee first or use a different phone.' })
+        return res.status(400).json({ success: false, message: 'A user with this phone already exists. Delete the existing employee first or use a different phone.' })
       }
-      return res.status(400).json({ message: 'Failed to create auth user: ' + (authErr.message || '') })
+      return res.status(400).json({ success: false, message: 'Failed to create auth user: ' + (authErr.message || '') })
     }
 
     const employeeId = firebaseUid || `emp_${phoneClean.slice(-10)}`
@@ -116,17 +116,17 @@ techniciansRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthentic
       updatedAt: new Date().toISOString()
     })
 
-    return res.status(201).json({ id: employeeId, ...parsed.data, totalJobs: 0, rating: 0 })
+    return res.status(201).json({ success: true, data: { id: employeeId, ...parsed.data, totalJobs: 0, rating: 0 } })
   } catch (error) {
     console.error('Firestore create employee failed:', error)
-    return res.status(500).json({ message: 'Failed to create employee' })
+    return res.status(500).json({ success: false, message: 'Failed to create employee' })
   }
 })
 
 techniciansRouter.post('/:id/password', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   const { password } = req.body as { password?: string }
   if (!password || password.length < 6) {
-    return res.status(400).json({ message: 'Password must be at least 6 characters' })
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' })
   }
   try {
     await getAuth().updateUser(req.params.id as string, { password })
@@ -134,16 +134,16 @@ techniciansRouter.post('/:id/password', verifyFirebaseIdToken, async (req: Fireb
   } catch (error: any) {
     console.error('Failed to update Firebase Auth password:', error)
     if (error?.code === 'auth/user-not-found') {
-      return res.status(404).json({ message: 'Auth user not found. Create a new employee instead.' })
+      return res.status(404).json({ success: false, message: 'Auth user not found. Create a new employee instead.' })
     }
-    return res.status(500).json({ message: 'Failed to update password' })
+    return res.status(500).json({ success: false, message: 'Failed to update password' })
   }
 })
 
 techniciansRouter.patch('/:id', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   const parsed = employeeUpdateSchema.safeParse(req.body)
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid technician payload', issues: parsed.error.flatten() })
+    return res.status(400).json({ success: false, message: 'Invalid technician payload', issues: parsed.error.flatten() })
   }
   try {
     await updateDocument('employees', req.params.id as string, {
@@ -151,9 +151,9 @@ techniciansRouter.patch('/:id', verifyFirebaseIdToken, async (req: FirebaseAuthe
       updatedAt: new Date().toISOString()
     })
     const updated = await getDocument<Record<string, unknown>>('employees', req.params.id as string)
-    return res.json(updated)
+    return res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Firestore update employee failed:', error)
-    return res.status(500).json({ message: 'Failed to update employee' })
+    return res.status(500).json({ success: false, message: 'Failed to update employee' })
   }
 })

@@ -39,6 +39,7 @@ razorpayRouter.post('/create-order', async (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
+      success: false,
       message: 'Invalid payment order payload',
       issues: parsed.error.flatten()
     })
@@ -70,13 +71,15 @@ razorpayRouter.post('/create-order', async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      provider: order.provider,
-      keyId: order.keyId,
-      orderId: order.orderId,
-      amountPaise: order.amountPaise,
-      currency: order.currency,
-      receipt: order.receipt,
-      notes: order.notes
+      data: {
+        provider: order.provider,
+        keyId: order.keyId,
+        orderId: order.orderId,
+        amountPaise: order.amountPaise,
+        currency: order.currency,
+        receipt: order.receipt,
+        notes: order.notes
+      }
     })
   } catch (error) {
     console.error('[PAYMENTS] Failed to create Razorpay order:', error)
@@ -93,6 +96,7 @@ razorpayRouter.post('/verify', async (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
+      success: false,
       message: 'Invalid payment verification payload',
       issues: parsed.error.flatten()
     })
@@ -134,12 +138,14 @@ razorpayRouter.post('/verify', async (req, res) => {
     const docId = await createDocument('payments', paymentRecord)
     return res.status(201).json({
       success: true,
-      provider: verification.provider,
-      verified: true,
-      message: verification.message,
-      payment: {
-        id: docId,
-        ...paymentRecord
+      data: {
+        provider: verification.provider,
+        verified: true,
+        message: verification.message,
+        payment: {
+          id: docId,
+          ...paymentRecord
+        }
       }
     })
   } catch (error) {

@@ -35,10 +35,10 @@ customersRouter.get('/', verifyFirebaseIdToken, async (req, res) => {
       })
     })
 
-    return res.json(customers)
+    return res.json({ success: true, data: customers })
   } catch (error) {
     console.error('Firestore customers lookup failed:', error)
-    return res.status(500).json({ message: 'Failed to fetch customers' })
+    return res.status(500).json({ success: false, message: 'Failed to fetch customers' })
   }
 })
 
@@ -49,26 +49,29 @@ customersRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
     const doc = await db.collection('customers').doc(req.params.id as string).get()
     
     if (!doc.exists) {
-      return res.status(404).json({ message: 'Customer not found' })
+      return res.status(404).json({ success: false, message: 'Customer not found' })
     }
     
     const data = doc.data() as unknown as Record<string, unknown>
     return res.json({
-      id: doc.id,
-      ...data
+      success: true,
+      data: {
+        id: doc.id,
+        ...data
+      }
     })
   } catch (error) {
     console.error('Firestore customer lookup failed:', error)
-    return res.status(500).json({ message: 'Failed to fetch customer' })
+    return res.status(500).json({ success: false, message: 'Failed to fetch customer' })
   }
 })
 
 // POST /customers - Create new customer
-customersRouter.post('/', async (req, res) => {
+customersRouter.post('/', verifyFirebaseIdToken, async (req, res) => {
   const parsed = customerCreateSchema.safeParse(req.body)
 
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid customer payload', issues: parsed.error.flatten() })
+    return res.status(400).json({ success: false, message: 'Invalid customer payload', issues: parsed.error.flatten() })
   }
 
   try {
@@ -79,38 +82,38 @@ customersRouter.post('/', async (req, res) => {
       totalSpent: parsed.data.totalSpent ?? 0,
       createdAt: new Date().toISOString()
     })
-    return res.status(201).json({ id: docId, ...parsed.data })
+    return res.status(201).json({ success: true, data: { id: docId, ...parsed.data } })
   } catch (error) {
     console.error('Firestore create customer failed:', error)
-    return res.status(500).json({ message: 'Failed to create customer' })
+    return res.status(500).json({ success: false, message: 'Failed to create customer' })
   }
 })
 
 // PATCH /customers/:id - Update customer
-customersRouter.patch('/:id', async (req, res) => {
+customersRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
   const parsed = customerUpdateSchema.safeParse(req.body)
 
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid customer payload', issues: parsed.error.flatten() })
+    return res.status(400).json({ success: false, message: 'Invalid customer payload', issues: parsed.error.flatten() })
   }
 
   try {
     await updateDocument('customers', req.params.id, parsed.data)
     const updated = await getDocument<Record<string, unknown>>('customers', req.params.id)
-    return res.json(updated)
+    return res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Firestore update customer failed:', error)
-    return res.status(500).json({ message: 'Failed to update customer' })
+    return res.status(500).json({ success: false, message: 'Failed to update customer' })
   }
 })
 
 // DELETE /customers/:id - Delete customer
-customersRouter.delete('/:id', async (req, res) => {
+customersRouter.delete('/:id', verifyFirebaseIdToken, async (req, res) => {
   try {
     await deleteDocument('customers', req.params.id)
-    return res.json({ message: 'Customer deleted' })
+    return res.json({ success: true, message: 'Customer deleted' })
   } catch (error) {
     console.error('Firestore delete customer failed:', error)
-    return res.status(500).json({ message: 'Failed to delete customer' })
+    return res.status(500).json({ success: false, message: 'Failed to delete customer' })
   }
 })

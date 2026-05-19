@@ -200,6 +200,37 @@ function extractTree(
 
 // ─── ROUTES ─────────────────────────────────────────────────
 
+// PATCH /:serviceId/meta — Update service metadata (title, icon, enabled)
+servicesAdminRouter.patch('/:serviceId/meta', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const { title, icon, enabled } = req.body as { title?: string; icon?: string; enabled?: boolean };
+
+    const db = getDb();
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const doc = await docRef.get();
+    if (!doc.exists) return res.status(404).json({ success: false, error: 'Service not found' });
+
+    const updates: Record<string, unknown> = {};
+    const existingData = doc.data() || {};
+    const existingMeta = (existingData._meta || {}) as Record<string, unknown>;
+
+    if (title !== undefined) updates['_meta.title'] = title;
+    if (icon !== undefined) updates['_meta.icon'] = icon;
+    if (enabled !== undefined) updates['_meta.enabled'] = enabled;
+    updates['_meta.updatedAt'] = new Date().toISOString();
+
+    if (Object.keys(updates).length > 0) {
+      await docRef.update(updates);
+    }
+
+    res.json({ success: true, message: `Service "${serviceId}" metadata updated` });
+  } catch (error) {
+    console.error('[SERVICES-ADMIN] PATCH meta error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update service metadata' });
+  }
+});
+
 // GET /list — List all available services in the Services collection
 servicesAdminRouter.get('/list', authenticateToken, requireRole(['admin']), async (_req: Request, res: Response) => {
   try {

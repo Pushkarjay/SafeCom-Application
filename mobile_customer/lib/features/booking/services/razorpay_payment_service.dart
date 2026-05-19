@@ -23,14 +23,16 @@ class RazorpayCheckoutOrder {
   });
 
   factory RazorpayCheckoutOrder.fromJson(Map<String, dynamic> json) {
+    // Support both wrapped { success, data: {...} } and flat formats
+    final d = json['data'] as Map<String, dynamic>? ?? json;
     return RazorpayCheckoutOrder(
-      provider: json['provider'] as String? ?? 'razorpay',
-      keyId: json['keyId'] as String? ?? '',
-      orderId: json['orderId'] as String? ?? '',
-      amountPaise: (json['amountPaise'] as num?)?.toInt() ?? 0,
-      currency: json['currency'] as String? ?? 'INR',
-      receipt: json['receipt'] as String? ?? '',
-      notes: Map<String, dynamic>.from(json['notes'] as Map? ?? const {}),
+      provider: d['provider'] as String? ?? 'razorpay',
+      keyId: d['keyId'] as String? ?? '',
+      orderId: d['orderId'] as String? ?? '',
+      amountPaise: (d['amountPaise'] as num?)?.toInt() ?? 0,
+      currency: d['currency'] as String? ?? 'INR',
+      receipt: d['receipt'] as String? ?? '',
+      notes: Map<String, dynamic>.from(d['notes'] as Map? ?? const {}),
     );
   }
 }
@@ -49,13 +51,15 @@ class RazorpayVerificationResult {
   });
 
   factory RazorpayVerificationResult.fromJson(Map<String, dynamic> json) {
+    // Support both wrapped { success, data: {...} } and flat formats
+    final d = json['data'] as Map<String, dynamic>? ?? json;
     return RazorpayVerificationResult(
-      provider: json['provider'] as String? ?? 'razorpay',
-      verified: json['verified'] as bool? ?? false,
-      message: json['message'] as String? ?? '',
-      payment: json['payment'] == null
+      provider: d['provider'] as String? ?? 'razorpay',
+      verified: d['verified'] as bool? ?? false,
+      message: d['message'] as String? ?? '',
+      payment: d['payment'] == null
           ? null
-          : Map<String, dynamic>.from(json['payment'] as Map),
+          : Map<String, dynamic>.from(d['payment'] as Map),
     );
   }
 }

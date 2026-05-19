@@ -32,7 +32,7 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
 
   // Allow phone-only sign-in (email optional)
   if (!displayName || !role) {
-    return res.status(400).json({ message: 'Missing required fields: displayName, role' });
+    return res.status(400).json({ success: false, message: 'Missing required fields: displayName, role' });
   }
 
   // Email is optional — use empty string when not provided
@@ -106,20 +106,24 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
     }
 
     return res.json({
-      message: 'User linked successfully',
-      user: {
-        uid,
-        email: finalEmail,
-        displayName,
-        role,
-        phone,
+      success: true,
+      data: {
+        user: {
+          uid,
+          email: finalEmail,
+          displayName,
+          role,
+          phone,
+        },
+        linkedDocument: linkedDoc,
+        merged: conflictUser ? true : false,
       },
-      linkedDocument: linkedDoc,
-      merged: conflictUser ? true : false,
+      message: 'User linked successfully',
     });
   } catch (error) {
     console.error('Error linking user:', error);
     return res.status(500).json({
+      success: false,
       message: 'Error linking user to Firestore',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
@@ -133,13 +137,13 @@ router.post('/link', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
 router.get('/me', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   const uid = req.firebaseUid;
   if (!uid) {
-    return res.status(401).json({ message: 'Firebase UID not found in request' });
+    return res.status(401).json({ success: false, message: 'Firebase UID not found in request' });
   }
 
   try {
     const user = await getFirestoreUserByUid(uid);
     if (!user) {
-      return res.status(404).json({ message: 'User not found. Call POST /api/users/link to link your account.' });
+      return res.status(404).json({ success: false, message: 'User not found. Call POST /api/users/link to link your account.' });
     }
 
     // Also fetch the role-specific document
@@ -151,12 +155,16 @@ router.get('/me', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReques
     }
 
     return res.json({
-      user,
-      roleDocument,
+      success: true,
+      data: {
+        user,
+        roleDocument,
+      },
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return res.status(500).json({
+      success: false,
       message: 'Error fetching user profile',
       error: error instanceof Error ? error.message : 'Unknown error',
     });

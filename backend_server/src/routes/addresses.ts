@@ -17,35 +17,35 @@ export const addressesRouter = Router()
 // GET /customers/:customerId/addresses - List all addresses
 addressesRouter.get('/:customerId/addresses', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   if (req.firebaseUid !== req.params.customerId) {
-    return res.status(403).json({ message: 'Forbidden' })
+    return res.status(403).json({ success: false, message: 'Forbidden' })
   }
   try {
     const db = getDb()
     const doc = await db.collection('customers').doc(req.params.customerId).get()
-    if (!doc.exists) return res.status(404).json({ message: 'Customer not found' })
+    if (!doc.exists) return res.status(404).json({ success: false, message: 'Customer not found' })
     const data = doc.data() as Record<string, unknown>
     const addresses = (data.savedAddresses as SavedAddress[]) || []
-    return res.json({ addresses, defaultAddressId: data.defaultAddressId || null })
+    return res.json({ success: true, data: { addresses, defaultAddressId: data.defaultAddressId || null } })
   } catch (error) {
     console.error('Failed to fetch addresses:', error)
-    return res.status(500).json({ message: 'Failed to fetch addresses' })
+    return res.status(500).json({ success: false, message: 'Failed to fetch addresses' })
   }
 })
 
 // POST /customers/:customerId/addresses - Add new address
 addressesRouter.post('/:customerId/addresses', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   if (req.firebaseUid !== req.params.customerId) {
-    return res.status(403).json({ message: 'Forbidden' })
+    return res.status(403).json({ success: false, message: 'Forbidden' })
   }
   const parsed = addressSchema.safeParse(req.body)
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid address payload', issues: parsed.error.flatten() })
+    return res.status(400).json({ success: false, message: 'Invalid address payload', issues: parsed.error.flatten() })
   }
   try {
     const db = getDb()
     const docRef = db.collection('customers').doc(req.params.customerId)
     const doc = await docRef.get()
-    if (!doc.exists) return res.status(404).json({ message: 'Customer not found' })
+    if (!doc.exists) return res.status(404).json({ success: false, message: 'Customer not found' })
 
     const data = doc.data() as Record<string, unknown>
     const addresses = (data.savedAddresses as SavedAddress[]) || []
@@ -72,32 +72,32 @@ addressesRouter.post('/:customerId/addresses', verifyFirebaseIdToken, async (req
       address: newAddress.isDefault ? newAddress.address : (data.address || ''),
     } as Record<string, unknown>)
 
-    return res.status(201).json(newAddress)
+    return res.status(201).json({ success: true, data: newAddress })
   } catch (error) {
     console.error('Failed to add address:', error)
-    return res.status(500).json({ message: 'Failed to add address' })
+    return res.status(500).json({ success: false, message: 'Failed to add address' })
   }
 })
 
 // PATCH /customers/:customerId/addresses/:addressId - Update address
 addressesRouter.patch('/:customerId/addresses/:addressId', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   if (req.firebaseUid !== req.params.customerId) {
-    return res.status(403).json({ message: 'Forbidden' })
+    return res.status(403).json({ success: false, message: 'Forbidden' })
   }
   const parsed = addressSchema.partial().safeParse(req.body)
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid address payload', issues: parsed.error.flatten() })
+    return res.status(400).json({ success: false, message: 'Invalid address payload', issues: parsed.error.flatten() })
   }
   try {
     const db = getDb()
     const docRef = db.collection('customers').doc(req.params.customerId)
     const doc = await docRef.get()
-    if (!doc.exists) return res.status(404).json({ message: 'Customer not found' })
+    if (!doc.exists) return res.status(404).json({ success: false, message: 'Customer not found' })
 
     const data = doc.data() as Record<string, unknown>
     const addresses = (data.savedAddresses as SavedAddress[]) || []
     const index = addresses.findIndex(a => a.id === req.params.addressId)
-    if (index === -1) return res.status(404).json({ message: 'Address not found' })
+    if (index === -1) return res.status(404).json({ success: false, message: 'Address not found' })
 
     const updated = { ...addresses[index], ...parsed.data, updatedAt: new Date().toISOString() }
     let updatedAddresses = [...addresses]
@@ -113,28 +113,28 @@ addressesRouter.patch('/:customerId/addresses/:addressId', verifyFirebaseIdToken
       address: updated.isDefault ? updated.address : (data.address || ''),
     } as Record<string, unknown>)
 
-    return res.json(updated)
+    return res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Failed to update address:', error)
-    return res.status(500).json({ message: 'Failed to update address' })
+    return res.status(500).json({ success: false, message: 'Failed to update address' })
   }
 })
 
 // DELETE /customers/:customerId/addresses/:addressId - Delete address
 addressesRouter.delete('/:customerId/addresses/:addressId', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   if (req.firebaseUid !== req.params.customerId) {
-    return res.status(403).json({ message: 'Forbidden' })
+    return res.status(403).json({ success: false, message: 'Forbidden' })
   }
   try {
     const db = getDb()
     const docRef = db.collection('customers').doc(req.params.customerId)
     const doc = await docRef.get()
-    if (!doc.exists) return res.status(404).json({ message: 'Customer not found' })
+    if (!doc.exists) return res.status(404).json({ success: false, message: 'Customer not found' })
 
     const data = doc.data() as Record<string, unknown>
     const addresses = (data.savedAddresses as SavedAddress[]) || []
     const deleted = addresses.find(a => a.id === req.params.addressId)
-    if (!deleted) return res.status(404).json({ message: 'Address not found' })
+    if (!deleted) return res.status(404).json({ success: false, message: 'Address not found' })
 
     const remaining = addresses.filter(a => a.id !== req.params.addressId)
 
@@ -161,28 +161,28 @@ addressesRouter.delete('/:customerId/addresses/:addressId', verifyFirebaseIdToke
 
     await docRef.update(updateData)
 
-    return res.json({ message: 'Address deleted' })
+    return res.json({ success: true, message: 'Address deleted' })
   } catch (error) {
     console.error('Failed to delete address:', error)
-    return res.status(500).json({ message: 'Failed to delete address' })
+    return res.status(500).json({ success: false, message: 'Failed to delete address' })
   }
 })
 
 // PUT /customers/:customerId/addresses/:addressId/default - Set as default
 addressesRouter.put('/:customerId/addresses/:addressId/default', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
   if (req.firebaseUid !== req.params.customerId) {
-    return res.status(403).json({ message: 'Forbidden' })
+    return res.status(403).json({ success: false, message: 'Forbidden' })
   }
   try {
     const db = getDb()
     const docRef = db.collection('customers').doc(req.params.customerId)
     const doc = await docRef.get()
-    if (!doc.exists) return res.status(404).json({ message: 'Customer not found' })
+    if (!doc.exists) return res.status(404).json({ success: false, message: 'Customer not found' })
 
     const data = doc.data() as Record<string, unknown>
     const addresses = (data.savedAddresses as SavedAddress[]) || []
     const target = addresses.find(a => a.id === req.params.addressId)
-    if (!target) return res.status(404).json({ message: 'Address not found' })
+    if (!target) return res.status(404).json({ success: false, message: 'Address not found' })
 
     const updatedAddresses = addresses.map(a => ({ ...a, isDefault: a.id === req.params.addressId, updatedAt: new Date().toISOString() }))
 
@@ -192,9 +192,9 @@ addressesRouter.put('/:customerId/addresses/:addressId/default', verifyFirebaseI
       address: target.address,
     } as Record<string, unknown>)
 
-    return res.json({ message: 'Default address updated', addressId: req.params.addressId })
+    return res.json({ success: true, data: { message: 'Default address updated', addressId: req.params.addressId } })
   } catch (error) {
     console.error('Failed to set default address:', error)
-    return res.status(500).json({ message: 'Failed to set default address' })
+    return res.status(500).json({ success: false, message: 'Failed to set default address' })
   }
 })

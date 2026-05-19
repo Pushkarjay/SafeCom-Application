@@ -72,7 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const payload = await res.json()
-      const user = payload.user || {
+      const user = (payload.data?.user ?? payload.user) || {
         id: firebaseUser.uid,
         email: firebaseUser.email || '',
         name: firebaseUser.displayName || '',

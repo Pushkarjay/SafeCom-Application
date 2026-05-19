@@ -199,6 +199,12 @@ export class AdminDatasource {
     })
   }
 
+  async deleteCatalogMetadata(id: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/metadata/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    })
+  }
+
   async createCatalogProduct(data: Partial<CatalogProduct>): Promise<CatalogProduct> {
     const payload = await this.fetchJson<{ success: boolean; data: CatalogProduct }>(`${BASE_URL}/catalog/products`, {
       method: 'POST',
@@ -322,6 +328,13 @@ export class AdminDatasource {
     await this.fetchJson(`${BASE_URL}/catalog/services-admin/create`, {
       method: 'POST',
       body: JSON.stringify({ id, title, icon })
+    })
+  }
+
+  async updateService(id: string, data: { title?: string; icon?: string; enabled?: boolean }): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/${encodeURIComponent(id)}/meta`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
     })
   }
 

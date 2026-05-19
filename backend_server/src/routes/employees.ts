@@ -20,18 +20,18 @@ router.get('/me', async (req: FirebaseAuthenticatedRequest, res) => {
     // Try to find employee by firebaseUid using userService (Firestore-linked)
     const employee = await userServiceGetEmployee(uid);
     if (employee) {
-      return res.json(employee);
+      return res.json({ success: true, data: employee });
     }
 
     // Fallback: try legacy employeeService
     const byId = await getEmployeeById(uid);
     if (byId) {
-      return res.json(byId);
+      return res.json({ success: true, data: byId });
     }
 
-    return res.status(404).json({ message: 'Employee profile not found for authenticated user. Please contact admin to link your account.' });
+    return res.status(404).json({ success: false, message: 'Employee profile not found for authenticated user. Please contact admin to link your account.' });
   } catch (error) {
-    return res.status(500).json({ message: 'Error fetching employee profile', error });
+    return res.status(500).json({ success: false, message: 'Error fetching employee profile', error });
   }
 });
 
@@ -41,12 +41,12 @@ router.get('/:id', async (req, res) => {
   try {
     const employee = await getEmployeeById(id);
     if (employee) {
-      res.json(employee);
+      res.json({ success: true, data: employee });
     } else {
-      res.status(404).json({ message: 'Employee not found' });
+      res.status(404).json({ success: false, message: 'Employee not found' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching employee data', error });
+    res.status(500).json({ success: false, message: 'Error fetching employee data', error });
   }
 });
 
@@ -54,19 +54,19 @@ router.get('/:id', async (req, res) => {
 router.post('/device-token', async (req: FirebaseAuthenticatedRequest, res) => {
   const uid = req.firebaseUid;
   if (!uid) {
-    return res.status(401).json({ message: 'Unable to determine authenticated user' });
+    return res.status(401).json({ success: false, message: 'Unable to determine authenticated user' });
   }
 
   const { token } = req.body as { token?: string };
   if (!token || token.trim().length === 0) {
-    return res.status(400).json({ message: 'Device token is required' });
+    return res.status(400).json({ success: false, message: 'Device token is required' });
   }
 
   try {
     const db = getDb();
     const snapshot = await db.collection('employees').where('firebaseUid', '==', uid).limit(1).get();
     if (snapshot.empty) {
-      return res.status(404).json({ message: 'Employee profile not found for authenticated user' });
+      return res.status(404).json({ success: false, message: 'Employee profile not found for authenticated user' });
     }
 
     const docRef = snapshot.docs[0].ref;
@@ -76,9 +76,9 @@ router.post('/device-token', async (req: FirebaseAuthenticatedRequest, res) => {
       updatedAt: new Date().toISOString()
     });
 
-    return res.json({ message: 'Device token registered' });
+    return res.json({ success: true, message: 'Device token registered' });
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to register device token', error });
+    return res.status(500).json({ success: false, message: 'Failed to register device token', error });
   }
 });
 
@@ -87,9 +87,9 @@ router.get('/:id/earnings', async (req, res) => {
   const { id } = req.params;
   try {
     const earnings = await getEarningsByEmployeeId(id);
-    res.json(earnings);
+    res.json({ success: true, data: earnings });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching earnings data', error });
+    res.status(500).json({ success: false, message: 'Error fetching earnings data', error });
   }
 });
 

@@ -66,11 +66,19 @@ export default function ServiceCreatorScreen() {
       setError('Title is required')
       return
     }
-    const normalizedId = form.id.trim().replace(/\s+/g, '_')
     setIsSaving(true)
     setError(null)
     try {
-      await adminDatasource.createService(normalizedId, form.title, form.icon)
+      if (editingService) {
+        await adminDatasource.updateService(editingService.id, {
+          title: form.title,
+          icon: form.icon,
+          enabled: form.enabled
+        })
+      } else {
+        const normalizedId = form.id.trim().replace(/\s+/g, '_')
+        await adminDatasource.createService(normalizedId, form.title, form.icon)
+      }
       await loadData()
       setIsModalOpen(false)
     } catch (err) {
