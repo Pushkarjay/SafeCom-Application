@@ -7,7 +7,6 @@ import 'package:mobile_employee/data/providers/theme_provider.dart';
 import 'package:mobile_employee/data/models/job_models.dart';
 import 'package:mobile_employee/data/providers/jobs_providers.dart';
 import 'package:mobile_employee/data/providers/employee_providers.dart';
-import 'package:mobile_employee/data/repositories/jobs_repository.dart';
 
 class JobsHomeScreen extends ConsumerStatefulWidget {
   const JobsHomeScreen({super.key});

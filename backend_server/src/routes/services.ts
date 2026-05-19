@@ -79,10 +79,13 @@ servicesRouter.get(
 
       const services = snapshot.docs
         .slice(startIndex, endIndex)
-        .map((doc: DocumentSnapshot) => ({
-          serviceId: doc.id,
-          ...doc.data()
-        })) as CatalogService[]
+        .map((doc: DocumentSnapshot) => {
+          const data = doc.data() as Record<string, unknown> | undefined;
+          return {
+            serviceId: doc.id,
+            ...(data ?? {})
+          } as CatalogService;
+        })
 
       return res.json({
         success: true,
@@ -265,10 +268,13 @@ servicesRouter.get(
         .orderBy('displayPriority', 'asc')
         .get()
 
-      const services = snapshot.docs.map((doc: DocumentSnapshot) => ({
-        serviceId: doc.id,
-        ...doc.data()
-      })) as CatalogService[]
+      const services = snapshot.docs.map((doc: DocumentSnapshot) => {
+        const data = doc.data() as Record<string, unknown> | undefined;
+        return {
+          serviceId: doc.id,
+          ...(data ?? {})
+        } as CatalogService;
+      })
 
       return res.json({
         success: true,

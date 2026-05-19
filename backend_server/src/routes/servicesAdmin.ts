@@ -59,7 +59,8 @@ async function getProductMap(): Promise<Map<string, ProductData>> {
   const snapshot = await db.collection(PRODUCT_COLLECTION).get();
   const map = new Map<string, ProductData>();
   snapshot.docs.forEach((doc) => {
-    map.set(doc.id, { id: doc.id, ...doc.data() } as ProductData);
+    const data = doc.data() as Record<string, unknown> | undefined;
+    map.set(doc.id, { id: doc.id, ...(data ?? {}) } as ProductData);
   });
   return map;
 }

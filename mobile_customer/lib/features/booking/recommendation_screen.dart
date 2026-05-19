@@ -486,7 +486,6 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
             itemCount: variant.options.length,
             itemBuilder: (context, i) {
               final option = variant.options[i];
-              final isSelected = selections[variant.variantId] == option;
               return RadioListTile<String>(
                 title: Text(option),
                 value: option,

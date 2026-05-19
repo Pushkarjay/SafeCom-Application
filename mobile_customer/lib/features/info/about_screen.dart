@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_customer/core/widgets/safecom_logo.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class AboutScreen extends ConsumerWidget {

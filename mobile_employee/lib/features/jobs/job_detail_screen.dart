@@ -407,7 +407,6 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   Future<void> _navigateToSite() async {
     final latitude = widget.job.latitude;
     final longitude = widget.job.longitude;
-    final locationName = widget.job.location;
 
     // Google Maps URI scheme
     final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';

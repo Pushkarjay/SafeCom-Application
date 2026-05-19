@@ -27,5 +27,5 @@ final pricingRepositoryProvider = Provider<PricingRepository>((ref) {
 final productDetailProvider = FutureProvider.family<MasterProduct?, String>((ref, productId) async {
   final apiService = ref.watch(apiServiceProvider);
   final data = await apiService.getProduct(productId);
-  return MasterProduct.fromJson(data as Map<String, dynamic>);
+  return MasterProduct.fromJson(data);
 });

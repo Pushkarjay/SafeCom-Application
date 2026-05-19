@@ -17,7 +17,6 @@ class OrderHistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = FirebaseAuth.instance.currentUser;
     final bookingsAsync = ref.watch(bookingsProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,

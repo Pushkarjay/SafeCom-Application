@@ -49,7 +49,7 @@ class ProductSelectionNotifier extends StateNotifier<Map<String, ProductSelectio
 
   /// Checks whether a product is fully selected (all required variants have an option).
   bool isProductComplete(MasterProduct product) {
-    final variants = product.variants ?? [];
+    final variants = product.variants;
     if (variants.isEmpty) return true; // no variants means simple product
     final selections = getSelections(product.id);
     for (final variant in variants) {

@@ -61,7 +61,6 @@ class NotificationService {
 
     // Parse notification type and handle accordingly
     final notificationType = message.data['type'] ?? 'generic';
-    final jobId = message.data['jobId'];
     final bookingId = message.data['bookingId'];
 
     switch (notificationType) {

@@ -67,12 +67,12 @@ class AuthService {
       await linkUserToBackend(
         firebaseUid: user.uid,
         email: user.email ?? '',
-        displayName: user.displayName ?? customer.name ?? 'Customer',
+        displayName: user.displayName ?? customer.name,
         phone: user.phoneNumber ?? '',
       );
 
       return (token: idToken ?? (throw Exception('No Firebase ID token')), customer: customer);
-    } catch (e) {
+    } catch (_) {
       rethrow;
     }
   }

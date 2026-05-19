@@ -19,11 +19,6 @@ async function resolveRoleFromFirebase(decoded: Record<string, unknown>): Promis
   const uid = decoded.uid as string | undefined
   const email = decoded.email as string | undefined
 
-  // Quick-match SafeCom admin emails before Firestore lookup
-  if (email && (email.endsWith('_admin@safecom.com') || email === 'admin@safecom.com')) {
-    return 'admin'
-  }
-
   try {
     if (uid) {
       const adminsByUid = await queryCollection<{ id: string }>(

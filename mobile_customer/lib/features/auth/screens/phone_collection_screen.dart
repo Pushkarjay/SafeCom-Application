@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
-import 'package:mobile_customer/features/auth/services/auth_service.dart';
 import 'package:mobile_customer/core/widgets/safecom_logo.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 

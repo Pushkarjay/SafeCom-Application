@@ -165,8 +165,9 @@ jobsRouter.post('/:id/pickup', verifyFirebaseIdToken, async (req: FirebaseAuthen
       })
     }
     
-    const job = { jobId: jobSnap.docs[0].id, ...jobSnap.docs[0].data() } as CanonicalJob
-    
+    const jobData = jobSnap.docs[0].data() as Record<string, unknown> | undefined;
+    const job = { jobId: jobSnap.docs[0].id, ...(jobData ?? {}) } as CanonicalJob
+
     if ((job as any).assignedTo || job.status === 'assigned' || job.status === 'in_progress') {
       return res.status(409).json({
         success: false,
@@ -243,8 +244,9 @@ jobsRouter.get('/:id', async (req, res) => {
       } as ApiResponse<never>)
     }
     const doc = jobSnap.docs[0]
-    const job = { jobId: doc.id, ...doc.data() } as CanonicalJob
-    
+    const jData = doc.data() as Record<string, unknown> | undefined;
+    const job = { jobId: doc.id, ...(jData ?? {}) } as CanonicalJob
+
     return res.json({
       success: true,
       data: job,

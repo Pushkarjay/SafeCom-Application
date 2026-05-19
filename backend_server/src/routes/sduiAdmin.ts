@@ -11,10 +11,13 @@ sduiAdminRouter.get('/layouts', authenticateToken, requireRole(['admin']), async
   try {
     const db = getDb();
     const snapshot = await db.collection(COLLECTION).get();
-    const layouts = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const layouts = snapshot.docs.map(doc => {
+      const data = doc.data() as Record<string, unknown> | undefined;
+      return {
+        id: doc.id,
+        ...(data ?? {})
+      };
+    });
     res.json({ success: true, data: layouts });
   } catch (error) {
     console.error('[SDUI-ADMIN] GET layouts error:', error);
@@ -29,7 +32,8 @@ sduiAdminRouter.get('/layouts/:id', authenticateToken, requireRole(['admin']), a
     const db = getDb();
     const doc = await db.collection(COLLECTION).doc(id).get();
     if (!doc.exists) return res.status(404).json({ success: false, error: 'Layout not found' });
-    res.json({ success: true, data: { id: doc.id, ...doc.data() } });
+    const d = doc.data() as Record<string, unknown> | undefined;
+    res.json({ success: true, data: { id: doc.id, ...(d ?? {}) } });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to load layout' });
   }
@@ -57,10 +61,13 @@ sduiAdminRouter.get('/feature-flags', authenticateToken, requireRole(['admin']),
   try {
     const db = getDb();
     const snapshot = await db.collection('sdui_feature_flags').get();
-    const flags = snapshot.docs.map(doc => ({
-      key: doc.id,
-      ...doc.data()
-    }));
+    const flags = snapshot.docs.map(doc => {
+      const data = doc.data() as Record<string, unknown> | undefined;
+      return {
+        key: doc.id,
+        ...(data ?? {})
+      };
+    });
     res.json({ success: true, data: flags });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to load feature flags' });

@@ -1,6 +1,4 @@
 // e:/Projects/Working/SafeCom-Application/mobile_customer/lib/core/config/api_config.dart
-import 'dart:io';
-
 class ApiConfig {
   // Base URL for the customer app backend - asia-south1
   static const String baseUrl = String.fromEnvironment(

@@ -35,9 +35,9 @@ export function initFirebase(): Firestore {
     // Firestore serializer from throwing: "Cannot use \"undefined\" as a Firestore value".
     try {
       // `settings` is available on the Firestore instance and accepts ignoreUndefinedProperties.
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      firestoreDb.settings({ ignoreUndefinedProperties: true });
+      if (firestoreDb) {
+        firestoreDb.settings({ ignoreUndefinedProperties: true });
+      }
     } catch (e) {
       // Non-fatal - if settings isn't available for any reason, proceed without it and let
       // individual routes handle validation. Log for visibility.
@@ -96,10 +96,10 @@ export async function queryCollection<T>(
   }
 
   const snapshot = await query.get();
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  } as T));
+  return snapshot.docs.map(doc => {
+    const data = doc.data() as Record<string, unknown> | undefined;
+    return { id: doc.id, ...(data ?? {}) } as T;
+  });
 }
 
 /**
@@ -110,7 +110,8 @@ export async function getDocument<T>(collectionName: string, docId: string): Pro
   if (!doc.exists) {
     return null;
   }
-  return { id: doc.id, ...doc.data() } as T;
+  const data = doc.data() as Record<string, unknown> | undefined;
+  return { id: doc.id, ...(data ?? {}) } as T;
 }
 
 /**

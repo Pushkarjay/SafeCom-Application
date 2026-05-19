@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_employee/core/constants/app_routes.dart';
 import 'package:mobile_employee/data/providers/employee_providers.dart';
-import 'package:mobile_employee/features/auth/services/auth_service.dart';
 
 class EmployeeProfileScreen extends ConsumerWidget {
   const EmployeeProfileScreen({super.key});

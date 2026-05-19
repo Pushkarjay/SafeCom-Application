@@ -131,12 +131,15 @@ async function getTopPerformingTechnicians(): Promise<
       .limit(5)
       .get()
 
-    return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({
-      id: doc.id,
-      name: doc.data().name || 'Unknown',
-      jobsCompleted: doc.data().jobsCompleted || 0,
-      rating: doc.data().rating || 0,
-    }))
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => {
+      const d = doc.data() as Record<string, unknown> | undefined ?? {};
+      return {
+        id: doc.id,
+        name: (d as any).name || 'Unknown',
+        jobsCompleted: (d as any).jobsCompleted || 0,
+        rating: (d as any).rating || 0,
+      };
+    })
   } catch (e) {
     console.error('Error getting top technicians:', e)
     return []
@@ -160,14 +163,17 @@ async function getRecentBookings(): Promise<
       .limit(10)
       .get()
 
-    return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({
-      bookingId: doc.id,
-      customerId: doc.data().customerId,
-      serviceType: doc.data().serviceType || 'unknown',
-      amount: doc.data().invoice?.grandTotal || 0,
-      status: doc.data().status || 'pending',
-      createdAt: doc.data().createdAt || new Date().toISOString(),
-    }))
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => {
+      const d = doc.data() as Record<string, unknown> | undefined ?? {};
+      return {
+        bookingId: doc.id,
+        customerId: (d as any).customerId,
+        serviceType: (d as any).serviceType || 'unknown',
+        amount: (d as any).invoice?.grandTotal || 0,
+        status: (d as any).status || 'pending',
+        createdAt: (d as any).createdAt || new Date().toISOString(),
+      };
+    })
   } catch (e) {
     console.error('Error getting recent bookings:', e)
     return []

@@ -107,6 +107,16 @@ export function verifyCheckoutSignature(input: RazorpayVerificationInput): Razor
   const provider = getRazorpayConfig().provider
 
   if (provider === 'mock') {
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_MOCK_PAYMENTS !== 'true') {
+      return {
+        provider: 'mock',
+        verified: false,
+        orderId: input.orderId,
+        paymentId: input.paymentId,
+        signature: '',
+        message: 'Mock payments are not allowed in production. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, or set ALLOW_MOCK_PAYMENTS=true to override.'
+      }
+    }
     return {
       provider: 'mock',
       verified: true,

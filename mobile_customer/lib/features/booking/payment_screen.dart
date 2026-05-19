@@ -308,7 +308,6 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final booking = ref.watch(bookingFlowProvider);
     final locationState = ref.watch(locationProvider);
 
-    const taxAmount = 0.0;
     const bookingAmount = ApiConfig.bookingAmount;
     final productTotal = activeOrder?.estimatedTotal ?? 0;
     final grandTotal = productTotal + bookingAmount;

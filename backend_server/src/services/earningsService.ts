@@ -25,7 +25,8 @@ export const getEarningsByEmployeeId = async (employeeId: string): Promise<Earni
 
     const earnings: Earning[] = [];
     snapshot.forEach((doc: QueryDocumentSnapshot) => {
-      earnings.push({ id: doc.id, ...doc.data() } as unknown as Earning);
+      const data = doc.data() as Record<string, unknown> | undefined;
+      earnings.push({ id: doc.id, ...(data ?? {}) } as unknown as Earning);
     });
 
     return earnings;

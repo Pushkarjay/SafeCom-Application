@@ -86,7 +86,10 @@ async function getFeatureFlags(): Promise<SduiFeatureFlag[]> {
     const db = getDb()
     const snap = await db.collection('sdui_feature_flags').get()
     if (snap.empty) return defaultFeatureFlags()
-    return snap.docs.map((doc) => ({ key: doc.id, ...doc.data() }) as SduiFeatureFlag)
+    return snap.docs.map((doc) => {
+      const data = doc.data() as Record<string, unknown> | undefined;
+      return { key: doc.id, ...(data ?? {}) } as SduiFeatureFlag;
+    })
   } catch {
     return defaultFeatureFlags()
   }

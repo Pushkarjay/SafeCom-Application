@@ -19,7 +19,8 @@ export const getEmployeeById = async (employeeId: string): Promise<Employee | nu
       return null;
     }
 
-    return { id: doc.id, ...doc.data() } as Employee;
+    const data = doc.data() as Record<string, unknown> | undefined;
+    return { id: doc.id, ...(data ?? {}) } as Employee;
   } catch (error) {
     console.error(`Error fetching employee ${employeeId}:`, error);
     throw new Error('Failed to fetch employee data.');
@@ -37,7 +38,8 @@ export const getEmployeeByFirebaseUid = async (firebaseUid: string): Promise<Emp
       return null;
     }
     const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as Employee;
+    const data = doc.data() as Record<string, unknown> | undefined;
+    return { id: doc.id, ...(data ?? {}) } as Employee;
   } catch (error) {
     console.error(`Error fetching employee by firebaseUid ${firebaseUid}:`, error);
     throw new Error('Failed to fetch employee data by firebaseUid.');

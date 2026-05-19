@@ -285,12 +285,14 @@ bookingsRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticate
     } as ApiResponse<any>)
   } catch (error) {
     console.error('Failed to create booking:', error)
+    const errorBody: Record<string, unknown> = {
+      code: 'BOOKING_CREATION_FAILED',
+      message: error instanceof Error ? error.message : 'Internal server error'
+    }
+    if (error instanceof Error && error.stack) errorBody.stack = error.stack
     return res.status(500).json({
       success: false,
-      error: {
-        code: 'BOOKING_CREATION_FAILED',
-        message: error instanceof Error ? error.message : 'Internal server error'
-      },
+      error: errorBody,
       timestamp: new Date().toISOString()
     } as ApiResponse<never>)
   }
@@ -359,9 +361,10 @@ bookingsRouter.get('/', async (req: FirebaseAuthenticatedRequest, res) => {
       const snapshot = await fallbackQuery.get()
       const bookings: CanonicalBooking[] = []
       snapshot.forEach((doc: QueryDocumentSnapshot) => {
+        const d = doc.data() as Record<string, unknown> | undefined;
         bookings.push({
           bookingId: doc.id,
-          ...doc.data()
+          ...(d ?? {})
         } as CanonicalBooking)
       })
       return res.json({
@@ -371,15 +374,17 @@ bookingsRouter.get('/', async (req: FirebaseAuthenticatedRequest, res) => {
       })
     } catch (fallbackError) {
       console.error('Fallback also failed:', fallbackError)
-    }
-    return res.status(500).json({
-      success: false,
-      error: {
+      const errBody: Record<string, unknown> = {
         code: 'BOOKING_LIST_FAILED',
-        message: 'Failed to retrieve bookings'
-      },
-      timestamp: new Date().toISOString()
-    })
+        message: fallbackError instanceof Error ? fallbackError.message : 'Failed to retrieve bookings'
+      }
+      if (fallbackError instanceof Error && fallbackError.stack) errBody.stack = fallbackError.stack
+      return res.status(500).json({
+        success: false,
+        error: errBody,
+        timestamp: new Date().toISOString()
+      })
+    }
   }
 })
 
@@ -406,14 +411,16 @@ bookingsRouter.get('/:id', async (req, res) => {
       data: booking,
       timestamp: new Date().toISOString()
     })
-  } catch (error) {
+    } catch (error) {
     console.error('Failed to get booking:', error)
+    const errorBody: Record<string, unknown> = {
+      code: 'BOOKING_FETCH_FAILED',
+      message: error instanceof Error ? error.message : 'Failed to retrieve booking'
+    }
+    if (error instanceof Error && error.stack) errorBody.stack = error.stack
     return res.status(500).json({
       success: false,
-      error: {
-        code: 'BOOKING_FETCH_FAILED',
-        message: 'Failed to retrieve booking'
-      },
+      error: errorBody,
       timestamp: new Date().toISOString()
     })
   }
@@ -454,14 +461,16 @@ bookingsRouter.patch('/:id', async (req, res) => {
       data: updated,
       timestamp: new Date().toISOString()
     })
-  } catch (error) {
+    } catch (error) {
     console.error('Failed to update booking:', error)
+    const errorBody: Record<string, unknown> = {
+      code: 'BOOKING_UPDATE_FAILED',
+      message: error instanceof Error ? error.message : 'Failed to update booking'
+    }
+    if (error instanceof Error && error.stack) errorBody.stack = error.stack
     return res.status(500).json({
       success: false,
-      error: {
-        code: 'BOOKING_UPDATE_FAILED',
-        message: 'Failed to update booking'
-      },
+      error: errorBody,
       timestamp: new Date().toISOString()
     })
   }

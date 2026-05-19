@@ -27,7 +27,6 @@ class SafeComEmployeeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.read(appRouterProvider);
-    final theme = ref.watch(themeDataProvider);
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(

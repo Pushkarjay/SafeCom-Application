@@ -59,10 +59,13 @@ accessoriesRouter.get(
 
       const accessories = snapshot.docs
         .slice(startIndex, endIndex)
-        .map((doc: DocumentSnapshot) => ({
-          accessoryId: doc.id,
-          ...doc.data()
-        })) as CatalogAccessory[]
+        .map((doc: DocumentSnapshot) => {
+          const data = doc.data() as Record<string, unknown> | undefined;
+          return {
+            accessoryId: doc.id,
+            ...(data ?? {})
+          } as CatalogAccessory;
+        })
 
       return res.json({
         success: true,
@@ -240,10 +243,13 @@ accessoriesRouter.get(
         .orderBy('displayPriority', 'asc')
         .get()
 
-      const accessories = snapshot.docs.map((doc: DocumentSnapshot) => ({
-        accessoryId: doc.id,
-        ...doc.data()
-      })) as CatalogAccessory[]
+      const accessories = snapshot.docs.map((doc: DocumentSnapshot) => {
+        const data = doc.data() as Record<string, unknown> | undefined;
+        return {
+          accessoryId: doc.id,
+          ...(data ?? {})
+        } as CatalogAccessory;
+      })
 
       return res.json({
         success: true,

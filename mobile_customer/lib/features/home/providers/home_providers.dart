@@ -23,7 +23,7 @@ final homeRecommendationsProvider = FutureProvider<List<HomeRecommendationItem>>
   return response.recommendations.map((r) => HomeRecommendationItem(
     id: r.recommendationId,
     name: r.name,
-    description: r.description ?? '',
+    description: r.description,
     productIds: r.productIds,
   )).toList();
 });
