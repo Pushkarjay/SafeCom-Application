@@ -36,6 +36,13 @@ class BookingFlowNotifier extends StateNotifier<BookingFlowState> {
   void selectTimeSlot(String value) {
     state = state.copyWith(selectedTimeSlot: value);
   }
+
+  void reset() {
+    state = BookingFlowState(
+      selectedDate: DateTime.now().add(const Duration(days: 1)),
+      selectedTimeSlot: '10:00 AM - 12:00 PM',
+    );
+  }
 }
 
 final bookingFlowProvider =

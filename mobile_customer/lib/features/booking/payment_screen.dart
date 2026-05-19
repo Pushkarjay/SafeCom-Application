@@ -12,6 +12,9 @@ import 'package:mobile_customer/features/booking/providers/active_order_provider
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/booking/services/razorpay_payment_service.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
+import 'package:mobile_customer/features/services/providers/product_selection_provider.dart';
+import 'package:mobile_customer/features/cart/providers/cart_provider.dart';
+import 'package:mobile_customer/data/providers/cart_provider.dart' as data_cart;
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
@@ -131,6 +134,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       if (!mounted) return;
 
       setState(() { _isProcessing = false; _checkoutOrder = null; });
+
+      ref.read(activeOrderProvider.notifier).clear();
+      ref.read(bookingFlowProvider.notifier).reset();
+      ref.read(productSelectionProvider.notifier).clearAll();
+      ref.read(cartProvider.notifier).clear();
+      ref.read(data_cart.cartProvider.notifier).clearCart();
 
       messenger.showSnackBar(
         SnackBar(
