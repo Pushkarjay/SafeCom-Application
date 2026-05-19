@@ -98,12 +98,12 @@ export function createApp() {
   app.use('/api/bookings', verifyFirebaseIdToken, bookingsRouter)
   app.use('/api/payments/razorpay', verifyFirebaseIdToken, razorpayRouter)
   app.use('/api/payments', verifyFirebaseIdToken, paymentsRouter)
-  app.use('/api/catalog', verifyFirebaseIdToken, catalogRouter)
   app.use('/api/employees', verifyFirebaseIdToken, employeeRoutes)
   app.use('/api/users', verifyFirebaseIdToken, usersRoutes)
   app.use('/api/catalog/services-admin', verifyFirebaseIdToken, servicesAdminRouter)
   app.use('/api/catalog/installation-admin', verifyFirebaseIdToken, installationAdminRouter)
   app.use('/api/catalog/sdui-admin', verifyFirebaseIdToken, sduiAdminRouter)
+  app.use('/api/catalog', verifyFirebaseIdToken, catalogRouter)
 
   app.use((_req, res) => {
     res.status(404).json({ message: 'Route not found' })

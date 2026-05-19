@@ -645,6 +645,23 @@ export class AdminDatasource {
     await this.fetchJson(`${BASE_URL}/catalog/products/${id}`, { method: 'PATCH', body: JSON.stringify({ basePrice: p }) })
   }
 
+  // ====== MAINTENANCE ALIASES ======
+  async getMaintenanceAdminConfig() { return this.getServiceConfig('Maintenance') }
+  async maintenanceAddCategory(name: string) { return this.serviceAddCategory('Maintenance', name) }
+  async maintenanceDeleteCategory(key: string) { return this.serviceDeleteCategory('Maintenance', key) }
+  async maintenanceAddSetup(cat: string, name: string) { return this.serviceAddSetup('Maintenance', cat, name) }
+  async maintenanceDeleteSetup(cat: string, setup: string) { return this.serviceDeleteSetup('Maintenance', cat, setup) }
+  async maintenanceAddProduct(cat: string, setup: string, id: string) { return this.serviceAddProduct('Maintenance', cat, setup, id) }
+  async maintenanceDeleteProduct(cat: string, setup: string, pk: string) { return this.serviceDeleteProduct('Maintenance', cat, setup, pk) }
+  async maintenanceAddClubOption(cat: string, setup: string, path: string[], id: string) { return this.serviceAddNode('Maintenance', cat, setup, path, id) }
+  async maintenanceDeleteClubOption(cat: string, setup: string, path: string[]) { return this.serviceDeleteNode('Maintenance', cat, setup, path) }
+  async fetchMaintenanceProducts(q: string) { return this.fetchMasterProducts(q) }
+  async maintenanceUpdateQuantities(cat: string, setup: string, path: string[], q: any) { return this.serviceUpdateQuantities('Maintenance', cat, setup, path, q) }
+  async maintenanceUpdateDynamicField(cat: string, setup: string, path: string[], v: any) { return this.serviceUpdateDynamicField('Maintenance', cat, setup, path, v) }
+  async maintenanceUpdateProductPrice(id: string, p: number) { 
+    await this.fetchJson(`${BASE_URL}/catalog/products/${id}`, { method: 'PATCH', body: JSON.stringify({ basePrice: p }) })
+  }
+
   async updatePricingData(data: Partial<PricingSet>): Promise<{ success: boolean }> {
     return await this.fetchJson<{ success: boolean }>(`${BASE_URL}/catalog/pricing`, {
       method: 'PUT',

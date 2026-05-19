@@ -585,21 +585,6 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/quantit
   } catch (error) { res.status(500).json({ success: false, error: 'Failed to update quantities' }); }
 });
 
-// PATCH /config/:serviceId/category/:categoryKey/node/dynamic-field (update dynamic field at category level)
-servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/dynamic-field', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const serviceId = String(req.params.serviceId);
-    const categoryKey = String(req.params.categoryKey);
-    const { nodePath, field, value } = req.body as { nodePath: string[]; field: string; value: any; };
-    if (!nodePath || nodePath.length === 0) return res.status(400).json({ success: false, error: 'Node path required' });
-    
-    const db = getDb();
-    const updatePath = `${categoryKey}.${nodePath.join('.')}.${field}`;
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [updatePath]: value });
-    res.json({ success: true, message: `Dynamic field updated at category level` });
-  } catch (error) { res.status(500).json({ success: false, error: 'Failed to update dynamic field' }); }
-});
-
 // POST /config/:serviceId/category/:categoryKey/branch (add empty branch node at category level)
 servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/branch', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
