@@ -232,15 +232,29 @@ class InstallationCustomizationScreen extends ConsumerWidget {
 
   Widget _buildItemWidget(BuildContext context, WidgetRef ref, InvoiceLineItem item) {
     if (item.isClubbed) {
+      final isMulti = item.clubbedOptions.any((o) => o.selectionType == 'multi');
       return GestureDetector(
         onTap: () async {
-          final selected = await ClubbedProductSelector.show(
-            context,
-            title: item.key,
-            options: item.clubbedOptions,
-          );
-          if (selected != null) {
-            ref.read(installationFlowProvider.notifier).selectClubbedOption(item.key, selected);
+          if (isMulti) {
+            final selected = await ClubbedProductSelector.showMulti(
+              context,
+              title: item.key,
+              options: item.clubbedOptions,
+              preSelectedKeys: ref.read(installationFlowProvider).selectedMultiOptions[item.parentProductKey],
+            );
+            if (selected != null) {
+              final keys = selected.map((l) => l.optionKey).toSet();
+              ref.read(installationFlowProvider.notifier).setMultiSelectedOptions(item.parentProductKey, keys);
+            }
+          } else {
+            final selected = await ClubbedProductSelector.show(
+              context,
+              title: item.key,
+              options: item.clubbedOptions,
+            );
+            if (selected != null) {
+              ref.read(installationFlowProvider.notifier).selectClubbedOption(item.key, selected);
+            }
           }
         },
         child: Row(

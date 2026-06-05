@@ -71,6 +71,8 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
   try {
     const user = jwt.verify(token, jwtSecret) as AuthUser
     req.user = user
+    ;(req as unknown as { firebaseUid?: string }).firebaseUid = user.id
+    ;(req as unknown as { firebaseClaims?: Record<string, unknown> }).firebaseClaims = user as unknown as Record<string, unknown>
     return next()
   } catch (error) {
     // Try to verify as Firebase ID token as a fallback
@@ -86,6 +88,8 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
         role
       }
       req.user = mapped
+      ;(req as unknown as { firebaseUid?: string }).firebaseUid = decoded.uid
+      ;(req as unknown as { firebaseClaims?: Record<string, unknown> }).firebaseClaims = decoded as Record<string, unknown>
       return next()
     } catch (fbErr) {
       if (error instanceof jwt.TokenExpiredError) {

@@ -4,25 +4,30 @@ import 'package:mobile_customer/core/theme/app_theme.dart';
 
 /// A recursive bottom sheet selector for deeply nested clubbed product options.
 ///
-/// Database pattern: Product → Option → Sub → Sub Sub → ... → Leaf (product details)
+/// Database pattern: Product → Option → Sub → Sub Sub → … → Leaf (product details)
 /// - Branch node: has children (show options, drill deeper on tap)
 /// - Leaf node: has productId/price (selectable product)
 ///
-/// Each branch selection opens a new level in the same sheet.
-/// User can go back via breadcrumbs or back button.
+/// Supports both single-select (radio) and multi-select (checkbox) modes.
 class ClubbedProductSelector extends StatefulWidget {
   final String title;
   final List<ClubbedOption> options;
-  final Function(ClubbedOption selectedLeaf) onLeafSelected;
+  final Function(ClubbedOption selectedLeaf)? onLeafSelected;
+  final bool multiSelect;
+  final Set<String>? preSelectedKeys;
+  final Function(List<ClubbedOption> selected)? onMultiSelect;
 
   const ClubbedProductSelector({
     super.key,
     required this.title,
     required this.options,
-    required this.onLeafSelected,
+    this.onLeafSelected,
+    this.multiSelect = false,
+    this.preSelectedKeys,
+    this.onMultiSelect,
   });
 
-  /// Show the selector as a modal bottom sheet.
+  /// Show the selector as a modal bottom sheet (single-select mode).
   /// Returns the selected LEAF option, or null if dismissed.
   static Future<ClubbedOption?> show(
     BuildContext context, {
@@ -46,18 +51,31 @@ class ClubbedProductSelector extends StatefulWidget {
     return result;
   }
 
-  /// Convenience: show for a MappedProduct that has clubbed options
-  static Future<ClubbedOption?> showForProduct(
-    BuildContext context,
-    MappedProduct mappedProduct,
-  ) {
-    return show(
-      context,
-      title: mappedProduct.productKey.isNotEmpty
-          ? mappedProduct.productKey
-          : mappedProduct.product.productName,
-      options: mappedProduct.clubbedOptions,
+  /// Show the selector as a modal bottom sheet (multi-select mode).
+  /// Returns list of selected leaf options, or null if dismissed.
+  static Future<List<ClubbedOption>?> showMulti(
+    BuildContext context, {
+    required String title,
+    required List<ClubbedOption> options,
+    Set<String>? preSelectedKeys,
+  }) async {
+    List<ClubbedOption>? result;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ClubbedProductSelector(
+        title: title,
+        options: options,
+        multiSelect: true,
+        preSelectedKeys: preSelectedKeys,
+        onMultiSelect: (selected) {
+          result = selected;
+          Navigator.of(ctx).pop();
+        },
+      ),
     );
+    return result;
   }
 
   @override
@@ -65,11 +83,9 @@ class ClubbedProductSelector extends StatefulWidget {
 }
 
 class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
-  /// Stack of navigation levels: each entry is (label, options list)
   late final List<_NavLevel> _navStack;
-
-  /// Currently highlighted leaf option (for confirm button)
   ClubbedOption? _selectedLeaf;
+  Set<String> _selectedKeys = {};
 
   @override
   void initState() {
@@ -77,13 +93,16 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
     _navStack = [
       _NavLevel(label: widget.title, options: widget.options),
     ];
+    if (widget.multiSelect && widget.preSelectedKeys != null) {
+      _selectedKeys = Set<String>.from(widget.preSelectedKeys!);
+    }
   }
 
   _NavLevel get _current => _navStack.last;
 
   void _drillInto(ClubbedOption branch) {
     setState(() {
-      _selectedLeaf = null;
+      if (!widget.multiSelect) _selectedLeaf = null;
       _navStack.add(_NavLevel(
         label: branch.productName.isNotEmpty ? branch.productName : branch.optionKey,
         options: branch.children,
@@ -94,7 +113,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
   void _goBack() {
     if (_navStack.length > 1) {
       setState(() {
-        _selectedLeaf = null;
+        if (!widget.multiSelect) _selectedLeaf = null;
         _navStack.removeLast();
       });
     }
@@ -103,10 +122,40 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
   void _jumpTo(int index) {
     if (index < _navStack.length - 1) {
       setState(() {
-        _selectedLeaf = null;
+        if (!widget.multiSelect) _selectedLeaf = null;
         _navStack.removeRange(index + 1, _navStack.length);
       });
     }
+  }
+
+  void _toggleMultiSelection(ClubbedOption leaf) {
+    if (!leaf.available) return;
+    setState(() {
+      if (_selectedKeys.contains(leaf.optionKey)) {
+        _selectedKeys.remove(leaf.optionKey);
+      } else {
+        _selectedKeys.add(leaf.optionKey);
+      }
+    });
+  }
+
+  void _confirmMulti() {
+    if (_selectedKeys.isEmpty) return;
+    final allLeaves = _collectAllLeaves(widget.options);
+    final selected = allLeaves.where((l) => _selectedKeys.contains(l.optionKey)).toList();
+    widget.onMultiSelect?.call(selected);
+  }
+
+  List<ClubbedOption> _collectAllLeaves(List<ClubbedOption> options) {
+    final result = <ClubbedOption>[];
+    for (final opt in options) {
+      if (opt.isLeaf) {
+        result.add(opt);
+      } else {
+        result.addAll(_collectAllLeaves(opt.children));
+      }
+    }
+    return result;
   }
 
   @override
@@ -204,9 +253,11 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _current.hasOnlyLeaves
-                            ? 'Select a product option'
-                            : 'Choose a category to drill deeper',
+                        widget.multiSelect
+                            ? 'Select one or more options'
+                            : _current.hasOnlyLeaves
+                                ? 'Select a product option'
+                                : 'Choose a category to drill deeper',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
                       ),
                     ],
@@ -236,8 +287,8 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                   ),
           ),
 
-          // ── Confirm button (leaf selected) ──
-          if (_selectedLeaf != null)
+          // ── Confirm button ──
+          if (widget.multiSelect)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
@@ -246,7 +297,31 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
               ),
               child: SafeArea(
                 child: FilledButton(
-                  onPressed: () => widget.onLeafSelected(_selectedLeaf!),
+                  onPressed: _selectedKeys.isEmpty ? null : _confirmMulti,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: const Size(double.infinity, 52),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(
+                    _selectedKeys.isEmpty
+                        ? 'Select at least one option'
+                        : 'Confirm (${_selectedKeys.length} selected)',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            )
+          else if (_selectedLeaf != null)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: AppColors.border)),
+              ),
+              child: SafeArea(
+                child: FilledButton(
+                  onPressed: () => widget.onLeafSelected?.call(_selectedLeaf!),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     minimumSize: const Size(double.infinity, 52),
@@ -264,13 +339,19 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
     );
   }
 
-  /// Tile for a LEAF option — selectable product with radio indicator
+  /// Tile for a LEAF option — selectable product with radio/checkbox indicator
   Widget _buildLeafTile(ClubbedOption option) {
-    final isSelected = _selectedLeaf?.optionKey == option.optionKey;
+    final isSelected = widget.multiSelect
+        ? _selectedKeys.contains(option.optionKey)
+        : _selectedLeaf?.optionKey == option.optionKey;
     return GestureDetector(
       onTap: () {
         if (!option.available) return;
-        setState(() => _selectedLeaf = option);
+        if (widget.multiSelect) {
+          _toggleMultiSelection(option);
+        } else {
+          setState(() => _selectedLeaf = option);
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -289,17 +370,33 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.border,
-                  width: isSelected ? 7 : 2,
-                ),
-              ),
-            ),
+            widget.multiSelect
+                ? Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : Colors.transparent,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : AppColors.border,
+                        width: 2,
+                      ),
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, size: 18, color: Colors.white)
+                        : null,
+                  )
+                : Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : AppColors.border,
+                        width: isSelected ? 7 : 2,
+                      ),
+                    ),
+                  ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

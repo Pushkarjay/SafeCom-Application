@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument, getDb } from '../services/firestore.js'
 import { verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
+import { authenticateToken, requireRole } from '../middleware/auth.js'
 
 const catalogCreateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -86,7 +87,7 @@ catalogRouter.get('/metadata', verifyFirebaseIdToken, async (_req, res) => {
 })
 
 // POST /catalog/metadata - Create new category or group
-catalogRouter.post('/metadata', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.post('/metadata', authenticateToken, requireRole(['admin']), async (req, res) => {
   const { type, value } = req.body
   if (!type || !value) {
     return res.status(400).json({ success: false, message: 'type and value are required' })
@@ -110,7 +111,7 @@ catalogRouter.post('/metadata', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // DELETE /catalog/metadata/:id - Delete metadata entry
-catalogRouter.delete('/metadata/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.delete('/metadata/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     await deleteDocument('catalog_metadata', req.params.id as string)
     return res.json({ success: true, message: 'Metadata deleted' })
@@ -152,8 +153,8 @@ catalogRouter.get('/pricing', verifyFirebaseIdToken, async (_req, res) => {
   }
 })
 
-// PUT /catalog/pricing - Update pricing configuration
-catalogRouter.put('/pricing', verifyFirebaseIdToken, async (req, res) => {
+// PUT /catalog/pricing - Update pricing configuration (admin only)
+catalogRouter.put('/pricing', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const { installation, maintenance, repair } = req.body
     const now = new Date().toISOString()
@@ -188,7 +189,7 @@ catalogRouter.get('/packages', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // POST /catalog/packages
-catalogRouter.post('/packages', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.post('/packages', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = packageCreateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid package payload', issues: parsed.error.flatten() })
@@ -208,17 +209,17 @@ catalogRouter.post('/packages', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // PATCH /catalog/packages/:id
-catalogRouter.patch('/packages/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.patch('/packages/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = packageUpdateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid package payload', issues: parsed.error.flatten() })
   }
   try {
-    await updateDocument('catalog_packages', req.params.id, {
+    await updateDocument('catalog_packages', req.params.id as string, {
       ...parsed.data,
       updatedAt: new Date().toISOString()
     })
-    const updated = await getDocument<Record<string, unknown>>('catalog_packages', req.params.id)
+    const updated = await getDocument<Record<string, unknown>>('catalog_packages', req.params.id as string)
     return res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Firestore update package failed:', error)
@@ -227,9 +228,9 @@ catalogRouter.patch('/packages/:id', verifyFirebaseIdToken, async (req, res) => 
 })
 
 // DELETE /catalog/packages/:id
-catalogRouter.delete('/packages/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.delete('/packages/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    await deleteDocument('catalog_packages', req.params.id)
+    await deleteDocument('catalog_packages', req.params.id as string)
     return res.json({ success: true, message: 'Package deleted' })
   } catch (error) {
     console.error('Firestore delete package failed:', error)
@@ -250,7 +251,7 @@ catalogRouter.get('/addons', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // POST /catalog/addons
-catalogRouter.post('/addons', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.post('/addons', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = addonCreateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid add-on payload', issues: parsed.error.flatten() })
@@ -270,17 +271,17 @@ catalogRouter.post('/addons', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // PATCH /catalog/addons/:id
-catalogRouter.patch('/addons/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.patch('/addons/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = addonUpdateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid add-on payload', issues: parsed.error.flatten() })
   }
   try {
-    await updateDocument('catalog_addons', req.params.id, {
+    await updateDocument('catalog_addons', req.params.id as string, {
       ...parsed.data,
       updatedAt: new Date().toISOString()
     })
-    const updated = await getDocument<Record<string, unknown>>('catalog_addons', req.params.id)
+    const updated = await getDocument<Record<string, unknown>>('catalog_addons', req.params.id as string)
     return res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Firestore update add-on failed:', error)
@@ -289,9 +290,9 @@ catalogRouter.patch('/addons/:id', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // DELETE /catalog/addons/:id
-catalogRouter.delete('/addons/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.delete('/addons/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    await deleteDocument('catalog_addons', req.params.id)
+    await deleteDocument('catalog_addons', req.params.id as string)
     return res.json({ success: true, message: 'Add-on deleted' })
   } catch (error) {
     console.error('Firestore delete add-on failed:', error)
@@ -312,7 +313,7 @@ catalogRouter.get('/taxes', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // POST /catalog/taxes
-catalogRouter.post('/taxes', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.post('/taxes', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = taxCreateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid tax payload', issues: parsed.error.flatten() })
@@ -332,17 +333,17 @@ catalogRouter.post('/taxes', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // PATCH /catalog/taxes/:id
-catalogRouter.patch('/taxes/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.patch('/taxes/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = taxUpdateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid tax payload', issues: parsed.error.flatten() })
   }
   try {
-    await updateDocument('catalog_taxes', req.params.id, {
+    await updateDocument('catalog_taxes', req.params.id as string, {
       ...parsed.data,
       updatedAt: new Date().toISOString()
     })
-    const updated = await getDocument<Record<string, unknown>>('catalog_taxes', req.params.id)
+    const updated = await getDocument<Record<string, unknown>>('catalog_taxes', req.params.id as string)
     return res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Firestore update tax failed:', error)
@@ -351,9 +352,9 @@ catalogRouter.patch('/taxes/:id', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // DELETE /catalog/taxes/:id
-catalogRouter.delete('/taxes/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.delete('/taxes/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    await deleteDocument('catalog_taxes', req.params.id)
+    await deleteDocument('catalog_taxes', req.params.id as string)
     return res.json({ success: true, message: 'Tax deleted' })
   } catch (error) {
     console.error('Firestore delete tax failed:', error)
@@ -374,7 +375,7 @@ catalogRouter.get('/invoices', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // POST /catalog/invoices
-catalogRouter.post('/invoices', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.post('/invoices', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = invoiceTemplateCreateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid invoice template payload', issues: parsed.error.flatten() })
@@ -395,17 +396,17 @@ catalogRouter.post('/invoices', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // PATCH /catalog/invoices/:id
-catalogRouter.patch('/invoices/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.patch('/invoices/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = invoiceTemplateUpdateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid invoice template payload', issues: parsed.error.flatten() })
   }
   try {
-    await updateDocument('catalog_invoices', req.params.id, {
+    await updateDocument('catalog_invoices', req.params.id as string, {
       ...parsed.data,
       updatedAt: new Date().toISOString()
     })
-    const updated = await getDocument<Record<string, unknown>>('catalog_invoices', req.params.id)
+    const updated = await getDocument<Record<string, unknown>>('catalog_invoices', req.params.id as string)
     return res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Firestore update invoice template failed:', error)
@@ -414,9 +415,9 @@ catalogRouter.patch('/invoices/:id', verifyFirebaseIdToken, async (req, res) => 
 })
 
 // DELETE /catalog/invoices/:id
-catalogRouter.delete('/invoices/:id', verifyFirebaseIdToken, async (req, res) => {
+catalogRouter.delete('/invoices/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    await deleteDocument('catalog_invoices', req.params.id)
+    await deleteDocument('catalog_invoices', req.params.id as string)
     return res.json({ success: true, message: 'Invoice template deleted' })
   } catch (error) {
     console.error('Firestore delete invoice template failed:', error)

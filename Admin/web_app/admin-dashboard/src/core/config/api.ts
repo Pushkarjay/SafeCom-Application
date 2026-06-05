@@ -4,8 +4,11 @@
 // Local development
 const DEV_API_BASE_URL = 'http://127.0.0.1:5000/api'
 
-// Production - Cloud Run deployed backend
-const PROD_API_BASE_URL = 'https://safecom-backend-177425757120.us-central1.run.app/api'
+// Production - Cloud Run deployed backend (us-central1)
+const PROD_API_BASE_URL = 'https://safecom-backend-central-177425757120.us-central1.run.app/api'
+
+// Fallback region (asia-south1) - used when mobile apps need closer endpoint
+export const ASIA_API_BASE_URL = 'https://safecom-backend-south-177425757120.asia-south1.run.app/api'
 
 export function getApiBaseUrl(): string {
   // Check for explicitly configured base URL from environment

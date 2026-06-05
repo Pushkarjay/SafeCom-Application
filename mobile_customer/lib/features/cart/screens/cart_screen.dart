@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
-import 'package:mobile_customer/features/cart/models/cart_item.dart';
-import 'package:mobile_customer/features/cart/providers/cart_provider.dart';
+import 'package:mobile_customer/data/providers/cart_provider.dart' as data_cart;
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 
@@ -13,17 +12,18 @@ class CartScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cartItems = ref.watch(cartProvider);
-    final totalAmount = cartItems.fold<double>(0.0, (sum, item) => sum + item.totalPrice);
-    final itemCount = cartItems.length;
+    final cartState = ref.watch(data_cart.cartProvider);
+    final cartItems = cartState.items;
+    final totalAmount = cartState.subtotal;
+    final itemCount = cartState.totalItems;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Cart'),
         actions: [
-          if (cartItems.isNotEmpty)
+          if (cartState.items.isNotEmpty)
             TextButton(
-              onPressed: () => ref.read(cartProvider.notifier).clear(),
+              onPressed: () => ref.read(data_cart.cartProvider.notifier).clearCart(),
               child: const Text('Clear All', style: TextStyle(color: AppColors.error)),
             ),
         ],
@@ -38,14 +38,14 @@ class CartScreen extends ConsumerWidget {
                 return _CartItemCard(
                   item: item,
                   onIncrement: () {
-                    ref.read(cartProvider.notifier).updateQuantity(item.id, item.quantity + 1);
+                    ref.read(data_cart.cartProvider.notifier).updateQuantity(item.product.id, item.quantity + 1);
                   },
                   onDecrement: () {
                     if (item.quantity > 1) {
-                      ref.read(cartProvider.notifier).updateQuantity(item.id, item.quantity - 1);
+                      ref.read(data_cart.cartProvider.notifier).updateQuantity(item.product.id, item.quantity - 1);
                     }
                   },
-                  onRemove: () => ref.read(cartProvider.notifier).removeItem(item.id),
+                  onRemove: () => ref.read(data_cart.cartProvider.notifier).removeFromCart(item.product.id),
                 );
               },
             ),
@@ -107,12 +107,12 @@ class CartScreen extends ConsumerWidget {
 
   void _proceedToSchedule(BuildContext context, WidgetRef ref, List<CartItem> items) {
     final lineItems = items.map((item) => ActiveOrderLineItem(
-      name: item.name,
+      name: item.product.productName,
       quantity: item.quantity,
-      unitPrice: item.unitPrice,
+      unitPrice: item.product.basePrice,
     )).toList();
 
-    final total = items.fold<double>(0.0, (sum, item) => sum + item.totalPrice);
+    final total = items.fold<double>(0.0, (sum, item) => sum + item.lineTotal);
 
     ref.read(activeOrderProvider.notifier).setSummary(
       ActiveOrderSummary(
@@ -157,27 +157,12 @@ class _CartItemCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.name,
+                  item.product.productName,
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Rs ${item.unitPrice.toStringAsFixed(0)} each',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                if (item.serviceType != null) ...[
-                  const SizedBox(height: 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryLight,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      item.serviceType!,
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.secondary),
-                    ),
-                  ),
+'Rs ${item.product.basePrice.toStringAsFixed(0)} each',
                 ],
               ],
             ),
@@ -197,7 +182,7 @@ class _CartItemCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'Rs ${item.totalPrice.toStringAsFixed(0)}',
+            'Rs ${item.lineTotal.toStringAsFixed(0)}',
             style: const TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 15,

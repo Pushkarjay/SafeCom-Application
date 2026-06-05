@@ -609,6 +609,27 @@ export class AdminDatasource {
     }
   }
 
+  async serviceCloneSetup(serviceId: string, sourceCategoryKey: string, sourceSetupKey: string, destCategoryKey: string, newName: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(destCategoryKey)}/setup/clone`, {
+      method: 'POST',
+      body: JSON.stringify({ sourceCategoryKey, sourceSetupKey, newName })
+    })
+  }
+
+  async serviceClubProducts(serviceId: string, categoryKey: string, setupKey: string, groupName: string, keys: string[], nodePath?: string[]): Promise<void> {
+    if (!setupKey || setupKey === '') {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/_/club`, {
+        method: 'POST',
+        body: JSON.stringify({ groupName, keys, nodePath })
+      })
+    } else {
+      await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/club`, {
+        method: 'POST',
+        body: JSON.stringify({ groupName, keys, nodePath })
+      })
+    }
+  }
+
   async serviceAddBranch(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], branchName: string): Promise<void> {
     if (!setupKey || setupKey === '') {
       await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/branch`, {

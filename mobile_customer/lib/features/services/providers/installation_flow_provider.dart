@@ -116,6 +116,8 @@ class InstallationFlowState {
   final List<InvoiceListGroup> listGroups;
   /// Tracks which LIST branch is selected for clubbed products (productKey -> branchOptionKey)
   final Map<String, String> selectedBranch;
+  /// Tracks selected multi-select options (productKey -> set of selected optionKeys)
+  final Map<String, Set<String>> selectedMultiOptions;
 
   const InstallationFlowState({
     required this.isLoading,
@@ -125,6 +127,7 @@ class InstallationFlowState {
     this.items = const [],
     this.listGroups = const [],
     this.selectedBranch = const {},
+    this.selectedMultiOptions = const {},
   });
 
   double get totalAmount => items.fold(0, (sum, item) => sum + item.amount);
@@ -169,6 +172,7 @@ class InstallationFlowState {
     List<InvoiceLineItem>? items,
     List<InvoiceListGroup>? listGroups,
     Map<String, String>? selectedBranch,
+    Map<String, Set<String>>? selectedMultiOptions,
   }) {
     return InstallationFlowState(
       isLoading: isLoading ?? this.isLoading,
@@ -178,6 +182,7 @@ class InstallationFlowState {
       items: items ?? this.items,
       listGroups: listGroups ?? this.listGroups,
       selectedBranch: selectedBranch ?? this.selectedBranch,
+      selectedMultiOptions: selectedMultiOptions ?? this.selectedMultiOptions,
     );
   }
 }
@@ -186,6 +191,8 @@ class InstallationFlowState {
 class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
   final PricingRepository _repo;
   Map<String, List<String>> _dependencyMap = {};
+  Map<String, String> _sourceProductKeys = {};
+  Map<String, int> _slotMaxConstraints = {};
 
   InstallationFlowNotifier(this._repo) : super(InstallationFlowState(isLoading: true)) {
     _loadConfig();
@@ -201,7 +208,7 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
   }
 
   void selectCategory(String categoryId) {
-    state = state.copyWith(selectedCategoryId: categoryId, selectedGroupId: null, items: [], listGroups: []);
+    state = state.copyWith(selectedCategoryId: categoryId, selectedGroupId: null, items: [], listGroups: [], selectedMultiOptions: {});
   }
 
   void selectGroup(String groupId) {
@@ -220,12 +227,20 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     _buildItemsFromGroup();
   }
 
+  void setMultiSelectedOptions(String productKey, Set<String> optionKeys) {
+    final updated = Map<String, Set<String>>.from(state.selectedMultiOptions);
+    updated[productKey] = optionKeys;
+    state = state.copyWith(selectedMultiOptions: updated);
+    _buildItemsFromGroup();
+  }
+
   void _buildItemsFromGroup() {
     final group = state.selectedGroup;
     if (group == null) return;
 
     final items = <InvoiceLineItem>[];
     final listGroups = <InvoiceListGroup>[];
+    final Map<String, Set<String>> newMultiSelections = {};
 
     for (final mappedProduct in group.mappedProducts) {
       final clubbedOpts = mappedProduct.clubbedOptions;
@@ -340,6 +355,40 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
           continue;
         }
 
+        // ── Multi-select clubbed product (flat leaf list) ──
+        if (mappedProduct.isClubbed && clubbedOpts.isNotEmpty &&
+            clubbedOpts.every((o) => o.isLeaf) &&
+            clubbedOpts.any((o) => o.selectionType == 'multi')) {
+          final hasSelection = state.selectedMultiOptions.containsKey(mappedProduct.productKey);
+          final selectedKeys = hasSelection
+              ? Set<String>.from(state.selectedMultiOptions[mappedProduct.productKey]!)
+              : <String>{};
+          if (selectedKeys.isEmpty) {
+            selectedKeys.add(clubbedOpts.first.optionKey);
+            newMultiSelections[mappedProduct.productKey] = selectedKeys;
+          }
+          for (final leaf in clubbedOpts) {
+            if (selectedKeys.contains(leaf.optionKey)) {
+              items.add(InvoiceLineItem(
+                key: '${mappedProduct.productKey}__${leaf.optionKey}',
+                name: leaf.productName,
+                unitPrice: leaf.price,
+                quantity: leaf.defaultQty,
+                canEditQuantity: leaf.dependsOn == null && leaf.minQty != leaf.maxQty,
+                minQty: leaf.minQty,
+                maxQty: leaf.maxQty,
+                isClubbed: true,
+                clubbedOptions: clubbedOpts,
+                selectedOption: leaf,
+                renderType: 'option',
+                parentProductKey: mappedProduct.productKey,
+                dependsOn: leaf.dependsOn ?? mappedProduct.dependsOn,
+              ));
+            }
+          }
+          continue;
+        }
+
         // ── Regular clubbed product (OPTION — drill-down selector) ──
         if (mappedProduct.isClubbed && clubbedOpts.isNotEmpty) {
           final firstLeaf = _findFirstLeaf(clubbedOpts);
@@ -381,15 +430,37 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     }
 
     // Build dependency map from dependsOn fields
+    // Also record source productKey for group-level dependency resolution
     _dependencyMap = {};
+    _sourceProductKeys = {};
+    // Build name→key lookup so dependsOn values like "Camera" resolve to the
+    // actual productKey (e.g. "Product_2") used as parentProductKey by source items.
+    final nameToKey = <String, String>{};
+    for (final mp in group.mappedProducts) {
+      nameToKey[mp.productKey] = mp.productKey;
+      if (mp.product.productName.isNotEmpty) {
+        nameToKey[mp.product.productName] = mp.productKey;
+      }
+      for (final opt in mp.clubbedOptions) {
+        nameToKey[opt.optionKey] = mp.productKey;
+        if (opt.productName.isNotEmpty) {
+          nameToKey[opt.productName] = mp.productKey;
+        }
+      }
+    }
     for (final item in items) {
       if (item.dependsOn != null) {
         _dependencyMap.putIfAbsent(item.dependsOn!, () => []).add(item.key);
+        _sourceProductKeys[item.dependsOn!] =
+            nameToKey[item.dependsOn!] ?? item.parentProductKey;
       }
     }
 
     _applyDependencies(items);
-    state = state.copyWith(items: items, listGroups: listGroups);
+    final updatedMulti = newMultiSelections.isNotEmpty
+        ? {...state.selectedMultiOptions, ...newMultiSelections}
+        : state.selectedMultiOptions;
+    state = state.copyWith(items: items, listGroups: listGroups, selectedMultiOptions: updatedMulti);
   }
 
   void _applyDependencies([List<InvoiceLineItem>? items]) {
@@ -405,9 +476,20 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     for (final entry in _dependencyMap.entries) {
       final sourceKey = entry.key;
       final depKeys = entry.value;
-      // Source items are those whose parentProductKey matches the dependency key
-      final sourceItems = parentMap[sourceKey] ?? [];
-      final totalQty = sourceItems.fold(0, (sum, i) => sum + i.quantity);
+
+      // Try direct parentProductKey lookup first
+      var sourceItems = parentMap[sourceKey] ?? [];
+      var totalQty = sourceItems.fold(0, (sum, i) => sum + i.quantity);
+
+      // If no direct match, check if dependsOn matches a group-level dependency
+      if (totalQty == 0 && sourceItems.isEmpty) {
+        final sourceProductKey = _sourceProductKeys[sourceKey];
+        if (sourceProductKey != null) {
+          sourceItems = target.where((i) => i.parentProductKey == sourceProductKey).toList();
+          totalQty = sourceItems.fold(0, (sum, i) => sum + i.quantity);
+        }
+      }
+
       for (final depKey in depKeys) {
         final idx = target.indexWhere((i) => i.key == depKey);
         if (idx >= 0) {

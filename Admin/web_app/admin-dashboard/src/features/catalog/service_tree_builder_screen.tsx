@@ -66,7 +66,9 @@ function fmt(n: number): string { return `₹${n.toLocaleString('en-IN')}` }
 
 /** Replace chars that break URL paths / Firestore document IDs */
 function safeKey(s: string): string {
-  return s.replace(/[:/#?&=%+]+/g, '-').replace(/\s+/g, ' ').trim()
+  // Allow dots (for decimals like "2.0 MP") and colons (for MAC addresses).
+  // The backend handles dotted keys correctly via setNested()/deleteNested().
+  return s.replace(/[\/#?&=%+]+/g, '-').replace(/\s+/g, ' ').trim()
 }
 
 function setupTotal(s: Setup): number {
@@ -80,15 +82,17 @@ function categoryTotal(c: Category): number {
   return c.setups.reduce((sum, s) => sum + setupTotal(s), 0)
 }
 
-// ─── Product Search Modal ───────────────────────────────────
-function ProductSearchModal({ onSelect, onClose }: {
-  onSelect: (product: CatalogProduct) => void
+// ─── Product Search Modal (multi-select) ────────────────────
+function ProductSearchModal({ onSelect, onSelectMultiple, onClose }: {
+  onSelect?: (product: CatalogProduct) => void
+  onSelectMultiple?: (products: CatalogProduct[]) => void
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<CatalogProduct[]>([])
   const [allProducts, setAllProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     adminDatasource.fetchMasterProducts('').then((products) => {
@@ -108,6 +112,42 @@ function ProductSearchModal({ onSelect, onClose }: {
       ))
     }
   }, [query, allProducts])
+
+  const visibleResults = results.slice(0, 30)
+
+  const toggleProduct = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selected.size === visibleResults.length && visibleResults.length > 0) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(visibleResults.map(p => p.id)))
+    }
+  }
+
+  const handleAddSelected = () => {
+    const products = allProducts.filter(p => selected.has(p.id))
+    if (products.length === 0) return
+    if (onSelectMultiple) {
+      onSelectMultiple(products)
+    } else if (onSelect && products.length === 1) {
+      onSelect(products[0])
+    }
+  }
+
+  const handleRowClick = (p: CatalogProduct) => {
+    if (onSelectMultiple) {
+      toggleProduct(p.id)
+    } else if (onSelect) {
+      onSelect(p)
+    }
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -131,17 +171,45 @@ function ProductSearchModal({ onSelect, onClose }: {
           ) : results.length === 0 ? (
             <p className="ib-empty">No products found</p>
           ) : (
-            results.slice(0, 30).map((p) => (
-              <button key={p.id} className="ib-search-result" onClick={() => onSelect(p)}>
-                <div className="ib-sr-left">
-                  <span className="ib-sr-name">{p.name}</span>
-                  <span className="ib-sr-meta">{p.id} · {p.category} · {p.group}</span>
+            <>
+              <div className="ib-search-select-all">
+                <label className="ib-select-all-label">
+                  <input
+                    type="checkbox"
+                    checked={visibleResults.length > 0 && selected.size === visibleResults.length}
+                    onChange={toggleSelectAll}
+                  />
+                  <span>Select all {visibleResults.length} shown</span>
+                </label>
+                <span className="ib-search-count">{selected.size} selected</span>
+              </div>
+              {visibleResults.map((p) => (
+                <div key={p.id} className={`ib-search-result ${selected.has(p.id) ? 'selected' : ''}`} onClick={() => handleRowClick(p)}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(p.id)}
+                    onChange={() => toggleProduct(p.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ marginRight: 8 }}
+                  />
+                  <div className="ib-sr-left">
+                    <span className="ib-sr-name">{p.name}</span>
+                    <span className="ib-sr-meta">{p.id} · {p.category} · {p.group}</span>
+                  </div>
+                  <span className="ib-sr-price">{fmt(p.price)}</span>
                 </div>
-                <span className="ib-sr-price">{fmt(p.price)}</span>
-              </button>
-            ))
+              ))}
+            </>
           )}
         </div>
+        {onSelectMultiple && (
+          <div className="modal-footer">
+            <button className="secondary-btn" onClick={onClose}>Cancel</button>
+            <button className="primary-btn" onClick={handleAddSelected} disabled={selected.size === 0}>
+              Add Selected ({selected.size})
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -197,8 +265,8 @@ export default function ServiceTreeBuilderScreen() {
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([])
   const hasUnsavedChanges = pendingEdits.length > 0
 
-  // Clipboard for copy-paste
-  const [clipboard, setClipboard] = useState<{ type: 'setup'; label: string; data: Setup } | null>(null)
+  // Clipboard for copy-paste — stores source keys for deep Firestore-level clone
+  const [clipboard, setClipboard] = useState<{ type: 'setup'; label: string; data: { sourceCategoryKey: string; sourceSetupKey: string } } | null>(null)
 
   /** Collect all leaf product IDs from a setup's product slots */
   const collectLeafIds = useCallback((slots: ProductSlot[]): string[] => {
@@ -221,6 +289,7 @@ export default function ServiceTreeBuilderScreen() {
   const [newName, setNewName] = useState('')
   const [saving, setSaving] = useState(false)
   const [selectedForClubbing, setSelectedForClubbing] = useState<Record<string, Set<string>>>({})
+  const [selectedNested, setSelectedNested] = useState<Record<string, Set<string>>>({})
   const [sortField, setSortField] = useState<'productName' | 'price' | 'defaultQty' | 'key'>('key')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   // Dependency engine modal
@@ -229,7 +298,7 @@ export default function ServiceTreeBuilderScreen() {
     setupKey: string
     nodePath: string[]
     node: TreeNode
-    siblings: TreeNode[]
+    allSlots: ProductSlot[]
   } | null>(null)
 
   const loadData = useCallback(async () => {
@@ -391,14 +460,17 @@ export default function ServiceTreeBuilderScreen() {
     finally { setSaving(false) }
   }
 
-  const addProduct = async (categoryKey: string, setupKey: string, product: CatalogProduct) => {
-    if (!serviceId) return
+  const addProducts = async (categoryKey: string, setupKey: string, products: CatalogProduct[]) => {
+    if (!serviceId || products.length === 0) return
     setSaving(true)
+    setError(null)
     try {
-      await adminDatasource.serviceAddProduct(serviceId, categoryKey, setupKey, product.id)
+      for (const product of products) {
+        await adminDatasource.serviceAddProduct(serviceId, categoryKey, setupKey, product.id)
+      }
       setShowProductSearch(null)
       await loadData()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to add products') }
     finally { setSaving(false) }
   }
 
@@ -430,6 +502,32 @@ export default function ServiceTreeBuilderScreen() {
     finally { setSaving(false) }
   }
 
+  const clubSelected = async (categoryKey: string, setupKey: string, nodePath?: string[]) => {
+    if (!serviceId) return
+    const setupId = `${categoryKey}::${setupKey}`
+    let selected: string[]
+    if (nodePath && nodePath.length > 0) {
+      const parentKey = `${setupId}::${nodePath.join('::')}`
+      selected = Array.from(selectedNested[parentKey] || [])
+    } else {
+      selected = Array.from(selectedForClubbing[setupId] || [])
+    }
+    if (selected.length < 2) return
+    const groupName = prompt(`Enter group name for ${selected.length} items:`, 'Product Group')
+    if (!groupName?.trim()) return
+    setSaving(true)
+    try {
+      await adminDatasource.serviceClubProducts(serviceId, categoryKey, setupKey, safeKey(groupName.trim()), selected, nodePath)
+      setSelectedForClubbing(prev => ({ ...prev, [setupId]: new Set() }))
+      setSelectedNested(prev => {
+        const parentKey = `${setupId}::${(nodePath || []).join('::')}`
+        return { ...prev, [parentKey]: new Set() }
+      })
+      await loadData()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
+    finally { setSaving(false) }
+  }
+
   const addClubOption = async (categoryKey: string, setupKey: string, nodePath: string[], product: CatalogProduct) => {
     if (!serviceId) return
     setSaving(true)
@@ -455,7 +553,7 @@ export default function ServiceTreeBuilderScreen() {
 
   const addBranch = async (categoryKey: string, setupKey: string, nodePath: string[]) => {
     if (!serviceId) return
-    const name = prompt('Enter branch name (e.g. "2.4 MP", "colour", "indoor"):')
+    const name = prompt('Enter branch/group name (e.g. "2.4 MP", "Colour", "Indoor"):')
     if (!name?.trim()) return
     setSaving(true)
     try {
@@ -607,8 +705,8 @@ export default function ServiceTreeBuilderScreen() {
     })
   }
 
-  const editDependency = (catKey: string, setupKey: string, nodePath: string[], node: TreeNode, siblings: TreeNode[]) => {
-    setShowDepModal({ categoryKey: catKey, setupKey, nodePath, node, siblings })
+  const editDependency = (catKey: string, setupKey: string, nodePath: string[], node: TreeNode, allSlots: ProductSlot[]) => {
+    setShowDepModal({ categoryKey: catKey, setupKey, nodePath, node, allSlots })
   }
 
   const saveDependency = async (targetKey: string) => {
@@ -738,21 +836,19 @@ export default function ServiceTreeBuilderScreen() {
   }
 
   // ─── Copy / Paste ────────────────────────────────────────
-  const copySetup = (setup: Setup) => {
-    setClipboard({ type: 'setup', label: setup.name, data: setup })
+  const copySetup = (catKey: string, setup: Setup) => {
+    setClipboard({ type: 'setup', label: setup.name, data: { sourceCategoryKey: catKey, sourceSetupKey: setup.key } })
   }
 
   const pasteSetup = async (categoryKey: string) => {
     if (!clipboard || !serviceId) return
     const src = clipboard.data
+    const newName = prompt(`Enter name for pasted setup (source: "${clipboard.label}"):`, clipboard.label + ' (Copy)')
+    if (!newName?.trim()) return
     setSaving(true)
     setError(null)
     try {
-      await adminDatasource.serviceAddSetup(serviceId, categoryKey, src.name)
-      const ids = collectLeafIds(src.products)
-      for (const id of ids) {
-        await adminDatasource.serviceAddProduct(serviceId, categoryKey, src.name, id)
-      }
+      await adminDatasource.serviceCloneSetup(serviceId, src.sourceCategoryKey, src.sourceSetupKey, categoryKey, newName.trim())
       setClipboard(null)
       await loadData()
     } catch (err) {
@@ -811,6 +907,27 @@ export default function ServiceTreeBuilderScreen() {
     return nodes.filter(n => !n.isLeaf && !n.isField).length
   }
 
+  /** Validate that sum of leaf maxQty >= branch maxQty for LIST render groups */
+  function getProductSlotWarnings(slot: ProductSlot): string[] {
+    const warnings: string[] = []
+    function checkBranch(nodes: TreeNode[], parentMaxQty: number) {
+      const leaves = nodes.filter(n => n.isLeaf)
+      if (leaves.length > 0 && parentMaxQty > 0) {
+        const sumMax = leaves.reduce((s, l) => s + l.maxQty, 0)
+        if (sumMax < parentMaxQty) {
+          warnings.push(`Leaf max total (${sumMax}) < group max (${parentMaxQty}) — collective limit unattainable`)
+        }
+      }
+      for (const n of nodes) {
+        if (!n.isLeaf && !n.isField) {
+          checkBranch(n.children, n.maxQty)
+        }
+      }
+    }
+    checkBranch(slot.options, slot.options[0]?.maxQty || 999)
+    return warnings
+  }
+
   /// Collect all leaf-level product nodes from a setup's product slots
   function collectAllProducts(products: ProductSlot[]): TreeNode[] {
     const result: TreeNode[] = []
@@ -831,13 +948,22 @@ export default function ServiceTreeBuilderScreen() {
     }
   }
 
+  function toggleNested(parentKey: string, nodeKey: string) {
+    setSelectedNested(prev => {
+      const set = new Set(prev[parentKey] || [])
+      set.has(nodeKey) ? set.delete(nodeKey) : set.add(nodeKey)
+      return { ...prev, [parentKey]: set }
+    })
+  }
+
   /** Render tree nodes recursively as table rows with indentation */
   function renderTreeNodes(
     nodes: TreeNode[],
     depth: number,
     catKey: string,
     setupKey: string,
-    currentPath: string[]
+    currentPath: string[],
+    allSlots: ProductSlot[] = []
   ): JSX.Element[] {
     const rows: JSX.Element[] = []
     const indent = depth * 24
@@ -845,13 +971,17 @@ export default function ServiceTreeBuilderScreen() {
     for (const node of nodes) {
       const nodePath = [...currentPath, node.key]
       const nodeId = `${catKey}::${setupKey}::${nodePath.join('::')}::d${depth}`
+      const nestedParentKey = `${catKey}::${setupKey}::${currentPath.join('::')}`
+      const isNestedSelected = selectedNested[nestedParentKey]?.has(node.key)
 
       if (node.isLeaf && !node.isField) {
         // ── LEAF ROW: shows product details ──
         const depthClass = depth <= 4 ? `depth-${depth}` : 'depth-4'
         rows.push(
           <tr key={nodeId} className={`ib-product-row ib-club-option-row ${depthClass}`}>
-            <td></td>
+            <td>
+              <input type="checkbox" checked={isNestedSelected || false} onChange={() => toggleNested(nestedParentKey, node.key)} />
+            </td>
             <td>
               <div className="product-main" style={{ paddingLeft: indent }}>
                 <span className="product-name">
@@ -878,8 +1008,8 @@ export default function ServiceTreeBuilderScreen() {
                   </span>
                 )}
                 <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey: setupKey, nodePath })} title="Add product option">+ Option</button>
-                <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
-                <button className="link-btn" onClick={() => editDependency(catKey, setupKey, nodePath, node, nodes)} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
+                <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                <button className="link-btn" onClick={() => editDependency(catKey, setupKey, nodePath, node, allSlots)} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
                 <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename">✏️</button>
                 <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this option">✕</button>
@@ -933,7 +1063,9 @@ export default function ServiceTreeBuilderScreen() {
         const depthClass = depth <= 4 ? `depth-${depth}` : 'depth-4'
         rows.push(
           <tr key={nodeId} className={`ib-product-row ib-club-option-row ${depthClass}`}>
-            <td></td>
+            <td>
+              <input type="checkbox" checked={isNestedSelected || false} onChange={() => toggleNested(nestedParentKey, node.key)} />
+            </td>
             <td>
               <button className="ib-club-toggle" onClick={() => toggle(expandedClubs, nodeId, setExpandedClubs)} type="button">
                 <div className="product-main" style={{ paddingLeft: indent }}>
@@ -956,7 +1088,10 @@ export default function ServiceTreeBuilderScreen() {
             <td>
               <div className="ib-actions">
                 <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add product option">+ Option</button>
-                <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                {selectedNested[`${catKey}::${setupKey}::${currentPath.join('::')}`]?.size >= 2 && (
+                  <button className="link-btn club-btn" onClick={() => clubSelected(catKey, setupKey, currentPath)} title="Group selected items" style={{ color: '#8b5cf6' }}>📁 Group</button>
+                )}
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename branch">✏️</button>
                 <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
                 <button className="link-btn" onClick={() => {
@@ -980,7 +1115,7 @@ export default function ServiceTreeBuilderScreen() {
         )
 
         if (branchOpen) {
-          rows.push(...renderTreeNodes(node.children, depth + 1, catKey, setupKey, nodePath))
+          rows.push(...renderTreeNodes(node.children, depth + 1, catKey, setupKey, nodePath, allSlots))
         }
       }
     }
@@ -1105,7 +1240,7 @@ export default function ServiceTreeBuilderScreen() {
                                 <button className="secondary-btn small" onClick={() => setShowProductSearch({ categoryKey: cat.key, setupKey: setup.key })} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px' }}>+ Product</button>
                                 <button className="secondary-btn small" onClick={() => addBranch(cat.key, setup.key, [])} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
                                 <button className="icon-btn" onClick={() => renameSetup(cat.key, setup.key)} title="Rename Setup" style={{ marginRight: '4px' }}>✏️</button>
-                                <button className="icon-btn" onClick={() => copySetup(setup)} title="Copy setup to clipboard" style={{ marginRight: '4px', fontSize: '13px' }}>📋</button>
+                                <button className="icon-btn" onClick={() => copySetup(cat.key, setup)} title="Copy setup to clipboard" style={{ marginRight: '4px', fontSize: '13px' }}>📋</button>
                                 <button className="icon-btn" onClick={() => moveSetup(cat.key, setupIdx, 'up')} disabled={setupIdx === 0} title="Move Up" style={{ marginRight: '2px', fontSize: '14px' }}>↑</button>
                                 <button className="icon-btn" onClick={() => moveSetup(cat.key, setupIdx, 'down')} disabled={setupIdx === cat.setups.length - 1} title="Move Down" style={{ marginRight: '4px', fontSize: '14px' }}>↓</button>
                                 <span className="ib-setup-price">{fmt(setupTotal(setup))}</span>
@@ -1126,7 +1261,13 @@ export default function ServiceTreeBuilderScreen() {
                                     setExpandedClubs(filtered)
                                   }} title="Collapse all nested options">▲ Collapse Below</button>
                                   {(selectedForClubbing[sKey]?.size || 0) > 0 && (
-                                    <button className="secondary-btn danger" onClick={() => bulkDeleteProducts(cat.key, setup.key)}>🗑️ Delete Selected</button>
+                                    <>
+                                      <span style={{ marginRight: 8, fontSize: 11, color: '#666' }}>({selectedForClubbing[sKey]?.size || 0} selected)</span>
+                                      {(selectedForClubbing[sKey]?.size || 0) >= 2 && (
+                                        <button className="secondary-btn" onClick={() => clubSelected(cat.key, setup.key)} style={{ background: '#8b5cf6', color: '#fff', marginRight: 6 }}>📁 Club Selected</button>
+                                      )}
+                                      <button className="secondary-btn danger" onClick={() => bulkDeleteProducts(cat.key, setup.key)}>🗑️ Delete Selected</button>
+                                    </>
                                   )}
                                 </div>
 
@@ -1162,7 +1303,7 @@ export default function ServiceTreeBuilderScreen() {
                                         if (typeof bVal === 'string') bVal = bVal.toLowerCase()
                                         if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
                                         if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
-                                        return 0
+                                        return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
                                       }).map((slot) => {
                                         if (!slot.isClubbed) {
                                           // Regular product row (single leaf option)
@@ -1193,8 +1334,8 @@ export default function ServiceTreeBuilderScreen() {
                                                     <span className="ib-badge" style={{ background: '#fef3c7', color: '#92400e' }} title={`Depends on: ${opt.dependsOn}`}>🔗 {opt.dependsOn}</span>
                                                   )}
                                                   <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product option">+ Option</button>
-                                                  <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
-                                                  <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], opt, collectAllProducts(setup.products))} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
+                                                  <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                                                  <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], opt, setup.products)} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
                                                   <button className="icon-btn" onClick={() => editRenderConfig(cat.key, setup.key, [slot.key], opt)} title="Configure render type (OPT/LIST)" style={{ color: '#10b981' }}>⚙️</button>
                                                   <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Rename">✏️</button>
                                                   <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire product">🗑️</button>
@@ -1217,28 +1358,34 @@ export default function ServiceTreeBuilderScreen() {
                                                 <div className="product-main">
                                                   <span className="product-name">
                                                     {slot.key} <span className="ib-badge club">🔗 {countLeaves(slot.options)} options</span>
+                                                    {getProductSlotWarnings(slot).map((w, i) => (
+                                                      <span key={i} className="ib-badge" style={{ background: '#fef3c7', color: '#92400e', marginLeft: 6 }} title={w}>⚠️ MaxQty</span>
+                                                    ))}
                                                   </span>
-                                                  <span className="product-id">Clubbed — customer drills down to select</span>
+                                                  <span className="product-id">Group — contains selectable options</span>
                                                 </div>
                                               </button>
                                             </td>
-                                            <td className="num">—</td>
-                                            <td className="num">—</td>
-                                            <td className="num">—</td>
-                                            <td className="num">—</td>
-                                            <td className="num total">{fmt(slot.options[0]?.price * (slot.options[0]?.defaultQty || 1) || 0)}</td>
-                                              <td>
-                                                <div className="ib-actions">
-                                                  <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product option">+ Option</button>
-                                                  <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add sub-branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
-                                                  <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], slot.options[0], collectAllProducts(setup.products))} title="Map dependency" style={{ color: '#d97706' }}>🔗 Depends On</button>
-                                                  <button className="icon-btn" onClick={() => editRenderConfig(cat.key, setup.key, [slot.key], { ...slot.options[0], key: slot.key })} title="Configure render type (OPT/LIST)" style={{ color: '#10b981' }}>⚙️</button>
-                                                  <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
-                                                  <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
-                                                </div>
-                                              </td>
-                                            </tr>,
-                                          ...(clubOpen ? renderTreeNodes(slot.options, 1, cat.key, setup.key, [slot.key]) : [])
+                                             <td className="num">—</td>
+                                             <td className="num">—</td>
+                                             <td className="num">—</td>
+                                             <td className="num">—</td>
+                                             <td className="num total">{fmt(slot.options[0]?.price * (slot.options[0]?.defaultQty || 1) || 0)}</td>
+                                               <td>
+                                                 <div className="ib-actions">
+                                                   <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product option">+ Option</button>
+                                                   <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                                                   <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], slot.options[0], setup.products)} title="Map dependency" style={{ color: '#d97706' }}>🔗 Depends On</button>
+                                                   <button className="icon-btn" onClick={() => editRenderConfig(cat.key, setup.key, [slot.key], { ...slot.options[0], key: slot.key })} title="Configure render type (OPT/LIST)" style={{ color: '#10b981' }}>⚙️</button>
+                                                   {selectedNested[`${cat.key}::${setup.key}::${slot.key}`]?.size >= 2 && (
+                                                     <button className="icon-btn club-btn" onClick={() => clubSelected(cat.key, setup.key, [slot.key])} title="Group selected items">📁 Group</button>
+                                                   )}
+                                                   <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
+                                                   <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
+                                                 </div>
+                                               </td>
+                                             </tr>,
+                                          ...(clubOpen ? renderTreeNodes(slot.options, 1, cat.key, setup.key, [slot.key], setup.products) : [])
                                         ]
                                       })}
                                     </tbody>
@@ -1297,11 +1444,11 @@ export default function ServiceTreeBuilderScreen() {
         </div>
       )}
 
-      {/* Product Search (add product to setup) */}
+      {/* Product Search (add product to setup) — multi-select */}
       {showProductSearch && (
         <ProductSearchModal
           onClose={() => setShowProductSearch(null)}
-          onSelect={(p) => addProduct(showProductSearch.categoryKey, showProductSearch.setupKey, p)}
+          onSelectMultiple={(products) => addProducts(showProductSearch.categoryKey, showProductSearch.setupKey, products)}
         />
       )}
 
@@ -1322,25 +1469,28 @@ export default function ServiceTreeBuilderScreen() {
               <button className="icon-btn" onClick={() => setShowDepModal(null)}>×</button>
             </div>
             <div className="modal-body">
-              <p className="hint-text">Select a product whose quantity this product should auto-map from:</p>
+              <p className="hint-text">Select a product slot whose total quantity this product should auto-map from:</p>
               {showDepModal.node.dependsOn && (
                 <div className="dependency-current">
-                  Currently depends on KEY: <strong>{showDepModal.node.dependsOn}</strong>
+                  Currently depends on: <strong>{showDepModal.node.dependsOn}</strong>
                   <button className="secondary-btn" style={{ marginLeft: 8 }} onClick={() => { const m = showDepModal; setShowDepModal(null); removeDependency(m.categoryKey, m.setupKey, m.nodePath) }}>Remove</button>
                 </div>
               )}
               <div className="dep-product-list" style={{ maxHeight: 400, overflowY: 'auto' }}>
-                {showDepModal.siblings.filter(s => s.key !== showDepModal.node.key && s.isLeaf && !s.isField && s.productId).map(sib => (
-                  <label key={sib.key} className="dep-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}>
-                    <input type="radio" name="dep-target" value={sib.key}
-                      checked={showDepModal.node.dependsOn === sib.key}
-                      onChange={() => saveDependency(sib.key)} />
-                    <span style={{ fontWeight: 600, flex: 1 }}>{sib.displayLabel || sib.productName || sib.key}</span>
-                    <span style={{ color: '#64748b', fontSize: 11 }}>PID: {sib.productId} · KEY: {sib.key}</span>
-                  </label>
-                ))}
-                {showDepModal.siblings.filter(s => s.key !== showDepModal.node.key && s.isLeaf && !s.isField && s.productId).length === 0 && (
-                  <p className="hint-text" style={{ padding: 16 }}>No other products available in this scope to depend on.</p>
+                {showDepModal.allSlots.filter(s => s.key !== showDepModal.nodePath[0]).map(slot => {
+                  const firstOpt = slot.options.find(o => o.isLeaf && !o.isField)
+                  return (
+                    <label key={slot.key} className="dep-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}>
+                      <input type="radio" name="dep-target" value={slot.key}
+                        checked={showDepModal.node.dependsOn === slot.key}
+                        onChange={() => saveDependency(slot.key)} />
+                      <span style={{ fontWeight: 600, flex: 1 }}>{firstOpt?.displayLabel || firstOpt?.productName || slot.key}</span>
+                      <span style={{ color: '#64748b', fontSize: 11 }}>PID: {firstOpt?.productId || '—'} · SLOT: {slot.key}</span>
+                    </label>
+                  )
+                })}
+                {showDepModal.allSlots.filter(s => s.key !== showDepModal.nodePath[0]).length === 0 && (
+                  <p className="hint-text" style={{ padding: 16 }}>No other product slots available in this setup to depend on.</p>
                 )}
               </div>
             </div>

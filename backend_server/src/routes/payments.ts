@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument } from '../services/firestore.js'
 import { verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
+import { authenticateToken, requireRole } from '../middleware/auth.js'
 
 const paymentMethodSchema = z.enum(['card', 'cash', 'upi', 'bank', 'razorpay'])
 
@@ -25,7 +26,7 @@ const paymentUpdateSchema = z.object({
 export const paymentsRouter = Router()
 
 // GET /payments - List all payments
-paymentsRouter.get('/', verifyFirebaseIdToken, async (req, res) => {
+paymentsRouter.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50))
     const payments = await queryCollection<Record<string, unknown>>('payments')
@@ -37,9 +38,9 @@ paymentsRouter.get('/', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // GET /payments/:id - Get single payment
-paymentsRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
+paymentsRouter.get('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    const payment = await getDocument<Record<string, unknown>>('payments', req.params.id)
+    const payment = await getDocument<Record<string, unknown>>('payments', req.params.id as string)
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' })
     }
@@ -51,7 +52,7 @@ paymentsRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // POST /payments - Create new payment
-paymentsRouter.post('/', verifyFirebaseIdToken, async (req, res) => {
+paymentsRouter.post('/', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = paymentCreateSchema.safeParse(req.body)
 
   if (!parsed.success) {
@@ -72,7 +73,7 @@ paymentsRouter.post('/', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // PATCH /payments/:id - Update payment
-paymentsRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
+paymentsRouter.patch('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = paymentUpdateSchema.safeParse(req.body)
 
   if (!parsed.success) {
@@ -93,9 +94,9 @@ paymentsRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // DELETE /payments/:id - Delete payment
-paymentsRouter.delete('/:id', verifyFirebaseIdToken, async (req, res) => {
+paymentsRouter.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    await deleteDocument('payments', req.params.id)
+    await deleteDocument('payments', req.params.id as string)
     return res.json({ success: true, message: 'Payment deleted' })
   } catch (error) {
     console.error('Firestore delete payment failed:', error)
@@ -104,13 +105,13 @@ paymentsRouter.delete('/:id', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // POST /payments/:id/request - Request payment
-paymentsRouter.post('/:id/request', verifyFirebaseIdToken, async (req, res) => {
+paymentsRouter.post('/:id/request', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    await updateDocument('payments', req.params.id, {
+    await updateDocument('payments', req.params.id as string, {
       status: 'payment_requested',
       requestedAt: new Date().toISOString()
     })
-    return res.json({ success: true, message: 'Payment requested', data: { paymentId: req.params.id } })
+    return res.json({ success: true, message: 'Payment requested', data: { paymentId: req.params.id as string } })
   } catch (error) {
     console.error('Firestore payment request failed:', error)
     return res.status(500).json({ success: false, message: 'Failed to request payment' })

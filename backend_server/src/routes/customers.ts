@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument, getDb } from '../services/firestore.js'
 import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
+import { authenticateToken, requireRole } from '../middleware/auth.js'
 import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 
 const customerCreateSchema = z.object({
@@ -19,7 +20,7 @@ const customerUpdateSchema = customerCreateSchema.partial()
 export const customersRouter = Router()
 
 // GET /customers - List all customers
-customersRouter.get('/', verifyFirebaseIdToken, async (req, res) => {
+customersRouter.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const db = getDb()
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50))
@@ -43,7 +44,7 @@ customersRouter.get('/', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // GET /customers/:id - Get single customer
-customersRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
+customersRouter.get('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const db = getDb()
     const doc = await db.collection('customers').doc(req.params.id as string).get()
@@ -67,7 +68,7 @@ customersRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // POST /customers - Create new customer
-customersRouter.post('/', verifyFirebaseIdToken, async (req, res) => {
+customersRouter.post('/', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = customerCreateSchema.safeParse(req.body)
 
   if (!parsed.success) {
@@ -90,7 +91,7 @@ customersRouter.post('/', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // PATCH /customers/:id - Update customer
-customersRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
+customersRouter.patch('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   const parsed = customerUpdateSchema.safeParse(req.body)
 
   if (!parsed.success) {
@@ -98,8 +99,8 @@ customersRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
   }
 
   try {
-    await updateDocument('customers', req.params.id, parsed.data)
-    const updated = await getDocument<Record<string, unknown>>('customers', req.params.id)
+    await updateDocument('customers', req.params.id as string, parsed.data)
+    const updated = await getDocument<Record<string, unknown>>('customers', req.params.id as string)
     return res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Firestore update customer failed:', error)
@@ -108,9 +109,9 @@ customersRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
 })
 
 // DELETE /customers/:id - Delete customer
-customersRouter.delete('/:id', verifyFirebaseIdToken, async (req, res) => {
+customersRouter.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    await deleteDocument('customers', req.params.id)
+    await deleteDocument('customers', req.params.id as string)
     return res.json({ success: true, message: 'Customer deleted' })
   } catch (error) {
     console.error('Firestore delete customer failed:', error)

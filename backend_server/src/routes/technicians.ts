@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { getDocument, createDocument, updateDocument, deleteDocument, getDb } from '../services/firestore.js'
 import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
+import { authenticateToken, requireRole } from '../middleware/auth.js'
 import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 import { getAuth } from 'firebase-admin/auth'
 
@@ -19,7 +20,7 @@ const employeeUpdateSchema = employeeCreateSchema.partial().omit({ password: tru
 
 export const techniciansRouter = Router()
 
-techniciansRouter.get('/', verifyFirebaseIdToken, async (_req, res) => {
+techniciansRouter.get('/', authenticateToken, requireRole(['admin']), async (_req, res) => {
   try {
     const db = getDb()
     const snapshot = await db.collection('employees').get()
@@ -37,7 +38,7 @@ techniciansRouter.get('/', verifyFirebaseIdToken, async (_req, res) => {
   }
 })
 
-techniciansRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
+techniciansRouter.get('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const db = getDb()
     const doc = await db.collection('employees').doc(req.params.id as string).get()
@@ -52,7 +53,7 @@ techniciansRouter.get('/:id', verifyFirebaseIdToken, async (req, res) => {
   }
 })
 
-techniciansRouter.delete('/:id', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+techniciansRouter.delete('/:id', authenticateToken, requireRole(['admin']), async (req: FirebaseAuthenticatedRequest, res) => {
   try {
     const db = getDb()
     const doc = await db.collection('employees').doc(req.params.id as string).get()
@@ -70,7 +71,7 @@ techniciansRouter.delete('/:id', verifyFirebaseIdToken, async (req: FirebaseAuth
   }
 })
 
-techniciansRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+techniciansRouter.post('/', authenticateToken, requireRole(['admin']), async (req: FirebaseAuthenticatedRequest, res) => {
   const parsed = employeeCreateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid technician payload', issues: parsed.error.flatten() })
@@ -123,7 +124,7 @@ techniciansRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthentic
   }
 })
 
-techniciansRouter.post('/:id/password', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+techniciansRouter.post('/:id/password', authenticateToken, requireRole(['admin']), async (req: FirebaseAuthenticatedRequest, res) => {
   const { password } = req.body as { password?: string }
   if (!password || password.length < 6) {
     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' })
@@ -140,7 +141,7 @@ techniciansRouter.post('/:id/password', verifyFirebaseIdToken, async (req: Fireb
   }
 })
 
-techniciansRouter.patch('/:id', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+techniciansRouter.patch('/:id', authenticateToken, requireRole(['admin']), async (req: FirebaseAuthenticatedRequest, res) => {
   const parsed = employeeUpdateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ success: false, message: 'Invalid technician payload', issues: parsed.error.flatten() })

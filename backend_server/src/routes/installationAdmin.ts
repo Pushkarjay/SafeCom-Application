@@ -176,6 +176,47 @@ function extractTree(
   return nodes;
 }
 
+/**
+ * Build a deep nested object for use with set({ merge: true }).
+ * Unlike dot-notation update(), this preserves literal dots in keys.
+ * e.g., setNested(["a", "b.c", "d"], "v") => { a: { "b.c": { d: "v" } } }
+ */
+function setNested(path: string[], value: unknown): Record<string, unknown> {
+  const [head, ...tail] = path;
+  if (tail.length === 0) return { [head]: value };
+  return { [head]: setNested(tail, value) };
+}
+
+/**
+ * Delete a field at a nested path, handling dots in key names correctly.
+ * Falls back to update() with dot-notation when no path segment has a dot (faster).
+ */
+async function deleteNested(
+  docRef: FirebaseFirestore.DocumentReference,
+  path: string[]
+): Promise<void> {
+  const hasDots = path.some(s => s.includes('.'));
+  if (!hasDots) {
+    const upd: Record<string, unknown> = {};
+    upd[path.join('.')] = FieldValue.delete();
+    await docRef.update(upd);
+    return;
+  }
+  const db = getDb();
+  await db.runTransaction(async (txn) => {
+    const snap = await txn.get(docRef);
+    if (!snap.exists) return;
+    const data = snap.data()!;
+    let current: any = data;
+    for (let i = 0; i < path.length - 1; i++) {
+      if (!current[path[i]]) current[path[i]] = {};
+      current = current[path[i]];
+    }
+    delete current[path[path.length - 1]];
+    txn.set(docRef, data);
+  });
+}
+
 // ─── GET /api/catalog/installation-admin ────────────────────
 // Returns the full recursive hierarchical config
 installationAdminRouter.get('/', authenticateToken, requireRole(['admin']), async (_req: Request, res: Response) => {

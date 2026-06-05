@@ -95,6 +95,7 @@ interface TreeNode {
   collectiveValidation?: boolean;
   displayLabel?: string;
   mandatory?: boolean;
+  dependsOn?: string | null;
 }
 
 function extractTree(
@@ -170,6 +171,7 @@ function extractTree(
         collectiveValidation: obj.collectiveValidation === true,
         displayLabel: obj.displayLabel ? String(obj.displayLabel) : undefined,
         mandatory: obj.mandatory !== false,
+        dependsOn: obj.dependsOn ? String(obj.dependsOn) : undefined,
       });
     } else {
       const children = extractTree(obj, productMap);
@@ -193,10 +195,57 @@ function extractTree(
         collectiveValidation: obj.collectiveValidation === true,
         displayLabel: obj.displayLabel ? String(obj.displayLabel) : undefined,
         mandatory: obj.mandatory !== false,
+        dependsOn: obj.dependsOn ? String(obj.dependsOn) : undefined,
       });
     }
   }
   return nodes;
+}
+
+/**
+ * Build a deep nested object for use with set({ merge: true }).
+ * Unlike dot-notation update(), this preserves literal dots in keys.
+ * e.g., setNested(["a", "b.c", "d"], "v") => { a: { "b.c": { d: "v" } } }
+ * Call as: docRef.set(setNested([fullPath...], value), { merge: true })
+ */
+function setNested(path: string[], value: unknown): Record<string, unknown> {
+  const [head, ...tail] = path;
+  if (tail.length === 0) return { [head]: value };
+  return { [head]: setNested(tail, value) };
+}
+
+/**
+ * Delete a field at a nested path, handling dots in key names correctly.
+ * Reads the full doc, removes the key from memory, writes back with set().
+ * Falls back to update() with dot-notation when no path segment has a dot (faster).
+ */
+async function deleteNested(
+  docRef: FirebaseFirestore.DocumentReference,
+  path: string[],
+  transaction?: FirebaseFirestore.Transaction
+): Promise<void> {
+  const hasDots = path.some(s => s.includes('.'));
+  if (!hasDots) {
+    // Fast path — no dots, use update() with FieldValue.delete()
+    const upd: Record<string, unknown> = {};
+    upd[path.join('.')] = FieldValue.delete();
+    await docRef.update(upd);
+    return;
+  }
+  // Slow path — dots present, read/modify/write in a transaction
+  const db = getDb();
+  await db.runTransaction(async (txn) => {
+    const snap = await txn.get(docRef);
+    if (!snap.exists) return;
+    const data = snap.data()!;
+    let current: any = data;
+    for (let i = 0; i < path.length - 1; i++) {
+      if (!current[path[i]]) current[path[i]] = {};
+      current = current[path[i]];
+    }
+    delete current[path[path.length - 1]];
+    txn.set(docRef, data);
+  });
 }
 
 // ─── ROUTES ─────────────────────────────────────────────────
@@ -336,9 +385,11 @@ servicesAdminRouter.get('/config/:serviceId', authenticateToken, requireRole(['a
 servicesAdminRouter.delete('/config/:serviceId', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
+    const { doc, actualId } = await findServiceDoc(serviceId);
+    if (!doc || !doc.exists) return res.status(404).json({ success: false, error: 'Service not found' });
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).delete();
-    res.json({ success: true, message: `Service "${serviceId}" deleted` });
+    await db.collection(SERVICE_COLLECTION).doc(actualId).delete();
+    res.json({ success: true, message: `Service "${actualId}" deleted` });
   } catch (error) {
     console.error('[SERVICES-ADMIN] DELETE service error:', error);
     res.status(500).json({ success: false, error: 'Failed to delete service' });
@@ -367,7 +418,12 @@ servicesAdminRouter.delete('/config/:serviceId/category/:key', authenticateToken
     const serviceId = String(req.params.serviceId);
     const key = String(req.params.key);
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [key]: FieldValue.delete() });
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    if (key.includes('.')) {
+      await deleteNested(docRef, [key]);
+    } else {
+      await docRef.update({ [key]: FieldValue.delete() });
+    }
     res.json({ success: true, message: `Category "${key}" deleted` });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to delete category' });
@@ -382,46 +438,40 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup', authe
     const { name } = req.body as { name?: string };
     if (!name?.trim()) return res.status(400).json({ success: false, error: 'Setup name required' });
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${name}`]: {} });
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+
+    if ([categoryKey, name].some(s => s.includes('.'))) {
+      await serviceRef.set(setNested([categoryKey, name], {}), { merge: true });
+    } else {
+      await serviceRef.update({ [`${categoryKey}.${name}`]: {} });
+    }
     res.json({ success: true, message: `Setup "${name}" created` });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST setup error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to create setup' });
   }
 });
 
-// DELETE /config/:serviceId/category/:categoryKey/setup/:setupKey
-servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setupKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const serviceId = String(req.params.serviceId);
-    const categoryKey = String(req.params.categoryKey);
-    const setupKey = String(req.params.setupKey);
-    const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}`]: FieldValue.delete() });
-    res.json({ success: true, message: `Setup deleted` });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Failed to delete setup' });
-  }
-});
-
-// POST /config/:serviceId/category/:categoryKey/product (add directly to category, no setup)
+// POST /config/:serviceId/category/:categoryKey/product — Add product slot directly under category
 servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/product', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
     const categoryKey = String(req.params.categoryKey);
-    const { productId, defaultQty, minQty, maxQty } = req.body as { productId?: string; defaultQty?: number; minQty?: number; maxQty?: number; };
-    if (!productId?.trim()) return res.status(400).json({ success: false, error: 'Product ID required' });
-
+    const { productId, defaultQty, minQty, maxQty } = req.body as {
+      productId?: string; defaultQty?: number; minQty?: number; maxQty?: number;
+    };
+    if (!productId?.trim()) return res.status(400).json({ success: false, error: 'Product ID is required' });
     const db = getDb();
-    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
-    const productDoc = await productRef.get();
-    if (!productDoc.exists) return res.status(404).json({ success: false, error: 'Product not found' });
-
+    const productDoc = await db.collection(PRODUCT_COLLECTION).doc(productId).get();
+    if (!productDoc.exists) return res.status(404).json({ success: false, error: `Product ${productId} not found in catalog` });
     const serviceDoc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
-    const categoryData = (serviceDoc.data()?.[categoryKey] || {}) as Record<string, unknown>;
-    const nextNum = Object.keys(categoryData).length + 1;
+    const serviceData = serviceDoc.exists ? serviceDoc.data() || {} : {};
+    const catData = serviceData[categoryKey] as Record<string, unknown> | undefined;
+    const existingKeys = Object.keys(catData || {});
+    const nextNum = existingKeys.length + 1;
     const productKey = `Product ${nextNum}`;
     const optionKey = `${productKey} Option 1`;
-
+    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
     const optionData = {
       'Deafult q': defaultQty ?? 1,
       'Price': productRef,
@@ -431,41 +481,42 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/product', aut
       'min q': minQty ?? 0,
       'rigid': false
     };
-
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
-      [`${categoryKey}.${productKey}.${optionKey}`]: optionData
-    });
-    res.json({ success: true, message: `Product added as "${productKey}" directly to category` });
-  } catch (error) {
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allSegments = [categoryKey, productKey, optionKey];
+    if (allSegments.some(s => s.includes('.'))) {
+      await docRef.set(setNested(allSegments, optionData), { merge: true });
+    } else {
+      await docRef.update({ [`${categoryKey}.${productKey}.${optionKey}`]: optionData });
+    }
+    res.json({ success: true, message: `Product added as "${productKey}"`, productKey, optionKey });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST product error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to add product to category' });
   }
 });
 
-// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/product
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/product — Add product slot under setup
 servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/product', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
     const categoryKey = String(req.params.categoryKey);
-    let setupKey = String(req.params.setupKey);
-    const { productId, defaultQty, minQty, maxQty } = req.body as { productId?: string; defaultQty?: number; minQty?: number; maxQty?: number; };
-    if (!productId?.trim()) return res.status(400).json({ success: false, error: 'Product ID required' });
-
-    // If setupKey is empty, use/create a "General" setup
-    if (!setupKey || setupKey === '' || setupKey === '_') {
-      setupKey = 'General';
-    }
-
+    const setupKey = String(req.params.setupKey);
+    const { productId, defaultQty, minQty, maxQty } = req.body as {
+      productId?: string; defaultQty?: number; minQty?: number; maxQty?: number;
+    };
+    if (!productId?.trim()) return res.status(400).json({ success: false, error: 'Product ID is required' });
     const db = getDb();
-    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
-    const productDoc = await productRef.get();
-    if (!productDoc.exists) return res.status(404).json({ success: false, error: 'Product not found' });
-
+    const productDoc = await db.collection(PRODUCT_COLLECTION).doc(productId).get();
+    if (!productDoc.exists) return res.status(404).json({ success: false, error: `Product ${productId} not found in catalog` });
     const serviceDoc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
-    const setupData = (serviceDoc.data()?.[categoryKey]?.[setupKey] || {}) as Record<string, unknown>;
-    const nextNum = Object.keys(setupData).length + 1;
+    const serviceData = serviceDoc.exists ? serviceDoc.data() || {} : {};
+    const catData = serviceData[categoryKey] as Record<string, unknown> | undefined;
+    const setupData = (catData?.[setupKey] as Record<string, unknown>) || {};
+    const existingKeys = Object.keys(setupData);
+    const nextNum = existingKeys.length + 1;
     const productKey = `Product ${nextNum}`;
     const optionKey = `${productKey} Option 1`;
-
+    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
     const optionData = {
       'Deafult q': defaultQty ?? 1,
       'Price': productRef,
@@ -475,178 +526,64 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
       'min q': minQty ?? 0,
       'rigid': false
     };
-
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
-      [`${categoryKey}.${setupKey}.${productKey}.${optionKey}`]: optionData
-    });
-    res.json({ success: true, message: `Product added as "${productKey}" to ${setupKey}` });
-  } catch (error) {
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allSegments = [categoryKey, setupKey, productKey, optionKey];
+    if (allSegments.some(s => s.includes('.'))) {
+      await docRef.set(setNested(allSegments, optionData), { merge: true });
+    } else {
+      await docRef.update({ [`${categoryKey}.${setupKey}.${productKey}.${optionKey}`]: optionData });
+    }
+    res.json({ success: true, message: `Product added as "${productKey}"`, productKey, optionKey });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST product error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to add product' });
   }
 });
 
-// DELETE /config/:serviceId/category/:categoryKey/product/:productKey (delete directly from category)
+// DELETE /config/:serviceId/category/:categoryKey/product/:productKey — Remove product slot from category
 servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/product/:productKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
     const categoryKey = String(req.params.categoryKey);
     const productKey = String(req.params.productKey);
-    
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${productKey}`]: FieldValue.delete() });
-    res.json({ success: true, message: `Product removed from category` });
-  } catch (error) {
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const path = [categoryKey, productKey];
+    if (path.some(s => s.includes('.'))) {
+      await deleteNested(docRef, path);
+    } else {
+      await docRef.update({ [`${categoryKey}.${productKey}`]: FieldValue.delete() });
+    }
+    res.json({ success: true, message: `Product "${productKey}" removed from category` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] DELETE product error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to remove product from category' });
   }
 });
 
-// DELETE /config/:serviceId/category/:categoryKey/setup/:setupKey/product/:productKey
+// DELETE /config/:serviceId/category/:categoryKey/setup/:setupKey/product/:productKey — Remove product slot from setup
 servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setupKey/product/:productKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
     const categoryKey = String(req.params.categoryKey);
-    let setupKey = String(req.params.setupKey);
+    const setupKey = String(req.params.setupKey);
     const productKey = String(req.params.productKey);
-    
-    // If setupKey is empty, use "General"
-    if (!setupKey || setupKey === '' || setupKey === '_') {
-      setupKey = 'General';
-    }
-    
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${productKey}`]: FieldValue.delete() });
-    res.json({ success: true, message: `Product slot removed` });
-  } catch (error) {
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const path = [categoryKey, setupKey, productKey];
+    if (path.some(s => s.includes('.'))) {
+      await deleteNested(docRef, path);
+    } else {
+      await docRef.update({ [`${categoryKey}.${setupKey}.${productKey}`]: FieldValue.delete() });
+    }
+    res.json({ success: true, message: `Product "${productKey}" removed` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] DELETE product error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to remove product' });
   }
 });
 
-// POST /config/:serviceId/category/:categoryKey/node (add node directly to category)
-servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const serviceId = String(req.params.serviceId);
-    const categoryKey = String(req.params.categoryKey);
-    const { nodePath, productId, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; productId: string; defaultQty?: number; minQty?: number; maxQty?: number; };
-    
-    const db = getDb();
-    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
-    const productDoc = await productRef.get();
-    if (!productDoc.exists) return res.status(404).json({ success: false, error: 'Product not found' });
-
-    const serviceDoc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
-    const categoryData = (serviceDoc.data()?.[categoryKey] || {}) as Record<string, unknown>;
-    const targetPath = nodePath.length > 0 ? nodePath : [];
-    let targetData = categoryData;
-    for (const p of targetPath) { targetData = (targetData[p] || {}) as Record<string, unknown>; }
-    
-    const nextNum = Object.keys(targetData).length + 1;
-    const productKey = `Product ${nextNum}`;
-    const optionKey = `${productKey} Option 1`;
-    const optionData = { 'Deafult q': defaultQty ?? 1, 'Price': productRef, [`${optionKey} ID`]: productRef, 'available': true, 'max q': maxQty ?? 50, 'min q': minQty ?? 0, 'rigid': false };
-
-    const updatePath = targetPath.length > 0 ? `${categoryKey}.${targetPath.join('.')}.${productKey}.${optionKey}` : `${categoryKey}.${productKey}.${optionKey}`;
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [updatePath]: optionData });
-    res.json({ success: true, message: `Node added at category level` });
-  } catch (error) { res.status(500).json({ success: false, error: 'Failed to add node' }); }
-});
-
-// DELETE /config/:serviceId/category/:categoryKey/node (delete node from category)
-servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const serviceId = String(req.params.serviceId);
-    const categoryKey = String(req.params.categoryKey);
-    const nodePath = JSON.parse(String(req.query.path) || '[]') as string[];
-    if (nodePath.length === 0) return res.status(400).json({ success: false, error: 'Node path required' });
-    
-    const db = getDb();
-    const updatePath = `${categoryKey}.${nodePath.join('.')}`;
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [updatePath]: FieldValue.delete() });
-    res.json({ success: true, message: `Node deleted from category` });
-  } catch (error) { res.status(500).json({ success: false, error: 'Failed to delete node' }); }
-});
-
-// PATCH /config/:serviceId/category/:categoryKey/node/quantities (update quantities at category level)
-servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/quantities', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const serviceId = String(req.params.serviceId);
-    const categoryKey = String(req.params.categoryKey);
-    const { nodePath, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; defaultQty?: number; minQty?: number; maxQty?: number; };
-    if (!nodePath || nodePath.length === 0) return res.status(400).json({ success: false, error: 'Node path required' });
-    
-    const db = getDb();
-    const basePath = `${categoryKey}.${nodePath.join('.')}`;
-    const updates: Record<string, any> = {};
-    if (defaultQty !== undefined) updates[`${basePath}.Deafult q`] = defaultQty;
-    if (minQty !== undefined) updates[`${basePath}.min q`] = minQty;
-    if (maxQty !== undefined) updates[`${basePath}.max q`] = maxQty;
-    
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
-    res.json({ success: true, message: `Quantities updated at category level` });
-  } catch (error) { res.status(500).json({ success: false, error: 'Failed to update quantities' }); }
-});
-
-// POST /config/:serviceId/category/:categoryKey/branch (add empty branch node at category level)
-servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/branch', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const serviceId = String(req.params.serviceId);
-    const categoryKey = String(req.params.categoryKey);
-    const { nodePath, branchName } = req.body as { nodePath?: string[]; branchName: string };
-    if (!branchName?.trim()) return res.status(400).json({ success: false, error: 'Branch name required' });
-    
-    const db = getDb();
-    const path = nodePath && nodePath.length > 0
-      ? `${categoryKey}.${nodePath.join('.')}.${branchName}`
-      : `${categoryKey}.${branchName}`;
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [path]: {} });
-    res.json({ success: true, message: `Branch "${branchName}" created at category level` });
-  } catch (error) { res.status(500).json({ success: false, error: 'Failed to create branch' }); }
-});
-
-// POST /config/:serviceId/category/:categoryKey/node/rename (rename node at category level)
-servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node/rename', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const serviceId = String(req.params.serviceId);
-    const categoryKey = String(req.params.categoryKey);
-    const { nodePath, newName } = req.body as { nodePath: string[]; newName: string; };
-    
-    if (!nodePath || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath required' });
-    if (!newName?.trim()) return res.status(400).json({ success: false, error: 'newName required' });
-    
-    const db = getDb();
-    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    
-    await db.runTransaction(async (transaction) => {
-       const doc = await transaction.get(serviceRef);
-       if (!doc.exists) throw new Error('Service not found');
-       
-       const data = doc.data()!;
-       let target = data[categoryKey];
-       if (!target) throw new Error('Category not found');
-       
-       for (const p of nodePath) {
-          if (target[p] === undefined) throw new Error(`Node path not found`);
-          target = target[p];
-       }
-       
-       const parentPath = nodePath.slice(0, -1);
-       const oldName = nodePath[nodePath.length - 1];
-       
-       const firestoreParentPath = parentPath.length > 0 ? `${categoryKey}.${parentPath.join('.')}` : categoryKey;
-       
-       transaction.update(serviceRef, {
-         [`${firestoreParentPath}.${newName}`]: target,
-         [`${firestoreParentPath}.${oldName}`]: FieldValue.delete()
-       });
-    });
-    
-    res.json({ success: true, message: `Node renamed to ${newName}` });
-  } catch (error: any) {
-    console.error('[SERVICES-ADMIN] POST node rename error:', error?.message || error);
-    res.status(500).json({ success: false, error: 'Failed to rename node' });
-  }
-});
-
-// PATCH /config/:serviceId/category/:categoryKey/node/quantities (update quantities at category level)
+// PATCH /config/:serviceId/category/:categoryKey/node/quantities (duplicate, keep for backward compat)
 servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/quantities', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
@@ -655,13 +592,21 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/quantit
     if (!Array.isArray(nodePath) || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath required' });
 
     const db = getDb();
-    const updates: Record<string, unknown> = {};
-    const firestorePath = `${categoryKey}.${nodePath.join('.')}`;
-    if (defaultQty !== undefined) updates[`${firestorePath}.Deafult q`] = defaultQty;
-    if (minQty !== undefined) updates[`${firestorePath}.min q`] = minQty;
-    if (maxQty !== undefined) updates[`${firestorePath}.max q`] = maxQty;
-    if (Object.keys(updates).length > 0) {
-      await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allNoDots = [categoryKey, ...nodePath].every(s => !s.includes('.'));
+
+    if (allNoDots) {
+      const updates: Record<string, unknown> = {};
+      const firestorePath = `${categoryKey}.${nodePath.join('.')}`;
+      if (defaultQty !== undefined) updates[`${firestorePath}.Deafult q`] = defaultQty;
+      if (minQty !== undefined) updates[`${firestorePath}.min q`] = minQty;
+      if (maxQty !== undefined) updates[`${firestorePath}.max q`] = maxQty;
+      if (Object.keys(updates).length > 0) { await docRef.update(updates); }
+    } else {
+      const base = [categoryKey, ...nodePath];
+      if (defaultQty !== undefined) await docRef.set(setNested([...base, 'Deafult q'], defaultQty), { merge: true });
+      if (minQty !== undefined) await docRef.set(setNested([...base, 'min q'], minQty), { merge: true });
+      if (maxQty !== undefined) await docRef.set(setNested([...base, 'max q'], maxQty), { merge: true });
     }
     res.json({ success: true, message: 'Quantities updated' });
   } catch (error: any) {
@@ -670,7 +615,7 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/quantit
   }
 });
 
-// PATCH /config/:serviceId/category/:categoryKey/node/dynamic-field (update field at category level)
+// PATCH /config/:serviceId/category/:categoryKey/node/dynamic-field
 servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/dynamic-field', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
@@ -679,7 +624,13 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/node/dynamic
     if (!Array.isArray(nodePath) || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath required' });
 
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${nodePath.join('.')}`]: value });
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allNoDots = [categoryKey, ...nodePath].every(s => !s.includes('.'));
+    if (allNoDots) {
+      await docRef.update({ [`${categoryKey}.${nodePath.join('.')}`]: value });
+    } else {
+      await docRef.set(setNested([categoryKey, ...nodePath], value), { merge: true });
+    }
     res.json({ success: true, message: 'Field updated' });
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] PATCH dynamic-field (category) error:', error?.message || error);
@@ -710,20 +661,30 @@ servicesAdminRouter.patch(
       }
 
       const db = getDb();
-      const updates: Record<string, unknown> = {};
-      const basePath = `${categoryKey}.${nodePath.join('.')}`;
+      const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+      const allNoDots = [categoryKey, ...nodePath].every(s => !s.includes('.'));
 
-      if (renderType !== undefined)          updates[`${basePath}.renderType`] = renderType;
-      if (selectionType !== undefined)       updates[`${basePath}.selectionType`] = selectionType;
-      if (collectiveValidation !== undefined) updates[`${basePath}.collectiveValidation`] = collectiveValidation;
-      if (displayLabel !== undefined)        updates[`${basePath}.displayLabel`] = displayLabel;
-      if (mandatory !== undefined)           updates[`${basePath}.mandatory`] = mandatory;
+      const configFields: Record<string, unknown> = {};
+      if (renderType !== undefined) configFields.renderType = renderType;
+      if (selectionType !== undefined) configFields.selectionType = selectionType;
+      if (collectiveValidation !== undefined) configFields.collectiveValidation = collectiveValidation;
+      if (displayLabel !== undefined) configFields.displayLabel = displayLabel;
+      if (mandatory !== undefined) configFields.mandatory = mandatory;
 
-      if (Object.keys(updates).length === 0) {
+      if (Object.keys(configFields).length === 0) {
         return res.status(400).json({ success: false, error: 'No render config fields provided' });
       }
 
-      await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+      if (allNoDots) {
+        const basePath = `${categoryKey}.${nodePath.join('.')}`;
+        const updates: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(configFields)) updates[`${basePath}.${k}`] = v;
+        await docRef.update(updates);
+      } else {
+        for (const [k, v] of Object.entries(configFields)) {
+          await docRef.set(setNested([categoryKey, ...nodePath, k], v), { merge: true });
+        }
+      }
       res.json({ success: true, message: 'Render config updated', path: nodePath, renderType });
     } catch (error: unknown) {
       console.error('[SERVICES-ADMIN] PATCH render-config (category) error:', error instanceof Error ? error.message : error);
@@ -748,11 +709,15 @@ servicesAdminRouter.patch(
       }
 
       const db = getDb();
-      const basePath = `${categoryKey}.${nodePath.join('.')}`;
-      const updates: Record<string, unknown> = {};
-      updates[`${basePath}.dependsOn`] = dependsOn || null;
+      const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+      const allNoDots = [categoryKey, ...nodePath].every(s => !s.includes('.'));
 
-      await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+      if (allNoDots) {
+        const basePath = `${categoryKey}.${nodePath.join('.')}`;
+        await docRef.update({ [`${basePath}.dependsOn`]: dependsOn || null });
+      } else {
+        await docRef.set(setNested([categoryKey, ...nodePath, 'dependsOn'], dependsOn || null), { merge: true });
+      }
       res.json({ success: true, message: 'Dependency updated', path: nodePath, dependsOn });
     } catch (error: unknown) {
       console.error('[SERVICES-ADMIN] PATCH dependency (category) error:', error instanceof Error ? error.message : error);
@@ -761,7 +726,7 @@ servicesAdminRouter.patch(
   }
 );
 
-// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/branch (add empty branch node at setup level)
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/branch
 servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/branch', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const serviceId = String(req.params.serviceId);
@@ -771,10 +736,18 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     if (!branchName?.trim()) return res.status(400).json({ success: false, error: 'Branch name required' });
     
     const db = getDb();
-    const path = nodePath && nodePath.length > 0
-      ? `${categoryKey}.${setupKey}.${nodePath.join('.')}.${branchName}`
-      : `${categoryKey}.${setupKey}.${branchName}`;
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [path]: {} });
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allSegments = nodePath && nodePath.length > 0
+      ? [categoryKey, setupKey, ...nodePath, branchName]
+      : [categoryKey, setupKey, branchName];
+    if (allSegments.some(s => s.includes('.'))) {
+      await docRef.set(setNested(allSegments, {}), { merge: true });
+    } else {
+      const path = nodePath && nodePath.length > 0
+        ? `${categoryKey}.${setupKey}.${nodePath.join('.')}.${branchName}`
+        : `${categoryKey}.${setupKey}.${branchName}`;
+      await docRef.update({ [path]: {} });
+    }
     res.json({ success: true, message: `Branch "${branchName}" created` });
   } catch (error) { res.status(500).json({ success: false, error: 'Failed to create branch' }); }
 });
@@ -790,7 +763,7 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     const db = getDb();
     const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
     const parentName = nodePath[nodePath.length - 1];
-    const optionKey = `${parentName} Option ${Date.now().toString().slice(-4)}`; // Simple unique name
+    const optionKey = `${parentName} Option ${Date.now().toString().slice(-4)}`;
 
     const optionData = {
       'Deafult q': defaultQty ?? 1,
@@ -802,9 +775,13 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
       'rigid': false
     };
 
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({
-      [`${categoryKey}.${setupKey}.${nodePath.join('.')}.${optionKey}`]: optionData
-    });
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allSegments = [categoryKey, setupKey, ...nodePath, optionKey];
+    if (allSegments.some(s => s.includes('.'))) {
+      await docRef.set(setNested(allSegments, optionData), { merge: true });
+    } else {
+      await docRef.update({ [`${categoryKey}.${setupKey}.${nodePath.join('.')}.${optionKey}`]: optionData });
+    }
     res.json({ success: true, message: `Node added` });
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] POST node error:', error?.message || error);
@@ -820,7 +797,7 @@ servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setu
     const setupKey = String(req.params.setupKey);
     const path = JSON.parse(req.query.path as string) as string[];
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${path.join('.')}`]: FieldValue.delete() });
+    await deleteNested(db.collection(SERVICE_COLLECTION).doc(serviceId), [categoryKey, setupKey, ...path]);
     res.json({ success: true, message: 'Node deleted' });
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] DELETE node error:', error?.message || error);
@@ -836,12 +813,21 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/setup/:setup
     const setupKey = String(req.params.setupKey);
     const { nodePath, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; defaultQty?: number; minQty?: number; maxQty?: number; };
     const db = getDb();
-    const firestorePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
-    const updates: any = {};
-    if (defaultQty !== undefined) updates[`${firestorePath}.Deafult q`] = defaultQty;
-    if (minQty !== undefined) updates[`${firestorePath}.min q`] = minQty;
-    if (maxQty !== undefined) updates[`${firestorePath}.max q`] = maxQty;
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allNoDots = [categoryKey, setupKey, ...nodePath].every(s => !s.includes('.'));
+    if (allNoDots) {
+      const firestorePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+      const updates: any = {};
+      if (defaultQty !== undefined) updates[`${firestorePath}.Deafult q`] = defaultQty;
+      if (minQty !== undefined) updates[`${firestorePath}.min q`] = minQty;
+      if (maxQty !== undefined) updates[`${firestorePath}.max q`] = maxQty;
+      await docRef.update(updates);
+    } else {
+      const base = [categoryKey, setupKey, ...nodePath];
+      if (defaultQty !== undefined) await docRef.set(setNested([...base, 'Deafult q'], defaultQty), { merge: true });
+      if (minQty !== undefined) await docRef.set(setNested([...base, 'min q'], minQty), { merge: true });
+      if (maxQty !== undefined) await docRef.set(setNested([...base, 'max q'], maxQty), { merge: true });
+    }
     res.json({ success: true, message: 'Quantities updated' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to update quantities' });
@@ -856,7 +842,13 @@ servicesAdminRouter.patch('/config/:serviceId/category/:categoryKey/setup/:setup
     const setupKey = String(req.params.setupKey);
     const { nodePath, value } = req.body as { nodePath: string[]; value: any; };
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc(serviceId).update({ [`${categoryKey}.${setupKey}.${nodePath.join('.')}`]: value });
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allNoDots = [categoryKey, setupKey, ...nodePath].every(s => !s.includes('.'));
+    if (allNoDots) {
+      await docRef.update({ [`${categoryKey}.${setupKey}.${nodePath.join('.')}`]: value });
+    } else {
+      await docRef.set(setNested([categoryKey, setupKey, ...nodePath], value), { merge: true });
+    }
     res.json({ success: true, message: 'Field updated' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to update field' });
@@ -876,30 +868,42 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     
     const db = getDb();
     const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    
-    await db.runTransaction(async (transaction) => {
-       const doc = await transaction.get(serviceRef);
-       if (!doc.exists) throw new Error('Service not found');
-       
-       const data = doc.data()!;
-       let target = data[categoryKey]?.[setupKey];
-       if (!target) throw new Error('Setup not found');
-       
-       for (const p of nodePath) {
-          if (target[p] === undefined) throw new Error(`Node path not found`);
-          target = target[p];
-       }
-       
-       const parentPath = nodePath.slice(0, -1);
-       const oldName = nodePath[nodePath.length - 1];
-       
-       const firestoreParentPath = parentPath.length > 0 ? `${categoryKey}.${setupKey}.${parentPath.join('.')}` : `${categoryKey}.${setupKey}`;
-       
-       transaction.update(serviceRef, {
-         [`${firestoreParentPath}.${newName}`]: target,
-         [`${firestoreParentPath}.${oldName}`]: FieldValue.delete()
-       });
-    });
+    const hasDots = [categoryKey, setupKey, ...nodePath, newName].some(s => s.includes('.'));
+
+    if (!hasDots) {
+      await db.runTransaction(async (transaction) => {
+         const doc = await transaction.get(serviceRef);
+         if (!doc.exists) throw new Error('Service not found');
+         const data = doc.data()!;
+         let target = data[categoryKey]?.[setupKey];
+         if (!target) throw new Error('Setup not found');
+         for (const p of nodePath) {
+            if (target[p] === undefined) throw new Error(`Node path not found`);
+            target = target[p];
+         }
+         const parentPath = nodePath.slice(0, -1);
+         const oldName = nodePath[nodePath.length - 1];
+         const firestoreParentPath = parentPath.length > 0 ? `${categoryKey}.${setupKey}.${parentPath.join('.')}` : `${categoryKey}.${setupKey}`;
+         transaction.update(serviceRef, {
+           [`${firestoreParentPath}.${newName}`]: target,
+           [`${firestoreParentPath}.${oldName}`]: FieldValue.delete()
+         });
+      });
+    } else {
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(serviceRef);
+        if (!doc.exists) throw new Error('Service not found');
+        const data = doc.data()!;
+        let current = data[categoryKey]?.[setupKey];
+        if (!current) throw new Error('Setup not found');
+        const parentPath = nodePath.slice(0, -1);
+        for (const p of parentPath) { current = current[p]; }
+        const oldName = nodePath[nodePath.length - 1];
+        current[newName] = current[oldName];
+        delete current[oldName];
+        transaction.set(serviceRef, data);
+      });
+    }
     
     res.json({ success: true, message: `Node renamed to ${newName}` });
   } catch (error: any) {
@@ -949,22 +953,122 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     
     const db = getDb();
     const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const hasDots = [categoryKey, setupKey, newName].some(s => s.includes('.'));
     
-    await db.runTransaction(async (transaction) => {
-       const doc = await transaction.get(serviceRef);
-       if (!doc.exists) throw new Error('Service not found');
-       const data = doc.data()!;
-       const setupData = data[categoryKey]?.[setupKey];
-       if (!setupData) throw new Error('Setup not found');
-       
-       transaction.update(serviceRef, {
-         [`${categoryKey}.${newName}`]: setupData,
-         [`${categoryKey}.${setupKey}`]: FieldValue.delete()
-       });
-    });
+    if (!hasDots) {
+      await db.runTransaction(async (transaction) => {
+         const doc = await transaction.get(serviceRef);
+         if (!doc.exists) throw new Error('Service not found');
+         const data = doc.data()!;
+         const setupData = data[categoryKey]?.[setupKey];
+         if (!setupData) throw new Error('Setup not found');
+         transaction.update(serviceRef, {
+           [`${categoryKey}.${newName}`]: setupData,
+           [`${categoryKey}.${setupKey}`]: FieldValue.delete()
+         });
+      });
+    } else {
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(serviceRef);
+        if (!doc.exists) throw new Error('Service not found');
+        const data = doc.data()!;
+        data[categoryKey][newName] = data[categoryKey][setupKey];
+        delete data[categoryKey][setupKey];
+        transaction.set(serviceRef, data);
+      });
+    }
     res.json({ success: true, message: `Setup renamed to ${newName}` });
   } catch (error: any) {
     res.status(500).json({ success: false, error: 'Failed to rename setup' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/club — Group selected product slots/branches under a new group
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/club', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { groupName, keys, nodePath } = req.body as { groupName: string; keys: string[]; nodePath?: string[] };
+
+    if (!groupName?.trim()) return res.status(400).json({ success: false, error: 'groupName is required' });
+    if (!Array.isArray(keys) || keys.length < 2) {
+      return res.status(400).json({ success: false, error: 'At least 2 keys are required' });
+    }
+
+    const db = getDb();
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+
+    const parentSegments = nodePath && nodePath.length > 0
+      ? [categoryKey, setupKey, ...nodePath]
+      : [categoryKey, setupKey];
+
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(serviceRef);
+      if (!doc.exists) throw new Error('Service not found');
+      const data = doc.data()!;
+
+      // Traverse to parent, creating missing segments as empty objects so
+      // parent stays a live reference into the data object (avoids detachment).
+      let parent: Record<string, unknown> = data;
+      for (const seg of parentSegments) {
+        if (!parent[seg] || typeof parent[seg] !== 'object') parent[seg] = {};
+        parent = parent[seg] as Record<string, unknown>;
+      }
+
+      // Build the group map from selected child keys
+      const groupMap: Record<string, unknown> = {};
+      for (const key of keys) {
+        if (parent[key] !== undefined) {
+          groupMap[key] = parent[key];
+        }
+      }
+
+      // Write the new group and remove the original keys
+      parent[groupName] = groupMap;
+      for (const key of keys) {
+        delete parent[key];
+      }
+
+      transaction.set(serviceRef, data);
+    });
+
+    res.json({ success: true, message: `Items clubbed under "${groupName}"` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST club error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to club items' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup/clone — Deep-clone a setup from any category
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/clone', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const destCategoryKey = String(req.params.categoryKey);
+    const { sourceCategoryKey, sourceSetupKey, newName } = req.body as { sourceCategoryKey: string; sourceSetupKey: string; newName: string; };
+
+    if (!sourceCategoryKey?.trim() || !sourceSetupKey?.trim() || !newName?.trim()) {
+      return res.status(400).json({ success: false, error: 'sourceCategoryKey, sourceSetupKey, and newName are required' });
+    }
+
+    const db = getDb();
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const doc = await serviceRef.get();
+    if (!doc.exists) return res.status(404).json({ success: false, error: 'Service not found' });
+
+    const data = doc.data()!;
+    const sourceData = data[sourceCategoryKey]?.[sourceSetupKey];
+    if (!sourceData) {
+      return res.status(404).json({ success: false, error: `Source setup "${sourceCategoryKey}.${sourceSetupKey}" not found` });
+    }
+
+    // Always use setNested + set({ merge: true }) to preserve literal dots
+    // in any nested keys within sourceData (legacy data, user-entered decimals, etc.)
+    await serviceRef.set(setNested([destCategoryKey, newName], sourceData), { merge: true });
+    res.json({ success: true, message: `Setup cloned as "${newName}"` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST clone setup error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to clone setup' });
   }
 });
 
@@ -1031,20 +1135,30 @@ servicesAdminRouter.patch(
       }
 
       const db = getDb();
-      const updates: Record<string, unknown> = {};
-      const basePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+      const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+      const allNoDots = [categoryKey, setupKey, ...nodePath].every(s => !s.includes('.'));
 
-      if (renderType !== undefined)          updates[`${basePath}.renderType`] = renderType;
-      if (selectionType !== undefined)       updates[`${basePath}.selectionType`] = selectionType;
-      if (collectiveValidation !== undefined) updates[`${basePath}.collectiveValidation`] = collectiveValidation;
-      if (displayLabel !== undefined)        updates[`${basePath}.displayLabel`] = displayLabel;
-      if (mandatory !== undefined)           updates[`${basePath}.mandatory`] = mandatory;
+      const configFields: Record<string, unknown> = {};
+      if (renderType !== undefined) configFields.renderType = renderType;
+      if (selectionType !== undefined) configFields.selectionType = selectionType;
+      if (collectiveValidation !== undefined) configFields.collectiveValidation = collectiveValidation;
+      if (displayLabel !== undefined) configFields.displayLabel = displayLabel;
+      if (mandatory !== undefined) configFields.mandatory = mandatory;
 
-      if (Object.keys(updates).length === 0) {
+      if (Object.keys(configFields).length === 0) {
         return res.status(400).json({ success: false, error: 'No render config fields provided' });
       }
 
-      await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+      if (allNoDots) {
+        const basePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+        const updates: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(configFields)) updates[`${basePath}.${k}`] = v;
+        await docRef.update(updates);
+      } else {
+        for (const [k, v] of Object.entries(configFields)) {
+          await docRef.set(setNested([categoryKey, setupKey, ...nodePath, k], v), { merge: true });
+        }
+      }
       res.json({ success: true, message: 'Render config updated', path: nodePath, renderType });
     } catch (error: unknown) {
       console.error('[SERVICES-ADMIN] PATCH render-config error:', error instanceof Error ? error.message : error);
@@ -1070,11 +1184,15 @@ servicesAdminRouter.patch(
       }
 
       const db = getDb();
-      const basePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
-      const updates: Record<string, unknown> = {};
-      updates[`${basePath}.dependsOn`] = dependsOn || null;
+      const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+      const allNoDots = [categoryKey, setupKey, ...nodePath].every(s => !s.includes('.'));
 
-      await db.collection(SERVICE_COLLECTION).doc(serviceId).update(updates);
+      if (allNoDots) {
+        const basePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
+        await docRef.update({ [`${basePath}.dependsOn`]: dependsOn || null });
+      } else {
+        await docRef.set(setNested([categoryKey, setupKey, ...nodePath, 'dependsOn'], dependsOn || null), { merge: true });
+      }
       res.json({ success: true, message: 'Dependency updated', path: nodePath, dependsOn });
     } catch (error: unknown) {
       console.error('[SERVICES-ADMIN] PATCH dependency error:', error instanceof Error ? error.message : error);

@@ -88,6 +88,7 @@ interface ClubbedOption {
   collectiveValidation?: boolean; // for LIST groups
   displayLabel?: string;         // human-readable label override
   mandatory?: boolean;           // whether customer must select
+  dependsOn?: string;            // product key this leaf's quantity depends on
 }
 
 /**
@@ -150,6 +151,7 @@ function extractClubbedOptions(
         collectiveValidation: Boolean(opt['collectiveValidation']),
         displayLabel: (opt['displayLabel'] as string) || undefined,
         mandatory: opt['mandatory'] !== false,
+        dependsOn: (opt['dependsOn'] as string) || undefined,
       });
     } else {
       // BRANCH: children are maps — recurse
@@ -172,6 +174,7 @@ function extractClubbedOptions(
         collectiveValidation: Boolean(opt['collectiveValidation']),
         displayLabel: (opt['displayLabel'] as string) || undefined,
         mandatory: opt['mandatory'] !== false,
+        dependsOn: (opt['dependsOn'] as string) || undefined,
       });
     }
   }
@@ -276,6 +279,7 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
           collectiveValidation?: boolean;
           displayLabel?: string;
           mandatory?: boolean;
+          dependsOn?: string;
         }> = [];
         for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
           const optionMappings = optionMapEntry as Record<string, unknown>;
@@ -285,12 +289,13 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
           if (!firstLeaf) continue;
           const product = productMap.get(firstLeaf.productId);
           if (!product) continue;
+          const slotMaxQty = Number((optionMappings as Record<string, unknown>)['max q']) || 0;
           mappedProducts.push({
             productKey,
             productId: firstLeaf.productId,
             defaultQty: firstLeaf.defaultQty,
             minQty: firstLeaf.minQty,
-            maxQty: firstLeaf.maxQty,
+            maxQty: slotMaxQty || firstLeaf.maxQty,
             product: normalizeProduct(firstLeaf.productId, product),
             isClubbed,
             clubbedOptions,
@@ -298,6 +303,7 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
             collectiveValidation: firstLeaf.collectiveValidation ?? false,
             displayLabel: firstLeaf.displayLabel,
             mandatory: firstLeaf.mandatory !== false,
+            dependsOn: firstLeaf.dependsOn,
           });
         }
         return {
@@ -351,6 +357,7 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
           collectiveValidation?: boolean;
           displayLabel?: string;
           mandatory?: boolean;
+          dependsOn?: string;
         }> = [];
         for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
           const optionMappings = optionMapEntry as Record<string, unknown>;
@@ -360,12 +367,13 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
           if (!firstLeaf) continue;
           const product = productMap.get(firstLeaf.productId);
           if (!product) continue;
+          const slotMaxQty = Number((optionMappings as Record<string, unknown>)['max q']) || 0;
           mappedProducts.push({
             productKey,
             productId: firstLeaf.productId,
             defaultQty: firstLeaf.defaultQty,
             minQty: firstLeaf.minQty,
-            maxQty: firstLeaf.maxQty,
+            maxQty: slotMaxQty || firstLeaf.maxQty,
             product: normalizeProduct(firstLeaf.productId, product),
             isClubbed,
             clubbedOptions,
@@ -373,6 +381,7 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
             collectiveValidation: firstLeaf.collectiveValidation ?? false,
             displayLabel: firstLeaf.displayLabel,
             mandatory: firstLeaf.mandatory !== false,
+            dependsOn: firstLeaf.dependsOn,
           });
         }
         return {
