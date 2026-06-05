@@ -3,7 +3,7 @@ import { useAuthStore } from '../../core/services/auth_service'
 import { getApiBaseUrl } from '../../core/config/api'
 
 const BASE_URL = getApiBaseUrl()
-const FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/safecom-application-01/databases/(default)/documents'
+const FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/safecom-application-01/databases/safecom-database-nosql/documents'
 
 async function authHeaders(): Promise<Record<string, string>> {
   // Always try to get a fresh Firebase ID token first.
