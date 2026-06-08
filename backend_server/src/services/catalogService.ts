@@ -3,6 +3,7 @@ import { getDb } from './firestore.js';
 
 const SERVICE_COLLECTION = 'Services';
 const PRODUCT_COLLECTION = 'catalog_product';
+const ACTIVE_META_KEY = '__active__';
 
 const MAINTENANCE_ICON_MAP: Record<string, string> = {
   'Preventive Maintenance': 'settings_suggest_outlined',
@@ -263,25 +264,38 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
     const productMap = new Map<string, Record<string, unknown>>();
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
-    const categories = Object.entries(data).map(([categoryKey, setups]) => {
-      const groups = Object.entries(setups as Record<string, unknown>).map(([setupName, productMapEntry]) => {
-        const groupProducts = productMapEntry as Record<string, unknown>;
-        const mappedProducts: Array<{
-          productKey: string;
-          productId: string;
-          defaultQty: number;
-          minQty: number;
-          maxQty: number;
-          product: Record<string, unknown>;
-          isClubbed: boolean;
-          clubbedOptions: ClubbedOption[];
-          renderType?: string;
-          collectiveValidation?: boolean;
-          displayLabel?: string;
-          mandatory?: boolean;
-          dependsOn?: string;
-        }> = [];
-        for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
+    const categories = Object.entries(data)
+      .filter(([categoryKey]) => {
+        const catData = data[categoryKey] as Record<string, unknown>;
+        if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
+        return true;
+      })
+      .map(([categoryKey, setups]) => {
+        const groups = Object.entries(setups as Record<string, unknown>)
+          .filter(([setupName]) => setupName !== ACTIVE_META_KEY)
+          .filter(([setupName]) => {
+            const setupData = (setups as Record<string, unknown>)[setupName] as Record<string, unknown>;
+            if (setupData && typeof setupData === 'object' && setupData[ACTIVE_META_KEY] === false) return false;
+            return true;
+          })
+          .map(([setupName, productMapEntry]) => {
+            const groupProducts = productMapEntry as Record<string, unknown>;
+            const mappedProducts: Array<{
+              productKey: string;
+              productId: string;
+              defaultQty: number;
+              minQty: number;
+              maxQty: number;
+              product: Record<string, unknown>;
+              isClubbed: boolean;
+              clubbedOptions: ClubbedOption[];
+              renderType?: string;
+              collectiveValidation?: boolean;
+              displayLabel?: string;
+              mandatory?: boolean;
+              dependsOn?: string;
+            }> = [];
+            for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
           const optionMappings = optionMapEntry as Record<string, unknown>;
           const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
           const isClubbed = clubbedOptions.length > 1;
@@ -348,25 +362,38 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
     const productMap = new Map<string, Record<string, unknown>>();
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
-    const categories = Object.entries(data).map(([categoryKey, setups]) => {
-      const groups = Object.entries(setups as Record<string, unknown>).map(([setupName, productMapEntry]) => {
-        const groupProducts = productMapEntry as Record<string, unknown>;
-        const mappedProducts: Array<{
-          productKey: string;
-          productId: string;
-          defaultQty: number;
-          minQty: number;
-          maxQty: number;
-          product: Record<string, unknown>;
-          isClubbed: boolean;
-          clubbedOptions: ClubbedOption[];
-          renderType?: string;
-          collectiveValidation?: boolean;
-          displayLabel?: string;
-          mandatory?: boolean;
-          dependsOn?: string;
-        }> = [];
-        for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
+    const categories = Object.entries(data)
+      .filter(([categoryKey]) => {
+        const catData = data[categoryKey] as Record<string, unknown>;
+        if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
+        return true;
+      })
+      .map(([categoryKey, setups]) => {
+        const groups = Object.entries(setups as Record<string, unknown>)
+          .filter(([setupName]) => setupName !== ACTIVE_META_KEY)
+          .filter(([setupName]) => {
+            const setupData = (setups as Record<string, unknown>)[setupName] as Record<string, unknown>;
+            if (setupData && typeof setupData === 'object' && setupData[ACTIVE_META_KEY] === false) return false;
+            return true;
+          })
+          .map(([setupName, productMapEntry]) => {
+            const groupProducts = productMapEntry as Record<string, unknown>;
+            const mappedProducts: Array<{
+              productKey: string;
+              productId: string;
+              defaultQty: number;
+              minQty: number;
+              maxQty: number;
+              product: Record<string, unknown>;
+              isClubbed: boolean;
+              clubbedOptions: ClubbedOption[];
+              renderType?: string;
+              collectiveValidation?: boolean;
+              displayLabel?: string;
+              mandatory?: boolean;
+              dependsOn?: string;
+            }> = [];
+            for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
           const optionMappings = optionMapEntry as Record<string, unknown>;
           const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
           const isClubbed = clubbedOptions.length > 1;
@@ -438,7 +465,9 @@ export const getRepairPricing = async (req: Request, res: Response) => {
     const templates: Array<{ key: string; name: string; unitPrice: number; quantity: number; canEditQuantity: boolean }> = [];
 
     for (const [issueName, products] of Object.entries(data)) {
+      if (issueName === ACTIVE_META_KEY) continue; // skip active metadata
       const issueProducts = products as Record<string, unknown>;
+      if (typeof issueProducts === 'object' && issueProducts[ACTIVE_META_KEY] === false) continue;
       let visitFee = 0;
       let diagnosticFee = 0;
       for (const optionMap of Object.values(issueProducts)) {
@@ -510,7 +539,14 @@ export const getAmcConfig = async (req: Request, res: Response) => {
     const productMap = new Map<string, Record<string, unknown>>();
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
-    const plans = Object.entries(data).map(([planName, planData], index) => {
+    const plans = Object.entries(data)
+      .filter(([planName]) => planName !== ACTIVE_META_KEY)
+      .filter(([planName]) => {
+        const planData = data[planName] as Record<string, unknown>;
+        if (planData && typeof planData === 'object' && planData[ACTIVE_META_KEY] === false) return false;
+        return true;
+      })
+      .map(([planName, planData], index) => {
       const planMap = planData as Record<string, unknown>;
       let price = 0;
       for (const optionMap of Object.values(planMap)) {
@@ -561,7 +597,14 @@ export const getUpgradeBundles = async (req: Request, res: Response) => {
     const productMap = new Map<string, Record<string, unknown>>();
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
-    const bundles = Object.entries(data).map(([bundleName, bundleData]) => {
+    const bundles = Object.entries(data)
+      .filter(([bundleName]) => bundleName !== ACTIVE_META_KEY)
+      .filter(([bundleName]) => {
+        const bundleData = data[bundleName] as Record<string, unknown>;
+        if (bundleData && typeof bundleData === 'object' && bundleData[ACTIVE_META_KEY] === false) return false;
+        return true;
+      })
+      .map(([bundleName, bundleData]) => {
       const bundleMap = bundleData as Record<string, unknown>;
       let price = 0;
       for (const optionMap of Object.values(bundleMap)) {

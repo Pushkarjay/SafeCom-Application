@@ -48,6 +48,8 @@ async function getProductMap(): Promise<Map<string, Record<string, unknown>>> {
 // Detects leaf vs branch nodes in the deeply nested Firestore map.
 // Leaf: has 'Price', 'Deafult q', 'available', 'rigid' fields.
 // Branch: children are maps → recurse.
+const ACTIVE_META_KEY = '__active__';
+
 function isLeafNode(obj: Record<string, unknown>): boolean {
   return (
     obj.hasOwnProperty('Price') ||
@@ -90,6 +92,7 @@ function extractTree(
   const nodes: TreeNode[] = [];
   for (const [key, value] of Object.entries(slot)) {
     if (value === null || value === undefined) continue;
+    if (key === ACTIVE_META_KEY) continue; // skip active metadata
 
     if (typeof value !== 'object') {
       nodes.push({
@@ -241,33 +244,47 @@ installationAdminRouter.get('/', authenticateToken, requireRole(['admin']), asyn
     const data = doc.data() || {};
     const productMap = await getProductMap();
 
-    const categories = Object.entries(data).map(([categoryKey, setupsRaw]) => {
-      const setups = setupsRaw as Record<string, unknown>;
-      const setupEntries = Object.entries(setups).map(([setupKey, productsRaw]) => {
-        const products = productsRaw as Record<string, unknown>;
-        const productSlots = Object.entries(products).map(([productKey, optionsRaw]) => {
-          const options = optionsRaw as Record<string, unknown>;
-          // Recursively extract the full tree for this product slot
-          const tree = extractTree(options, productMap);
-          const hasMultipleTopLevel = tree.length > 1;
-          return {
-            key: productKey,
-            options: tree,
-            isClubbed: hasMultipleTopLevel
-          };
-        });
+    const categories = Object.entries(data)
+      .filter(([categoryKey]) => {
+        if (categoryKey.startsWith('_')) return false;
+        const catData = data[categoryKey] as Record<string, unknown>;
+        if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
+        return true;
+      })
+      .map(([categoryKey, setupsRaw]) => {
+        const setups = setupsRaw as Record<string, unknown>;
+        const setupEntries = Object.entries(setups)
+          .filter(([setupKey]) => setupKey !== ACTIVE_META_KEY)
+          .map(([setupKey, productsRaw]) => {
+            const products = productsRaw as Record<string, unknown>;
+            const isActive = products[ACTIVE_META_KEY] !== false;
+            const productSlots = Object.entries(products)
+              .filter(([productKey]) => productKey !== ACTIVE_META_KEY)
+              .map(([productKey, optionsRaw]) => {
+                const options = optionsRaw as Record<string, unknown>;
+                const tree = extractTree(options, productMap);
+                const hasMultipleTopLevel = tree.length > 1;
+                return {
+                  key: productKey,
+                  options: tree,
+                  isClubbed: hasMultipleTopLevel
+                };
+              });
+            return {
+              key: setupKey,
+              name: setupKey,
+              products: productSlots,
+              active: isActive
+            };
+          });
+        const catActive = (setups as Record<string, unknown>)[ACTIVE_META_KEY] !== false;
         return {
-          key: setupKey,
-          name: setupKey,
-          products: productSlots
+          key: categoryKey,
+          name: categoryKey,
+          setups: setupEntries,
+          active: catActive
         };
       });
-      return {
-        key: categoryKey,
-        name: categoryKey,
-        setups: setupEntries
-      };
-    });
 
     res.json({ success: true, data: { categories } });
   } catch (error) {
@@ -501,6 +518,42 @@ installationAdminRouter.delete(
     } catch (error) {
       console.error('[INSTALL-ADMIN] DELETE node error:', error);
       res.status(500).json({ success: false, error: 'Failed to delete node' });
+    }
+  }
+);
+
+// ─── PATCH /active — Toggle active status on category or setup ──
+installationAdminRouter.patch(
+  '/active',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const { categoryKey, setupKey, active } = req.body as {
+        categoryKey?: string;
+        setupKey?: string;
+        active: boolean;
+      };
+
+      if (!categoryKey) {
+        return res.status(400).json({ success: false, error: 'categoryKey is required' });
+      }
+
+      const db = getDb();
+      const docRef = db.collection(SERVICE_COLLECTION).doc('Installation');
+
+      if (setupKey) {
+        const path = `${categoryKey}.${setupKey}.${ACTIVE_META_KEY}`;
+        await docRef.update({ [path]: active });
+        res.json({ success: true, message: `Setup "${setupKey}" ${active ? 'activated' : 'deactivated'}` });
+      } else {
+        const path = `${categoryKey}.${ACTIVE_META_KEY}`;
+        await docRef.update({ [path]: active });
+        res.json({ success: true, message: `Category "${categoryKey}" ${active ? 'activated' : 'deactivated'}` });
+      }
+    } catch (error) {
+      console.error('[INSTALL-ADMIN] PATCH active error:', error);
+      res.status(500).json({ success: false, error: 'Failed to toggle active status' });
     }
   }
 );

@@ -44,12 +44,14 @@ interface Setup {
   key: string
   name: string
   products: ProductSlot[]
+  active?: boolean
 }
 
 interface Category {
   key: string
   name: string
   setups: Setup[]
+  active?: boolean
 }
 
 interface CatalogProduct {
@@ -888,6 +890,41 @@ export default function ServiceTreeBuilderScreen() {
     }
   }
 
+  // ─── Toggle active status ─────────────────────────────────
+  const toggleCategoryActive = async (catKey: string, currentActive: boolean) => {
+    if (!serviceId) return
+    const newActive = !currentActive
+    // Optimistic update
+    setCategories(prev => prev.map(c => c.key === catKey ? { ...c, active: newActive } : c))
+    setSaving(true)
+    try {
+      await adminDatasource.serviceToggleActive(serviceId, catKey, null, newActive)
+    } catch (err) {
+      setCategories(prev => prev.map(c => c.key === catKey ? { ...c, active: currentActive } : c))
+      setError(err instanceof Error ? err.message : 'Failed')
+    } finally { setSaving(false) }
+  }
+
+  const toggleSetupActive = async (catKey: string, setupKey: string, currentActive: boolean) => {
+    if (!serviceId) return
+    const newActive = !currentActive
+    // Optimistic update
+    setCategories(prev => prev.map(c => {
+      if (c.key !== catKey) return c
+      return { ...c, setups: c.setups.map(s => s.key === setupKey ? { ...s, active: newActive } : s) }
+    }))
+    setSaving(true)
+    try {
+      await adminDatasource.serviceToggleActive(serviceId, catKey, setupKey, newActive)
+    } catch (err) {
+      setCategories(prev => prev.map(c => {
+        if (c.key !== catKey) return c
+        return { ...c, setups: c.setups.map(s => s.key === setupKey ? { ...s, active: currentActive } : s) }
+      }))
+      setError(err instanceof Error ? err.message : 'Failed')
+    } finally { setSaving(false) }
+  }
+
   // ─── Reorder helpers ─────────────────────────────────────
   const moveCategory = (index: number, direction: 'up' | 'down') => {
     setCategories(prev => {
@@ -1224,7 +1261,7 @@ export default function ServiceTreeBuilderScreen() {
             ) : categories.map((cat, catIdx) => {
               const catOpen = expandedCats.has(cat.key)
               return (
-                <div key={cat.key} className={`ib-category-card ${catOpen ? 'open' : ''}`}>
+                <div key={cat.key} className={`ib-category-card ${catOpen ? 'open' : ''} ${cat.active === false ? 'inactive' : ''}`}>
                   <div className="ib-category-header">
                     <button className="ib-category-toggle" onClick={() => toggle(expandedCats, cat.key, setExpandedCats)} type="button">
                       <span className={`ib-chevron ${catOpen ? 'open' : ''}`}>▶</span>
@@ -1252,6 +1289,14 @@ export default function ServiceTreeBuilderScreen() {
                         } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
                       }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
                       <button className="icon-btn" onClick={() => renameCategory(cat.key)} title="Rename Category" style={{ marginRight: '4px' }}>✏️</button>
+                      <button
+                        className={`icon-btn ${cat.active === false ? 'danger' : ''}`}
+                        onClick={() => toggleCategoryActive(cat.key, cat.active !== false)}
+                        title={cat.active === false ? 'Activate category (show in customer app)' : 'Deactivate category (hide from customer app)'}
+                        style={{ marginRight: '4px', fontSize: '13px', color: cat.active === false ? '#ef4444' : '#10b981' }}
+                      >
+                        {cat.active === false ? '🔴' : '🟢'}
+                      </button>
                       <button className="icon-btn" onClick={() => moveCategory(catIdx, 'up')} disabled={catIdx === 0} title="Move Up" style={{ marginRight: '2px', fontSize: '14px' }}>↑</button>
                       <button className="icon-btn" onClick={() => moveCategory(catIdx, 'down')} disabled={catIdx === categories.length - 1} title="Move Down" style={{ marginRight: '4px', fontSize: '14px' }}>↓</button>
                       <span className="ib-category-price">{fmt(categoryTotal(cat))}</span>
@@ -1267,7 +1312,7 @@ export default function ServiceTreeBuilderScreen() {
                         const sKey = `${cat.key}::${setup.key}`
                         const setupOpen = expandedSetups.has(sKey)
                         return (
-                          <div key={setup.key} className={`ib-setup-card ${setupOpen ? 'open' : ''}`}>
+                          <div key={setup.key} className={`ib-setup-card ${setupOpen ? 'open' : ''} ${setup.active === false ? 'inactive' : ''}`}>
                             <div className="ib-setup-header">
                               <button className="ib-setup-toggle" onClick={() => toggle(expandedSetups, sKey, setExpandedSetups)} type="button">
                                 <span className={`ib-chevron ${setupOpen ? 'open' : ''}`}>▶</span>
@@ -1281,6 +1326,14 @@ export default function ServiceTreeBuilderScreen() {
                                   <button className="secondary-btn small" onClick={() => pasteNode(cat.key, setup.key, [])} disabled={saving} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#6366f1', color: '#fff' }}>📄 Paste</button>
                                 )}
                                 <button className="icon-btn" onClick={() => renameSetup(cat.key, setup.key)} title="Rename Setup" style={{ marginRight: '4px' }}>✏️</button>
+                                <button
+                                  className={`icon-btn ${setup.active === false ? 'danger' : ''}`}
+                                  onClick={() => toggleSetupActive(cat.key, setup.key, setup.active !== false)}
+                                  title={setup.active === false ? 'Activate setup (show in customer app)' : 'Deactivate setup (hide from customer app)'}
+                                  style={{ marginRight: '4px', fontSize: '13px', color: setup.active === false ? '#ef4444' : '#10b981' }}
+                                >
+                                  {setup.active === false ? '🔴' : '🟢'}
+                                </button>
                                 <button className="icon-btn" onClick={() => copySetup(cat.key, setup)} title="Copy setup to clipboard" style={{ marginRight: '4px', fontSize: '13px' }}>📋</button>
                                 <button className="icon-btn" onClick={() => moveSetup(cat.key, setupIdx, 'up')} disabled={setupIdx === 0} title="Move Up" style={{ marginRight: '2px', fontSize: '14px' }}>↑</button>
                                 <button className="icon-btn" onClick={() => moveSetup(cat.key, setupIdx, 'down')} disabled={setupIdx === cat.setups.length - 1} title="Move Down" style={{ marginRight: '4px', fontSize: '14px' }}>↓</button>

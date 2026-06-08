@@ -412,3 +412,19 @@ tr.depth-4:hover, tr.depth-5:hover {
   .ib-product-table td:last-child { min-width: 120px; }
   .ib-setup-body { padding: 6px; overflow-x: auto; }
 }
+
+/* ─── Inactive (deactivated) category/setup styling ─── */
+.ib-category-card.inactive > .ib-category-header {
+  opacity: 0.55;
+}
+.ib-category-card.inactive > .ib-category-header .ib-category-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.ib-setup-card.inactive > .ib-setup-header {
+  opacity: 0.55;
+}
+.ib-setup-card.inactive > .ib-setup-header .ib-setup-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}

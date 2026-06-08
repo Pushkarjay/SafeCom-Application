@@ -554,6 +554,13 @@ export class AdminDatasource {
     }
   }
 
+  async serviceToggleActive(serviceId: string, categoryKey: string, setupKey: string | null, active: boolean): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/active`, {
+      method: 'PATCH',
+      body: JSON.stringify({ categoryKey, setupKey, active })
+    })
+  }
+
   async serviceAddBranch(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], branchName: string): Promise<void> {
     if (!setupKey || setupKey === '') {
       await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/branch`, {
