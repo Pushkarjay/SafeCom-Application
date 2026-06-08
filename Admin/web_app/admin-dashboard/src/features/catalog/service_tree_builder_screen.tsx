@@ -117,6 +117,9 @@ function ProductSearchModal({ onSelect, onSelectMultiple, onClose }: {
 
   const toggleProduct = (id: string) => {
     setSelected(prev => {
+      if (!onSelectMultiple) {
+        return new Set(prev.has(id) ? [] : [id])
+      }
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
@@ -136,17 +139,14 @@ function ProductSearchModal({ onSelect, onSelectMultiple, onClose }: {
     if (products.length === 0) return
     if (onSelectMultiple) {
       onSelectMultiple(products)
-    } else if (onSelect && products.length === 1) {
+    } else if (onSelect && products.length >= 1) {
       onSelect(products[0])
     }
+    onClose()
   }
 
   const handleRowClick = (p: CatalogProduct) => {
-    if (onSelectMultiple) {
-      toggleProduct(p.id)
-    } else if (onSelect) {
-      onSelect(p)
-    }
+    toggleProduct(p.id)
   }
 
   return (
@@ -202,14 +202,12 @@ function ProductSearchModal({ onSelect, onSelectMultiple, onClose }: {
             </>
           )}
         </div>
-        {onSelectMultiple && (
-          <div className="modal-footer">
-            <button className="secondary-btn" onClick={onClose}>Cancel</button>
-            <button className="primary-btn" onClick={handleAddSelected} disabled={selected.size === 0}>
-              Add Selected ({selected.size})
-            </button>
-          </div>
-        )}
+        <div className="modal-footer">
+          <button className="secondary-btn" onClick={onClose}>Cancel</button>
+          <button className="primary-btn" onClick={handleAddSelected} disabled={selected.size === 0}>
+            Add Selected ({selected.size})
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -266,7 +264,15 @@ export default function ServiceTreeBuilderScreen() {
   const hasUnsavedChanges = pendingEdits.length > 0
 
   // Clipboard for copy-paste — stores source keys for deep Firestore-level clone
-  const [clipboard, setClipboard] = useState<{ type: 'setup'; label: string; data: { sourceCategoryKey: string; sourceSetupKey: string } } | null>(null)
+  const [clipboard, setClipboard] = useState<{
+    type: 'setup';
+    label: string;
+    data: { sourceCategoryKey: string; sourceSetupKey: string };
+  } | {
+    type: 'node';
+    label: string;
+    data: { sourceCategoryKey: string; sourceSetupKey: string; sourceNodePath: string[] };
+  } | null>(null)
 
   /** Collect all leaf product IDs from a setup's product slots */
   const collectLeafIds = useCallback((slots: ProductSlot[]): string[] => {
@@ -840,6 +846,11 @@ export default function ServiceTreeBuilderScreen() {
     setClipboard({ type: 'setup', label: setup.name, data: { sourceCategoryKey: catKey, sourceSetupKey: setup.key } })
   }
 
+  const copyNode = (catKey: string, setupKey: string, nodePath: string[]) => {
+    const label = nodePath[nodePath.length - 1]
+    setClipboard({ type: 'node', label, data: { sourceCategoryKey: catKey, sourceSetupKey: setupKey, sourceNodePath: nodePath } })
+  }
+
   const pasteSetup = async (categoryKey: string) => {
     if (!clipboard || !serviceId) return
     const src = clipboard.data
@@ -849,6 +860,25 @@ export default function ServiceTreeBuilderScreen() {
     setError(null)
     try {
       await adminDatasource.serviceCloneSetup(serviceId, src.sourceCategoryKey, src.sourceSetupKey, categoryKey, newName.trim())
+      setClipboard(null)
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to paste')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const pasteNode = async (categoryKey: string, setupKey: string, destNodePath: string[]) => {
+    if (!clipboard || clipboard.type !== 'node' || !serviceId) return
+    const src = clipboard.data
+    const defaultKey = clipboard.label
+    const newKey = prompt(`Enter name for pasted node (source: "${clipboard.label}"):`, safeKey(`Copy of ${defaultKey}`))
+    if (!newKey?.trim()) return
+    setSaving(true)
+    setError(null)
+    try {
+      await adminDatasource.serviceCloneNode(serviceId, categoryKey, setupKey, src.sourceNodePath, destNodePath, safeKey(newKey.trim()))
       setClipboard(null)
       await loadData()
     } catch (err) {
@@ -1007,11 +1037,15 @@ export default function ServiceTreeBuilderScreen() {
                     🔗 {node.dependsOn}
                   </span>
                 )}
-                <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey: setupKey, nodePath })} title="Add product option">+ Option</button>
+                <button className="secondary-btn small" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add product from catalog" style={{ fontSize: '11px', padding: '4px 8px' }}>+ Product</button>
                 <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                {clipboard?.type === 'node' && (
+                  <button className="link-btn" onClick={() => pasteNode(catKey, setupKey, nodePath)} disabled={saving} style={{ color: '#6366f1' }}>📄 Paste</button>
+                )}
                 <button className="link-btn" onClick={() => editDependency(catKey, setupKey, nodePath, node, allSlots)} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
                 <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename">✏️</button>
+                <button className="icon-btn" onClick={() => copyNode(catKey, setupKey, nodePath)} title="Copy to clipboard">📋</button>
                 <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this option">✕</button>
               </div>
             </td>
@@ -1087,12 +1121,16 @@ export default function ServiceTreeBuilderScreen() {
             <td className="num">—</td>
             <td>
               <div className="ib-actions">
-                <button className="link-btn" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add product option">+ Option</button>
+                <button className="secondary-btn small" onClick={() => setShowClubSearch({ categoryKey: catKey, setupKey, nodePath })} title="Add product from catalog" style={{ fontSize: '11px', padding: '4px 8px' }}>+ Product</button>
                 <button className="link-btn" onClick={() => addBranch(catKey, setupKey, nodePath)} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                {clipboard?.type === 'node' && (
+                  <button className="link-btn" onClick={() => pasteNode(catKey, setupKey, nodePath)} disabled={saving} style={{ color: '#6366f1' }}>📄 Paste</button>
+                )}
                 {selectedNested[`${catKey}::${setupKey}::${currentPath.join('::')}`]?.size >= 2 && (
                   <button className="link-btn club-btn" onClick={() => clubSelected(catKey, setupKey, currentPath)} title="Group selected items" style={{ color: '#8b5cf6' }}>📁 Group</button>
                 )}
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename branch">✏️</button>
+                <button className="icon-btn" onClick={() => copyNode(catKey, setupKey, nodePath)} title="Copy branch to clipboard">📋</button>
                 <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
                 <button className="link-btn" onClick={() => {
                    const fieldName = prompt('Enter new field name:')
@@ -1198,7 +1236,7 @@ export default function ServiceTreeBuilderScreen() {
                       {clipboard?.type === 'setup' && (
                         <button className="secondary-btn small" onClick={() => pasteSetup(cat.key)} disabled={saving} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#6366f1', color: '#fff' }}>📄 Paste "{clipboard.label}"</button>
                       )}
-                      <button className="secondary-btn small" onClick={() => { setShowProductSearch({ categoryKey: cat.key, setupKey: '' }); }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#10b981' }}>+ Product</button>
+                      <button className="secondary-btn small" onClick={() => { setShowProductSearch({ categoryKey: cat.key, setupKey: '' }); }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px' }}>+ Product</button>
                       <button className="secondary-btn small" onClick={async () => {
                         const name = prompt('Enter category-level section name:');
                         if (!name?.trim()) return;
@@ -1239,6 +1277,9 @@ export default function ServiceTreeBuilderScreen() {
                               <div className="ib-header-actions">
                                 <button className="secondary-btn small" onClick={() => setShowProductSearch({ categoryKey: cat.key, setupKey: setup.key })} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px' }}>+ Product</button>
                                 <button className="secondary-btn small" onClick={() => addBranch(cat.key, setup.key, [])} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
+                                {clipboard?.type === 'node' && (
+                                  <button className="secondary-btn small" onClick={() => pasteNode(cat.key, setup.key, [])} disabled={saving} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#6366f1', color: '#fff' }}>📄 Paste</button>
+                                )}
                                 <button className="icon-btn" onClick={() => renameSetup(cat.key, setup.key)} title="Rename Setup" style={{ marginRight: '4px' }}>✏️</button>
                                 <button className="icon-btn" onClick={() => copySetup(cat.key, setup)} title="Copy setup to clipboard" style={{ marginRight: '4px', fontSize: '13px' }}>📋</button>
                                 <button className="icon-btn" onClick={() => moveSetup(cat.key, setupIdx, 'up')} disabled={setupIdx === 0} title="Move Up" style={{ marginRight: '2px', fontSize: '14px' }}>↑</button>
@@ -1333,11 +1374,15 @@ export default function ServiceTreeBuilderScreen() {
                                                   {opt.dependsOn && (
                                                     <span className="ib-badge" style={{ background: '#fef3c7', color: '#92400e' }} title={`Depends on: ${opt.dependsOn}`}>🔗 {opt.dependsOn}</span>
                                                   )}
-                                                  <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product option">+ Option</button>
+                                                  <button className="secondary-btn small" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product from catalog" style={{ fontSize: '11px', padding: '4px 8px' }}>+ Product</button>
                                                   <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                                                  {clipboard?.type === 'node' && (
+                                                    <button className="icon-btn" onClick={() => pasteNode(cat.key, setup.key, [slot.key])} disabled={saving} style={{ color: '#6366f1' }} title="Paste from clipboard">📄</button>
+                                                  )}
                                                   <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], opt, setup.products)} title="Map this product's quantity to another product" style={{ color: '#d97706' }}>🔗 Depends On</button>
                                                   <button className="icon-btn" onClick={() => editRenderConfig(cat.key, setup.key, [slot.key], opt)} title="Configure render type (OPT/LIST)" style={{ color: '#10b981' }}>⚙️</button>
                                                   <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Rename">✏️</button>
+                                                  <button className="icon-btn" onClick={() => copyNode(cat.key, setup.key, [slot.key])} title="Copy to clipboard">📋</button>
                                                   <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire product">🗑️</button>
                                                 </div>
                                               </td>
@@ -1373,14 +1418,18 @@ export default function ServiceTreeBuilderScreen() {
                                              <td className="num total">{fmt(slot.options[0]?.price * (slot.options[0]?.defaultQty || 1) || 0)}</td>
                                                <td>
                                                  <div className="ib-actions">
-                                                   <button className="icon-btn" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product option">+ Option</button>
-                                                   <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
-                                                   <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], slot.options[0], setup.products)} title="Map dependency" style={{ color: '#d97706' }}>🔗 Depends On</button>
+                                                     <button className="secondary-btn small" onClick={() => setShowClubSearch({ categoryKey: cat.key, setupKey: setup.key, nodePath: [slot.key] })} title="Add product from catalog" style={{ fontSize: '11px', padding: '4px 8px' }}>+ Product</button>
+                                                     <button className="icon-btn" onClick={() => addBranch(cat.key, setup.key, [slot.key])} title="Add nested branch" style={{ color: '#8b5cf6' }}>+ Branch</button>
+                                                    {clipboard?.type === 'node' && (
+                                                      <button className="icon-btn" onClick={() => pasteNode(cat.key, setup.key, [slot.key])} disabled={saving} style={{ color: '#6366f1' }} title="Paste from clipboard">📄</button>
+                                                    )}
+                                                    <button className="icon-btn" onClick={() => editDependency(cat.key, setup.key, [slot.key], slot.options[0], setup.products)} title="Map dependency" style={{ color: '#d97706' }}>🔗 Depends On</button>
                                                    <button className="icon-btn" onClick={() => editRenderConfig(cat.key, setup.key, [slot.key], { ...slot.options[0], key: slot.key })} title="Configure render type (OPT/LIST)" style={{ color: '#10b981' }}>⚙️</button>
                                                    {selectedNested[`${cat.key}::${setup.key}::${slot.key}`]?.size >= 2 && (
                                                      <button className="icon-btn club-btn" onClick={() => clubSelected(cat.key, setup.key, [slot.key])} title="Group selected items">📁 Group</button>
                                                    )}
                                                    <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
+                                                   <button className="icon-btn" onClick={() => copyNode(cat.key, setup.key, [slot.key])} title="Copy club to clipboard">📋</button>
                                                    <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
                                                  </div>
                                                </td>
@@ -1452,7 +1501,7 @@ export default function ServiceTreeBuilderScreen() {
         />
       )}
 
-      {/* Club Search (add option to existing product) */}
+      {/* Club Search (add product to club/branch) */}
       {showClubSearch && (
         <ProductSearchModal
           onClose={() => setShowClubSearch(null)}

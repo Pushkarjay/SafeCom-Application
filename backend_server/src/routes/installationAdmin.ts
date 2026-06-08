@@ -10,6 +10,17 @@ export const installationAdminRouter = Router();
 
 // ─── Helpers ────────────────────────────────────────────────
 
+function safeKey(s: string): string {
+  return s.replace(/[\/#?&=%+]+/g, '-').replace(/\s+/g, ' ').trim();
+}
+
+function uniqueKey(base: string, existing: Record<string, unknown>): string {
+  if (!(base in existing)) return base;
+  let counter = 2;
+  while (`${base}-${counter}` in existing) counter++;
+  return `${base}-${counter}`;
+}
+
 function isDocumentReference(value: unknown): value is { id: string } {
   return Boolean(value && typeof value === 'object' && 'id' in (value as Record<string, unknown>));
 }
@@ -423,6 +434,10 @@ installationAdminRouter.post(
       const productDoc = await db.collection(PRODUCT_COLLECTION).doc(productId).get();
       if (!productDoc.exists) return res.status(404).json({ success: false, error: `Product ${productId} not found` });
 
+      const productData = productDoc.data()!;
+      const rawName = (productData.name ?? productData.productName ?? productId) as string;
+      let optionKey = safeKey(rawName);
+
       const installDoc = await db.collection(SERVICE_COLLECTION).doc('Installation').get();
       const installData = installDoc.exists ? installDoc.data() || {} : {};
       
@@ -434,14 +449,7 @@ installationAdminRouter.post(
       }
 
       const parentNode = currentLevel || {};
-      const optionCount = Object.keys(parentNode).length;
-      const nextOptionNum = optionCount + 1;
-      
-      // Generate name: e.g. "Product 2 Option 1 sub 1"
-      const parentName = nodePath[nodePath.length - 1];
-      const isSub = nodePath.length > 1; // Product N is depth 1, Product N Option M is depth 2
-      const prefix = isSub ? 'sub' : 'Option';
-      const optionKey = `${parentName} ${prefix} ${nextOptionNum}`;
+      optionKey = uniqueKey(optionKey, parentNode);
 
       const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
       const optionData = {

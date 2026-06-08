@@ -3,7 +3,6 @@ import { useAuthStore } from '../../core/services/auth_service'
 import { getApiBaseUrl } from '../../core/config/api'
 
 const BASE_URL = getApiBaseUrl()
-const FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/safecom-application-01/databases/safecom-database-nosql/documents'
 
 async function authHeaders(): Promise<Record<string, string>> {
   // Always try to get a fresh Firebase ID token first.
@@ -30,23 +29,6 @@ async function authHeaders(): Promise<Record<string, string>> {
 }
 
 export class AdminDatasource {
-  private async firestoreFetch(path: string): Promise<any> {
-    const token = await useAuthStore.getState().getIdToken()
-    const url = `${FIRESTORE_BASE}/${path}`
-    const res = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token ?? ''}`,
-        'Content-Type': 'application/json',
-      }
-    })
-    if (!res.ok) throw new Error(`Firestore error ${res.status}: ${await res.text()}`)
-    return res.json()
-  }
-
-  private encodePath(path: string): string {
-    return path.split('/').map(s => encodeURIComponent(s)).join('/')
-  }
-
   private async fetchJson<T>(url: string, opts: RequestInit = {}): Promise<T> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', ...await authHeaders() }
     if (opts.headers) {
@@ -351,46 +333,6 @@ export class AdminDatasource {
     )
     const apiCategories: any[] = apiPayload.data?.categories ?? []
 
-    // 2. Also fetch raw Firestore to catch branches created via + Branch button
-    // (those use a different endpoint the backend may not index correctly)
-    let fsBranches: Record<string, any[]> = {}
-    try {
-      for (const cat of apiCategories) {
-        const catPath = `services/${serviceId}/${cat.key}`
-        const docSnap = await this.firestoreFetch(this.encodePath(catPath))
-        const fields = docSnap?.fields as Record<string, any> | undefined
-        if (fields) {
-          for (const [setupKey, setupVal] of Object.entries(fields)) {
-            if (setupVal?.mapValue?.fields) {
-              const sf = setupVal.mapValue.fields as Record<string, any>
-              const hasProducts = !!sf.products
-              const hasChildren = !!sf.children
-              if (!hasProducts && hasChildren) {
-                // This is a branch-created setup — normalize its children into products slot
-                const children = sf.children.arrayValue?.values ?? []
-                const normalizedProducts = [{
-                  key: setupKey,
-                  isClubbed: true,
-                  options: children.map((c: any) => this.firestoreNodeToTreeNode(c))
-                }]
-                // Ensure the category has this setup
-                const existing = (apiCategories as any[]).find((c: any) => c.key === cat.key)
-                if (existing) {
-                  const hasSetup = existing.setups?.some((s: any) => s.key === setupKey)
-                  if (!hasSetup) {
-                    existing.setups = existing.setups || []
-                    existing.setups.push({ key: setupKey, name: setupKey, products: normalizedProducts })
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Firestore branch lookup failed (non-critical):', e)
-    }
-
     // Normalize: any setup with `children` instead of `products` → wrap as clubbed product
     const normalize = (cats: any[]): any[] => cats.map(cat => ({
       ...cat,
@@ -406,31 +348,6 @@ export class AdminDatasource {
     }))
 
     return { categories: normalize(apiCategories) }
-  }
-
-  /** Convert a Firestore "map" node to a TreeNode shape */
-  private firestoreNodeToTreeNode(node: any): any {
-    if (!node.mapValue?.fields) return {}
-    const f = node.mapValue.fields
-    return {
-      key: node.key || f.name?.stringValue || '',
-      isLeaf: !f.children && !f.products,
-      productId: f['Product ID']?.stringValue || f.PROD001?.stringValue || f.PROD033?.stringValue || '',
-      productName: f.name?.stringValue || '',
-      price: Number(f.Price?.referenceValue?.split('/').pop() || f.price?.stringValue || 0),
-      category: f.category?.stringValue || '',
-      defaultQty: Number(f['Deafult q']?.integerValue ?? f.defaultQty?.stringValue ?? 1),
-      minQty: Number(f['min q']?.integerValue ?? f.minQty?.stringValue ?? 0),
-      maxQty: Number(f['max q']?.integerValue ?? f.maxQty?.stringValue ?? 50),
-      available: f.available?.booleanValue ?? true,
-      rigid: f.rigid?.booleanValue ?? false,
-      renderType: f.renderType?.stringValue,
-      selectionType: f.selectionType?.stringValue,
-      collectiveValidation: f.collectiveValidation?.booleanValue,
-      mandatory: f.mandatory?.booleanValue,
-      dependsOn: f.dependsOn?.stringValue ?? null,
-      children: (f.children?.arrayValue?.values ?? []).map((c: any) => this.firestoreNodeToTreeNode(c)),
-    }
   }
 
   async serviceAddCategory(serviceId: string, name: string): Promise<void> {
@@ -613,6 +530,13 @@ export class AdminDatasource {
     await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(destCategoryKey)}/setup/clone`, {
       method: 'POST',
       body: JSON.stringify({ sourceCategoryKey, sourceSetupKey, newName })
+    })
+  }
+
+  async serviceCloneNode(serviceId: string, categoryKey: string, setupKey: string, sourceNodePath: string[], destNodePath: string[], newKey: string): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/clone`, {
+      method: 'POST',
+      body: JSON.stringify({ sourceNodePath, destNodePath, newKey })
     })
   }
 

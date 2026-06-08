@@ -10,6 +10,17 @@ export const servicesAdminRouter = Router();
 
 // ─── Helpers ────────────────────────────────────────────────
 
+function safeKey(s: string): string {
+  return s.replace(/[\/#?&=%+]+/g, '-').replace(/\s+/g, ' ').trim();
+}
+
+function uniqueKey(base: string, existing: Record<string, unknown>): string {
+  if (!(base in existing)) return base;
+  let counter = 2;
+  while (`${base}-${counter}` in existing) counter++;
+  return `${base}-${counter}`;
+}
+
 function isDocumentReference(value: unknown): value is { id: string } {
   return Boolean(value && typeof value === 'object' && 'id' in (value as Record<string, unknown>));
 }
@@ -175,28 +186,33 @@ function extractTree(
       });
     } else {
       const children = extractTree(obj, productMap);
-      nodes.push({
-        key,
-        isLeaf: false,
-        isField: false,
-        fieldType: 'map',
-        productId: '',
-        productName: key,
-        price: 0,
-        category: '',
-        defaultQty: 1,
-        minQty: 0,
-        maxQty: 999,
-        available: true,
-        rigid: false,
-        children,
-        renderType: (obj.renderType as 'option' | 'list' | undefined) ?? 'option',
-        selectionType: (obj.selectionType as 'single' | 'multi' | undefined),
-        collectiveValidation: obj.collectiveValidation === true,
-        displayLabel: obj.displayLabel ? String(obj.displayLabel) : undefined,
-        mandatory: obj.mandatory !== false,
-        dependsOn: obj.dependsOn ? String(obj.dependsOn) : undefined,
-      });
+      // Flatten: if a branch wraps exactly one leaf product, merge to skip the wrapper
+      if (children.length === 1 && children[0].isLeaf && children[0].productId) {
+        nodes.push({ ...children[0], key });
+      } else {
+        nodes.push({
+          key,
+          isLeaf: false,
+          isField: false,
+          fieldType: 'map',
+          productId: '',
+          productName: key,
+          price: 0,
+          category: '',
+          defaultQty: 1,
+          minQty: 0,
+          maxQty: 999,
+          available: true,
+          rigid: false,
+          children,
+          renderType: (obj.renderType as 'option' | 'list' | undefined) ?? 'option',
+          selectionType: (obj.selectionType as 'single' | 'multi' | undefined),
+          collectiveValidation: obj.collectiveValidation === true,
+          displayLabel: obj.displayLabel ? String(obj.displayLabel) : undefined,
+          mandatory: obj.mandatory !== false,
+          dependsOn: obj.dependsOn ? String(obj.dependsOn) : undefined,
+        });
+      }
     }
   }
   return nodes;
@@ -366,7 +382,7 @@ servicesAdminRouter.get('/config/:serviceId', authenticateToken, requireRole(['a
           return {
             key: productKey,
             options: tree,
-            isClubbed: tree.length > 1
+            isClubbed: tree.length > 1 || tree.length === 0
           };
         });
         return { key: setupKey, name: setupKey, products: productSlots };
@@ -449,6 +465,27 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup', authe
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] POST setup error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to create setup' });
+  }
+});
+
+// DELETE /config/:serviceId/category/:categoryKey/setup/:setupKey — Delete a setup
+servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setupKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const db = getDb();
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const path = [categoryKey, setupKey];
+    if (path.some(s => s.includes('.'))) {
+      await deleteNested(docRef, path);
+    } else {
+      await docRef.update({ [`${categoryKey}.${setupKey}`]: FieldValue.delete() });
+    }
+    res.json({ success: true, message: `Setup "${setupKey}" deleted from category "${categoryKey}"` });
+  } catch (error) {
+    console.error('[SERVICES-ADMIN] DELETE setup error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete setup' });
   }
 });
 
@@ -752,6 +789,31 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
   } catch (error) { res.status(500).json({ success: false, error: 'Failed to create branch' }); }
 });
 
+// POST /config/:serviceId/category/:categoryKey/branch — Add branch at category level (no setup)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/branch', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, branchName } = req.body as { nodePath?: string[]; branchName: string };
+    if (!branchName?.trim()) return res.status(400).json({ success: false, error: 'Branch name required' });
+
+    const db = getDb();
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allSegments = nodePath && nodePath.length > 0
+      ? [categoryKey, ...nodePath, branchName]
+      : [categoryKey, branchName];
+    if (allSegments.some(s => s.includes('.'))) {
+      await docRef.set(setNested(allSegments, {}), { merge: true });
+    } else {
+      const path = nodePath && nodePath.length > 0
+        ? `${categoryKey}.${nodePath.join('.')}.${branchName}`
+        : `${categoryKey}.${branchName}`;
+      await docRef.update({ [path]: {} });
+    }
+    res.json({ success: true, message: `Branch "${branchName}" created` });
+  } catch (error) { res.status(500).json({ success: false, error: 'Failed to create branch' }); }
+});
+
 // POST /config/:serviceId/category/:categoryKey/setup/:setupKey/node
 servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
@@ -762,8 +824,25 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     
     const db = getDb();
     const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
-    const parentName = nodePath[nodePath.length - 1];
-    const optionKey = `${parentName} Option ${Date.now().toString().slice(-4)}`;
+    const productDoc = await productRef.get();
+    let optionKey: string;
+    if (productDoc.exists) {
+      const productData = productDoc.data()!;
+      const rawName = (productData.name ?? productData.productName ?? productId) as string;
+      optionKey = safeKey(rawName);
+    } else {
+      optionKey = productId;
+    }
+
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allSegments = [categoryKey, setupKey, ...nodePath];
+    const parentSnapshot = await docRef.get();
+    const parentData = parentSnapshot.data() || {};
+    let currentLevel = parentData;
+    for (const seg of allSegments) {
+      currentLevel = (currentLevel[seg] as Record<string, unknown>) || {};
+    }
+    optionKey = uniqueKey(optionKey, currentLevel);
 
     const optionData = {
       'Deafult q': defaultQty ?? 1,
@@ -775,14 +854,13 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
       'rigid': false
     };
 
-    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    const allSegments = [categoryKey, setupKey, ...nodePath, optionKey];
+    allSegments.push(optionKey);
     if (allSegments.some(s => s.includes('.'))) {
       await docRef.set(setNested(allSegments, optionData), { merge: true });
     } else {
       await docRef.update({ [`${categoryKey}.${setupKey}.${nodePath.join('.')}.${optionKey}`]: optionData });
     }
-    res.json({ success: true, message: `Node added` });
+    res.json({ success: true, message: `Node "${optionKey}" added` });
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] POST node error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to add node' });
@@ -802,6 +880,129 @@ servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setu
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] DELETE node error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to delete node' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/node — Add a node at category level (no setup)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, productId, defaultQty, minQty, maxQty } = req.body as { nodePath: string[]; productId: string; defaultQty?: number; minQty?: number; maxQty?: number; };
+
+    const db = getDb();
+    const productRef = db.collection(PRODUCT_COLLECTION).doc(productId);
+    const productDoc = await productRef.get();
+    let optionKey: string;
+    if (productDoc.exists) {
+      const productData = productDoc.data()!;
+      const rawName = (productData.name ?? productData.productName ?? productId) as string;
+      optionKey = safeKey(rawName);
+    } else {
+      optionKey = productId;
+    }
+
+    const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const allSegments = [categoryKey, ...nodePath];
+    const parentSnapshot = await docRef.get();
+    const parentData = parentSnapshot.data() || {};
+    let currentLevel = parentData;
+    for (const seg of allSegments) {
+      currentLevel = (currentLevel[seg] as Record<string, unknown>) || {};
+    }
+    optionKey = uniqueKey(optionKey, currentLevel);
+
+    const optionData = {
+      'Deafult q': defaultQty ?? 1,
+      'Price': productRef,
+      [`${optionKey} ID`]: productRef,
+      'available': true,
+      'max q': maxQty ?? 50,
+      'min q': minQty ?? 0,
+      'rigid': false
+    };
+
+    allSegments.push(optionKey);
+    if (allSegments.some(s => s.includes('.'))) {
+      await docRef.set(setNested(allSegments, optionData), { merge: true });
+    } else {
+      await docRef.update({ [`${categoryKey}.${nodePath.join('.')}.${optionKey}`]: optionData });
+    }
+    res.json({ success: true, message: `Node "${optionKey}" added` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST node (category) error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to add node' });
+  }
+});
+
+// DELETE /config/:serviceId/category/:categoryKey/node — Delete a node at category level (no setup)
+servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/node', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const path = JSON.parse(req.query.path as string) as string[];
+    const db = getDb();
+    await deleteNested(db.collection(SERVICE_COLLECTION).doc(serviceId), [categoryKey, ...path]);
+    res.json({ success: true, message: 'Node deleted' });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] DELETE node (category) error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to delete node' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/node/rename — Rename a node at category level (no setup)
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node/rename', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const { nodePath, newName } = req.body as { nodePath: string[]; newName: string; };
+
+    if (!nodePath || nodePath.length === 0) return res.status(400).json({ success: false, error: 'nodePath required' });
+    if (!newName?.trim()) return res.status(400).json({ success: false, error: 'newName required' });
+
+    const db = getDb();
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const hasDots = [categoryKey, ...nodePath, newName].some(s => s.includes('.'));
+
+    if (!hasDots) {
+      await db.runTransaction(async (transaction) => {
+         const doc = await transaction.get(serviceRef);
+         if (!doc.exists) throw new Error('Service not found');
+         const data = doc.data()!;
+         let target = data[categoryKey];
+         if (!target) throw new Error('Category not found');
+         for (const p of nodePath) {
+            if (target[p] === undefined) throw new Error(`Node path not found`);
+            target = target[p];
+         }
+         const parentPath = nodePath.slice(0, -1);
+         const oldName = nodePath[nodePath.length - 1];
+         const firestoreParentPath = parentPath.length > 0 ? `${categoryKey}.${parentPath.join('.')}` : `${categoryKey}`;
+         transaction.update(serviceRef, {
+           [`${firestoreParentPath}.${newName}`]: target,
+           [`${firestoreParentPath}.${oldName}`]: FieldValue.delete()
+         });
+      });
+    } else {
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(serviceRef);
+        if (!doc.exists) throw new Error('Service not found');
+        const data = doc.data()!;
+        let current = data[categoryKey];
+        if (!current) throw new Error('Category not found');
+        const parentPath = nodePath.slice(0, -1);
+        for (const p of parentPath) { current = current[p]; }
+        const oldName = nodePath[nodePath.length - 1];
+        current[newName] = current[oldName];
+        delete current[oldName];
+        transaction.set(serviceRef, data);
+      });
+    }
+
+    res.json({ success: true, message: `Node renamed to ${newName}` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST node rename (category) error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to rename node' });
   }
 });
 
@@ -1069,6 +1270,62 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/clone',
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] POST clone setup error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to clone setup' });
+  }
+});
+
+// POST /config/:serviceId/category/:categoryKey/setup/:setupKey/node/clone — Deep-clone any node
+servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupKey/node/clone', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const serviceId = String(req.params.serviceId);
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const { sourceNodePath, destNodePath, newKey } = req.body as { sourceNodePath: string[]; destNodePath: string[]; newKey: string; };
+
+    if (!Array.isArray(sourceNodePath) || sourceNodePath.length === 0) {
+      return res.status(400).json({ success: false, error: 'sourceNodePath is required' });
+    }
+    if (!Array.isArray(destNodePath)) {
+      return res.status(400).json({ success: false, error: 'destNodePath is required' });
+    }
+    if (!newKey?.trim()) {
+      return res.status(400).json({ success: false, error: 'newKey is required' });
+    }
+
+    const db = getDb();
+    const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const doc = await serviceRef.get();
+    if (!doc.exists) return res.status(404).json({ success: false, error: 'Service not found' });
+
+    const data = doc.data()!;
+    const setupData = data[categoryKey]?.[setupKey];
+    if (!setupData) {
+      return res.status(404).json({ success: false, error: `Setup "${categoryKey}.${setupKey}" not found` });
+    }
+
+    // Navigate to source node
+    let sourceNode: unknown = setupData;
+    for (const seg of sourceNodePath) {
+      if (sourceNode && typeof sourceNode === 'object' && seg in (sourceNode as Record<string, unknown>)) {
+        sourceNode = (sourceNode as Record<string, unknown>)[seg];
+      } else {
+        return res.status(404).json({ success: false, error: `Source node "${sourceNodePath.join('.')}" not found` });
+      }
+    }
+
+    if (typeof sourceNode !== 'object' || sourceNode === null) {
+      return res.status(400).json({ success: false, error: 'Source node is not a valid object to clone' });
+    }
+
+    // Deep clone the source data (plain object, safe to spread)
+    const cloneData = JSON.parse(JSON.stringify(sourceNode));
+
+    // Write to destination
+    const destSegments = [categoryKey, setupKey, ...destNodePath, newKey];
+    await serviceRef.set(setNested(destSegments, cloneData), { merge: true });
+    res.json({ success: true, message: `Node cloned as "${newKey}"` });
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST node clone error:', error?.message || error);
+    res.status(500).json({ success: false, error: 'Failed to clone node' });
   }
 });
 
