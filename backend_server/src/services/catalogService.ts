@@ -290,12 +290,19 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
           const product = productMap.get(firstLeaf.productId);
           if (!product) continue;
           const slotMaxQty = Number((optionMappings as Record<string, unknown>)['max q']) || 0;
+          // Compute group-level maxQty: MAX of all child leaf maxQty values
+          const allLeafMaxes = clubbedOptions
+            .filter((o) => o.isLeaf)
+            .map((o) => o.maxQty);
+          const computedMax = allLeafMaxes.length > 0
+            ? Math.max(...allLeafMaxes)
+            : firstLeaf.maxQty;
           mappedProducts.push({
             productKey,
             productId: firstLeaf.productId,
             defaultQty: firstLeaf.defaultQty,
             minQty: firstLeaf.minQty,
-            maxQty: slotMaxQty || firstLeaf.maxQty,
+            maxQty: slotMaxQty || computedMax,
             product: normalizeProduct(firstLeaf.productId, product),
             isClubbed,
             clubbedOptions,
@@ -368,12 +375,19 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
           const product = productMap.get(firstLeaf.productId);
           if (!product) continue;
           const slotMaxQty = Number((optionMappings as Record<string, unknown>)['max q']) || 0;
+          // Compute group-level maxQty: MAX of all child leaf maxQty values
+          const allLeafMaxes = clubbedOptions
+            .filter((o) => o.isLeaf)
+            .map((o) => o.maxQty);
+          const computedMax = allLeafMaxes.length > 0
+            ? Math.max(...allLeafMaxes)
+            : firstLeaf.maxQty;
           mappedProducts.push({
             productKey,
             productId: firstLeaf.productId,
             defaultQty: firstLeaf.defaultQty,
             minQty: firstLeaf.minQty,
-            maxQty: slotMaxQty || firstLeaf.maxQty,
+            maxQty: slotMaxQty || computedMax,
             product: normalizeProduct(firstLeaf.productId, product),
             isClubbed,
             clubbedOptions,

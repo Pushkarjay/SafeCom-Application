@@ -196,7 +196,7 @@ class _ListChildRow extends StatelessWidget {
             children: [
               _StepButton(
                 icon: Icons.remove,
-                onTap: item.quantity > 0 ? onDecrement : null,
+                onTap: item.quantity > item.minQty ? onDecrement : null,
               ),
               SizedBox(
                 width: 32,

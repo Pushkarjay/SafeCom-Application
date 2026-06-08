@@ -271,18 +271,23 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
               collectiveValidation: selBranch.collectiveValidation,
             ));
 
-            // Only add leaves from the selected branch
+            // Compute group-level maxQty: MAX of all child leaf maxQty values
             final selLeaves = _collectLeaves([selBranch]);
+            final groupMaxQty = selLeaves.isEmpty
+                ? mappedProduct.maxQty
+                : selLeaves.map((l) => l.maxQty).reduce((a, b) => a > b ? a : b);
+
+            // Only add leaves from the selected branch
             for (final leaf in selLeaves) {
               final leafKey = '${groupKey}__${leaf.optionKey}';
               items.add(InvoiceLineItem(
                 key: leafKey,
                 name: leaf.label,
                 unitPrice: leaf.price,
-                quantity: 0,
-                canEditQuantity: leaf.dependsOn == null,
-                minQty: 0,
-                maxQty: leaf.maxQty,
+                quantity: leaf.defaultQty,
+                canEditQuantity: leaf.dependsOn == null && leaf.minQty != leaf.maxQty,
+                minQty: leaf.minQty,
+                maxQty: groupMaxQty,
                 renderType: 'list',
                 isListChild: true,
                 listGroupKey: groupKey,
@@ -326,24 +331,28 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
         // ── Product with renderType=='list' (flat LIST) ──
         if (mappedProduct.renderType == 'list' && clubbedOpts.isNotEmpty) {
           final groupKey = mappedProduct.productKey;
+          final leaves = _collectLeaves(clubbedOpts);
+          // Compute group-level maxQty: MAX of all child leaf maxQty values, fallback to mappedProduct.maxQty
+          final computedGroupMax = leaves.isEmpty
+              ? mappedProduct.maxQty
+              : leaves.map((l) => l.maxQty).reduce((a, b) => a > b ? a : b);
           listGroups.add(InvoiceListGroup(
             key: groupKey,
             label: mappedProduct.displayLabel ?? mappedProduct.productKey,
             minQty: mappedProduct.minQty,
-            maxQty: mappedProduct.maxQty,
+            maxQty: computedGroupMax,
             collectiveValidation: mappedProduct.collectiveValidation,
           ));
-          final leaves = _collectLeaves(clubbedOpts);
           for (final leaf in leaves) {
             final leafKey = '${groupKey}__${leaf.optionKey}';
             items.add(InvoiceLineItem(
               key: leafKey,
               name: leaf.label,
               unitPrice: leaf.price,
-              quantity: 0,
-              canEditQuantity: leaf.dependsOn == null,
-              minQty: 0,
-              maxQty: leaf.maxQty,
+              quantity: leaf.defaultQty,
+              canEditQuantity: leaf.dependsOn == null && leaf.minQty != leaf.maxQty,
+              minQty: leaf.minQty,
+              maxQty: computedGroupMax,
               renderType: 'list',
               isListChild: true,
               listGroupKey: groupKey,
@@ -493,7 +502,14 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
       for (final depKey in depKeys) {
         final idx = target.indexWhere((i) => i.key == depKey);
         if (idx >= 0) {
-          target[idx] = target[idx].copyWith(quantity: totalQty, canEditQuantity: false);
+          final depItem = target[idx];
+          // Apply minQty offset: if dependent has negative min, the actual qty is
+          // sourceTotal + minOffset. This lets admin set offset (e.g., -2 means
+          // cable starts 2 below camera count). Clamp to [0, maxQty].
+          final offset = depItem.minQty < 0 ? depItem.minQty : 0;
+          final rawQty = totalQty + offset;
+          final clampedQty = rawQty.clamp(0, depItem.maxQty);
+          target[idx] = depItem.copyWith(quantity: clampedQty, canEditQuantity: false);
         }
       }
     }
@@ -563,7 +579,7 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     final updatedItems = state.items.map((item) {
       if (item.key != itemKey) return item;
       final next = item.quantity - 1;
-      if (next < 0) return item;
+      if (next < item.minQty) return item;
       return item.copyWith(quantity: next);
     }).toList();
     _applyDependencies(updatedItems);
