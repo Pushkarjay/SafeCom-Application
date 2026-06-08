@@ -269,7 +269,14 @@ class ClubbedOption {
   });
 
   /// The label shown to the user — uses displayLabel if set, else optionKey.
-  String get label => displayLabel?.isNotEmpty == true ? displayLabel! : optionKey;
+  /// For leaf nodes, falls back to productName (catalog product name) instead
+  /// of optionKey (Firestore slot key) so that LIST mode displays the actual
+  /// product name rather than the admin-assigned slot key.
+  String get label {
+    if (displayLabel?.isNotEmpty == true) return displayLabel!;
+    if (isLeaf && productName.isNotEmpty) return productName;
+    return optionKey;
+  }
 
   factory ClubbedOption.fromJson(Map<String, dynamic> json) {
     final childrenJson = json['children'] as List<dynamic>? ?? [];
