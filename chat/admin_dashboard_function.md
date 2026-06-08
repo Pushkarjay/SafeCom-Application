@@ -872,6 +872,14 @@ Cable: { min q: -2, default q: 0 }
 - **Location:** `installation_flow_provider.dart` LIST child creation
 - **Fix:** Initialize with `leaf.defaultQty` when building items
 
+### Issue 6: Branch/Sub-Branch Names Overwritten by Product Names in LIST Mode
+- **Problem:** In LIST mode, hierarchy labels (branch names, sub-branch names) are replaced by Firestore slot keys (e.g., "4MP Option 4133") instead of showing the configured name or actual product name
+- **Root Cause:** `ClubbedOption.label` getter fell back to `optionKey` (Firestore slot key) for leaf nodes, instead of `productName` (catalog product name)
+- **Location:** `pricing_contracts.dart:272` — `ClubbedOption.label` getter
+- **Fix:** Updated `label` getter to fall back to `productName` for leaf nodes: `if (isLeaf && productName.isNotEmpty) return productName;`
+- **Impact:** LIST mode now shows correct product names. OPTION mode unaffected (already uses `productName` directly in `ClubbedProductSelector`)
+- **Status:** ✅ Fixed and deployed
+
 ---
 
 ## APPENDIX: ALL API ENDPOINTS
