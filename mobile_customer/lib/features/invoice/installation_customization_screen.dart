@@ -159,8 +159,8 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                               )
                             : QuantityStepper(
                                 quantity: item.quantity,
-                                onIncrement: item.canEditQuantity ? () => flowNotifier.incrementQuantity(item.key) : null,
-                                onDecrement: item.canEditQuantity ? () => flowNotifier.decrementQuantity(item.key) : null,
+                                onIncrement: item.canEditQuantity && item.quantity < item.maxQty ? () => flowNotifier.incrementQuantity(item.key) : null,
+                                onDecrement: item.canEditQuantity && item.quantity > item.minQty ? () => flowNotifier.decrementQuantity(item.key) : null,
                               ),
                         amount: item.amount,
                       ),
@@ -311,7 +311,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
 
       selectors.add(
         _OptionSection(
-          title: mappedProduct.product.productName,
+          title: mappedProduct.productKey,
           child: Wrap(
             spacing: 8,
             runSpacing: 6,

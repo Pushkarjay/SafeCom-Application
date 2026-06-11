@@ -54,6 +54,8 @@ class MaintenanceItem {
   final String name;
   final double unitPrice;
   final int quantity;
+  final int minQty;
+  final int maxQty;
   final bool canEditQuantity;
 
   const MaintenanceItem({
@@ -61,17 +63,21 @@ class MaintenanceItem {
     required this.name,
     required this.unitPrice,
     required this.quantity,
+    this.minQty = 1,
+    this.maxQty = 999,
     this.canEditQuantity = true,
   });
 
   double get amount => unitPrice * quantity;
 
-  MaintenanceItem copyWith({int? quantity}) {
+  MaintenanceItem copyWith({int? quantity, int? minQty, int? maxQty}) {
     return MaintenanceItem(
       key: key,
       name: name,
       unitPrice: unitPrice,
       quantity: quantity ?? this.quantity,
+      minQty: minQty ?? this.minQty,
+      maxQty: maxQty ?? this.maxQty,
       canEditQuantity: canEditQuantity,
     );
   }
@@ -105,6 +111,8 @@ class MaintenanceFlowNotifier extends StateNotifier<MaintenanceFlowState> {
       name: t.name,
       unitPrice: t.unitPrice,
       quantity: t.multiplyByVisitCount ? t.baseQuantity * visits : t.baseQuantity,
+      minQty: t.minQty,
+      maxQty: t.maxQty,
       canEditQuantity: t.canEditQuantity,
     )).toList();
     state = state.copyWith(selectedPackage: package, items: items, totalAmount: items.fold<double>(0.0, (s, i) => s + i.amount));
@@ -114,7 +122,8 @@ class MaintenanceFlowNotifier extends StateNotifier<MaintenanceFlowState> {
     state = state.copyWith(
       items: state.items.map((i) {
         if (i.key == key && i.canEditQuantity) {
-          return i.copyWith(quantity: i.quantity + 1);
+          final next = i.quantity + 1;
+          return i.copyWith(quantity: next > i.maxQty ? i.maxQty : next);
         }
         return i;
       }).toList(),
@@ -125,8 +134,9 @@ class MaintenanceFlowNotifier extends StateNotifier<MaintenanceFlowState> {
   void decrementQuantity(String key) {
     state = state.copyWith(
       items: state.items.map((i) {
-        if (i.key == key && i.quantity > 1 && i.canEditQuantity) {
-          return i.copyWith(quantity: i.quantity - 1);
+        if (i.key == key && i.canEditQuantity) {
+          final next = i.quantity - 1;
+          return i.copyWith(quantity: next < i.minQty ? i.minQty : next);
         }
         return i;
       }).toList(),

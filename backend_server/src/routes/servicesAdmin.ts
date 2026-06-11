@@ -76,7 +76,18 @@ async function getProductMap(): Promise<Map<string, ProductData>> {
   return map;
 }
 
-const ACTIVE_META_KEY = '__active__';
+const ACTIVE_META_KEY = '_isActive';
+const ORDER_META_KEY = '_order';
+
+function sortByOrder(entries: [string, unknown][]): [string, unknown][] {
+  return entries.sort((a, b) => {
+    const aVal = a[1] as Record<string, unknown> | undefined;
+    const bVal = b[1] as Record<string, unknown> | undefined;
+    const aOrder = (aVal && typeof aVal === 'object') ? Number((aVal as any)[ORDER_META_KEY] ?? Infinity) : Infinity;
+    const bOrder = (bVal && typeof bVal === 'object') ? Number((bVal as any)[ORDER_META_KEY] ?? Infinity) : Infinity;
+    return aOrder - bOrder;
+  });
+}
 
 function isLeafNode(obj: Record<string, unknown>): boolean {
   return (
@@ -121,6 +132,7 @@ function extractTree(
     if (key === ACTIVE_META_KEY) continue; // skip active metadata
 
     if (typeof value !== 'object') {
+      if (key === ORDER_META_KEY) continue; // skip order metadata
       nodes.push({
         key,
         isLeaf: false,
@@ -186,7 +198,8 @@ function extractTree(
         displayLabel: obj.displayLabel ? String(obj.displayLabel) : undefined,
         mandatory: obj.mandatory !== false,
         dependsOn: obj.dependsOn ? String(obj.dependsOn) : undefined,
-      });
+        _order: Number(obj[ORDER_META_KEY] ?? Infinity),
+      } as any);
     } else {
       const children = extractTree(obj, productMap);
       // Flatten: if a branch wraps exactly one leaf product, merge to skip the wrapper
@@ -214,7 +227,8 @@ function extractTree(
           displayLabel: obj.displayLabel ? String(obj.displayLabel) : undefined,
           mandatory: obj.mandatory !== false,
           dependsOn: obj.dependsOn ? String(obj.dependsOn) : undefined,
-        });
+          _order: Number(obj[ORDER_META_KEY] ?? Infinity),
+        } as any);
       }
     }
   }
@@ -375,35 +389,37 @@ servicesAdminRouter.get('/config/:serviceId', authenticateToken, requireRole(['a
 
     const productMap = await getProductMap();
 
-    const categories = Object.entries(data)
+    const categories = sortByOrder(Object.entries(data)
       .filter(([categoryKey]) => {
-        if (categoryKey.startsWith('_')) return false; // skip _meta etc.
-        const catData = data[categoryKey] as Record<string, unknown>;
-        if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
+        if (categoryKey.startsWith('_')) return false;
         return true;
-      })
+      }))
       .map(([categoryKey, setupsRaw]) => {
         const setups = setupsRaw as Record<string, unknown>;
-        const setupEntries = Object.entries(setups)
-          .filter(([setupKey]) => setupKey !== ACTIVE_META_KEY)
+        const catOrder = Number(setups?.[ORDER_META_KEY] ?? Infinity);
+        const setupEntries = sortByOrder(Object.entries(setups)
+          .filter(([setupKey]) => setupKey !== ACTIVE_META_KEY && setupKey !== ORDER_META_KEY))
           .map(([setupKey, productsRaw]) => {
             const products = productsRaw as Record<string, unknown>;
             const isActive = products[ACTIVE_META_KEY] !== false;
-            const productSlots = Object.entries(products)
-              .filter(([productKey]) => productKey !== ACTIVE_META_KEY)
+            const setupOrder = Number(products?.[ORDER_META_KEY] ?? Infinity);
+            const productSlots = sortByOrder(Object.entries(products)
+              .filter(([productKey]) => productKey !== ACTIVE_META_KEY && productKey !== ORDER_META_KEY))
               .map(([productKey, optionsRaw]) => {
                 const options = optionsRaw as Record<string, unknown>;
+                const prodOrder = Number(options?.[ORDER_META_KEY] ?? Infinity);
                 const tree = extractTree(options, productMap);
                 return {
                   key: productKey,
                   options: tree,
-                  isClubbed: tree.length > 1 || tree.length === 0
+                  isClubbed: tree.length > 1 || tree.length === 0,
+                  order: prodOrder
                 };
               });
-            return { key: setupKey, name: setupKey, products: productSlots, active: isActive };
+            return { key: setupKey, name: setupKey, products: productSlots, active: isActive, order: setupOrder };
           });
         const catActive = (setups as Record<string, unknown>)[ACTIVE_META_KEY] !== false;
-        return { key: categoryKey, name: categoryKey, setups: setupEntries, active: catActive };
+        return { key: categoryKey, name: categoryKey, setups: setupEntries, active: catActive, order: catOrder };
       });
 
     res.json({ success: true, data: { categories } });
@@ -1461,20 +1477,112 @@ servicesAdminRouter.patch(
       const db = getDb();
       const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
 
-      if (setupKey) {
-        // Toggle setup active status
-        const path = `${categoryKey}.${setupKey}.${ACTIVE_META_KEY}`;
+      const segments = setupKey
+        ? [categoryKey, setupKey, ACTIVE_META_KEY]
+        : [categoryKey, ACTIVE_META_KEY];
+      const allNoDots = segments.every(s => !s.includes('.'));
+
+      if (allNoDots) {
+        const path = segments.join('.');
         await docRef.update({ [path]: active });
-        res.json({ success: true, message: `Setup "${setupKey}" ${active ? 'activated' : 'deactivated'}` });
       } else {
-        // Toggle category active status
-        const path = `${categoryKey}.${ACTIVE_META_KEY}`;
-        await docRef.update({ [path]: active });
-        res.json({ success: true, message: `Category "${categoryKey}" ${active ? 'activated' : 'deactivated'}` });
+        await docRef.set(setNested(segments, active), { merge: true });
       }
+
+      const label = setupKey || categoryKey;
+      const kind = setupKey ? 'Setup' : 'Category';
+      res.json({ success: true, message: `${kind} "${label}" ${active ? 'activated' : 'deactivated'}` });
     } catch (error: unknown) {
       console.error('[SERVICES-ADMIN] PATCH active error:', error instanceof Error ? error.message : error);
       res.status(500).json({ success: false, error: 'Failed to toggle active status' });
+    }
+  }
+);
+
+// ─── PATCH /config/:serviceId/order — Set display order ──
+servicesAdminRouter.patch(
+  '/config/:serviceId/order',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const serviceId = String(req.params.serviceId);
+      const { categoryKey, setupKey, productKey, nodePath, order } = req.body as {
+        categoryKey?: string;
+        setupKey?: string;
+        productKey?: string;
+        nodePath?: string[];
+        order: number;
+      };
+
+      if (order === undefined && order !== 0) {
+        return res.status(400).json({ success: false, error: 'order is required' });
+      }
+
+      const db = getDb();
+      const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+
+      const segments: string[] = [];
+      if (nodePath && Array.isArray(nodePath)) {
+        if (categoryKey) segments.push(categoryKey);
+        if (setupKey) segments.push(setupKey);
+        segments.push(...nodePath);
+      } else {
+        if (categoryKey) segments.push(categoryKey);
+        if (setupKey) segments.push(setupKey);
+        if (productKey) segments.push(productKey);
+      }
+      segments.push(ORDER_META_KEY);
+
+      const allNoDots = segments.every(s => !s.includes('.'));
+      if (allNoDots) {
+        const path = segments.join('.');
+        await docRef.update({ [path]: order });
+      } else {
+        await docRef.set(setNested(segments, order), { merge: true });
+      }
+
+      res.json({ success: true, message: `Order set to ${order}` });
+    } catch (error) {
+      console.error('[SERVICES-ADMIN] PATCH order error:', error);
+      res.status(500).json({ success: false, error: 'Failed to update order' });
+    }
+  }
+);
+
+// ─── PATCH /config/:serviceId/order/bulk — Set display order for multiple items ──
+servicesAdminRouter.patch(
+  '/config/:serviceId/order/bulk',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const serviceId = String(req.params.serviceId);
+      const { items } = req.body as { items: Array<{ categoryKey?: string; setupKey?: string; productKey?: string; order: number }> };
+
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, error: 'items array is required' });
+      }
+
+      const db = getDb();
+      const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+      const updates: Record<string, unknown> = {};
+
+      for (const item of items) {
+        const segments: string[] = [];
+        if (item.categoryKey) segments.push(item.categoryKey);
+        if (item.setupKey) segments.push(item.setupKey);
+        if (item.productKey) segments.push(item.productKey);
+        segments.push(ORDER_META_KEY);
+        const path = segments.join('.');
+        updates[path] = item.order;
+      }
+
+      await docRef.update(updates);
+      res.json({ success: true, message: `${items.length} items reordered` });
+    } catch (error) {
+      console.error('[SERVICES-ADMIN] PATCH order/bulk error:', error);
+      res.status(500).json({ success: false, error: 'Failed to batch update order' });
     }
   }
 );

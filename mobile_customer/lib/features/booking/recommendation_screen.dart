@@ -73,12 +73,9 @@ class RecommendationScreen extends ConsumerWidget {
       ),
       body: recommendations.when(
         data: (payload) {
-          final recommendation = payload.recommendations.isNotEmpty
-              ? payload.recommendations.first
-              : null;
-          final productIds = recommendation?.productIds ?? [];
+          final recs = payload.recommendations;
 
-          if (productIds.isEmpty) {
+          if (recs.isEmpty) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
@@ -90,9 +87,17 @@ class RecommendationScreen extends ConsumerWidget {
             );
           }
 
+          // Collect all product IDs across all recommendations
+          final allProductIds = <String>[];
+          for (final rec in recs) {
+            for (final pid in rec.productIds) {
+              if (!allProductIds.contains(pid)) allProductIds.add(pid);
+            }
+          }
+
           // Compute the combined list of selected product IDs (simple + complex)
           final List<String> effectiveSelectedIds = [];
-          for (final id in productIds) {
+          for (final id in allProductIds) {
             final productAsync = ref.watch(productDetailProvider(id));
             final product = productAsync.value;
             if (product == null) continue;
@@ -108,73 +113,83 @@ class RecommendationScreen extends ConsumerWidget {
 
           return Column(
             children: [
-              // Header info
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryLight,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.secondaryLight),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        recommendation?.name ?? 'Optional Add-ons',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        recommendation?.description ??
-                            'These accessories are optional but recommended to optimize your service.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Products list
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: productIds.length,
-                  itemBuilder: (context, index) {
-                    final productId = productIds[index];
-                    final productAsync = ref.watch(productDetailProvider(productId));
-                    return productAsync.when(
-                      loading: () => const SizedBox(
-                        height: 80,
-                        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                      ),
-                      error: (err, stack) => ListTile(
-                        title: Text('Error: $err'),
-                      ),
-                      data: (product) {
-                        if (product == null) {
-                          return const ListTile(title: Text('Product not found'));
-                        }
-                        final hasVariants = product.variants.isNotEmpty;
-                        if (hasVariants) {
-                          final selections = productSelections[product.id]?.variantSelections ?? {};
-                          final isComplete = _isProductComplete(product, selections);
-                          return _buildComplexProductCard(context, ref, product, selections, isComplete);
-                        } else {
-                          final isSelected = simpleSelectedIds.contains(product.id);
-                          return _buildSimpleProductCard(product, isSelected, () {
-                            ref.read(selectedAccessoriesProvider.notifier).toggleAccessory(product.id);
-                          });
-                        }
-                      },
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: recs.length,
+                  itemBuilder: (context, recIndex) {
+                    final rec = recs[recIndex];
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Recommendation header
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondaryLight,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.secondaryLight),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                rec.name,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.secondary,
+                                ),
+                              ),
+                              if (rec.description.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  rec.description,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        // Products for this recommendation
+                        ...rec.productIds.map((productId) {
+                          final productAsync = ref.watch(productDetailProvider(productId));
+                          return productAsync.when(
+                            loading: () => const SizedBox(
+                              height: 80,
+                              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            ),
+                            error: (err, stack) => ListTile(
+                              title: Text('Error: $err'),
+                            ),
+                            data: (product) {
+                              if (product == null) {
+                                return const ListTile(title: Text('Product not found'));
+                              }
+                              final hasVariants = product.variants.isNotEmpty;
+                              if (hasVariants) {
+                                final selections = productSelections[product.id]?.variantSelections ?? {};
+                                final isComplete = _isProductComplete(product, selections);
+                                return _buildComplexProductCard(context, ref, product, selections, isComplete);
+                              } else {
+                                final isSelected = simpleSelectedIds.contains(product.id);
+                                return _buildSimpleProductCard(product, isSelected, () {
+                                  ref.read(selectedAccessoriesProvider.notifier).toggleAccessory(product.id);
+                                });
+                              }
+                            },
+                          );
+                        }),
+                        if (recIndex < recs.length - 1) ...[
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 16),
+                        ],
+                      ],
                     );
                   },
                 ),

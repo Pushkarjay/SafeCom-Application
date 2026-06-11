@@ -554,10 +554,32 @@ export class AdminDatasource {
     }
   }
 
+  async serviceSetNodeOrder(serviceId: string, categoryKey: string, setupKey: string, nodePath: string[], order: number): Promise<void> {
+    const url = `${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/order`;
+    await this.fetchJson(url, {
+      method: 'PATCH',
+      body: JSON.stringify({ categoryKey, setupKey, nodePath, order })
+    })
+  }
+
   async serviceToggleActive(serviceId: string, categoryKey: string, setupKey: string | null, active: boolean): Promise<void> {
     await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/active`, {
       method: 'PATCH',
       body: JSON.stringify({ categoryKey, setupKey, active })
+    })
+  }
+
+  async serviceSetOrder(serviceId: string, categoryKey: string | null, setupKey: string | null, productKey: string | null, order: number): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/order`, {
+      method: 'PATCH',
+      body: JSON.stringify({ categoryKey, setupKey, productKey, order })
+    })
+  }
+
+  async serviceReorderBulk(serviceId: string, items: Array<{ categoryKey?: string; setupKey?: string; productKey?: string; order: number }>): Promise<void> {
+    await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/order/bulk`, {
+      method: 'PATCH',
+      body: JSON.stringify({ items })
     })
   }
 

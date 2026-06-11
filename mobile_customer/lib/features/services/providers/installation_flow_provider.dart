@@ -202,7 +202,9 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     try {
       final config = await _repo.getInstallationPricing();
       state = InstallationFlowState(isLoading: false, config: config);
-    } catch (e) {
+    } catch (e, st) {
+      print('*** INSTALL ERROR *** _loadConfig error: $e');
+      print('*** INSTALL ERROR *** StackTrace: $st');
       state = InstallationFlowState(isLoading: false);
     }
   }
@@ -263,35 +265,37 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
                 listBranches.firstWhere((b) => b.optionKey == selectedBranchKey);
             final groupKey =
                 '${mappedProduct.productKey}__${selBranch.optionKey}';
-            listGroups.add(InvoiceListGroup(
-              key: groupKey,
-              label: selBranch.label,
-              minQty: selBranch.minQty,
-              maxQty: mappedProduct.maxQty,
-              collectiveValidation: selBranch.collectiveValidation,
-            ));
 
-            // Compute group-level maxQty: MAX of all child leaf maxQty values
+            // Compute group-level maxQty BEFORE creating listGroup
             final selLeaves = _collectLeaves([selBranch]);
             final groupMaxQty = selLeaves.isEmpty
                 ? mappedProduct.maxQty
                 : selLeaves.map((l) => l.maxQty).reduce((a, b) => a > b ? a : b);
 
+            listGroups.add(InvoiceListGroup(
+              key: groupKey,
+              label: mappedProduct.productKey,
+              minQty: selBranch.minQty,
+              maxQty: groupMaxQty,
+              collectiveValidation: selBranch.collectiveValidation,
+            ));
+
             // Only add leaves from the selected branch
             for (final leaf in selLeaves) {
               final leafKey = '${groupKey}__${leaf.optionKey}';
+              final initialQty = leaf.defaultQty < leaf.minQty ? leaf.minQty : leaf.defaultQty;
               items.add(InvoiceLineItem(
                 key: leafKey,
                 name: leaf.label,
                 unitPrice: leaf.price,
-                quantity: leaf.defaultQty,
+                quantity: initialQty,
                 canEditQuantity: leaf.dependsOn == null && leaf.minQty != leaf.maxQty,
                 minQty: leaf.minQty,
-                maxQty: groupMaxQty,
+                maxQty: leaf.maxQty,
                 renderType: 'list',
                 isListChild: true,
                 listGroupKey: groupKey,
-                listGroupLabel: selBranch.label,
+                listGroupLabel: mappedProduct.productKey,
                 parentProductKey: mappedProduct.productKey,
                 dependsOn: leaf.dependsOn,
               ));
@@ -311,13 +315,14 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
               return !branchLeafKeys.contains(leafId);
             }).toList();
             for (final leaf in nonListLeaves) {
+              final initialQty = leaf.defaultQty < leaf.minQty ? leaf.minQty : leaf.defaultQty;
               items.add(InvoiceLineItem(
                 key: '${mappedProduct.productKey}__${leaf.optionKey}',
                 name: leaf.label,
                 unitPrice: leaf.price,
-                quantity: 0,
-                canEditQuantity: leaf.dependsOn == null,
-                minQty: 0,
+                quantity: initialQty,
+                canEditQuantity: leaf.dependsOn == null && leaf.minQty != leaf.maxQty,
+                minQty: leaf.minQty,
                 maxQty: leaf.maxQty,
                 renderType: 'option',
                 parentProductKey: mappedProduct.productKey,
@@ -345,11 +350,12 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
           ));
           for (final leaf in leaves) {
             final leafKey = '${groupKey}__${leaf.optionKey}';
+            final initialQty = leaf.defaultQty < leaf.minQty ? leaf.minQty : leaf.defaultQty;
             items.add(InvoiceLineItem(
               key: leafKey,
               name: leaf.label,
               unitPrice: leaf.price,
-              quantity: leaf.defaultQty,
+              quantity: initialQty,
               canEditQuantity: leaf.dependsOn == null && leaf.minQty != leaf.maxQty,
               minQty: leaf.minQty,
               maxQty: computedGroupMax,
@@ -378,11 +384,12 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
           }
           for (final leaf in clubbedOpts) {
             if (selectedKeys.contains(leaf.optionKey)) {
+              final initialQty = leaf.defaultQty < leaf.minQty ? leaf.minQty : leaf.defaultQty;
               items.add(InvoiceLineItem(
                 key: '${mappedProduct.productKey}__${leaf.optionKey}',
                 name: leaf.productName,
                 unitPrice: leaf.price,
-                quantity: leaf.defaultQty,
+                quantity: initialQty,
                 canEditQuantity: leaf.dependsOn == null && leaf.minQty != leaf.maxQty,
                 minQty: leaf.minQty,
                 maxQty: leaf.maxQty,
@@ -401,16 +408,18 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
         // ── Regular clubbed product (OPTION — drill-down selector) ──
         if (mappedProduct.isClubbed && clubbedOpts.isNotEmpty) {
           final firstLeaf = _findFirstLeaf(clubbedOpts);
+          final leafMin = firstLeaf?.minQty ?? mappedProduct.minQty;
+          final leafMax = firstLeaf?.maxQty ?? mappedProduct.maxQty;
+          final leafDefault = firstLeaf?.defaultQty ?? mappedProduct.defaultQty;
+          final initialQty = leafDefault < leafMin ? leafMin : leafDefault;
           items.add(InvoiceLineItem(
             key: mappedProduct.productKey,
             name: firstLeaf?.productName ?? mappedProduct.product.productName,
             unitPrice: firstLeaf?.price ?? mappedProduct.product.basePrice,
-            quantity: firstLeaf?.defaultQty ?? mappedProduct.defaultQty,
-            canEditQuantity: mappedProduct.dependsOn == null &&
-                (firstLeaf?.minQty ?? mappedProduct.minQty) !=
-                    (firstLeaf?.maxQty ?? mappedProduct.maxQty),
-            minQty: firstLeaf?.minQty ?? mappedProduct.minQty,
-            maxQty: firstLeaf?.maxQty ?? mappedProduct.maxQty,
+            quantity: initialQty,
+            canEditQuantity: mappedProduct.dependsOn == null && leafMin != leafMax,
+            minQty: leafMin,
+            maxQty: leafMax,
             isClubbed: true,
             clubbedOptions: clubbedOpts,
             selectedOption: firstLeaf,
@@ -423,11 +432,14 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
       }
 
       // ── Non-clubbed product ──
+      final nonClubbedMin = mappedProduct.minQty;
+      final nonClubbedDefault = mappedProduct.defaultQty;
+      final nonClubbedInitial = nonClubbedDefault < nonClubbedMin ? nonClubbedMin : nonClubbedDefault;
       items.add(InvoiceLineItem(
         key: mappedProduct.productId,
         name: mappedProduct.product.productName,
         unitPrice: mappedProduct.product.basePrice,
-        quantity: mappedProduct.defaultQty,
+        quantity: nonClubbedInitial,
         canEditQuantity: mappedProduct.dependsOn == null &&
             mappedProduct.minQty != mappedProduct.maxQty,
         minQty: mappedProduct.minQty,
@@ -444,24 +456,39 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
     _sourceProductKeys = {};
     // Build name→key lookup so dependsOn values like "Camera" resolve to the
     // actual productKey (e.g. "Product_2") used as parentProductKey by source items.
+    // Normalize names (comma→dot, extra spaces) so dependsOn matches regardless of formatting.
+    String norm(String s) => s.replaceAll(',', '.').replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase();
     final nameToKey = <String, String>{};
+    final normNameToKey = <String, String>{};
+    // Also map the group (setup) name so dependsOn can reference the setup itself
+    nameToKey[group.name] = group.mappedProducts.isNotEmpty
+        ? group.mappedProducts.first.productKey
+        : '';
+    normNameToKey[norm(group.name)] = group.mappedProducts.isNotEmpty
+        ? group.mappedProducts.first.productKey
+        : '';
     for (final mp in group.mappedProducts) {
       nameToKey[mp.productKey] = mp.productKey;
+      normNameToKey[norm(mp.productKey)] = mp.productKey;
       if (mp.product.productName.isNotEmpty) {
         nameToKey[mp.product.productName] = mp.productKey;
+        normNameToKey[norm(mp.product.productName)] = mp.productKey;
       }
       for (final opt in mp.clubbedOptions) {
         nameToKey[opt.optionKey] = mp.productKey;
+        normNameToKey[norm(opt.optionKey)] = mp.productKey;
         if (opt.productName.isNotEmpty) {
           nameToKey[opt.productName] = mp.productKey;
+          normNameToKey[norm(opt.productName)] = mp.productKey;
         }
       }
     }
     for (final item in items) {
       if (item.dependsOn != null) {
         _dependencyMap.putIfAbsent(item.dependsOn!, () => []).add(item.key);
-        _sourceProductKeys[item.dependsOn!] =
-            nameToKey[item.dependsOn!] ?? item.parentProductKey;
+        // Resolve source: try exact match first, then normalized match
+        final resolved = nameToKey[item.dependsOn!] ?? normNameToKey[norm(item.dependsOn!)] ?? '';
+        _sourceProductKeys[item.dependsOn!] = resolved;
       }
     }
 
@@ -493,8 +520,19 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
       // If no direct match, check if dependsOn matches a group-level dependency
       if (totalQty == 0 && sourceItems.isEmpty) {
         final sourceProductKey = _sourceProductKeys[sourceKey];
-        if (sourceProductKey != null) {
+        if (sourceProductKey != null && sourceProductKey.isNotEmpty) {
           sourceItems = target.where((i) => i.parentProductKey == sourceProductKey).toList();
+          totalQty = sourceItems.fold(0, (sum, i) => sum + i.quantity);
+        }
+      }
+
+      // Intra-group: if source items are in the same group as the dependent,
+      // filter to only the specific source item (not ALL items in the group)
+      if (sourceItems.length > 1) {
+        final specificItems = sourceItems.where((i) =>
+            i.key.endsWith('__$sourceKey') || i.name == sourceKey).toList();
+        if (specificItems.isNotEmpty) {
+          sourceItems = specificItems;
           totalQty = sourceItems.fold(0, (sum, i) => sum + i.quantity);
         }
       }
@@ -508,7 +546,7 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
           // cable starts 2 below camera count). Clamp to [0, maxQty].
           final offset = depItem.minQty < 0 ? depItem.minQty : 0;
           final rawQty = totalQty + offset;
-          final clampedQty = rawQty.clamp(0, depItem.maxQty);
+          final clampedQty = rawQty.clamp(depItem.minQty < 0 ? 0 : depItem.minQty, depItem.maxQty);
           target[idx] = depItem.copyWith(quantity: clampedQty, canEditQuantity: false);
         }
       }

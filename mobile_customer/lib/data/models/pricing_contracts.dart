@@ -211,10 +211,10 @@ class MappedProduct {
       clubbedOptions: clubbedJson
           .map((e) => ClubbedOption.fromJson(e as Map<String, dynamic>))
           .toList(growable: false),
-      renderType: (json['renderType'] as String?) ?? 'option',
+      renderType: (json['renderType'] is String ? json['renderType'] : null) ?? 'option',
       collectiveValidation: json['collectiveValidation'] as bool? ?? false,
-      displayLabel: json['displayLabel'] as String?,
-      dependsOn: json['dependsOn'] as String?,
+      displayLabel: json['displayLabel'] is String ? json['displayLabel'] : null,
+      dependsOn: json['dependsOn'] is String ? json['dependsOn'] : null,
     );
   }
 }
@@ -279,7 +279,8 @@ class ClubbedOption {
   }
 
   factory ClubbedOption.fromJson(Map<String, dynamic> json) {
-    final childrenJson = json['children'] as List<dynamic>? ?? [];
+    final rawChildren = json['children'];
+    final childrenJson = (rawChildren is List<dynamic> ? rawChildren : null) ?? [];
     return ClubbedOption(
       optionKey: (json['optionKey'] ?? '').toString(),
       productId: (json['productId'] ?? '').toString(),
@@ -295,12 +296,12 @@ class ClubbedOption {
       children: childrenJson
           .map((c) => ClubbedOption.fromJson(c as Map<String, dynamic>))
           .toList(growable: false),
-      renderType: (json['renderType'] as String?) ?? 'option',
-      selectionType: json['selectionType'] as String?,
+      renderType: (json['renderType'] is String ? json['renderType'] : null) ?? 'option',
+      selectionType: json['selectionType'] is String ? json['selectionType'] : null,
       collectiveValidation: json['collectiveValidation'] as bool? ?? false,
-      displayLabel: json['displayLabel'] as String?,
+      displayLabel: json['displayLabel'] is String ? json['displayLabel'] : null,
       mandatory: json['mandatory'] as bool? ?? true,
-      dependsOn: json['dependsOn'] as String?,
+      dependsOn: json['dependsOn'] is String ? json['dependsOn'] : null,
     );
   }
 }
@@ -335,7 +336,7 @@ class MasterProduct {
       id: (json['id'] ?? json['productId'] ?? '').toString(),
       productName: (json['productName'] ?? json['name'] ?? '').toString(),
       description: (json['description'] ?? '').toString(),
-      basePrice: (json['basePrice'] ?? json['price'] as num?)?.toDouble() ?? 0,
+      basePrice: ((json['basePrice'] ?? json['price']) as num?)?.toDouble() ?? 0,
       category: (json['category'] ?? '').toString(),
       group: json['group']?.toString(),
       imageUrl: json['imageUrl']?.toString(),
@@ -434,6 +435,8 @@ class MaintenanceContractItem {
   final String name;
   final double unitPrice;
   final int baseQuantity;
+  final int minQty;
+  final int maxQty;
   final bool multiplyByVisitCount;
   final bool canEditQuantity;
 
@@ -442,6 +445,8 @@ class MaintenanceContractItem {
     required this.name,
     required this.unitPrice,
     required this.baseQuantity,
+    this.minQty = 1,
+    this.maxQty = 999,
     required this.multiplyByVisitCount,
     required this.canEditQuantity,
   });
@@ -452,6 +457,8 @@ class MaintenanceContractItem {
       name: (json['name'] ?? '').toString(),
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
       baseQuantity: json['baseQuantity'] as int? ?? 1,
+      minQty: json['minQty'] as int? ?? 1,
+      maxQty: json['maxQty'] as int? ?? 999,
       multiplyByVisitCount: json['multiplyByVisitCount'] as bool? ?? false,
       canEditQuantity: json['canEditQuantity'] as bool? ?? true,
     );
@@ -510,6 +517,8 @@ class RepairContractItem {
   final String name;
   final double unitPrice;
   final int quantity;
+  final int minQty;
+  final int maxQty;
   final bool canEditQuantity;
 
   const RepairContractItem({
@@ -517,6 +526,8 @@ class RepairContractItem {
     required this.name,
     required this.unitPrice,
     required this.quantity,
+    this.minQty = 1,
+    this.maxQty = 999,
     required this.canEditQuantity,
   });
 
@@ -526,6 +537,8 @@ class RepairContractItem {
       name: (json['name'] ?? '').toString(),
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
       quantity: json['quantity'] as int? ?? 1,
+      minQty: json['minQty'] as int? ?? 1,
+      maxQty: json['maxQty'] as int? ?? 999,
       canEditQuantity: json['canEditQuantity'] as bool? ?? true,
     );
   }

@@ -3,7 +3,7 @@ import { getDb } from './firestore.js';
 
 const SERVICE_COLLECTION = 'Services';
 const PRODUCT_COLLECTION = 'catalog_product';
-const ACTIVE_META_KEY = '__active__';
+const ACTIVE_META_KEY = '_isActive';
 
 const MAINTENANCE_ICON_MAP: Record<string, string> = {
   'Preventive Maintenance': 'settings_suggest_outlined',
@@ -43,16 +43,34 @@ function isDocumentReference(value: unknown): value is { id: string } {
   return Boolean(value && typeof value === 'object' && 'id' in (value as Record<string, unknown>));
 }
 
-function extractProductRef(option: Record<string, unknown>): { id: string } | null {
-  const direct = option.Price;
-  if (isDocumentReference(direct)) {
-    return direct;
+function extractProductRef(
+  option: Record<string, unknown>,
+  productMap?: Map<string, Record<string, unknown>>
+): { id: string } | null {
+  // 1. Explicit Reference in "Price" field
+  if (isDocumentReference(option.Price)) {
+    return option.Price as { id: string };
   }
-  for (const value of Object.values(option)) {
-    if (isDocumentReference(value)) {
-      return value;
+
+  // 2. String ID in "Price" field
+  if (typeof option.Price === 'string' && productMap?.has(option.Price)) {
+    return { id: option.Price };
+  }
+
+  // 3. Scan for keys ending in " ID" (common in legacy schema)
+  for (const [k, v] of Object.entries(option)) {
+    if (k.toLowerCase().endsWith(' id')) {
+      if (isDocumentReference(v)) return v as { id: string };
+      if (typeof v === 'string' && productMap?.has(v)) return { id: v };
     }
   }
+
+  // 4. Fallback: scan all values for any reference or known string ID
+  for (const value of Object.values(option)) {
+    if (isDocumentReference(value)) return value as { id: string };
+    if (typeof value === 'string' && productMap?.has(value)) return { id: value };
+  }
+
   return null;
 }
 
@@ -132,7 +150,7 @@ function extractClubbedOptions(
 
     if (isLeafNode(opt)) {
       // LEAF: extract product reference and details
-      const ref = extractProductRef(opt);
+      const ref = extractProductRef(opt, productMap);
       const catalogProduct = ref ? productMap.get(ref.id) : null;
       options.push({
         optionKey,
@@ -147,12 +165,12 @@ function extractClubbedOptions(
         rigid: opt.rigid === true,
         isLeaf: true,
         children: [],
-        renderType: (opt['renderType'] as string) || undefined,
-        selectionType: (opt['selectionType'] as string) || undefined,
+        renderType: typeof opt['renderType'] === 'string' ? (opt['renderType'] as string) : undefined,
+        selectionType: typeof opt['selectionType'] === 'string' ? (opt['selectionType'] as string) : undefined,
         collectiveValidation: Boolean(opt['collectiveValidation']),
-        displayLabel: (opt['displayLabel'] as string) || undefined,
+        displayLabel: typeof opt['displayLabel'] === 'string' ? (opt['displayLabel'] as string) : undefined,
         mandatory: opt['mandatory'] !== false,
-        dependsOn: (opt['dependsOn'] as string) || undefined,
+        dependsOn: typeof opt['dependsOn'] === 'string' ? (opt['dependsOn'] as string) : undefined,
       });
     } else {
       // BRANCH: children are maps — recurse
@@ -170,16 +188,29 @@ function extractClubbedOptions(
         rigid: false,
         isLeaf: false,
         children,
-        renderType: (opt['renderType'] as string) || undefined,
-        selectionType: (opt['selectionType'] as string) || undefined,
+        renderType: typeof opt['renderType'] === 'string' ? (opt['renderType'] as string) : undefined,
+        selectionType: typeof opt['selectionType'] === 'string' ? (opt['selectionType'] as string) : undefined,
         collectiveValidation: Boolean(opt['collectiveValidation']),
-        displayLabel: (opt['displayLabel'] as string) || undefined,
+        displayLabel: typeof opt['displayLabel'] === 'string' ? (opt['displayLabel'] as string) : undefined,
         mandatory: opt['mandatory'] !== false,
-        dependsOn: (opt['dependsOn'] as string) || undefined,
+        dependsOn: typeof opt['dependsOn'] === 'string' ? (opt['dependsOn'] as string) : undefined,
       });
     }
   }
   return options;
+}
+
+/** Recursively collect ALL leaf nodes from a clubbed option tree. */
+function collectAllLeaves(options: ClubbedOption[]): ClubbedOption[] {
+  const leaves: ClubbedOption[] = [];
+  for (const opt of options) {
+    if (opt.isLeaf) {
+      leaves.push(opt);
+    } else if (opt.children.length > 0) {
+      leaves.push(...collectAllLeaves(opt.children));
+    }
+  }
+  return leaves;
 }
 
 function toKey(value: string) {
@@ -187,6 +218,24 @@ function toKey(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
+}
+
+const ORDER_META_KEY = '_order';
+
+/** Sort [key, value] entries by their _order field (missing = Infinity → end). */
+function sortByOrder(entries: [string, unknown][]): [string, unknown][] {
+  return entries.sort((a, b) => {
+    const aVal = a[1] as Record<string, unknown> | undefined;
+    const bVal = b[1] as Record<string, unknown> | undefined;
+    const aOrder = (aVal && typeof aVal === 'object') ? Number((aVal as any)[ORDER_META_KEY] ?? Infinity) : Infinity;
+    const bOrder = (bVal && typeof bVal === 'object') ? Number((bVal as any)[ORDER_META_KEY] ?? Infinity) : Infinity;
+    return aOrder - bOrder;
+  });
+}
+
+/** Sort an array of objects with an `order` field. */
+function sortMappedByOrder<T extends { order?: number }>(items: T[]): T[] {
+  return items.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
 }
 
 // Get all service categories (top level)
@@ -264,22 +313,25 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
     const productMap = new Map<string, Record<string, unknown>>();
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
-    const categories = Object.entries(data)
+    const categories = sortByOrder(Object.entries(data)
       .filter(([categoryKey]) => {
         const catData = data[categoryKey] as Record<string, unknown>;
         if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
         return true;
-      })
+      }))
       .map(([categoryKey, setups]) => {
-        const groups = Object.entries(setups as Record<string, unknown>)
-          .filter(([setupName]) => setupName !== ACTIVE_META_KEY)
+        const catData = setups as Record<string, unknown>;
+        const catOrder = Number(catData?.[ORDER_META_KEY] ?? Infinity);
+        const groups = sortByOrder(Object.entries(catData)
+          .filter(([setupName]) => setupName !== ACTIVE_META_KEY && setupName !== ORDER_META_KEY)
           .filter(([setupName]) => {
-            const setupData = (setups as Record<string, unknown>)[setupName] as Record<string, unknown>;
+            const setupData = catData[setupName] as Record<string, unknown>;
             if (setupData && typeof setupData === 'object' && setupData[ACTIVE_META_KEY] === false) return false;
             return true;
-          })
+          }))
           .map(([setupName, productMapEntry]) => {
             const groupProducts = productMapEntry as Record<string, unknown>;
+            const setupOrder = Number(groupProducts?.[ORDER_META_KEY] ?? Infinity);
             const mappedProducts: Array<{
               productKey: string;
               productId: string;
@@ -294,9 +346,11 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
               displayLabel?: string;
               mandatory?: boolean;
               dependsOn?: string;
+              order?: number;
             }> = [];
-            for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
+            for (const [productKey, optionMapEntry] of sortByOrder(Object.entries(groupProducts).filter(([k]) => k !== ORDER_META_KEY))) {
           const optionMappings = optionMapEntry as Record<string, unknown>;
+          const prodOrder = Number(optionMappings?.[ORDER_META_KEY] ?? Infinity);
           const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
           const isClubbed = clubbedOptions.length > 1;
           const firstLeaf = findFirstLeafInTree(clubbedOptions);
@@ -304,10 +358,11 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
           const product = productMap.get(firstLeaf.productId);
           if (!product) continue;
           const slotMaxQty = Number((optionMappings as Record<string, unknown>)['max q']) || 0;
-          // Compute group-level maxQty: MAX of all child leaf maxQty values
-          const allLeafMaxes = clubbedOptions
-            .filter((o) => o.isLeaf)
-            .map((o) => o.maxQty);
+          const rawDependsOn = (optionMappings as Record<string, unknown>)['dependsOn'];
+          const slotDependsOn = typeof rawDependsOn === 'string' ? rawDependsOn : undefined;
+          // Recursively collect ALL leaves (not just direct children) for correct maxQty
+          const allLeaves = collectAllLeaves(clubbedOptions);
+          const allLeafMaxes = allLeaves.map((o) => o.maxQty);
           const computedMax = allLeafMaxes.length > 0
             ? Math.max(...allLeafMaxes)
             : firstLeaf.maxQty;
@@ -324,25 +379,30 @@ export const getInstallationPricing = async (req: Request, res: Response) => {
             collectiveValidation: firstLeaf.collectiveValidation ?? false,
             displayLabel: firstLeaf.displayLabel,
             mandatory: firstLeaf.mandatory !== false,
-            dependsOn: firstLeaf.dependsOn,
+            dependsOn: slotDependsOn || firstLeaf.dependsOn,
+            order: prodOrder,
           });
         }
+        sortMappedByOrder(mappedProducts);
         return {
           id: toKey(setupName),
           name: setupName,
           description: '',
-          mappedProducts
+          mappedProducts,
+          order: setupOrder,
         };
       });
+      sortMappedByOrder(groups);
       return {
         id: toKey(categoryKey),
         name: categoryKey,
         description: '',
         imageUrl: '',
-        groups
+        groups,
+        order: catOrder,
       };
     });
-
+    sortMappedByOrder(categories as any);
     res.json({ name: 'Installation', categories });
   } catch (error) {
     console.error('Error fetching installation config:', error);
@@ -362,22 +422,25 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
     const productMap = new Map<string, Record<string, unknown>>();
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
-    const categories = Object.entries(data)
+    const categories = sortByOrder(Object.entries(data)
       .filter(([categoryKey]) => {
         const catData = data[categoryKey] as Record<string, unknown>;
         if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
         return true;
-      })
+      }))
       .map(([categoryKey, setups]) => {
-        const groups = Object.entries(setups as Record<string, unknown>)
-          .filter(([setupName]) => setupName !== ACTIVE_META_KEY)
+        const catData = setups as Record<string, unknown>;
+        const catOrder = Number(catData?.[ORDER_META_KEY] ?? Infinity);
+        const groups = sortByOrder(Object.entries(catData)
+          .filter(([setupName]) => setupName !== ACTIVE_META_KEY && setupName !== ORDER_META_KEY)
           .filter(([setupName]) => {
-            const setupData = (setups as Record<string, unknown>)[setupName] as Record<string, unknown>;
+            const setupData = catData[setupName] as Record<string, unknown>;
             if (setupData && typeof setupData === 'object' && setupData[ACTIVE_META_KEY] === false) return false;
             return true;
-          })
+          }))
           .map(([setupName, productMapEntry]) => {
             const groupProducts = productMapEntry as Record<string, unknown>;
+            const setupOrder = Number(groupProducts?.[ORDER_META_KEY] ?? Infinity);
             const mappedProducts: Array<{
               productKey: string;
               productId: string;
@@ -392,9 +455,11 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
               displayLabel?: string;
               mandatory?: boolean;
               dependsOn?: string;
+              order?: number;
             }> = [];
-            for (const [productKey, optionMapEntry] of Object.entries(groupProducts)) {
+            for (const [productKey, optionMapEntry] of sortByOrder(Object.entries(groupProducts).filter(([k]) => k !== ORDER_META_KEY))) {
           const optionMappings = optionMapEntry as Record<string, unknown>;
+          const prodOrder = Number(optionMappings?.[ORDER_META_KEY] ?? Infinity);
           const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
           const isClubbed = clubbedOptions.length > 1;
           const firstLeaf = findFirstLeafInTree(clubbedOptions);
@@ -402,10 +467,10 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
           const product = productMap.get(firstLeaf.productId);
           if (!product) continue;
           const slotMaxQty = Number((optionMappings as Record<string, unknown>)['max q']) || 0;
-          // Compute group-level maxQty: MAX of all child leaf maxQty values
-          const allLeafMaxes = clubbedOptions
-            .filter((o) => o.isLeaf)
-            .map((o) => o.maxQty);
+          const rawDependsOn = (optionMappings as Record<string, unknown>)['dependsOn'];
+          const slotDependsOn = typeof rawDependsOn === 'string' ? rawDependsOn : undefined;
+          const allLeaves = collectAllLeaves(clubbedOptions);
+          const allLeafMaxes = allLeaves.map((o) => o.maxQty);
           const computedMax = allLeafMaxes.length > 0
             ? Math.max(...allLeafMaxes)
             : firstLeaf.maxQty;
@@ -422,25 +487,30 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
             collectiveValidation: firstLeaf.collectiveValidation ?? false,
             displayLabel: firstLeaf.displayLabel,
             mandatory: firstLeaf.mandatory !== false,
-            dependsOn: firstLeaf.dependsOn,
+            dependsOn: slotDependsOn || firstLeaf.dependsOn,
+            order: prodOrder,
           });
         }
+        sortMappedByOrder(mappedProducts);
         return {
           id: toKey(setupName),
           name: setupName,
           description: '',
-          mappedProducts
+          mappedProducts,
+          order: setupOrder,
         };
       });
+      sortMappedByOrder(groups);
       return {
         id: toKey(categoryKey),
         name: categoryKey,
         description: '',
         imageUrl: '',
-        groups
+        groups,
+        order: catOrder,
       };
     });
-
+    sortMappedByOrder(categories as any);
     res.json({ name: 'Maintenance', categories });
   } catch (error) {
     console.error('Error fetching maintenance config:', error);
@@ -474,7 +544,7 @@ export const getRepairPricing = async (req: Request, res: Response) => {
         const optionMappings = optionMap as Record<string, unknown>;
         const option = Object.values(optionMappings)[0] as Record<string, unknown> | undefined;
         if (!option) continue;
-        const productRef = extractProductRef(option);
+        const productRef = extractProductRef(option, productMap);
         if (!productRef) continue;
         const product = productMap.get(productRef.id);
         if (!product) continue;
@@ -553,7 +623,7 @@ export const getAmcConfig = async (req: Request, res: Response) => {
         const optionMappings = optionMap as Record<string, unknown>;
         const option = Object.values(optionMappings)[0] as Record<string, unknown> | undefined;
         if (!option) continue;
-        const productRef = extractProductRef(option);
+        const productRef = extractProductRef(option, productMap);
         if (!productRef) continue;
         const product = productMap.get(productRef.id);
         if (!product) continue;
@@ -611,7 +681,7 @@ export const getUpgradeBundles = async (req: Request, res: Response) => {
         const optionMappings = optionMap as Record<string, unknown>;
         const option = Object.values(optionMappings)[0] as Record<string, unknown> | undefined;
         if (!option) continue;
-        const productRef = extractProductRef(option);
+        const productRef = extractProductRef(option, productMap);
         if (!productRef) continue;
         const product = productMap.get(productRef.id);
         if (!product) continue;

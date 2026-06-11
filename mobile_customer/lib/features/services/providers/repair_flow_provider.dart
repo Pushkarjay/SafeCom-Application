@@ -8,6 +8,8 @@ class RepairInvoiceItem {
   final String name;
   final double unitPrice;
   final int quantity;
+  final int minQty;
+  final int maxQty;
   final bool canEditQuantity;
 
   const RepairInvoiceItem({
@@ -15,6 +17,8 @@ class RepairInvoiceItem {
     required this.name,
     required this.unitPrice,
     required this.quantity,
+    this.minQty = 1,
+    this.maxQty = 999,
     required this.canEditQuantity,
   });
 
@@ -28,6 +32,8 @@ class RepairInvoiceItem {
       name: name,
       unitPrice: unitPrice,
       quantity: quantity ?? this.quantity,
+      minQty: minQty,
+      maxQty: maxQty,
       canEditQuantity: canEditQuantity,
     );
   }
@@ -155,6 +161,8 @@ class RepairFlowNotifier extends StateNotifier<RepairFlowState> {
           name: template.name,
           unitPrice: template.unitPrice,
           quantity: template.quantity,
+          minQty: template.minQty,
+          maxQty: template.maxQty,
           canEditQuantity: template.canEditQuantity,
         ),
       ),
@@ -201,7 +209,8 @@ class RepairFlowNotifier extends StateNotifier<RepairFlowState> {
         return item;
       }
       final next = increment ? item.quantity + 1 : item.quantity - 1;
-      return item.copyWith(quantity: next < 1 ? 1 : next);
+      final safeQty = next.clamp(item.minQty, item.maxQty);
+      return item.copyWith(quantity: safeQty);
     }).toList(growable: false);
 
     state = state.copyWith(items: items);

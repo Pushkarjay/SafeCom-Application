@@ -48,7 +48,18 @@ async function getProductMap(): Promise<Map<string, Record<string, unknown>>> {
 // Detects leaf vs branch nodes in the deeply nested Firestore map.
 // Leaf: has 'Price', 'Deafult q', 'available', 'rigid' fields.
 // Branch: children are maps → recurse.
-const ACTIVE_META_KEY = '__active__';
+const ACTIVE_META_KEY = '_isActive';
+const ORDER_META_KEY = '_order';
+
+function sortByOrder(entries: [string, unknown][]): [string, unknown][] {
+  return entries.sort((a, b) => {
+    const aVal = a[1] as Record<string, unknown> | undefined;
+    const bVal = b[1] as Record<string, unknown> | undefined;
+    const aOrder = (aVal && typeof aVal === 'object') ? Number((aVal as any)[ORDER_META_KEY] ?? Infinity) : Infinity;
+    const bOrder = (bVal && typeof bVal === 'object') ? Number((bVal as any)[ORDER_META_KEY] ?? Infinity) : Infinity;
+    return aOrder - bOrder;
+  });
+}
 
 function isLeafNode(obj: Record<string, unknown>): boolean {
   return (
@@ -244,37 +255,40 @@ installationAdminRouter.get('/', authenticateToken, requireRole(['admin']), asyn
     const data = doc.data() || {};
     const productMap = await getProductMap();
 
-    const categories = Object.entries(data)
+    const categories = sortByOrder(Object.entries(data)
       .filter(([categoryKey]) => {
         if (categoryKey.startsWith('_')) return false;
-        const catData = data[categoryKey] as Record<string, unknown>;
-        if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
         return true;
-      })
+      }))
       .map(([categoryKey, setupsRaw]) => {
         const setups = setupsRaw as Record<string, unknown>;
-        const setupEntries = Object.entries(setups)
-          .filter(([setupKey]) => setupKey !== ACTIVE_META_KEY)
+        const catOrder = Number(setups?.[ORDER_META_KEY] ?? Infinity);
+        const setupEntries = sortByOrder(Object.entries(setups)
+          .filter(([setupKey]) => setupKey !== ACTIVE_META_KEY && setupKey !== ORDER_META_KEY))
           .map(([setupKey, productsRaw]) => {
             const products = productsRaw as Record<string, unknown>;
             const isActive = products[ACTIVE_META_KEY] !== false;
-            const productSlots = Object.entries(products)
-              .filter(([productKey]) => productKey !== ACTIVE_META_KEY)
+            const setupOrder = Number(products?.[ORDER_META_KEY] ?? Infinity);
+            const productSlots = sortByOrder(Object.entries(products)
+              .filter(([productKey]) => productKey !== ACTIVE_META_KEY && productKey !== ORDER_META_KEY))
               .map(([productKey, optionsRaw]) => {
                 const options = optionsRaw as Record<string, unknown>;
+                const prodOrder = Number(options?.[ORDER_META_KEY] ?? Infinity);
                 const tree = extractTree(options, productMap);
                 const hasMultipleTopLevel = tree.length > 1;
                 return {
                   key: productKey,
                   options: tree,
-                  isClubbed: hasMultipleTopLevel
+                  isClubbed: hasMultipleTopLevel,
+                  order: prodOrder
                 };
               });
             return {
               key: setupKey,
               name: setupKey,
               products: productSlots,
-              active: isActive
+              active: isActive,
+              order: setupOrder
             };
           });
         const catActive = (setups as Record<string, unknown>)[ACTIVE_META_KEY] !== false;
@@ -282,7 +296,8 @@ installationAdminRouter.get('/', authenticateToken, requireRole(['admin']), asyn
           key: categoryKey,
           name: categoryKey,
           setups: setupEntries,
-          active: catActive
+          active: catActive,
+          order: catOrder
         };
       });
 
@@ -542,18 +557,112 @@ installationAdminRouter.patch(
       const db = getDb();
       const docRef = db.collection(SERVICE_COLLECTION).doc('Installation');
 
-      if (setupKey) {
-        const path = `${categoryKey}.${setupKey}.${ACTIVE_META_KEY}`;
+      const segments = setupKey
+        ? [categoryKey, setupKey, ACTIVE_META_KEY]
+        : [categoryKey, ACTIVE_META_KEY];
+      const allNoDots = segments.every(s => !s.includes('.'));
+
+      if (allNoDots) {
+        const path = segments.join('.');
         await docRef.update({ [path]: active });
-        res.json({ success: true, message: `Setup "${setupKey}" ${active ? 'activated' : 'deactivated'}` });
       } else {
-        const path = `${categoryKey}.${ACTIVE_META_KEY}`;
-        await docRef.update({ [path]: active });
-        res.json({ success: true, message: `Category "${categoryKey}" ${active ? 'activated' : 'deactivated'}` });
+        await docRef.set(setNested(segments, active), { merge: true });
       }
+
+      const label = setupKey || categoryKey;
+      const kind = setupKey ? 'Setup' : 'Category';
+      res.json({ success: true, message: `${kind} "${label}" ${active ? 'activated' : 'deactivated'}` });
     } catch (error) {
       console.error('[INSTALL-ADMIN] PATCH active error:', error);
       res.status(500).json({ success: false, error: 'Failed to toggle active status' });
+    }
+  }
+);
+
+// ─── PATCH /order — Set display order for categories, setups, or products ──
+installationAdminRouter.patch(
+  '/order',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const { categoryKey, setupKey, productKey, nodePath, order } = req.body as {
+        categoryKey?: string;
+        setupKey?: string;
+        productKey?: string;
+        nodePath?: string[];
+        order: number;
+      };
+
+      if (order === undefined && order !== 0) {
+        return res.status(400).json({ success: false, error: 'order is required' });
+      }
+
+      const db = getDb();
+      const docRef = db.collection(SERVICE_COLLECTION).doc('Installation');
+
+      // Build path segments for _order field
+      let segments: string[] = [];
+      if (nodePath && Array.isArray(nodePath)) {
+        // Nested node path: [categoryKey, setupKey, ...nodePath]
+        if (categoryKey) segments.push(categoryKey);
+        if (setupKey) segments.push(setupKey);
+        segments.push(...nodePath);
+      } else {
+        if (categoryKey) segments.push(categoryKey);
+        if (setupKey) segments.push(setupKey);
+        if (productKey) segments.push(productKey);
+      }
+      segments.push(ORDER_META_KEY);
+
+      const allNoDots = segments.every(s => !s.includes('.'));
+      if (allNoDots) {
+        const path = segments.join('.');
+        await docRef.update({ [path]: order });
+      } else {
+        await docRef.set(setNested(segments, order), { merge: true });
+      }
+
+      res.json({ success: true, message: `Order set to ${order}` });
+    } catch (error) {
+      console.error('[INSTALL-ADMIN] PATCH order error:', error);
+      res.status(500).json({ success: false, error: 'Failed to update order' });
+    }
+  }
+);
+
+// ─── PATCH /order/bulk — Set display order for multiple items at once ──
+installationAdminRouter.patch(
+  '/order/bulk',
+  authenticateToken,
+  requireRole(['admin']),
+  async (req: Request, res: Response) => {
+    try {
+      const { items } = req.body as { items: Array<{ categoryKey?: string; setupKey?: string; productKey?: string; order: number }> };
+
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, error: 'items array is required' });
+      }
+
+      const db = getDb();
+      const docRef = db.collection(SERVICE_COLLECTION).doc('Installation');
+      const updates: Record<string, unknown> = {};
+
+      for (const item of items) {
+        const segments: string[] = [];
+        if (item.categoryKey) segments.push(item.categoryKey);
+        if (item.setupKey) segments.push(item.setupKey);
+        if (item.productKey) segments.push(item.productKey);
+        segments.push(ORDER_META_KEY);
+        const path = segments.join('.');
+        updates[path] = item.order;
+      }
+
+      await docRef.update(updates);
+      res.json({ success: true, message: `${items.length} items reordered` });
+    } catch (error) {
+      console.error('[INSTALL-ADMIN] PATCH order/bulk error:', error);
+      res.status(500).json({ success: false, error: 'Failed to batch update order' });
     }
   }
 );

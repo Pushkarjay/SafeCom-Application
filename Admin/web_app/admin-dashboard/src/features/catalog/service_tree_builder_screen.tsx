@@ -32,12 +32,16 @@ interface TreeNode {
   mandatory?: boolean
   // Dependency engine (Phase 1.5) — auto-map quantity from another product
   dependsOn?: string | null
+  // Order field
+  _order?: number
 }
 
 interface ProductSlot {
   key: string
   options: TreeNode[]
   isClubbed: boolean
+  order?: number
+  _order?: number
 }
 
 interface Setup {
@@ -926,7 +930,7 @@ export default function ServiceTreeBuilderScreen() {
   }
 
   // ─── Reorder helpers ─────────────────────────────────────
-  const moveCategory = (index: number, direction: 'up' | 'down') => {
+  const moveCategory = async (index: number, direction: 'up' | 'down') => {
     setCategories(prev => {
       const arr = [...prev]
       const target = direction === 'up' ? index - 1 : index + 1
@@ -934,9 +938,20 @@ export default function ServiceTreeBuilderScreen() {
       ;[arr[index], arr[target]] = [arr[target], arr[index]]
       return arr
     })
+    // Persist new order to Firestore
+    const arr = [...categories]
+    const target = direction === 'up' ? index - 1 : index + 1
+    if (target < 0 || target >= arr.length) return
+    ;[arr[index], arr[target]] = [arr[target], arr[index]]
+    try {
+      await adminDatasource.serviceReorderBulk(serviceId, arr.map((cat, i) => ({
+        categoryKey: cat.key,
+        order: i
+      })))
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to save order') }
   }
 
-  const moveSetup = (catKey: string, index: number, direction: 'up' | 'down') => {
+  const moveSetup = async (catKey: string, index: number, direction: 'up' | 'down') => {
     setCategories(prev => prev.map(cat => {
       if (cat.key !== catKey) return cat
       const arr = [...cat.setups]
@@ -945,6 +960,70 @@ export default function ServiceTreeBuilderScreen() {
       ;[arr[index], arr[target]] = [arr[target], arr[index]]
       return { ...cat, setups: arr }
     }))
+    // Persist new order to Firestore
+    const cat = categories.find(c => c.key === catKey)
+    if (!cat) return
+    const arr = [...cat.setups]
+    const target = direction === 'up' ? index - 1 : index + 1
+    if (target < 0 || target >= arr.length) return
+    ;[arr[index], arr[target]] = [arr[target], arr[index]]
+    try {
+      await adminDatasource.serviceReorderBulk(serviceId, arr.map((setup, i) => ({
+        categoryKey: catKey,
+        setupKey: setup.key,
+        order: i
+      })))
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to save order') }
+  }
+
+  const moveProduct = async (catKey: string, setupKey: string, index: number, direction: 'up' | 'down') => {
+    // Get the original (unsorted) array to find correct indices
+    const cat = categories.find(c => c.key === catKey)
+    if (!cat) return
+    const setup = cat.setups.find(s => s.key === setupKey)
+    if (!setup) return
+    const arr = [...setup.products]
+    const target = direction === 'up' ? index - 1 : index + 1
+    if (target < 0 || target >= arr.length) return
+    // Optimistic update
+    setCategories(prev => prev.map(c => {
+      if (c.key !== catKey) return c
+      return { ...c, setups: c.setups.map(s => {
+        if (s.key !== setupKey) return s
+        const a = [...s.products]
+        const t = direction === 'up' ? index - 1 : index + 1
+        ;[a[index], a[t]] = [a[t], a[index]]
+        return { ...s, products: a }
+      })}
+    }))
+    ;[arr[index], arr[target]] = [arr[target], arr[index]]
+    try {
+      await adminDatasource.serviceReorderBulk(serviceId, arr.map((p, i) => ({
+        categoryKey: catKey,
+        setupKey,
+        productKey: p.key,
+        order: i
+      })))
+      await loadData()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to save order') }
+  }
+
+  const moveNode = async (catKey: string, setupKey: string, parentPath: string[], siblings: TreeNode[], index: number, direction: 'up' | 'down') => {
+    const target = direction === 'up' ? index - 1 : index + 1
+    if (target < 0 || target >= siblings.length) return
+    const nodeA = siblings[index]
+    const nodeB = siblings[target]
+    const orderA = nodeB._order ?? target
+    const orderB = nodeA._order ?? index
+    try {
+      const pathA = [...parentPath, nodeA.key]
+      const pathB = [...parentPath, nodeB.key]
+      await Promise.all([
+        adminDatasource.serviceSetNodeOrder(serviceId, catKey, setupKey, pathA, orderA),
+        adminDatasource.serviceSetNodeOrder(serviceId, catKey, setupKey, pathB, orderB),
+      ])
+      await loadData()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to save order') }
   }
 
   // ─── Stats ───────────────────────────────────────────────
@@ -1034,8 +1113,9 @@ export default function ServiceTreeBuilderScreen() {
   ): JSX.Element[] {
     const rows: JSX.Element[] = []
     const indent = depth * 24
+    const sortedNodes = [...nodes].sort((a, b) => ((a as any)._order ?? Infinity) - ((b as any)._order ?? Infinity))
 
-    for (const node of nodes) {
+    for (const node of sortedNodes) {
       const nodePath = [...currentPath, node.key]
       const nodeId = `${catKey}::${setupKey}::${nodePath.join('::')}::d${depth}`
       const nestedParentKey = `${catKey}::${setupKey}::${currentPath.join('::')}`
@@ -1083,6 +1163,8 @@ export default function ServiceTreeBuilderScreen() {
                 <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename">✏️</button>
                 <button className="icon-btn" onClick={() => copyNode(catKey, setupKey, nodePath)} title="Copy to clipboard">📋</button>
+                <button className="icon-btn" onClick={() => moveNode(catKey, setupKey, currentPath, nodes, nodes.indexOf(node), 'up')} disabled={nodes.indexOf(node) === 0} title="Move Up">↑</button>
+                <button className="icon-btn" onClick={() => moveNode(catKey, setupKey, currentPath, nodes, nodes.indexOf(node), 'down')} disabled={nodes.indexOf(node) === nodes.length - 1} title="Move Down">↓</button>
                 <button className="icon-btn danger" onClick={() => deleteClubOption(catKey, setupKey, nodePath)} title="Remove this option">✕</button>
               </div>
             </td>
@@ -1169,6 +1251,8 @@ export default function ServiceTreeBuilderScreen() {
                 <button className="icon-btn" onClick={() => renameNode(catKey, setupKey, nodePath)} title="Rename branch">✏️</button>
                 <button className="icon-btn" onClick={() => copyNode(catKey, setupKey, nodePath)} title="Copy branch to clipboard">📋</button>
                 <button className="icon-btn" onClick={() => editRenderConfig(catKey, setupKey, nodePath, node)} title="Configure render type" style={{ color: '#10b981' }}>⚙️</button>
+                <button className="icon-btn" onClick={() => moveNode(catKey, setupKey, currentPath, nodes, nodes.indexOf(node), 'up')} disabled={nodes.indexOf(node) === 0} title="Move Up">↑</button>
+                <button className="icon-btn" onClick={() => moveNode(catKey, setupKey, currentPath, nodes, nodes.indexOf(node), 'down')} disabled={nodes.indexOf(node) === nodes.length - 1} title="Move Down">↓</button>
                 <button className="link-btn" onClick={() => {
                    const fieldName = prompt('Enter new field name:')
                    if (!fieldName || !serviceId) return;
@@ -1213,6 +1297,25 @@ export default function ServiceTreeBuilderScreen() {
           <button className="primary-btn" onClick={saveAllChanges} disabled={saving || pendingEdits.length === 0} style={{ background: '#d97706', marginLeft: 8 }}>
             {saving ? 'Saving...' : `💾 Save Changes (${pendingEdits.length})`}
           </button>
+          <button className="secondary-btn" onClick={async () => {
+            if (!confirm('Assign stable order numbers to all categories, setups, and products based on their current display order?')) return
+            setSaving(true)
+            try {
+              const items: Array<{ categoryKey?: string; setupKey?: string; productKey?: string; order: number }> = []
+              categories.forEach((cat, catIdx) => {
+                items.push({ categoryKey: cat.key, order: catIdx })
+                cat.setups.forEach((setup, setupIdx) => {
+                  items.push({ categoryKey: cat.key, setupKey: setup.key, order: setupIdx })
+                  setup.products.forEach((prod, prodIdx) => {
+                    items.push({ categoryKey: cat.key, setupKey: setup.key, productKey: prod.key, order: prodIdx })
+                  })
+                })
+              })
+              await adminDatasource.serviceReorderBulk(serviceId, items)
+              await loadData()
+            } catch (err) { setError(err instanceof Error ? err.message : 'Failed to seed order') }
+            finally { setSaving(false) }
+          }} disabled={saving} style={{ marginLeft: 8 }} title="Assign order numbers based on current display position">🔢 Seed Order</button>
           {clipboard && (
             <span style={{ marginLeft: 12, fontSize: 12, color: '#6366f1', display: 'flex', alignItems: 'center', gap: 4 }}>
               📋 {clipboard.label}
@@ -1388,18 +1491,23 @@ export default function ServiceTreeBuilderScreen() {
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {[...setup.products].sort((a, b) => {
-                                        const optA = (a.options[0] || {}) as TreeNode
-                                        const optB = (b.options[0] || {}) as TreeNode
-                                        let aVal: string | number = sortField === 'productName' ? (optA.productName || optA.productId || a.key) : (optA as any)[sortField] ?? a.key
-                                        let bVal: string | number = sortField === 'productName' ? (optB.productName || optB.productId || b.key) : (optB as any)[sortField] ?? b.key
-                                        if (typeof aVal === 'string') aVal = aVal.toLowerCase()
-                                        if (typeof bVal === 'string') bVal = bVal.toLowerCase()
-                                        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
-                                        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
-                                        return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
-                                      }).map((slot) => {
-                                        if (!slot.isClubbed) {
+                                  {[...setup.products].sort((a, b) => {
+                                    if (!sortField) {
+                                      // No sort active — use order field from Firestore
+                                      return (a.order ?? a._order ?? Infinity) - (b.order ?? b._order ?? Infinity)
+                                    }
+                                    const optA = (a.options[0] || {}) as TreeNode
+                                    const optB = (b.options[0] || {}) as TreeNode
+                                    let aVal: string | number = sortField === 'productName' ? (optA.productName || optA.productId || a.key) : (optA as any)[sortField] ?? a.key
+                                    let bVal: string | number = sortField === 'productName' ? (optB.productName || optB.productId || b.key) : (optB as any)[sortField] ?? b.key
+                                    if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+                                    if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+                                    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+                                    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+                                    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+                                  }).map((slot) => {
+                                    const originalIdx = setup.products.findIndex(p => p.key === slot.key)
+                                    if (!slot.isClubbed) {
                                           // Regular product row (single leaf option)
                                           const opt = slot.options[0]
                                           if (!opt) return null
@@ -1436,6 +1544,8 @@ export default function ServiceTreeBuilderScreen() {
                                                   <button className="icon-btn" onClick={() => editRenderConfig(cat.key, setup.key, [slot.key], opt)} title="Configure render type (OPT/LIST)" style={{ color: '#10b981' }}>⚙️</button>
                                                   <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Rename">✏️</button>
                                                   <button className="icon-btn" onClick={() => copyNode(cat.key, setup.key, [slot.key])} title="Copy to clipboard">📋</button>
+                                                  <button className="icon-btn" onClick={() => moveProduct(cat.key, setup.key, originalIdx, 'up')} disabled={originalIdx === 0} title="Move Up">↑</button>
+                                                  <button className="icon-btn" onClick={() => moveProduct(cat.key, setup.key, originalIdx, 'down')} disabled={originalIdx === setup.products.length - 1} title="Move Down">↓</button>
                                                   <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire product">🗑️</button>
                                                 </div>
                                               </td>
@@ -1481,9 +1591,11 @@ export default function ServiceTreeBuilderScreen() {
                                                    {selectedNested[`${cat.key}::${setup.key}::${slot.key}`]?.size >= 2 && (
                                                      <button className="icon-btn club-btn" onClick={() => clubSelected(cat.key, setup.key, [slot.key])} title="Group selected items">📁 Group</button>
                                                    )}
-                                                   <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
-                                                   <button className="icon-btn" onClick={() => copyNode(cat.key, setup.key, [slot.key])} title="Copy club to clipboard">📋</button>
-                                                   <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
+                                                    <button className="icon-btn" onClick={() => renameNode(cat.key, setup.key, [slot.key])} title="Edit name">✏️</button>
+                                                    <button className="icon-btn" onClick={() => copyNode(cat.key, setup.key, [slot.key])} title="Copy club to clipboard">📋</button>
+                                                    <button className="icon-btn" onClick={() => moveProduct(cat.key, setup.key, originalIdx, 'up')} disabled={originalIdx === 0} title="Move Up">↑</button>
+                                                    <button className="icon-btn" onClick={() => moveProduct(cat.key, setup.key, originalIdx, 'down')} disabled={originalIdx === setup.products.length - 1} title="Move Down">↓</button>
+                                                    <button className="icon-btn danger" onClick={() => deleteProduct(cat.key, setup.key, slot.key)} title="Remove entire club">🗑️</button>
                                                  </div>
                                                </td>
                                              </tr>,

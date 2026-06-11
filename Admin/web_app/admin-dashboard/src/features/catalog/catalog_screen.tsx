@@ -102,7 +102,14 @@ export default function CatalogScreen() {
         else if (activeTab === 'packages') setPackages(await adminDatasource.getCatalogPackages())
         else if (activeTab === 'addons') setAddons(await adminDatasource.getCatalogAddons())
         else if (activeTab === 'taxes') setTaxes(await adminDatasource.getCatalogTaxes())
-        else if (activeTab === 'recommendations') setRecommendations(await adminDatasource.getCatalogRecommendations())
+        else if (activeTab === 'recommendations') {
+          const [recs, prods] = await Promise.all([
+            adminDatasource.getCatalogRecommendations(),
+            products.length === 0 ? adminDatasource.getCatalogProducts() : Promise.resolve(products)
+          ])
+          setRecommendations(recs)
+          if (prods.length > 0 && products.length === 0) setProducts(prods)
+        }
         else if (activeTab === 'invoices') setInvoices(await adminDatasource.getInvoiceTemplates())
         else if (activeTab === 'services') setCatalogServices(await adminDatasource.getCatalogServices())
         else if (activeTab === 'upgrade') setUpgradeBundles(await adminDatasource.getUpgradeBundles())
@@ -281,6 +288,7 @@ export default function CatalogScreen() {
 
   const handleSaveRec = async () => {
     if (!recForm.name.trim()) { setError('Name is required'); return }
+    if (!recForm.productIds || recForm.productIds.length === 0) { setError('At least one product is required'); return }
     setIsSaving(true)
     try {
       if (editingRec) {
@@ -674,6 +682,7 @@ export default function CatalogScreen() {
                 <th style={{ width: '40px' }}><input type="checkbox" checked={recommendations.length > 0 && selectedItems.size === recommendations.length} onChange={() => toggleSelectAll(recommendations, 'recommendationId')} /></th>
                 <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Recommendation</th>
                 <th>Placement</th>
+                <th>Products</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -682,8 +691,12 @@ export default function CatalogScreen() {
               {recommendations.map((r) => (
                 <tr key={r.recommendationId} className={selectedItems.has(r.recommendationId) ? 'selected' : ''}>
                   <td><input type="checkbox" checked={selectedItems.has(r.recommendationId)} onChange={() => toggleSelection(r.recommendationId)} /></td>
-                  <td>{r.name}</td>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{r.name}</div>
+                    {r.description && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{r.description}</div>}
+                  </td>
                   <td style={{ textTransform: 'capitalize' }}>{r.placement}</td>
+                  <td>{r.productIds?.length ?? 0}</td>
                   <td><span className={`status ${r.isAvailable ? 'active' : 'inactive'}`}>{r.isAvailable ? 'active' : 'inactive'}</span></td>
                   <td>
                     <button className="icon-btn" onClick={() => { setEditingRec(r); setRecForm(r); setIsRecFormOpen(true); }}>Edit</button>
@@ -871,21 +884,74 @@ export default function CatalogScreen() {
 
       {isRecFormOpen && (
         <div className="modal-overlay">
-          <div className="modal-card">
+          <div className="modal-card" style={{ maxWidth: '640px' }}>
             <div className="modal-header">
               <h2>{editingRec ? 'Update Recommendation' : 'Create Recommendation'}</h2>
               <button className="icon-btn" onClick={() => setIsRecFormOpen(false)}>×</button>
             </div>
             <div className="modal-body">
               <label>Name <input value={recForm.name} onChange={(e) => setRecForm({...recForm, name: e.target.value})} /></label>
-              <label>Placement
-                <select value={recForm.placement} onChange={(e) => setRecForm({...recForm, placement: e.target.value as any})}>
-                  <option value="checkout">Checkout</option>
-                  <option value="cart">Cart</option>
-                  <option value="service">Service</option>
+              <label>Description
+                <textarea rows={2} value={recForm.description || ''} onChange={(e) => setRecForm({...recForm, description: e.target.value})} placeholder="Optional description for this recommendation" />
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label>Placement
+                  <select value={recForm.placement} onChange={(e) => setRecForm({...recForm, placement: e.target.value as any})}>
+                    <option value="checkout">Checkout</option>
+                    <option value="cart">Cart</option>
+                    <option value="service">Service</option>
+                    <option value="general">General (Home)</option>
+                  </select>
+                </label>
+                <label>Display Priority <input type="number" value={recForm.displayPriority} onChange={(e) => setRecForm({...recForm, displayPriority: Number(e.target.value)})} /></label>
+              </div>
+              <label>Active
+                <select value={recForm.isAvailable ? 'true' : 'false'} onChange={(e) => setRecForm({...recForm, isAvailable: e.target.value === 'true'})}>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
                 </select>
               </label>
-              <label>Display Priority <input type="number" value={recForm.displayPriority} onChange={(e) => setRecForm({...recForm, displayPriority: Number(e.target.value)})} /></label>
+              <label>Service Types (optional)
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
+                  {(['installation', 'maintenance', 'amc', 'repair', 'upgrade', 'accessories'] as const).map((st) => (
+                    <label key={st} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', textTransform: 'capitalize' }}>
+                      <input
+                        type="checkbox"
+                        checked={recForm.serviceTypes?.includes(st) ?? false}
+                        onChange={(e) => {
+                          const current = recForm.serviceTypes || []
+                          const updated = e.target.checked ? [...current, st] : current.filter((s) => s !== st)
+                          setRecForm({...recForm, serviceTypes: updated})
+                        }}
+                      />
+                      {st}
+                    </label>
+                  ))}
+                </div>
+              </label>
+              <label>Products
+                <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px', marginTop: '4px' }}>
+                  {products.length === 0 && <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Loading products...</div>}
+                  {products.map((p) => (
+                    <label key={p.productId} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 0', fontSize: '13px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={recForm.productIds?.includes(p.productId) ?? false}
+                        onChange={(e) => {
+                          const current = recForm.productIds || []
+                          const updated = e.target.checked ? [...current, p.productId] : current.filter((id) => id !== p.productId)
+                          setRecForm({...recForm, productIds: updated})
+                        }}
+                      />
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>₹{p.basePrice}</span>
+                    </label>
+                  ))}
+                </div>
+                {recForm.productIds && recForm.productIds.length > 0 && (
+                  <div style={{ fontSize: '12px', color: 'var(--primary)', marginTop: '4px' }}>{recForm.productIds.length} product(s) selected</div>
+                )}
+              </label>
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setIsRecFormOpen(false)}>Cancel</button>

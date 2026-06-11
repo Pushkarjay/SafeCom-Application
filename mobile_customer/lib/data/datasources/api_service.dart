@@ -78,8 +78,10 @@ class ApiService {
   Future<Map<String, dynamic>> getInstallationPricing() async {
     try {
       final response = await _dio.get('/catalog-public/pricing/installation');
+      print('*** INSTALL RESPONSE *** status=${response.statusCode} type=${response.data.runtimeType}');
       return response.data as Map<String, dynamic>;
     } catch (e) {
+      print('*** INSTALL ERROR *** ApiService.getInstallationPricing: $e');
       throw Exception('Failed to fetch installation pricing: $e');
     }
   }

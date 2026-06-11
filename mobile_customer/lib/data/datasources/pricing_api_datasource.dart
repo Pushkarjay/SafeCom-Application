@@ -8,7 +8,13 @@ class PricingApiDataSource {
 
   Future<InstallationPricingContract> getInstallationPricing() async {
     final response = await _apiService.getInstallationPricing();
-    return InstallationPricingContract.fromJson(response);
+    try {
+      return InstallationPricingContract.fromJson(response);
+    } catch (e, st) {
+      print('*** INSTALL ERROR *** PricingApiDataSource.getInstallationPricing fromJson error: $e');
+      print('*** INSTALL ERROR *** StackTrace: $st');
+      rethrow;
+    }
   }
 
   Future<MaintenancePricingContract> getMaintenancePricing() async {

@@ -48,10 +48,10 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
                         unitPrice: item.unitPrice,
                         quantityWidget: QuantityStepper(
                           quantity: item.quantity,
-                          onIncrement: item.canEditQuantity
+                          onIncrement: item.canEditQuantity && item.quantity < item.maxQty
                               ? () => notifier.incrementQuantity(item.key)
                               : null,
-                          onDecrement: item.canEditQuantity
+                          onDecrement: item.canEditQuantity && item.quantity > item.minQty
                               ? () => notifier.decrementQuantity(item.key)
                               : null,
                         ),
