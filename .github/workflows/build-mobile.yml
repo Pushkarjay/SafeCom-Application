@@ -9,6 +9,10 @@ on:
       - '.github/workflows/build-mobile.yml'
   workflow_dispatch:
     inputs:
+      bump_version:
+        description: Auto-increment build number
+        type: boolean
+        default: true
       upload_play_store:
         description: Upload to Google Play Store
         type: boolean
@@ -37,6 +41,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-java@v4
         with:
@@ -53,6 +59,25 @@ jobs:
           mkdir -p "$HOME/.android"
           echo "${{ secrets.SAFECOM_KEYSTORE }}" | base64 -d > "$HOME/.android/safecom-keystore.jks"
         shell: bash
+
+      - name: Bump build number
+        if: github.event_name == 'workflow_dispatch' && inputs.bump_version
+        run: |
+          LINE=$(grep '^version: ' pubspec.yaml)
+          VER=$(echo "$LINE" | sed 's/version: //')
+          NAME=$(echo "$VER" | cut -d+ -f1)
+          BUILD=$(echo "$VER" | cut -d+ -f2)
+          NEXT=$((BUILD + 1))
+          sed -i "s/^version: .*/version: ${NAME}+${NEXT}/" pubspec.yaml
+
+      - name: Commit version bump
+        if: github.event_name == 'workflow_dispatch' && inputs.bump_version
+        run: |
+          git config user.name "SafeCom CI"
+          git config user.email "ci@safecom.in"
+          git add pubspec.yaml
+          git commit -m "chore: bump customer build to $(grep '^version: ' pubspec.yaml | sed 's/version: //') [skip ci]"
+          git push
 
       - name: Install dependencies
         run: flutter pub get
@@ -89,6 +114,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-java@v4
         with:
@@ -99,6 +126,21 @@ jobs:
         with:
           flutter-version: stable
           channel: stable
+
+      - name: Bump build number
+        if: github.event_name == 'workflow_dispatch' && inputs.bump_version
+        run: |
+          LINE=$(grep '^version: ' pubspec.yaml)
+          VER=$(echo "$LINE" | sed 's/version: //')
+          NAME=$(echo "$VER" | cut -d+ -f1)
+          BUILD=$(echo "$VER" | cut -d+ -f2)
+          NEXT=$((BUILD + 1))
+          sed -i "s/^version: .*/version: ${NAME}+${NEXT}/" pubspec.yaml
+          git config user.name "SafeCom CI"
+          git config user.email "ci@safecom.in"
+          git add pubspec.yaml
+          git commit -m "chore: bump employee build to ${NAME}+${NEXT} [skip ci]"
+          git push
 
       - name: Install dependencies
         run: flutter pub get
