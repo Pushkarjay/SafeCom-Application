@@ -65,6 +65,11 @@ jobs:
           echo "${{ secrets.SAFECOM_KEYSTORE }}" | base64 -d > "$HOME/.android/safecom-keystore.jks"
         shell: bash
 
+      - name: Decode google-services.json
+        run: |
+          echo "${{ secrets.SAFECOM_CUSTOMER_GOOGLE_SERVICES }}" | base64 -d > android/app/google-services.json
+        shell: bash
+
       - name: Bump build number
         if: github.event_name == 'workflow_dispatch' && inputs.bump_version
         run: |
@@ -82,6 +87,7 @@ jobs:
           git config user.email "ci@safecom.in"
           git add pubspec.yaml
           git commit -m "chore: bump customer build to $(grep '^version: ' pubspec.yaml | sed 's/version: //') [skip ci]"
+          git pull --rebase origin main
           git push
 
       - name: Install dependencies
@@ -133,6 +139,11 @@ jobs:
           channel: stable
           version: latest
 
+      - name: Decode google-services.json
+        run: |
+          echo "${{ secrets.SAFECOM_EMPLOYEE_GOOGLE_SERVICES }}" | base64 -d > android/app/google-services.json
+        shell: bash
+
       - name: Bump build number
         if: github.event_name == 'workflow_dispatch' && inputs.bump_version
         run: |
@@ -146,6 +157,7 @@ jobs:
           git config user.email "ci@safecom.in"
           git add pubspec.yaml
           git commit -m "chore: bump employee build to ${NAME}+${NEXT} [skip ci]"
+          git pull --rebase origin main
           git push
 
       - name: Install dependencies
