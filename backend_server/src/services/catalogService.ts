@@ -243,23 +243,63 @@ export const getServices = async (req: Request, res: Response) => {
   try {
     const db = getDb();
     const snapshot = await db.collection(SERVICE_COLLECTION).get();
+    
+    // Hardcoded defaults for built-in services
     const displayMap: Record<string, { id: string; title: string; icon: string }> = {
       Installation: { id: 'installation', title: 'Installation', icon: '🔧' },
       Maintenance: { id: 'maintenance', title: 'Maintenance', icon: '🛠️' },
       AMC: { id: 'amc', title: 'AMC Plans', icon: '📋' },
       Camera_Repair: { id: 'repair', title: 'Camera Repair', icon: '🪛' },
       Camera_System_Upgrade: { id: 'upgrade', title: 'System Upgrade', icon: '⬆️' },
-      Accessories: { id: 'accessories', title: 'Accessories', icon: '🔌' }
+      Accessories: { id: 'accessories', title: 'Accessories', icon: '🔌' },
+      Recommendation_Addons: { id: 'recommendations', title: 'Recommendations', icon: '💡' },
     };
 
-    const services = snapshot.docs
-      .map((doc) => {
-        const display = displayMap[doc.id];
-        if (!display) return null;
-        return { ...display, enabled: true };
-      })
-      .filter(Boolean) as Array<{ id: string; title: string; icon: string; enabled: boolean }>;
+    // Track which IDs we've already added so we don't duplicate
+    const seenIds = new Set<string>();
+    const services: Array<{ id: string; title: string; icon: string; enabled: boolean }> = [];
 
+    // 1. First, add all hardcoded built-in services that actually exist in Firestore
+    for (const doc of snapshot.docs) {
+      const display = displayMap[doc.id];
+      if (display) {
+        const data = doc.data() || {};
+        const meta = data._meta as Record<string, unknown> | undefined;
+        // Use _meta overrides if available, otherwise use hardcoded defaults
+        services.push({
+          id: display.id,
+          title: (meta?.title as string) || display.title,
+          icon: (meta?.icon as string) || display.icon,
+          enabled: meta?.enabled as boolean ?? true,
+        });
+        seenIds.add(doc.id.toLowerCase());
+      }
+    }
+
+    // 2. Add dynamically created services (those with _meta that aren't in the hardcoded map)
+    for (const doc of snapshot.docs) {
+      const data = doc.data() || {};
+      const meta = data._meta as Record<string, unknown> | undefined;
+      
+      if (!meta || seenIds.has(doc.id.toLowerCase())) continue;
+      
+      const title = (meta.title as string) || doc.id;
+      const icon = (meta.icon as string) || '🔧';
+      const enabled = meta.enabled as boolean ?? true;
+      const safeId = doc.id
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      services.push({
+        id: safeId || doc.id,
+        title,
+        icon,
+        enabled,
+      });
+    }
+
+    // 3. Fallback: if nothing was found, return the hardcoded defaults
     if (services.length === 0) {
       const fallback = Object.values(displayMap).map((entry) => ({ ...entry, enabled: true }));
       return res.json({ services: fallback });

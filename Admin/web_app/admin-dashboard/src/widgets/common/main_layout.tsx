@@ -1,17 +1,10 @@
+import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@core/services/auth_service'
 import { useTheme } from '@core/services/theme_service'
+import { adminDatasource } from '@data/datasources/admin_datasource'
+import type { Service } from '@data/models/admin_models'
 import './main_layout.css'
-
-const SERVICE_ITEMS = [
-  { key: 'Installation', label: 'Installation', icon: '🔧', builder: true },
-  { key: 'Maintenance', label: 'Maintenance', icon: '⚙️', builder: true },
-  { key: 'Camera_Repair', label: 'Camera Repair', icon: '📷', builder: true },
-  { key: 'AMC', label: 'AMC Plans', icon: '📋', builder: true },
-  { key: 'Camera_System_Upgrade', label: 'Upgrade', icon: '⬆️', builder: true },
-  { key: 'Recommendation_Addons', label: 'Recommendations', icon: '💡', builder: true },
-  { key: 'services', label: 'Services', icon: '📦', builder: false, path: '/catalog/services' },
-]
 
 const CATALOG_ITEMS = [
   { key: 'products', label: 'Products', icon: '📦', path: '/catalog/products' },
@@ -29,6 +22,21 @@ export default function MainLayout() {
 
   const { theme, toggleTheme } = useTheme()
 
+  const [dbServices, setDbServices] = useState<Service[]>([])
+
+  // Fetch dynamic services from the database
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const services = await adminDatasource.getServicesList()
+        setDbServices(services)
+      } catch (err) {
+        console.error('Failed to fetch services:', err)
+      }
+    }
+    fetchServices()
+  }, [location.pathname]) // Re-fetch when navigating (catches new service creations)
+
   const handleLogout = async () => {
     await logout()
     navigate('/login')
@@ -36,19 +44,7 @@ export default function MainLayout() {
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`)
 
-  const getServicePath = (item: typeof SERVICE_ITEMS[0]) => {
-    if (item.builder) {
-      return `/catalog/builder/${item.key}`
-    }
-    return item.path
-  }
-
-  const isServiceActive = (item: typeof SERVICE_ITEMS[0]) => {
-    if (item.builder) {
-      return location.pathname === `/catalog/builder/${item.key}`
-    }
-    return location.pathname === item.path
-  }
+  const isServiceActive = (id: string) => location.pathname === `/catalog/builder/${id}`
 
   return (
     <div className="main-layout">
@@ -131,20 +127,30 @@ export default function MainLayout() {
             ))}
           </div>
 
-          {/* Services Section */}
+          {/* Services Section — Dynamic from Database */}
           <div className="nav-section services">
             <p className="section-title">SERVICES</p>
-            {SERVICE_ITEMS.map(item => (
+            {dbServices.filter(s => s.enabled !== false).map(service => (
               <button
-                key={item.key}
-                className={`nav-item service-item ${isServiceActive(item) ? 'active' : ''}`}
-                onClick={() => navigate(getServicePath(item))}
+                key={service.id}
+                className={`nav-item service-item ${isServiceActive(service.id) ? 'active' : ''}`}
+                onClick={() => navigate(`/catalog/builder/${service.id}`)}
               >
-                <span className="nav-icon">{item.icon}</span>
-                <span className="service-label">{item.label}</span>
+                <span className="nav-icon">{service.icon || '🔧'}</span>
+                <span className="service-label">{service.title || service.id}</span>
                 <span className="nav-arrow">→</span>
               </button>
             ))}
+            {/* Static link to Service Creator */}
+            <button
+              key="services-creator"
+              className={`nav-item service-item ${location.pathname === '/catalog/services' ? 'active' : ''}`}
+              onClick={() => navigate('/catalog/services')}
+            >
+              <span className="nav-icon">📦</span>
+              <span className="service-label">Services</span>
+              <span className="nav-arrow">→</span>
+            </button>
           </div>
 
           {/* Settings Section */}

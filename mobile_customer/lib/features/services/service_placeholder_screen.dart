@@ -9,17 +9,13 @@ class ServicePlaceholderScreen extends StatelessWidget {
     required this.serviceId,
   });
 
-  static const _serviceLabels = {
-    'maintenance': 'Maintenance',
-    'amc': 'AMC Plans',
-    'repair': 'Camera Repair',
-    'upgrade': 'System Upgrade',
-    'accessories': 'Accessories',
-  };
-
   @override
   Widget build(BuildContext context) {
-    final label = _serviceLabels[serviceId] ?? 'Service';
+    // Use the raw serviceId as the title; could be extended to fetch from API
+    final label = serviceId.replaceAll('_', ' ').replaceAll('-', ' ').split(' ').map((w) {
+      if (w.isEmpty) return w;
+      return w[0].toUpperCase() + w.substring(1);
+    }).join(' ');
 
     return Scaffold(
       appBar: AppBar(title: Text(label)),

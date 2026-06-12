@@ -52,6 +52,7 @@ function App() {
             <Route path="/payments" element={<PaymentsScreen />} />
             <Route path="/catalog/builder/:serviceId" element={<ServiceTreeBuilderScreen />} />
             <Route path="/catalog/services" element={<ServiceCreatorScreen />} />
+            <Route path="/catalog/accessories" element={<Navigate to="/catalog/products" replace />} />
             <Route path="/catalog/:tab" element={<CatalogRoute />} />
             <Route path="/catalog/home-cms" element={<Navigate to="/mobile-preview" replace />} />
             <Route path="/settings/serviceable-areas" element={<ServiceableAreasScreen />} />
