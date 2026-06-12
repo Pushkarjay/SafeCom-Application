@@ -30,6 +30,7 @@ on:
 env:
   CUSTOMER_PACKAGE: com.safecom.customer
   EMPLOYEE_PACKAGE: com.safecom.employee
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-customer:
@@ -49,9 +50,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: flutter/setup-flutter@v1
+      - name: Setup Flutter SDK
+        uses: flutter-actions/setup-flutter@v4
         with:
           channel: stable
+          version: latest
 
       - name: Decode keystore
         run: |
@@ -121,9 +124,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: flutter/setup-flutter@v1
+      - name: Setup Flutter SDK
+        uses: flutter-actions/setup-flutter@v4
         with:
           channel: stable
+          version: latest
 
       - name: Bump build number
         if: github.event_name == 'workflow_dispatch' && inputs.bump_version
