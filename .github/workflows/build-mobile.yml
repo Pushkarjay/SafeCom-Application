@@ -99,17 +99,15 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release
+        run: ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE="$HOME/.android/safecom-keystore.jks" flutter build apk --release
         env:
-          ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE: ${{ runner.home }}/.android/safecom-keystore.jks
           ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE_PASSWORD: ${{ secrets.SAFECOM_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_SAFECOM_KEY_ALIAS: ${{ secrets.SAFECOM_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_SAFECOM_KEY_PASSWORD: ${{ secrets.SAFECOM_KEY_PASSWORD }}
 
       - name: Build AAB
-        run: flutter build appbundle --release
+        run: ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE="$HOME/.android/safecom-keystore.jks" flutter build appbundle --release
         env:
-          ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE: ${{ runner.home }}/.android/safecom-keystore.jks
           ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE_PASSWORD: ${{ secrets.SAFECOM_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_SAFECOM_KEY_ALIAS: ${{ secrets.SAFECOM_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_SAFECOM_KEY_PASSWORD: ${{ secrets.SAFECOM_KEY_PASSWORD }}
@@ -180,17 +178,15 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release
+        run: ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE="$HOME/.android/safecom-keystore.jks" flutter build apk --release
         env:
-          ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE: ${{ runner.home }}/.android/safecom-keystore.jks
           ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE_PASSWORD: ${{ secrets.SAFECOM_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_SAFECOM_KEY_ALIAS: ${{ secrets.SAFECOM_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_SAFECOM_KEY_PASSWORD: ${{ secrets.SAFECOM_KEY_PASSWORD }}
 
       - name: Build AAB
-        run: flutter build appbundle --release
+        run: ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE="$HOME/.android/safecom-keystore.jks" flutter build appbundle --release
         env:
-          ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE: ${{ runner.home }}/.android/safecom-keystore.jks
           ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE_PASSWORD: ${{ secrets.SAFECOM_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_SAFECOM_KEY_ALIAS: ${{ secrets.SAFECOM_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_SAFECOM_KEY_PASSWORD: ${{ secrets.SAFECOM_KEY_PASSWORD }}
