@@ -8,7 +8,6 @@ const SERVICE_ITEMS = [
   { key: 'Maintenance', label: 'Maintenance', icon: '⚙️', builder: true },
   { key: 'Camera_Repair', label: 'Camera Repair', icon: '📷', builder: true },
   { key: 'AMC', label: 'AMC Plans', icon: '📋', builder: true },
-  { key: 'accessories', label: 'Accessories', icon: '🔌', builder: false, path: '/catalog/accessories' },
   { key: 'Camera_System_Upgrade', label: 'Upgrade', icon: '⬆️', builder: true },
   { key: 'Recommendation_Addons', label: 'Recommendations', icon: '💡', builder: true },
   { key: 'services', label: 'Services', icon: '📦', builder: false, path: '/catalog/services' },
@@ -16,8 +15,6 @@ const SERVICE_ITEMS = [
 
 const CATALOG_ITEMS = [
   { key: 'products', label: 'Products', icon: '📦', path: '/catalog/products' },
-  { key: 'services', label: 'Services', icon: '🛠️', path: '/catalog/services' },
-  { key: 'mobile-preview', label: 'Mobile Preview', icon: '📱', path: '/mobile-preview' },
 ]
 
 const SETTINGS_ITEMS = [

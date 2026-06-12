@@ -533,10 +533,10 @@ export class AdminDatasource {
     })
   }
 
-  async serviceCloneNode(serviceId: string, categoryKey: string, setupKey: string, sourceNodePath: string[], destNodePath: string[], newKey: string): Promise<void> {
+  async serviceCloneNode(serviceId: string, categoryKey: string, setupKey: string, sourceNodePath: string[], destNodePath: string[], newKey: string, sourceCategoryKey?: string, sourceSetupKey?: string): Promise<void> {
     await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/node/clone`, {
       method: 'POST',
-      body: JSON.stringify({ sourceNodePath, destNodePath, newKey })
+      body: JSON.stringify({ sourceNodePath, destNodePath, newKey, sourceCategoryKey, sourceSetupKey })
     })
   }
 

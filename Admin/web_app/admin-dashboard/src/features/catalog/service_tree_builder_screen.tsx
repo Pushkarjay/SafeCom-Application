@@ -884,7 +884,7 @@ export default function ServiceTreeBuilderScreen() {
     setSaving(true)
     setError(null)
     try {
-      await adminDatasource.serviceCloneNode(serviceId, categoryKey, setupKey, src.sourceNodePath, destNodePath, safeKey(newKey.trim()))
+      await adminDatasource.serviceCloneNode(serviceId, categoryKey, setupKey, src.sourceNodePath, destNodePath, safeKey(newKey.trim()), src.sourceCategoryKey, src.sourceSetupKey)
       setClipboard(null)
       await loadData()
     } catch (err) {

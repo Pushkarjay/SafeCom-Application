@@ -1311,7 +1311,7 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     const serviceId = String(req.params.serviceId);
     const categoryKey = String(req.params.categoryKey);
     const setupKey = String(req.params.setupKey);
-    const { sourceNodePath, destNodePath, newKey } = req.body as { sourceNodePath: string[]; destNodePath: string[]; newKey: string; };
+    const { sourceNodePath, destNodePath, newKey, sourceCategoryKey, sourceSetupKey } = req.body as { sourceNodePath: string[]; destNodePath: string[]; newKey: string; sourceCategoryKey?: string; sourceSetupKey?: string; };
 
     if (!Array.isArray(sourceNodePath) || sourceNodePath.length === 0) {
       return res.status(400).json({ success: false, error: 'sourceNodePath is required' });
@@ -1329,9 +1329,11 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     if (!doc.exists) return res.status(404).json({ success: false, error: 'Service not found' });
 
     const data = doc.data()!;
-    const setupData = data[categoryKey]?.[setupKey];
+    const srcCat = sourceCategoryKey || categoryKey;
+    const srcSetup = sourceSetupKey || setupKey;
+    const setupData = data[srcCat]?.[srcSetup];
     if (!setupData) {
-      return res.status(404).json({ success: false, error: `Setup "${categoryKey}.${setupKey}" not found` });
+      return res.status(404).json({ success: false, error: `Setup "${srcCat}.${srcSetup}" not found` });
     }
 
     // Navigate to source node

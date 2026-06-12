@@ -75,7 +75,48 @@
 - SafeKey applied in service_tree_builder_screen
 - PROD_API_BASE_URL updated to correct Cloud Run service name (`safecom-backend-central`)
 
+### Root Cause: Missing "Camera" Setup in "IP Camera: Samples"
+**Finding**: The backend `GET /config/Installation` returns exactly what exists in Firestore — the **backend is correct**.
+
+**Investigation** (`debug_firestore.ts` directly queried both databases):
+- Backend reads from `Services/Installation` document in `safecom-database-nosql` (named DB)
+- That document has only **3 entries** under `IP Camera: Samples`: "Test 4 Camera Setup", "Test 8 Camera Setup", "16 Camera Setup"
+- There is no "Camera" entry at `Services/Installation` → `IP Camera: Samples` → `Camera`
+- The `Configuration` collection is **empty** in the named DB
+- Default database `(default)` returns 5 NOT_FOUND (doesn't exist or inaccessible)
+
+**Conclusion**: The "Camera" entry visible in Firestore console screenshots was from a different document/database. The backend API correctly returns all data that exists in `Services/Installation` (`safecom-database-nosql`). No code change needed — the 3-setup count is accurate for the backend's data source. If the "Camera" setup should appear in the admin dashboard, it must be added to Firestore at `Services/Installation` → `IP Camera: Samples` → `Camera`.
+
+### Removed Broken Firestore REST Fallback
+- Removed `firestoreFetch`, `encodePath`, `firestoreNodeToTreeNode` methods and `FIRESTORE_BASE` constant from `admin_datasource.ts`
+- Removed the 403-prone Firestore REST branch lookup try-catch block in `getServiceConfig`
+- All data now served exclusively through the backend API
+
+### Fixed: Empty Branch Not Visible in Frontend
+**Problem**: Creating a branch via `+ Branch` creates `{ "BranchName": {} }` in Firestore. `extractTree({})` returns `[]`, so the product slot has `options: []` and `isClubbed: false`. Frontend's non-clubbed path does `slot.options[0]` → `undefined` → `return null`, making the branch invisible.
+
+**Fix**: `servicesAdmin.ts:369` — changed `isClubbed: tree.length > 1` to `isClubbed: tree.length > 1 || tree.length === 0`. Empty branches now render as expandable clubbed headers showing "0 options", with `+ Option` and `+ Branch` buttons to add content.
+
+**Deployed**: us-central1 backend rebuilt and deployed (Cloud Build, revision `safecom-backend-central-00004-gtn`).
+
 ### Deployment
 - Backend deployed to Cloud Run us-central1: `safecom-backend-central-177425757120.us-central1.run.app`
 - Backend deployed to Cloud Run asia-south1: `safecom-backend-south-177425757120.asia-south1.run.app`
 - Admin frontend deployed to Firebase: `safecom-application-01.web.app`
+
+## 2026-06-06 (This Session)
+
+### Customer Mobile App: DVR Naming & Mismatch Display Fix
+
+**Problem 1 — Naming**: Clubbed product leaves in the customer app showed the raw Firestore key (e.g., `"Product 14 Option 1"`) instead of the catalog product name (e.g., `"CP Plus 3+1 Co-Axial Cable - DVR Supported"`). The `ClubbedOption.label` getter at `pricing_contracts.dart:272` used `optionKey` as fallback when `displayLabel` was empty, skipping `productName`.
+
+**Fix**: Changed `label` getter to prefer `displayLabel` → `productName` (catalog name) → `optionKey` (Firestore key). This fixes display names for all list/option leaves across DVR, CCTV Camera, Storage, and any clubbed product.
+
+**Problem 2 — Mismatch Display (Branch Selector)**: Clubbed products with multiple LIST branches (e.g., `CCTV Camera` with `5.0 MP` and `2.4 MP` branches) used a **ChoiceChip branch selector** that only showed ONE branch at a time — unlike the admin dashboard which displays ALL branches simultaneously.
+
+**Fix**: Replaced the single-branch selector with simultaneous display of all branches as separate `InvoiceListGroup` widgets. Each branch (e.g., `5.0 MP`, `2.4 MP`) now renders its own list group with its own items and collective validation, matching the admin dashboard behavior.
+
+**Changed files**:
+- `mobile_customer/lib/data/models/pricing_contracts.dart`:272 — `label` getter now uses `productName` before `optionKey`
+- `mobile_customer/lib/features/services/providers/installation_flow_provider.dart` — removed `selectedBranch` state, removed `selectClubbedBranch` method, changed branch handling to iterate ALL branches (not just selected one)
+- `mobile_customer/lib/features/invoice/installation_customization_screen.dart` — removed `_buildBranchSelectors` (`ChoiceChip` UI) and unused import

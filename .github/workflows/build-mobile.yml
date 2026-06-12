@@ -70,6 +70,11 @@ jobs:
           echo "${{ secrets.SAFECOM_CUSTOMER_GOOGLE_SERVICES }}" | base64 -d > android/app/google-services.json
         shell: bash
 
+      - name: Decode strings.xml
+        run: |
+          echo "${{ secrets.SAFECOM_CUSTOMER_STRINGS_XML }}" | base64 -d > android/app/src/main/res/values/strings.xml
+        shell: bash
+
       - name: Bump build number
         if: github.event_name == 'workflow_dispatch' && inputs.bump_version
         run: |
@@ -148,6 +153,11 @@ jobs:
       - name: Decode google-services.json
         run: |
           echo "${{ secrets.SAFECOM_EMPLOYEE_GOOGLE_SERVICES }}" | base64 -d > android/app/google-services.json
+        shell: bash
+
+      - name: Decode strings.xml
+        run: |
+          echo "${{ secrets.SAFECOM_EMPLOYEE_STRINGS_XML }}" | base64 -d > android/app/src/main/res/values/strings.xml
         shell: bash
 
       - name: Bump build number
