@@ -319,13 +319,17 @@ servicesAdminRouter.get('/list', authenticateToken, requireRole(['admin']), asyn
   try {
     const db = getDb();
     const snapshot = await db.collection(SERVICE_COLLECTION).get();
-    const services = snapshot.docs.map(doc => ({
-      id: doc.id,
-      title: doc.id,
-      icon: '🔧', // Fallback icon
-      enabled: true,
-      ...doc.data()
-    }));
+    const services = snapshot.docs.map(doc => {
+      const data = doc.data() || {};
+      const meta = (data._meta || {}) as Record<string, unknown>;
+      return {
+        id: doc.id,
+        title: meta.title || doc.id,
+        icon: meta.icon || '🔧',
+        enabled: meta.enabled !== false,
+        updatedAt: meta.updatedAt || null
+      };
+    });
     res.json({ success: true, data: services });
   } catch (error) {
     console.error('[SERVICES-ADMIN] GET list error:', error);

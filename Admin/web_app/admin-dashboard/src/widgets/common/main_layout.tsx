@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@core/services/auth_service'
 import { useTheme } from '@core/services/theme_service'
-import { adminDatasource } from '@data/datasources/admin_datasource'
-import type { Service } from '@data/models/admin_models'
+import { useServicesStore } from '@core/services/services_store'
 import './main_layout.css'
 
 const CATALOG_ITEMS = [
@@ -22,20 +21,14 @@ export default function MainLayout() {
 
   const { theme, toggleTheme } = useTheme()
 
-  const [dbServices, setDbServices] = useState<Service[]>([])
+  const dbServices = useServicesStore((s) => s.services)
+  const servicesLoading = useServicesStore((s) => s.loading)
+  const fetchServices = useServicesStore((s) => s.fetchServices)
 
-  // Fetch dynamic services from the database
+  // Fetch services on mount (store prevents duplicate fetches)
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const services = await adminDatasource.getServicesList()
-        setDbServices(services)
-      } catch (err) {
-        console.error('Failed to fetch services:', err)
-      }
-    }
     fetchServices()
-  }, [location.pathname]) // Re-fetch when navigating (catches new service creations)
+  }, [])
 
   const handleLogout = async () => {
     await logout()
@@ -130,18 +123,25 @@ export default function MainLayout() {
           {/* Services Section — Dynamic from Database */}
           <div className="nav-section services">
             <p className="section-title">SERVICES</p>
-            {dbServices.filter(s => s.enabled !== false).map(service => (
-              <button
-                key={service.id}
-                className={`nav-item service-item ${isServiceActive(service.id) ? 'active' : ''}`}
-                onClick={() => navigate(`/catalog/builder/${service.id}`)}
-              >
-                <span className="nav-icon">{service.icon || '🔧'}</span>
-                <span className="service-label">{service.title || service.id}</span>
-                <span className="nav-arrow">→</span>
-              </button>
-            ))}
-            {/* Static link to Service Creator */}
+            {servicesLoading ? (
+              <div className="sidebar-loading">
+                <span className="sidebar-spinner" />
+                <span className="sidebar-loading-text">Loading...</span>
+              </div>
+            ) : (
+              dbServices.filter(s => s.enabled !== false).map(service => (
+                <button
+                  key={service.id}
+                  className={`nav-item service-item ${isServiceActive(service.id) ? 'active' : ''}`}
+                  onClick={() => navigate(`/catalog/builder/${service.id}`)}
+                >
+                  <span className="nav-icon">{service.icon || '🔧'}</span>
+                  <span className="service-label">{service.title || service.id}</span>
+                  <span className="nav-arrow">→</span>
+                </button>
+              ))
+            )}
+            {/* Static link to Service Creator — always visible */}
             <button
               key="services-creator"
               className={`nav-item service-item ${location.pathname === '/catalog/services' ? 'active' : ''}`}

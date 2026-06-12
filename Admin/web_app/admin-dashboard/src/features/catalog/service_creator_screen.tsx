@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
+import { useServicesStore } from '@core/services/services_store'
 import { Service } from '@data/models/admin_models'
 import './catalog_screen.css' // Reuse catalog styling
 
@@ -61,6 +62,8 @@ export default function ServiceCreatorScreen() {
     setIsModalOpen(true)
   }
 
+  const refreshServices = useServicesStore((s) => s.refreshServices)
+
   const handleSave = async () => {
     if (!form.title.trim()) {
       setError('Title is required')
@@ -80,6 +83,7 @@ export default function ServiceCreatorScreen() {
         await adminDatasource.createService(normalizedId, form.title, form.icon)
       }
       await loadData()
+      refreshServices() // Notify sidebar
       setIsModalOpen(false)
     } catch (err) {
       setError('Failed to save service: ' + (err instanceof Error ? err.message : 'Unknown error'))
@@ -94,6 +98,7 @@ export default function ServiceCreatorScreen() {
     try {
       await adminDatasource.deleteService(id)
       await loadData()
+      refreshServices() // Notify sidebar
     } catch (err) {
       setError('Failed to delete service')
     } finally {
