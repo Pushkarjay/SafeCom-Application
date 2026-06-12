@@ -31,7 +31,7 @@ import 'package:mobile_customer/features/services/maintenance_type_screen.dart';
 import 'package:mobile_customer/features/services/package_selection_screen.dart';
 import 'package:mobile_customer/features/services/products_discovery_screen.dart';
 import 'package:mobile_customer/features/services/repair_issue_screen.dart';
-import 'package:mobile_customer/features/services/service_placeholder_screen.dart';
+import 'package:mobile_customer/features/services/dynamic_service_screen.dart';
 import 'package:mobile_customer/features/services/service_type_screen.dart';
 import 'package:mobile_customer/features/services/system_upgrade_screen.dart';
 import 'package:mobile_customer/features/splash/splash_screen.dart';
@@ -140,9 +140,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '${AppRoutes.servicePlaceholder}/:serviceId',
-        builder: (context, state) => ServicePlaceholderScreen(
-          serviceId: state.pathParameters['serviceId'] ?? 'service',
-        ),
+        builder: (context, state) {
+          final serviceId = state.pathParameters['serviceId'] ?? 'service';
+          final extra = state.extra;
+          String serviceTitle = '';
+          String serviceIcon = '🔧';
+          if (extra is Map<String, String>) {
+            serviceTitle = extra['title'] ?? '';
+            serviceIcon = extra['icon'] ?? '🔧';
+          }
+          return DynamicServiceScreen(
+            serviceId: serviceId,
+            serviceTitle: serviceTitle,
+            serviceIcon: serviceIcon,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.phoneCollection,

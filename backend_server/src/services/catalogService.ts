@@ -771,6 +771,149 @@ export const getAccessories = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Generic handler: parse any service document into the standard pricing format
+ * (categories → groups → mappedProducts with clubbed options resolved).
+ * Same logic as getInstallationPricing but works for any service.
+ */
+export const getDynamicServicePricing = async (req: Request, res: Response) => {
+  try {
+    const serviceId = req.params.serviceId as string;
+    const db = getDb();
+
+    // Resolve serviceId to actual Firestore document ID
+    const resolvedDoc = await resolveServiceDoc(serviceId);
+    if (!resolvedDoc) {
+      return res.status(404).json({ error: `Service "${serviceId}" not found` });
+    }
+
+    const data = resolvedDoc.data() || {};
+    const meta = (data._meta || {}) as Record<string, unknown>;
+    const serviceName = (meta.title as string) || resolvedDoc.id;
+
+    const productSnapshot = await db.collection(PRODUCT_COLLECTION).get();
+    const productMap = new Map<string, Record<string, unknown>>();
+    productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
+
+    const categories = sortByOrder(Object.entries(data)
+      .filter(([categoryKey]) => {
+        if (categoryKey.startsWith('_')) return false;
+        const catData = data[categoryKey] as Record<string, unknown>;
+        if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
+        return true;
+      }))
+      .map(([categoryKey, setups]) => {
+        const catData = setups as Record<string, unknown>;
+        const catOrder = Number(catData?.[ORDER_META_KEY] ?? Infinity);
+        const groups = sortByOrder(Object.entries(catData)
+          .filter(([setupName]) => !setupName.startsWith('_'))
+          .filter(([setupName]) => {
+            const setupData = catData[setupName] as Record<string, unknown>;
+            if (setupData && typeof setupData === 'object' && setupData[ACTIVE_META_KEY] === false) return false;
+            return true;
+          }))
+          .map(([setupName, productMapEntry]) => {
+            const groupProducts = productMapEntry as Record<string, unknown>;
+            const setupOrder = Number(groupProducts?.[ORDER_META_KEY] ?? Infinity);
+            const mappedProducts: Array<{
+              productKey: string;
+              productId: string;
+              defaultQty: number;
+              minQty: number;
+              maxQty: number;
+              product: Record<string, unknown>;
+              isClubbed: boolean;
+              clubbedOptions: ClubbedOption[];
+              renderType?: string;
+              collectiveValidation?: boolean;
+              displayLabel?: string;
+              mandatory?: boolean;
+              dependsOn?: string;
+              order?: number;
+            }> = [];
+            for (const [productKey, optionMapEntry] of sortByOrder(Object.entries(groupProducts).filter(([k]) => !k.startsWith('_')))) {
+              const optionMappings = optionMapEntry as Record<string, unknown>;
+              const prodOrder = Number(optionMappings?.[ORDER_META_KEY] ?? Infinity);
+              const clubbedOptions = extractClubbedOptions(optionMappings, productMap);
+              const isClubbed = clubbedOptions.length > 1;
+              const firstLeaf = findFirstLeafInTree(clubbedOptions);
+              if (!firstLeaf) continue;
+              const product = productMap.get(firstLeaf.productId);
+              if (!product) continue;
+              const slotMaxQty = Number((optionMappings as Record<string, unknown>)['max q']) || 0;
+              const rawDependsOn = (optionMappings as Record<string, unknown>)['dependsOn'];
+              const slotDependsOn = typeof rawDependsOn === 'string' ? rawDependsOn : undefined;
+              const allLeaves = collectAllLeaves(clubbedOptions);
+              const allLeafMaxes = allLeaves.map((o) => o.maxQty);
+              const computedMax = allLeafMaxes.length > 0
+                ? Math.max(...allLeafMaxes)
+                : firstLeaf.maxQty;
+              mappedProducts.push({
+                productKey,
+                productId: firstLeaf.productId,
+                defaultQty: firstLeaf.defaultQty,
+                minQty: firstLeaf.minQty,
+                maxQty: slotMaxQty || computedMax,
+                product: normalizeProduct(firstLeaf.productId, product),
+                isClubbed,
+                clubbedOptions,
+                renderType: firstLeaf.renderType || 'option',
+                collectiveValidation: firstLeaf.collectiveValidation ?? false,
+                displayLabel: firstLeaf.displayLabel,
+                mandatory: firstLeaf.mandatory !== false,
+                dependsOn: slotDependsOn || firstLeaf.dependsOn,
+                order: prodOrder,
+              });
+            }
+            sortMappedByOrder(mappedProducts);
+            return {
+              id: toKey(setupName),
+              name: setupName,
+              description: '',
+              mappedProducts,
+              order: setupOrder,
+            };
+          });
+        sortMappedByOrder(groups);
+        return {
+          id: toKey(categoryKey),
+          name: categoryKey,
+          description: '',
+          imageUrl: '',
+          groups,
+          order: catOrder,
+        };
+      });
+    sortMappedByOrder(categories as any);
+    res.json({ name: serviceName, categories });
+  } catch (error) {
+    console.error(`Error fetching dynamic service pricing:`, error);
+    res.status(500).json({ error: 'Failed to fetch service pricing' });
+  }
+};
+
+/**
+ * Resolve a safe serviceId to the actual Firestore document.
+ * Tries direct match, capitalized match, and safeId scanning.
+ */
+async function resolveServiceDoc(serviceId: string) {
+  const db = getDb();
+  // Direct match
+  let doc = await db.collection(SERVICE_COLLECTION).doc(serviceId).get();
+  if (doc.exists) return doc;
+  // Capitalized first letter
+  const capitalized = serviceId.charAt(0).toUpperCase() + serviceId.slice(1);
+  doc = await db.collection(SERVICE_COLLECTION).doc(capitalized).get();
+  if (doc.exists) return doc;
+  // Scan all docs and match by safe ID
+  const snapshot = await db.collection(SERVICE_COLLECTION).get();
+  for (const d of snapshot.docs) {
+    const safeId = d.id.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    if (safeId === serviceId) return d;
+  }
+  return null;
+}
+
 // Get all master products (useful for discovery page)
 export const getAllProducts = async (req: Request, res: Response) => {
   try {

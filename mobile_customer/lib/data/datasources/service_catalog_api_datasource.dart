@@ -22,6 +22,11 @@ class ServiceCatalogApiDataSource {
     return RecommendationCatalogResponse.fromJson(response);
   }
 
+  Future<InstallationPricingContract> getDynamicServicePricing(String serviceId) async {
+    final response = await _apiService.getDynamicServicePricing(serviceId);
+    return InstallationPricingContract.fromJson(response);
+  }
+
   Future<MasterProductResponse> getProducts({int pageSize = 20}) async {
     final response = await _apiService.getAllProducts();
     return MasterProductResponse.fromJson(response);

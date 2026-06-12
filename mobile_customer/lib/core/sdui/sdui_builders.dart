@@ -98,7 +98,10 @@ void _handleServiceTap(BuildContext context, HomeServiceItem item) {
   if (route != null) {
     context.push(route);
   } else {
-    context.push('${AppRoutes.servicePlaceholder}/${item.id}');
+    context.push('${AppRoutes.servicePlaceholder}/${item.id}', extra: {
+      'title': item.title,
+      'icon': item.icon,
+    });
   }
 }
 

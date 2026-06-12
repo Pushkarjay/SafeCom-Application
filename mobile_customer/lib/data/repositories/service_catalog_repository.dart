@@ -21,6 +21,10 @@ class ServiceCatalogRepository {
         .toList(growable: false);
   }
 
+  Future<InstallationPricingContract> getDynamicServicePricing(String serviceId) {
+    return _dataSource.getDynamicServicePricing(serviceId);
+  }
+
   Future<RecommendationCatalogResponse> getRecommendations({
     String placement = 'checkout',
     String? serviceType,

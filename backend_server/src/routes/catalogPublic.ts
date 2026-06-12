@@ -7,7 +7,8 @@ import {
   getAmcConfig,
   getUpgradeBundles,
   getAccessories,
-  getAllProducts
+  getAllProducts,
+  getDynamicServicePricing
 } from '../services/catalogService.js';
 import { getCollection } from '../services/firestore.js';
 import { DocumentSnapshot } from 'firebase-admin/firestore';
@@ -22,6 +23,7 @@ catalogPublicRouter.get('/pricing/amc', getAmcConfig);
 catalogPublicRouter.get('/upgrade', getUpgradeBundles);
 catalogPublicRouter.get('/accessories', getAccessories);
 catalogPublicRouter.get('/products', getAllProducts);
+catalogPublicRouter.get('/services/:serviceId/pricing', getDynamicServicePricing);
 
 catalogPublicRouter.get('/recommendations', async (req, res) => {
   try {

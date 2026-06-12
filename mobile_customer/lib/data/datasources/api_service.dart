@@ -151,6 +151,16 @@ class ApiService {
     }
   }
 
+  // Get dynamic service pricing config (generic, works for any service)
+  Future<Map<String, dynamic>> getDynamicServicePricing(String serviceId) async {
+    try {
+      final response = await _dio.get('/catalog-public/services/$serviceId/pricing');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to fetch dynamic service pricing: $e');
+    }
+  }
+
   // Get all master products
   Future<Map<String, dynamic>> getAllProducts() async {
     try {
