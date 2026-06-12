@@ -139,6 +139,12 @@ jobs:
           channel: stable
           version: latest
 
+      - name: Decode keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          echo "${{ secrets.SAFECOM_KEYSTORE }}" | base64 -d > "$HOME/.android/safecom-keystore.jks"
+        shell: bash
+
       - name: Decode google-services.json
         run: |
           echo "${{ secrets.SAFECOM_EMPLOYEE_GOOGLE_SERVICES }}" | base64 -d > android/app/google-services.json
