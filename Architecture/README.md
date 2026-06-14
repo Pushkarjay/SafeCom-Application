@@ -42,9 +42,9 @@ For a quick overview, see **[ARCHITECTURE_SUMMARY.md](./20_Architecture_Report/R
 | Metric | Value |
 |--------|-------|
 | Components | 4 (Customer App, Employee App, Admin Web, Backend) |
-| Routes | 17 API endpoints |
-| Collections | 9 Firestore collections |
-| Documentation Files | 24 |
+| Routes | 17+ API route files |
+| Collections | 12 active Firestore collections |
+| Documentation Files | 86+ (across all directories) |
 | Architecture Score | 7/10 |
 
 ## Key Findings Summary

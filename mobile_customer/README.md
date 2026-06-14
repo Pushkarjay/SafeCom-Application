@@ -1,22 +1,45 @@
-# mobile_customer
+# SafeCom Customer Mobile App
 
-A new Flutter project.
+Self-service booking and service management app for SafeCom CCTV customers.
 
-## Getting Started
+## Tech Stack
 
-This project is a starting point for a Flutter application.
+- **Framework:** Flutter 3.x
+- **State Management:** Riverpod
+- **Navigation:** GoRouter
+- **HTTP Client:** Dio
+- **Backend:** Firebase Auth + Firestore + Cloud Run API
+- **Payments:** Razorpay
 
-A few resources to get you started if this is your first Flutter project:
+## Features
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- **Guest-First Auth:** Browse services without login; auth required at payment
+- **Service Discovery:** Browse categories, setups, products with nested tree navigation
+- **Dynamic Invoicing:** Real-time pricing with GST breakdown, quantity selectors
+- **Booking Flow:** Schedule, pay (Razorpay), confirm — with phone collection
+- **Order History:** View past bookings, invoices, payment status
+- **Profile Management:** Edit profile, saved locations, preferences
+- **SDUI:** Server-driven UI for dynamic home page content
+- **Serviceability:** Location-based coverage validation
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Architecture
 
-## Release notes
+```
+lib/
+├── core/          # Config, theme, SDUI engine, constants, routes
+├── data/          # Models, repositories, providers, API service
+└── features/      # Auth, home, services, booking, invoice, location, profile
+```
 
-- Play Store release guide: [PLAYSTORE_RELEASE.md](PLAYSTORE_RELEASE.md)
-- Play Store artifacts checklist: [PLAYSTORE_ARTIFACTS.md](PLAYSTORE_ARTIFACTS.md)
+## Version
+
+Current: **v1.3.6+15** (see pubspec.yaml)
+
+## Build
+
+```bash
+flutter pub get
+flutter run
+flutter build apk --release
+flutter build appbundle --release
+```

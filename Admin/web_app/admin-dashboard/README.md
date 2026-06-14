@@ -90,22 +90,18 @@ npm run preview
 npm run lint
 ```
 
-## Demo Credentials
+## Authentication
 
-Use these credentials to access the admin dashboard in development:
+The dashboard uses Firebase Authentication for admin login. Admin accounts are created via the backend's admin creation script.
 
-- **Email**: admin@safecom.com
-- **Password**: admin123
+### Creating Admin Users
 
-> Security note: Do not check real admin credentials into the repository. Production admin passwords must be managed securely through Firebase Console or environment variables.
-## API Integration
+```powershell
+$env:ADMIN_USERS_JSON = '[{"email":"admin@safecom.com","password":"<secure-password>","displayName":"Admin"}]'
+npm run create-admin-user
+```
 
-The dashboard currently uses mock API responses from `src/data/datasources/admin_datasource.ts`. To integrate with a real backend:
-
-1. Update the datasource endpoints in `admin_datasource.ts`
-2. Replace mock data with real API calls using Axios
-3. Update the models to match your backend schema
-4. Implement proper error handling and loading states
+> Security note: Do not store real admin passwords in the repository. Use environment variables or Firebase Console to manage production admin credentials.
 
 ## Features Overview
 
@@ -145,10 +141,10 @@ The dashboard currently uses mock API responses from `src/data/datasources/admin
 
 1. User navigates to `/login`
 2. Enters admin credentials
-3. System validates credentials (mock authentication)
-4. On success, stores auth token in localStorage
+3. System validates credentials via Firebase Authentication + backend middleware
+4. On success, stores Firebase ID token in Zustand store + localStorage
 5. Redirects to dashboard
-6. Protected routes check for authentication
+6. Protected routes check for authentication; auto-logout on 401
 7. Logout clears auth token and returns to login
 
 ## Styling
@@ -182,16 +178,28 @@ CSS variables are defined in `src/index.css` and can be customized for theming.
 
 ## Future Enhancements
 
-- [ ] Real backend API integration
-- [ ] Advanced reporting and analytics
-- [ ] Payment tracking and invoicing
-- [ ] Customer support ticketing system
-- [ ] Performance metrics dashboard
 - [ ] Multi-language support
 - [ ] Dark mode theme
-- [ ] Mobile app for admin management
-- [ ] Real-time notifications
-- [ ] Export functionality (PDF, CSV)
+- [ ] Mobile app for admin management (in planning)
+- [ ] Real-time WebSocket notifications
+- [ ] Advanced analytics and reporting
+- [ ] Offline mode support
+
+## What's Already Implemented
+
+- ✅ Real backend API integration (Firestore + Cloud Run)
+- ✅ Payment tracking with Razorpay integration
+- ✅ Jobs management with invoice PDF generation
+- ✅ Performance metrics dashboard with real data
+- ✅ Real-time notifications (FCM)
+- ✅ Export functionality (invoice PDFs)
+- ✅ Service catalog tree builder with infinite nesting
+- ✅ Product dependency engine (v1.3.0)
+- ✅ SDUI layout management with mobile preview
+- ✅ Serviceable areas management
+- ✅ CMS-driven promo banners and announcements
+- ✅ Activate/deactivate toggle for categories and setups
+- ✅ GitHub Actions CI/CD pipeline
 
 ## License
 

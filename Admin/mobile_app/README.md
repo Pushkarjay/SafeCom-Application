@@ -1,10 +1,23 @@
-# Admin Mobile App
+# SafeCom Admin Mobile App
 
-This directory will contain the source code for the admin mobile application.
+On-the-go management app for SafeCom platform administrators.
 
-## Purpose
-The admin mobile app will provide on-the-go management capabilities for platform administrators. Key features will include:
-- A dashboard overview of key metrics.
-- Real-time booking notifications.
-- Ability to manage urgent issues and re-assign tasks.
-- Communication with employees and customers.
+## Status: 🔧 Planning Phase
+
+The admin mobile app is in the planning stage. Requirements are documented in:
+- `planning_and_progress/plan.md` — Feature plan and scope
+- `planning_and_progress/progress.md` — Progress tracking
+- `planning_and_progress/instructions.md` — Implementation guidelines
+- `../../docs/SRS_Admin_Apps.md` — Detailed requirements
+
+## Planned Features
+
+- Live operations dashboard with key metrics
+- Real-time booking alerts and notifications
+- Workforce escalation management
+- Catalog and pricing approval workflows
+- Payment exception handling
+
+## Architecture
+
+Will follow the same patterns as the existing mobile apps (Flutter + Riverpod) to maintain code consistency and enable shared module extraction (`safecom_core`).
