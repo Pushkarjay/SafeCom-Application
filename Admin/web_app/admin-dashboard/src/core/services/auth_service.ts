@@ -5,7 +5,7 @@ import { getApiBaseUrl } from '../config/api'
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBj0tlpnSNzxvTwC4JwAEiC7M7bk9H44zQ",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "safecom-application-01.firebaseapp.com",
   projectId: "safecom-application-01",
   storageBucket: "safecom-application-01.firebasestorage.app",
