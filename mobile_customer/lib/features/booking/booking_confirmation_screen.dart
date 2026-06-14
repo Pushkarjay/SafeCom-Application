@@ -113,7 +113,7 @@ class BookingConfirmationScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ...activeOrder!.items.map((item) => Padding(
+                      ...activeOrder.items.map((item) => Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Row(
                           children: [
