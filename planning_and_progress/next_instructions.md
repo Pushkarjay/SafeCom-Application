@@ -36,3 +36,16 @@
 - CCTV-only service universe remains active.
 - Admin panel is the operational control-plane; direct DB edits should not be required for routine changes.
 - Seed data is allowed; hardcoded business values in UI are not.
+
+## 2026-06-15 Session Addendum
+### Completed
+- Recommendation screen now filters groups by Installation category name (`serviceName`)
+- GoRouter route extras fixed (`Map<String, String?>`)
+- Accessories skips recommendation screen → goes straight to payment
+- LocationHeader removed from 4 invoice/customization screens
+- Address CRUD API methods added to api_service.dart
+- Saved Addresses route + navigation added to profile screen
+
+### Blockers
+- `address_list_screen.dart` and `address_form_screen.dart` are corrupted (binary encoding in git) — must be rewritten before address CRUD can be tested
+- Other service flows (AMC, Repair, Upgrade) need device testing

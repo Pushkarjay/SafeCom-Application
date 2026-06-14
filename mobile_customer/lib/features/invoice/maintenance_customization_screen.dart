@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
-import 'package:mobile_customer/features/home/widgets/location_header.dart';
-import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/services/providers/maintenance_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
@@ -17,7 +15,6 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(maintenanceFlowProvider);
     final notifier = ref.read(maintenanceFlowProvider.notifier);
-    final locationState = ref.watch(locationProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Maintenance Invoice')),
@@ -27,11 +24,6 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LocationHeader(
-                location: locationState.location,
-                onChange: () =>
-                    ref.read(locationProvider.notifier).requestAndFetchLocation(),
-              ),
               const SizedBox(height: 16),
               Text(
                 '${state.selectedType} • ${state.selectedPackage} Plan',

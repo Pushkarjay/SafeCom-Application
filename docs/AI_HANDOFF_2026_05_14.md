@@ -169,3 +169,43 @@ POST   /api/users/link                  (now includes account merge logic)
 6. **Recommendation admin UI** — Create admin panel for seeding recommendation rules (backend already done)
 7. **Admin "Add Employee" fix** — Investigate and fix button binding in admin dashboard
 8. **SRS full update** — Update SRS documents with new architecture decisions
+
+---
+
+## Session: 2026-06-15 | Booking Flow Fixes, Address CRUD, Recommendation Filtering
+
+### Summary
+Fixed the recommendation screen to filter by the Installation category name (not package label), fixed a GoRouter type mismatch that broke route extras, removed irrelevant LocationHeader from invoice screens, added address CRUD API methods and navigation, and skipped Accessories from the recommendation step.
+
+### ✅ Changes
+
+| Feature | Files Changed | Notes |
+|---------|--------------|-------|
+| **Recommendation group filtering** | `recommendation_screen.dart` | Replaced `packageLabel` matching with `serviceName` matching via `_bestMatchingGroups()`. Installation categories (DVR, IP Camera, Wi-Fi Camera, Sim Based Camera) now match Recommendation_Addons group names exactly. Fallback to all groups for non-matching services (AMC, Repair, Upgrade). |
+| **Routing type fix** | `app_router.dart` | Changed `Map<String, String>` → `Map<String, String?>` on route extras. GoRouter extras carry nullable values; the strict type caused `serviceType` and other route params to silently fail to pass through. |
+| **Accessories skip recommendation** | `scheduling_screen.dart` | Added `activeOrder?.serviceTypeId == 'accessories'` check — Accessories goes directly from scheduling to payment, skipping the recommendation screen entirely. |
+| **LocationHeader removed from 4 screens** | `installation_customization_screen.dart`, `repair_estimate_screen.dart`, `maintenance_customization_screen.dart`, `dynamic_service_screen.dart` | Removed LocationHeader widget and unused `locationState` variables. Location section is irrelevant on invoice/customization/scheduling screens. |
+| **Address CRUD API methods** | `api_service.dart` | Added 5 methods: `getAddresses()`, `addAddress()`, `updateAddress()`, `deleteAddress()`, `setDefaultAddress()`. |
+| **Address routes & navigation** | `app_routes.dart`, `app_router.dart`, `profile_screen.dart` | Added `addressList` and `addressForm` route constants. Added AddressListScreen and AddressFormScreen route handlers. Added "Saved Addresses" tile to profile screen. |
+| **Address screen files corrupted** | `address_list_screen.dart`, `address_form_screen.dart` | Both files stored as binary in git with encoding corruption. Need to be rewritten entirely. |
+
+### Architecture Notes
+
+#### How Recommendation Group Filtering Works
+1. `scheduling_screen.dart` passes `activeOrder.serviceName` (e.g. "DVR") and `activeOrder.serviceTypeId` (e.g. "installation") to the recommendation screen via route extras
+2. `recommendation_screen.dart` calls `_bestMatchingGroups()` with `serviceName`
+3. `_bestMatchingGroups()` splits the recommendation groups into categories, checks if any category name matches `serviceName` case-insensitively
+4. If match found → show only that category's groups
+5. If no match found → show all groups across all categories (fallback for AMC, Repair, Upgrade, Accessories)
+
+#### Service Type Routing
+- `Map<String, String?>` is the correct type for GoRouter extras since route parameters can be null
+- Service type IDs: `installation`, `maintenance`, `amc`, `repair`, `upgrade`, `accessories`
+- `serviceName` for Installation = category name (DVR, IP Camera, Wi-Fi Camera, Sim Based Camera)
+
+#### Corrupted Address Files
+Both `address_list_screen.dart` and `address_form_screen.dart` were committed with encoding issues (appear as binary). They exist on disk but cannot be read by the Read tool. Any work on saved addresses must include rewriting these files from scratch.
+
+### Known Issues / Blockers
+- Address screen files are corrupted (binary encoding) — rewrite needed before address CRUD can be tested
+- App was built and installed on wireless device V2321; other service flows beyond Installation need testing on device

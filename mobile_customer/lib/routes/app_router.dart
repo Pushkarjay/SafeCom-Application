@@ -23,6 +23,8 @@ import 'package:mobile_customer/features/auth/screens/phone_collection_screen.da
 import 'package:mobile_customer/features/profile/screens/profile_screen.dart';
 import 'package:mobile_customer/features/profile/screens/order_history_screen.dart';
 import 'package:mobile_customer/features/profile/screens/booking_detail_screen.dart';
+import 'package:mobile_customer/features/profile/screens/address_list_screen.dart';
+import 'package:mobile_customer/features/profile/screens/address_form_screen.dart';
 import 'package:mobile_customer/features/profile/providers/booking_provider.dart';
 import 'package:mobile_customer/features/services/accessories_screen.dart';
 import 'package:mobile_customer/features/services/amc_plan_screen.dart';
@@ -131,6 +133,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: AppRoutes.addressList,
+        builder: (context, state) => const AddressListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.addressForm,
+        builder: (context, state) {
+          final address = state.extra;
+          return AddressFormScreen(existingAddress: address);
+        },
+      ),
+      GoRoute(
         path: AppRoutes.productsDiscovery,
         builder: (context, state) => const ProductsDiscoveryScreen(),
       ),
@@ -229,8 +242,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.recommendation,
         builder: (context, state) {
-          final serviceType = state.extra as String?;
-          return RecommendationScreen(serviceType: serviceType);
+          final extra = state.extra;
+          String? serviceType;
+          String? serviceName;
+          if (extra is Map<String, String?>) {
+            serviceType = extra['serviceType'];
+            serviceName = extra['serviceName'];
+          } else if (extra is String) {
+            serviceType = extra;
+          }
+          return RecommendationScreen(serviceType: serviceType, serviceName: serviceName);
         },
         routes: [
           GoRoute(

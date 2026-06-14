@@ -50,13 +50,14 @@ This document summarizes all pages created across the three SafeCom applications
     - Time slot selection (5 slots daily)
     - Routes to Recommendation Screen
 
-  - **NEW: Recommendation Screen** (`mobile_customer/lib/features/booking/recommendation_screen.dart`)
-    - Master stock accessories display
-    - Optional items: Junction Box (Rs 150), Cable Box (Rs 200), POE Switch (Rs 500), Cable Glands (Rs 100)
-    - Checkbox selection for each item
-    - "Continue with Selection" or "Skip" buttons
-    - Selected items total calculation
-    - **Routes to Payment Screen**
+   - **Recommendation Screen** (`mobile_customer/lib/features/booking/recommendation_screen.dart`)
+     - Grouped product cards from Recommendation_Addons pricing API
+     - Filters groups by Installation category name (`serviceName`) — e.g. "DVR" shows only DVR groups
+     - Falls back to all groups for non-Installation services (AMC, Repair, Upgrade)
+     - Flat product card layout (no group chips/setup labels)
+     - "Continue with Selection" or "Skip" buttons
+     - Selected items total calculation
+     - **Skips directly to Payment for Accessories service type**
 
   - **NEW: Payment Screen** (`mobile_customer/lib/features/booking/payment_screen.dart`)
     - Service summary display
@@ -82,6 +83,8 @@ This document summarizes all pages created across the three SafeCom applications
   - Edit profile functionality
   - Phone, address, name fields
   - Save/cancel actions
+  - Saved Addresses navigation tile (routes to AddressListScreen)
+  - **NEW: Address CRUD** — API methods in api_service.dart: getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress
 
 - **Booking/Order History** (`mobile_customer/lib/features/profile/screens/order_history_screen.dart`)
   - Mock order data with statuses (completed, in-progress)
@@ -252,9 +255,11 @@ This document summarizes all pages created across the three SafeCom applications
 2. **User Selects Service** -> Browse available services
 3. **User Configures** -> Choose package and customizations
 4. **User Schedules** -> Pick date and time slot
-5. **User Sees Recommendations** -> Accessory master stock suggestion
-   - Optional items displayed with prices
-   - User can select accessories or skip
+5. **User Sees Recommendations** -> Grouped products from Recommendation_Addons API
+   - For Installation services: only the category-matching group is shown (e.g. DVR groups for DVR bookings)
+   - For other services (AMC, Repair, Upgrade): all recommendation groups displayed
+   - Accessories service type: **skips this step entirely**, goes straight to payment
+   - Optional items displayed with prices, user can select or skip
 6. **User Proceeds to Payment** -> Shows service summary
    - Razorpay integration ready (placeholder - awaiting SDK)
    - "Pay Rs 100 and Confirm" button
@@ -266,7 +271,7 @@ This document summarizes all pages created across the three SafeCom applications
    - Back to home navigation
 
 ### Key Features
-- **Recommendation Engine**: Shows admin-controlled master stock items
+- **Recommendation Engine**: Groups filtered by Installation category name (`serviceName`), fallback to all for non-matching services
 - **Flexible Payment**: Customers choose between full/partial payment
 - **Admin Controls**: Minimum payment amount configured by admin
 - **Transparent Messaging**: Clear communication about technician timing and charges
@@ -400,18 +405,36 @@ SafeCom-Application/
 ├── mobile_customer/         # Customer Mobile (Flutter)
 │   ├── lib/
 │   │   ├── features/
-│   │   │   ├── auth/        # Login, Signup, Forgot Password
+│   │   │   ├── auth/        # Login, Signup, Forgot Password, Phone Collection
 │   │   │   ├── home/        # Home screen
 │   │   │   ├── booking/
-│   │   │   │   ├── recommendation_screen.dart    # NEW
+│   │   │   │   ├── recommendation_screen.dart    # Filtered by serviceName
 │   │   │   │   ├── payment_screen.dart           # Updated
 │   │   │   │   ├── booking_confirmation_screen.dart  # Updated
-│   │   │   │   ├── scheduling_screen.dart        # Updated
+│   │   │   │   ├── scheduling_screen.dart        # Passes serviceName, skips for accessories
 │   │   │   │   └── ...
-│   │   │   ├── profile/     # Profile, Order History
+│   │   │   ├── invoice/
+│   │   │   │   ├── installation_customization_screen.dart  # LocationHeader removed
+│   │   │   │   ├── repair_estimate_screen.dart             # LocationHeader removed
+│   │   │   │   ├── maintenance_customization_screen.dart   # LocationHeader removed
+│   │   │   │   └── ...
+│   │   │   ├── services/
+│   │   │   │   └── dynamic_service_screen.dart   # LocationHeader removed
+│   │   │   ├── profile/
+│   │   │   │   ├── screens/
+│   │   │   │   │   ├── profile_screen.dart       # Saved Addresses tile added
+│   │   │   │   │   ├── address_list_screen.dart  # CORRUPTED - needs rewrite
+│   │   │   │   │   ├── address_form_screen.dart  # CORRUPTED - needs rewrite
+│   │   │   │   │   └── order_history_screen.dart
+│   │   │   │   ├── models/saved_address.dart
+│   │   │   │   └── providers/address_provider.dart
 │   │   │   └── ...
+│   │   ├── data/
+│   │   │   └── datasources/
+│   │   │       └── api_service.dart  # +5 address CRUD methods
 │   │   ├── routes/
-│   │   │   └── app_router.dart  # Updated with all routes
+│   │   │   ├── app_routes.dart   # addressList, addressForm added
+│   │   │   └── app_router.dart   # Map<String, String?> fix, address routes added
 │   │   └── ...
 │   └── build/
 │       └── app/outputs/flutter-apk/app-release.apk
@@ -438,17 +461,18 @@ SafeCom-Application/
 ## Implementation Checklist
 
 ### Customer App
-- [x] Authentication (Login, Signup, Forgot Password)
+- [x] Authentication (Login, Signup, Forgot Password, Phone Collection)
 - [x] Home Dashboard
 - [x] Service selection and booking
-- [x] Recommendation page (NEW)
-- [x] Payment page with Razorpay placeholder (NEW)
-- [x] Booking confirmation with payment options (NEW)
-- [x] Profile page
+- [x] Recommendation page (filtered by serviceName, skips for Accessories)
+- [x] Payment page with Razorpay placeholder
+- [x] Booking confirmation with payment options
+- [x] Profile page (Saved Addresses navigation tile added)
 - [x] Order history
-- [x] All routes configured
-- [x] Mock data setup
+- [x] Address CRUD API methods (getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress)
+- [x] All routes configured (addressList, addressForm added)
 - [ ] Razorpay SDK integration
+- [ ] Rewrite corrupted address_list_screen.dart and address_form_screen.dart
 
 ### Admin Dashboard
 - [x] Dashboard with metrics
@@ -485,4 +509,7 @@ The applications are ready for:
 3. User acceptance testing
 4. Deployment to production
 
-**Last Updated**: April 29, 2026
+**Pending**: Address list/form screen files corrupted (binary encoding) — requires rewrite.
+**Pending**: Test all service flows on device (Installation, AMC, Repair, Upgrade, Accessories).
+
+**Last Updated**: June 15, 2026

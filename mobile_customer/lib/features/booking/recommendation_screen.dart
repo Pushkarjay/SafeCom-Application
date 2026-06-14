@@ -43,13 +43,14 @@ final recommendationProvider = FutureProvider<RecommendationCatalogResponse>((re
 
 class RecommendationScreen extends ConsumerWidget {
   final String? serviceType;
+  final String? serviceName;
 
-  const RecommendationScreen({super.key, this.serviceType});
+  const RecommendationScreen({super.key, this.serviceType, this.serviceName});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (serviceType != null && serviceType!.isNotEmpty) {
-      return _RecommendationTreeScreen(serviceType: serviceType!);
+      return _RecommendationTreeScreen(serviceType: serviceType!, serviceName: serviceName);
     }
     return _LegacyRecommendationScreen();
   }
@@ -410,18 +411,17 @@ class _LegacyRecommendationScreen extends ConsumerWidget {
 
 class _RecommendationTreeScreen extends ConsumerStatefulWidget {
   final String serviceType;
+  final String? serviceName;
 
-  const _RecommendationTreeScreen({required this.serviceType});
+  const _RecommendationTreeScreen({required this.serviceType, this.serviceName});
 
   @override
   ConsumerState<_RecommendationTreeScreen> createState() => _RecommendationTreeScreenState();
 }
 
 class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeScreen> {
-  String? _selectedCategoryId;
-  String? _selectedGroupId;
+  final Set<String> _selectedProductKeys = {};
   final Map<String, int> _quantities = {};
-  final Set<String> _selectedLeaves = {};
 
   @override
   Widget build(BuildContext context) {
@@ -457,84 +457,67 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
             );
           }
 
-          // Auto-select first category and first group if nothing selected
-          if (_selectedCategoryId == null) {
-            _selectedCategoryId = config.categories.first.id;
-            if (config.categories.first.groups.isNotEmpty) {
-              _selectedGroupId = config.categories.first.groups.first.id;
+          final flatItems = <_DisplayItem>[];
+          for (final cat in config.categories) {
+            final groups = widget.serviceName != null
+                ? _bestMatchingGroups(cat.groups, widget.serviceName!)
+                : cat.groups;
+            for (final group in groups) {
+              for (final product in group.mappedProducts) {
+                final leaves = _collectLeaves(product.clubbedOptions);
+                if (leaves.isEmpty) {
+                  flatItems.add(_DisplayItem(
+                    categoryName: cat.name,
+                    groupName: group.name,
+                    key: product.productKey,
+                    productName: product.product.productName,
+                    description: product.product.description,
+                    price: product.product.basePrice,
+                    defaultQty: product.defaultQty,
+                    minQty: product.minQty,
+                    maxQty: product.maxQty,
+                  ));
+                } else {
+                  for (final leaf in leaves) {
+                    flatItems.add(_DisplayItem(
+                      categoryName: cat.name,
+                      groupName: group.name,
+                      key: '${product.productKey}__${leaf.optionKey}',
+                      productName: leaf.productName,
+                      description: '',
+                      price: leaf.price,
+                      defaultQty: leaf.defaultQty,
+                      minQty: leaf.minQty,
+                      maxQty: leaf.maxQty,
+                    ));
+                  }
+                }
+              }
             }
           }
 
-          final selectedCat = config.categories.cast<InstallationCategory?>().firstWhere(
-            (c) => c?.id == _selectedCategoryId,
-            orElse: () => null,
-          );
+          if (flatItems.isEmpty) {
+            return const Center(
+              child: Text('No products available.', style: TextStyle(fontSize: 16)),
+            );
+          }
+
+          final grouped = <String, List<_DisplayItem>>{};
+          for (final item in flatItems) {
+            grouped.putIfAbsent(item.categoryName, () => []).add(item);
+          }
 
           return Column(
             children: [
-              // Category chips
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: config.categories.map((cat) {
-                      final isSelected = cat.id == _selectedCategoryId;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(cat.name, style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          )),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() {
-                                _selectedCategoryId = cat.id;
-                                _selectedGroupId = cat.groups.isNotEmpty ? cat.groups.first.id : null;
-                              });
-                            }
-                          },
-                          selectedColor: AppColors.secondaryLight,
-                          backgroundColor: AppColors.surfaceVariant,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              if (selectedCat != null && selectedCat.groups.isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: selectedCat.groups.map((group) {
-                        final isSelected = group.id == _selectedGroupId;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: FilterChip(
-                            label: Text(group.name, style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                            )),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) setState(() => _selectedGroupId = group.id);
-                            },
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ],
               Expanded(
-                child: selectedCat != null ? _buildCategoryContent(selectedCat) : const SizedBox.shrink(),
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  children: grouped.entries.toList().map((entry) {
+                    return _buildCategorySection(entry.key, entry.value);
+                  }).toList(),
+                ),
               ),
-              _buildTreeBottomSection(),
+              _buildBottomSection(),
             ],
           );
         },
@@ -549,37 +532,29 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
     );
   }
 
-  Widget _buildCategoryContent(InstallationCategory category) {
-    if (category.groups.isEmpty) {
-      return const Center(child: Text('No setups in this category'));
-    }
-
-    if (_selectedGroupId == null || !category.groups.any((g) => g.id == _selectedGroupId)) {
-      return const SizedBox.shrink();
-    }
-
-    final group = category.groups.firstWhere((g) => g.id == _selectedGroupId);
-
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      children: group.mappedProducts.map((product) {
-        return _buildProductCard(product);
-      }).toList(),
+  Widget _buildCategorySection(String categoryName, List<_DisplayItem> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Text(
+            categoryName,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.secondary),
+          ),
+        ),
+        ...items.map((item) => _buildProductCard(item)),
+      ],
     );
   }
 
-  Widget _buildProductCard(MappedProduct mappedProduct) {
-    final productKey = mappedProduct.productKey;
-    final defaultQty = mappedProduct.defaultQty;
-    final currentQty = _quantities[productKey] ?? defaultQty;
-    final isSelected = _selectedLeaves.contains(productKey);
-
-    if (mappedProduct.isClubbed && mappedProduct.clubbedOptions.isNotEmpty) {
-      return _buildClubbedProductCard(mappedProduct);
-    }
+  Widget _buildProductCard(_DisplayItem item) {
+    final key = item.key;
+    final isSelected = _selectedProductKeys.contains(key);
+    final currentQty = _quantities[key] ?? item.defaultQty;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isSelected ? AppColors.secondaryLight : Colors.white,
@@ -600,8 +575,8 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
                 onChanged: (val) {
                   setState(() {
                     val == true
-                        ? _selectedLeaves.add(productKey)
-                        : _selectedLeaves.remove(productKey);
+                        ? _selectedProductKeys.add(key)
+                        : _selectedProductKeys.remove(key);
                   });
                 },
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -612,13 +587,13 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      mappedProduct.product.productName,
+                      item.productName,
                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
-                    if (mappedProduct.product.description.isNotEmpty) ...[
+                    if (item.description.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
-                        mappedProduct.product.description,
+                        item.description,
                         style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                       ),
                     ],
@@ -626,18 +601,18 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
                 ),
               ),
               Text(
-                '₹${mappedProduct.product.basePrice.toStringAsFixed(0)}',
+                '₹${item.price.toStringAsFixed(0)}',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ],
           ),
-          if (isSelected && currentQty > 0 && mappedProduct.minQty != mappedProduct.maxQty)
+          if (isSelected && currentQty > 0 && item.minQty != item.maxQty)
             Padding(
               padding: const EdgeInsets.only(left: 44, top: 8),
               child: Row(
                 children: [
                   const Text('Qty: ', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-                  _buildQtyControl(productKey, currentQty, mappedProduct.minQty, mappedProduct.maxQty),
+                  _buildQtyControl(key, currentQty, item.minQty, item.maxQty),
                 ],
               ),
             ),
@@ -646,100 +621,24 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
     );
   }
 
-  Widget _buildClubbedProductCard(MappedProduct mappedProduct) {
-    final productKey = mappedProduct.productKey;
-    final firstLeaf = _findFirstLeaf(mappedProduct.clubbedOptions);
-    final isSelected = _selectedLeaves.contains(productKey);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.secondaryLight : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? AppColors.secondary : AppColors.border,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Checkbox(
-                value: isSelected,
-                onChanged: (val) {
-                  setState(() {
-                    val == true
-                        ? _selectedLeaves.add(productKey)
-                        : _selectedLeaves.remove(productKey);
-                  });
-                },
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  mappedProduct.displayLabel ?? mappedProduct.product.productName,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-              ),
-              if (firstLeaf != null)
-                Text(
-                  '₹${firstLeaf.price.toStringAsFixed(0)}',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-            ],
-          ),
-          if (isSelected && mappedProduct.clubbedOptions.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            ...mappedProduct.clubbedOptions.map((opt) {
-              return _buildClubbedOptionTile(opt, productKey, 0);
-            }),
-          ],
-        ],
-      ),
-    );
+  List<InstallationGroup> _bestMatchingGroups(List<InstallationGroup> groups, String serviceName) {
+    final lowerName = serviceName.toLowerCase();
+    final matched = groups.where((g) =>
+        g.name.toLowerCase() == lowerName ||
+        g.id.toLowerCase() == lowerName.replaceAll(' ', '_')).toList();
+    return matched.isNotEmpty ? matched : groups;
   }
 
-  Widget _buildClubbedOptionTile(ClubbedOption option, String parentProductKey, int depth) {
-    if (option.isLeaf) {
-      final isOptSelected = _selectedLeaves.contains('${parentProductKey}__${option.optionKey}');
-      return Padding(
-        padding: EdgeInsets.only(left: 16.0 * depth, bottom: 4),
-        child: Row(
-          children: [
-            Checkbox(
-              value: isOptSelected,
-              onChanged: (val) {
-                setState(() {
-                  val == true
-                      ? _selectedLeaves.add('${parentProductKey}__${option.optionKey}')
-                      : _selectedLeaves.remove('${parentProductKey}__${option.optionKey}');
-                });
-              },
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-              visualDensity: VisualDensity.compact,
-            ),
-            const SizedBox(width: 4),
-            Expanded(child: Text(option.label, style: const TextStyle(fontSize: 13))),
-            Text('₹${option.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      );
+  List<ClubbedOption> _collectLeaves(List<ClubbedOption> options) {
+    final leaves = <ClubbedOption>[];
+    for (final opt in options) {
+      if (opt.isLeaf) {
+        leaves.add(opt);
+      } else {
+        leaves.addAll(_collectLeaves(opt.children));
+      }
     }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(left: 16.0 * depth, top: 4, bottom: 2),
-          child: Text(option.label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondary)),
-        ),
-        ...option.children.map((child) => _buildClubbedOptionTile(child, parentProductKey, depth + 1)),
-      ],
-    );
+    return leaves;
   }
 
   Widget _buildQtyControl(String key, int currentQty, int minQty, int maxQty) {
@@ -775,7 +674,7 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
     );
   }
 
-  Widget _buildTreeBottomSection() {
+  Widget _buildBottomSection() {
     return SafeArea(
       top: false,
       child: Container(
@@ -788,7 +687,7 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
           mainAxisSize: MainAxisSize.min,
           children: [
             FilledButton(
-              onPressed: _selectedLeaves.isNotEmpty ? () => context.push(AppRoutes.payment) : null,
+              onPressed: _selectedProductKeys.isNotEmpty ? () => context.push(AppRoutes.payment) : null,
               child: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Text('Continue with Selection'),
@@ -807,15 +706,29 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
       ),
     );
   }
+}
 
-  ClubbedOption? _findFirstLeaf(List<ClubbedOption> options) {
-    for (final opt in options) {
-      if (opt.isLeaf) return opt;
-      final child = _findFirstLeaf(opt.children);
-      if (child != null) return child;
-    }
-    return null;
-  }
+class _DisplayItem {
+  final String categoryName;
+  final String groupName;
+  final String key;
+  final String productName;
+  final String description;
+  final double price;
+  final int defaultQty;
+  final int minQty;
+  final int maxQty;
+  const _DisplayItem({
+    required this.categoryName,
+    required this.groupName,
+    required this.key,
+    required this.productName,
+    required this.description,
+    required this.price,
+    required this.defaultQty,
+    required this.minQty,
+    required this.maxQty,
+  });
 }
 
 class _ProductVariantSelectorSheet extends ConsumerStatefulWidget {

@@ -5,8 +5,6 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
-import 'package:mobile_customer/features/home/widgets/location_header.dart';
-import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
 import 'package:mobile_customer/widgets/common/clubbed_product_selector.dart';
@@ -20,7 +18,6 @@ class InstallationCustomizationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final flow = ref.watch(installationFlowProvider);
     final flowNotifier = ref.read(installationFlowProvider.notifier);
-    final locationState = ref.watch(locationProvider);
     final category = flow.selectedCategory;
     final group = flow.selectedGroup;
 
@@ -93,12 +90,6 @@ class InstallationCustomizationScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LocationHeader(
-                location: locationState.location,
-                onChange: () {
-                  ref.read(locationProvider.notifier).requestAndFetchLocation();
-                },
-              ),
               const SizedBox(height: 16),
               Text(
                 '${category.name} - ${group.name}',

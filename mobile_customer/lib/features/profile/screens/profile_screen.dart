@@ -465,6 +465,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 ),
                 const SizedBox(height: 8),
                 _buildActionTile(
+                  icon: Icons.location_on_rounded,
+                  title: 'Saved Addresses',
+                  subtitle: 'Manage your delivery addresses',
+                  color: AppColors.primary,
+                  onTap: () => context.push(AppRoutes.addressList),
+                ),
+                const SizedBox(height: 8),
+                _buildActionTile(
                   icon: Icons.info_outline_rounded,
                   title: 'About SafeCom',
                   subtitle: 'Company info, policies, and contact',

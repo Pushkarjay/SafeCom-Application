@@ -345,5 +345,21 @@ elease_assets\.
 
 ---
 
-*Last Updated: 2026-06-14*
+## 2026-06-15 (Recommendation Filtering, Routing Fix, Address CRUD, Location Removal)
+
+- **Recommendation Screen Group Filtering:** Replaced `packageLabel`-based matching with `serviceName`-based matching in `recommendation_screen.dart`. Installation categories (DVR, IP Camera, Wi-Fi Camera, Sim Based Camera) now correctly map to Recommendation_Addons group names. Non-matching services (AMC, Repair, Upgrade) fall back to showing all recommendation groups.
+- **GoRouter Type Fix:** Fixed `Map<String, String>` → `Map<String, String?>` in `app_router.dart` — route extras carry nullable values, strict non-nullable type silently dropped `serviceType` and other params.
+- **Accessories Skip:** Accessories now skips recommendation screen entirely and goes straight to payment from scheduling.
+- **LocationHeader Removed:** Removed LocationHeader (and unused `locationState` variables) from 4 screens:
+  - `installation_customization_screen.dart`
+  - `repair_estimate_screen.dart`
+  - `maintenance_customization_screen.dart`
+  - `dynamic_service_screen.dart`
+- **Address CRUD API:** Added 5 address methods to `api_service.dart`: getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress.
+- **Saved Addresses Navigation:** Added `addressList`/`addressForm` routes, mapped in `app_router.dart`, added "Saved Addresses" tile to `profile_screen.dart`.
+- **Address Files Corrupted:** `address_list_screen.dart` and `address_form_screen.dart` are stored as binary in git with encoding corruption — need rewrite.
+- **APK Build:** Built and installed on wireless device V2321 for testing.
+- **Docs Updated:** Updated AI_HANDOFF_2026_05_14.md, progress_log.md, IMPLEMENTATION_SUMMARY.md, next_instructions.md.
+
+*Last Updated: 2026-06-15*
 *Author: Claude Code Assistant (Documentation Update)*

@@ -312,12 +312,6 @@ class DynamicServiceScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              LocationHeader(
-                location: locationState.location,
-                onChange: () {
-                  ref.read(locationProvider.notifier).requestAndFetchLocation();
-                },
-              ),
               const SizedBox(height: 16),
               Text(
                 '${category.name} - ${group.name}',

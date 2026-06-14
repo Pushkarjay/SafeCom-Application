@@ -30,4 +30,6 @@ class AppRoutes {
   static const recommendationWithService = '/recommendation/:serviceType';
   static const payment = '/payment';
   static const confirmation = '/confirmation';
+  static const addressList = '/address-list';
+  static const addressForm = '/address-form';
 }

@@ -258,6 +258,51 @@ class ApiService {
       throw Exception('Failed to create booking: $e');
     }
   }
+
+  Future<List<Map<String, dynamic>>> getAddresses(String customerId) async {
+    try {
+      final response = await _dio.get('/customers/$customerId/addresses');
+      return (response.data['data'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ?? [];
+    } catch (e) {
+      throw Exception('Failed to fetch addresses: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> addAddress(String customerId, Map<String, dynamic> address) async {
+    try {
+      final response = await _dio.post('/customers/$customerId/addresses', data: address);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to add address: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateAddress(String customerId, String addressId, Map<String, dynamic> address) async {
+    try {
+      final response = await _dio.put('/customers/$customerId/addresses/$addressId', data: address);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to update address: $e');
+    }
+  }
+
+  Future<void> deleteAddress(String customerId, String addressId) async {
+    try {
+      await _dio.delete('/customers/$customerId/addresses/$addressId');
+    } catch (e) {
+      throw Exception('Failed to delete address: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> setDefaultAddress(String customerId, String addressId) async {
+    try {
+      final response = await _dio.put('/customers/$customerId/addresses/$addressId/default');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to set default address: $e');
+    }
+  }
 }
 
 final apiServiceProvider = Provider<ApiService>((ref) {
