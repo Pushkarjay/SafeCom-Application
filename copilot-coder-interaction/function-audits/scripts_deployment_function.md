@@ -111,18 +111,126 @@
 
 ## 5. CI/CD PIPELINES
 
-### GitHub Actions: build-mobile.yml
-- **Triggers:** Push to main, PR to main
-- **Jobs:** Build customer APK, Build customer AAB, Build employee APK, Build employee AAB
-- **Artifacts:** APK/AAB files uploaded
-- **Environment:** Ubuntu latest, Java 17, Flutter stable
+### Workflow Files (4 total)
 
-### Missing CI/CD
-- No deployment pipeline to Firebase Hosting
-- No deployment pipeline to Google Cloud Run
-- No automated testing in CI
-- No linting or type-checking in CI
-- No Docker image build and push
+| File | Purpose | Trigger |
+|------|---------|---------|
+| `build-mobile.yml` | Build Customer + Employee Flutter APKs/AABs | Push to `main` on mobile paths + manual dispatch |
+| `deploy-backend.yml` | Build Docker image, deploy to Cloud Run (2 regions) | Push to `main` on backend paths + manual |
+| `deploy-admin.yml` | Build + deploy Admin Dashboard to Firebase Hosting | Push to `main` on admin paths + manual |
+| `deploy-landing.yml` | Deploy Customer Landing page to Firebase Hosting | Push to `main` on landing paths + manual |
+
+---
+
+### 5.1 build-mobile.yml (240 lines)
+
+**Triggers:**
+- Push to `main` when `mobile_customer/**`, `mobile_employee/**`, or `.github/workflows/build-mobile.yml` change
+- Manual `workflow_dispatch` with inputs: `bump_version`, `upload_play_store`, `release_track`
+
+**Job 1: build-customer**
+```
+1. actions/checkout@v4
+2. actions/setup-java@v4 (JDK 17, Temurin)
+3. flutter-actions/setup-flutter@v4 (stable, latest)
+4. Decode keystore (base64 secret -> ~/.android/safecom-keystore.jks)
+5. Decode google-services.json (base64 secret -> android/app/google-services.json)
+6. Decode strings.xml (base64 secret -> android/app/src/main/res/values/strings.xml)
+7. Bump build number (manual only: parse pubspec, increment, git commit [skip ci])
+8. flutter pub get
+9. flutter build apk --release (with keystore env vars)
+10. flutter build appbundle --release (with keystore env vars)
+11. actions/upload-artifact@v4 (APK + AAB saved)
+```
+
+**Job 2: build-employee** — identical structure for employee app
+
+**Job 3: upload-play-store**
+- Only runs on manual dispatch with `upload_play_store: true`
+- Downloads artifacts from build-customer + build-employee
+- `r0adkll/upload-google-play@v1` for both packages
+
+**Issues with build-mobile.yml:**
+
+| Issue | Details |
+|-------|---------|
+| No PR triggers | Build only runs on push to main — no PR validation |
+| No `flutter test` | Zero test execution in CI — `widget_test.dart` exists but never runs |
+| No `flutter analyze` | Linting/static analysis absent — `analysis_options.yaml` unused |
+| No code formatting | `dart format` never enforced |
+| Feature branches not built | Only main branch — can't validate before merge |
+| `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` | Unusual compat flag, undocumented |
+| `upload-google-play@v1` outdated | Last updated 2022 — should use `@v1.1.0` |
+| No version bump on push | Auto-builds always produce same version |
+| No iOS build | Only Android — no macOS runner configured |
+| No dependency caching | `pub get` and Gradle run fresh every time |
+| No security scanning | No SCA, SAST, or secret scanning |
+| Employee job duplicated | Copy-paste — should use matrix strategy |
+
+---
+
+### 5.2 deploy-backend.yml
+
+**Triggers:** Push to `main` on `backend_server/**` + manual dispatch
+
+**Steps:**
+1. `google-github-actions/auth@v2` (GCP service account auth)
+2. `setup-gcloud@v2`
+3. `gcloud builds submit` (builds Docker image)
+4. `gcloud run deploy` to `us-central1`
+5. `gcloud run deploy` to `asia-south1`
+
+**Issues:**
+- No tests run before deploy
+- No health check step after deploy
+- No rollback strategy
+- No staging environment (deploys directly to prod)
+
+---
+
+### 5.3 deploy-admin.yml
+
+**Triggers:** Push to `main` on `Admin/web_app/admin-dashboard/**` + manual
+
+**Steps:**
+1. npm ci
+2. npm run build
+3. `FirebaseExtended/action-hosting-deploy@v0`
+
+**Issues:**
+- No `npm run lint` or type check
+- No tests
+- No dependency caching
+
+---
+
+### 5.4 deploy-landing.yml
+
+**Triggers:** Push to `main` on `customer_landing/**` + manual
+
+**Steps:**
+1. `FirebaseExtended/action-hosting-deploy@v0` (static HTML, no build step)
+
+**Issues:** Minimal — static site with no build requirements
+
+---
+
+### Critical CI/CD Gaps
+
+| Missing | Priority | Reason |
+|---------|----------|--------|
+| Unit tests (`flutter test`) | CRITICAL | Tests exist but never run — no quality gate |
+| Static analysis (`flutter analyze`) | HIGH | Linting unused — code quality unchecked |
+| PR checks (`pull_request`) | HIGH | Merges can break main silently |
+| Backend tests (Jest/Vitest) | HIGH | Zero backend test coverage |
+| Integration/E2E tests | MEDIUM | No end-to-end flow validation |
+| Security scanning (SCA) | MEDIUM | No dependency vulnerability check |
+| Dependency caching | MEDIUM | ~3min saved per build |
+| Code coverage | MEDIUM | No coverage enforcement |
+| iOS builds | MEDIUM | Only Android — no iOS pipeline |
+| Firebase App Distribution | LOW | No test build distribution |
+| Slack notifications | LOW | No build failure alerts |
+| Automated tagging/releases | LOW | No git tag or release creation |
 
 ---
 

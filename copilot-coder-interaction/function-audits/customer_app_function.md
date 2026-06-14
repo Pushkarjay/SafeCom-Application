@@ -15,12 +15,13 @@
 6. [Profile & Order History](#6-profile--order-history)
 7. [Location Services](#7-location-services)
 8. [Shopping Cart](#8-shopping-cart)
-9. [SDUI Rendering Engine](#9-sdui-rendering-engine)
-10. [Data Layer: Repositories & Providers](#10-data-layer-repositories--providers)
-11. [Firestore Data Model Reference](#11-firestore-data-model-reference)
-12. [Block Diagrams](#12-block-diagrams)
-13. [Multi-Case Behavior Analysis](#13-multi-case-behavior-analysis)
-14. [Known Issues & Fixes Required](#14-known-issues--fixes-required)
+9. [Routing & Navigation](#9-routing--navigation)
+10. [SDUI Rendering Engine](#10-sdui-rendering-engine)
+11. [Data Layer: Repositories & Providers](#11-data-layer-repositories--providers)
+12. [Firestore Data Model Reference](#12-firestore-data-model-reference)
+13. [Block Diagrams](#13-block-diagrams)
+14. [Multi-Case Behavior Analysis](#14-multi-case-behavior-analysis)
+15. [Known Issues & Fixes Required](#15-known-issues--fixes-required)
 
 ---
 
@@ -445,7 +446,182 @@ Customer {
 
 ---
 
-## 9. SDUI RENDERING ENGINE
+## 9. ROUTING & NAVIGATION
+
+### Router Configuration (`routes/app_router.dart`)
+- **Package:** GoRouter v14.8.1 + Riverpod (`Provider<GoRouter>`)
+- **Initial Location:** `/` (splash screen)
+- **Auth Guard:** Global redirect with 3-layer protection
+- **Wiring:** `MaterialApp.router(routerConfig: router)` in `main.dart`
+
+### Route Constants (`core/constants/app_routes.dart`)
+```dart
+class AppRoutes {
+  static const splash = '/';
+  static const login = '/login';
+  static const phoneAuth = '/phone-auth';
+  static const phoneCollection = '/phone-collection';
+  static const locationPermission = '/location-permission';
+  static const locationPicker = '/location-picker';
+  static const home = '/home';
+  static const profile = '/profile';
+  static const about = '/about';
+  static const orderHistory = '/order-history';
+  static const bookingDetail = '/booking-detail';
+  static const productsDiscovery = '/products-discovery';
+  static const serviceTypes = '/service-types';
+  static const servicePlaceholder = '/service';
+  static const packageSelection = '/package-selection';
+  static const installationCustomization = '/installation-customization';
+  static const maintenanceTypes = '/maintenance-types';
+  static const maintenancePackageSelection = '/maintenance-package-selection';
+  static const maintenanceCustomization = '/maintenance-customization';
+  static const amcPlans = '/amc-plans';
+  static const repairIssues = '/repair-issues';
+  static const repairEstimate = '/repair-estimate';
+  static const systemUpgrade = '/system-upgrade';
+  static const upgradeEstimate = '/upgrade-estimate';
+  static const accessories = '/accessories';
+  static const accessoriesEstimate = '/accessories-estimate';
+  static const scheduling = '/scheduling';
+  static const recommendation = '/recommendation';
+  static const payment = '/payment';
+  static const confirmation = '/confirmation';
+}
+```
+
+### Complete Route Table (31 routes)
+
+| # | Path | Screen | Auth | Notes |
+|---|------|--------|------|-------|
+| 1 | `/` | `SplashScreen` | No | Auto-navigates to `/home` after 2s |
+| 2 | `/login` | `LoginScreen` | No | Redirects authenticated users away |
+| 3 | `/phone-auth` | `PhoneAuthScreen` | No | Phone OTP verification |
+| 4 | `/phone-collection` | `PhoneCollectionScreen` | No (but auth) | Phone input with `?continue=` param |
+| 5 | `/location-permission` | `LocationPermissionScreen` | No | Location permission request |
+| 6 | `/location-picker` | `LocationPickerScreen` | No | Map location picker |
+| 7 | `/home` | `HomeScreen` | No | Main screen SDUI + bottom nav |
+| 8 | `/profile` | `ProfileScreen` | **YES** | Profile management |
+| 9 | `/about` | `AboutScreen` | No | App info screen |
+| 10 | `/order-history` | `OrderHistoryScreen` | **YES** | Past bookings list |
+| 11 | `/booking-detail` | `BookingDetailScreen` | **YES** | Uses `state.extra` for `BookingModel` |
+| 12 | `/products-discovery` | `ProductsDiscoveryScreen` | No | Browse/search products |
+| 13 | `/service-types` | `ServiceTypeScreen` | No | Installation service types |
+| 14 | `/service/:serviceId` | `DynamicServiceScreen` | No | Param + extras: title, icon |
+| 15 | `/package-selection` | `PackageSelectionScreen` | No | Camera packages |
+| 16 | `/installation-customization` | `InstallationCustomizationScreen` | No | Customize installation |
+| 17 | `/maintenance-types` | `MaintenanceTypeScreen` | No | Maintenance type picker |
+| 18 | `/maintenance-package-selection` | `MaintenancePackageScreen` | No | Package selector |
+| 19 | `/maintenance-customization` | `MaintenanceCustomizationScreen` | No | Customize maintenance |
+| 20 | `/amc-plans` | `AmcPlanScreen` | No | AMC plan selection |
+| 21 | `/repair-issues` | `RepairIssueScreen` | No | Issue selection |
+| 22 | `/repair-estimate` | `RepairEstimateScreen` | No | Repair cost estimate |
+| 23 | `/system-upgrade` | `SystemUpgradeScreen` | No | Upgrade bundles |
+| 24 | `/upgrade-estimate` | `UpgradeEstimateScreen` | No | Uses `state.extra` for `UpgradeBundle` |
+| 25 | `/accessories` | `AccessoriesScreen` | No | Accessories catalog |
+| 26 | `/accessories-estimate` | `AccessoriesEstimateScreen` | No | Uses `state.extra` for entries |
+| 27 | `/scheduling` | `SchedulingScreen` | No | Date/time slot picker |
+| 28 | `/recommendation` | `RecommendationScreen` | No | Cross-sell/upsell |
+| 29 | `/payment` | `PaymentScreen` | **YES** | Razorpay checkout |
+| 30 | `/confirmation` | `BookingConfirmationScreen` | **YES** | Post-payment confirmation |
+
+### Auth Guard — 3-Layer Protection
+
+**Layer 1 — Authentication Required:**
+```dart
+const authRequiredRoutes = { payment, confirmation, profile, orderHistory, bookingDetail };
+if (!authState.isAuthenticated && requiresAuth) return '/login';
+```
+Only 5 routes require auth. All browsing (services, estimates, scheduling) is public.
+
+**Layer 2 — Login Redirect:**
+```dart
+if (authState.isAuthenticated && (path == '/login' || path == '/phone-auth')) return '/home';
+```
+Authenticated users can't see login screens.
+
+**Layer 3 — Phone Collection Guard:**
+```dart
+if (authState.isAuthenticated && noPhone && authRoute) return '/phone-collection?continue=/original-path';
+```
+After login, if user has no phone, redirect to phone collection then back to original route.
+
+### Navigation Methods Used
+
+| Method | Count | Usage |
+|--------|-------|-------|
+| `context.push(route)` | ~40 | Forward navigation (keeps back stack) |
+| `context.go(route)` | ~15 | Destination navigation (replaces stack — login, splash) |
+| `context.pop()` | ~4 | Back navigation |
+| `GoRouter.of(context).go()` | 3 | Outside build context (payment, login) |
+| `Navigator.pop(context)` | 2 | In scheduling screen after auth gate |
+
+### Bottom Navigation (`widgets/customer_bottom_navigation.dart`)
+- **NOT** using GoRouter `ShellRoute` — manually embedded per screen
+- **3 Tabs:** Home (`/home`), Bookings (`/order-history`), Profile (`/profile`)
+- **State:** `navigationIndexProvider` (Riverpod `StateProvider<int>`)
+- **Screens that embed it:** HomeScreen (0), BookingListScreen (1), CartScreen (1), ProfileScreen (2), OrderHistoryScreen (1)
+- **Issue:** No `StatefulShellRoute` — switching tabs replaces the stack, losing scroll position
+
+### Deep Linking — NOT Configured
+- No Android intent filters for deep links
+- No `app_links`, `uni_links`, or `firebase_dynamic_links` packages
+- No iOS deep link configuration
+- No GoRouter `initialLocation` override for deep links
+- SDUI has a `deeplink` action type but it's treated same as `navigate`
+
+### Route Transitions
+- **GoRouter:** No custom transitions defined (uses defaults)
+- **Theme:** `FadeUpwardsPageTransitionsBuilder` (Android), `CupertinoPageTransitionsBuilder` (iOS)
+- **Splash:** Custom animation controller (fade + slide + scale, 1500ms)
+- **Login:** Fade-in + slide-up (1000ms)
+- **Profile:** Fade-in (600ms)
+
+### Navigation Flow Diagram
+```
+Splash (/) --2s--> Home (/home)
+                      |
+          +-----------+-----------+
+          |           |           |
+      Login       Browse All   Service Grid
+     (/login)    (/products-   (push to
+          |       discovery)   various)
+     +----+---+
+     |        |
+Phone Auth  Google Sign-in
+(/phone-auth) --> Phone Collection
+                    (/phone-collection)
+                       |
+                       v
+                    Home --> Scheduling --> Payment --> Confirmation
+
+Service Flows (all public):
+  Home -> Installation -> /service-types -> /package-selection -> /installation-customization -> /scheduling
+  Home -> Maintenance -> /maintenance-types -> /maintenance-package-selection -> /maintenance-customization -> /scheduling
+  Home -> AMC -> /amc-plans -> /scheduling
+  Home -> Repair -> /repair-issues -> /repair-estimate -> /scheduling
+  Home -> Upgrade -> /system-upgrade -> /upgrade-estimate -> /scheduling
+  Home -> Accessories -> /accessories -> /accessories-estimate -> /scheduling
+
+  Scheduling -> (auth check) -> Payment -> Confirmation
+```
+
+### Known Routing Issues
+
+| Issue | Details |
+|-------|---------|
+| Dead CartScreen | `cart_screen.dart` exists but never imported/routed |
+| No ShellRoute | Bottom nav manually duplicated across screens |
+| No StatefulShellRoute | Tab switch loses state/scroll position |
+| No deep linking | Zero push notification or QR navigation support |
+| No 404/error route | No `errorBuilder` — unknown routes show blank screen |
+| Duplicate booking list | `BookingListScreen` and `OrderHistoryScreen` similar |
+| Mixed pop methods | `Navigator.pop()` with GoRouter can cause issues |
+| No guest cart preservation | Guest browsing context lost on login |
+
+---
+
+## 10. SDUI RENDERING ENGINE
 
 ### SDUI Renderer (`core/sdui/sdui_renderer.dart`)
 - **Purpose:** Server-Driven UI — renders widget trees from backend JSON
@@ -487,7 +663,7 @@ Customer {
 
 ---
 
-## 10. DATA LAYER: REPOSITORIES & PROVIDERS
+## 11. DATA LAYER: REPOSITORIES & PROVIDERS
 
 ### API Service (`data/datasources/api_service.dart`)
 - **HTTP Client:** Dio-based
@@ -534,7 +710,7 @@ Customer {
 
 ---
 
-## 11. FIRESTORE DATA MODEL REFERENCE
+## 12. FIRESTORE DATA MODEL REFERENCE
 
 ### Collections Accessed by Customer App
 
@@ -599,7 +775,7 @@ Customer {
 
 ---
 
-## 12. BLOCK DIAGRAMS
+## 13. BLOCK DIAGRAMS
 
 ### Authentication Flow
 ```
@@ -681,7 +857,7 @@ Serviceable? ──Yes──→ GET /api/sdui/layout?screen=home&location=
 
 ---
 
-## 13. MULTI-CASE BEHAVIOR ANALYSIS
+## 14. MULTI-CASE BEHAVIOR ANALYSIS
 
 ### Case 1: Guest User Tries to Book
 1. User browses services and selects items
@@ -723,7 +899,7 @@ Serviceable? ──Yes──→ GET /api/sdui/layout?screen=home&location=
 
 ---
 
-## 14. KNOWN ISSUES & FIXES REQUIRED
+## 15. KNOWN ISSUES & FIXES REQUIRED
 
 ### Issue 1: Cart Not Persisted Across Restarts
 - **Problem:** Cart state is in-memory only; clearing app from memory loses cart contents
