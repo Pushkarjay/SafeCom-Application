@@ -7,6 +7,11 @@ on:
       - 'backend_server/**'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Docker image tag to deploy (defaults to git SHA)
+        type: string
+        required: false
 
 env:
   PROJECT_ID: safecom-application-01
@@ -15,14 +20,20 @@ env:
   REGION_2: asia-south1
 
 jobs:
-  deploy:
+  build-and-push:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+    outputs:
+      image_tag: ${{ steps.resolve-tag.outputs.image_tag }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - id: resolve-tag
+        run: echo "image_tag=${{ github.event.inputs.image_tag || github.sha }}" >> "$GITHUB_OUTPUT"
 
       - id: auth
         uses: google-github-actions/auth@v2
@@ -34,22 +45,73 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          gcloud builds submit backend_server \
-            --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
-            --project ${{ env.PROJECT_ID }}
+          BUILD_ID=$(gcloud builds submit backend_server \
+            --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ steps.resolve-tag.outputs.image_tag }} \
+            --project ${{ env.PROJECT_ID }} \
+            --async --format='value(id)')
+
+          echo "Cloud Build ID: $BUILD_ID"
+
+          while true; do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --format='value(status)')
+            echo "Build status: $STATUS"
+            case "$STATUS" in
+              SUCCESS) break ;;
+              FAILURE|TIMEOUT|INTERNAL_ERROR|CANCELLED)
+                echo "Build failed with status: $STATUS"
+                gcloud builds log "$BUILD_ID" --project ${{ env.PROJECT_ID }} 2>/dev/null || true
+                exit 1
+                ;;
+            esac
+            sleep 15
+          done
+
+  deploy-us-central1:
+    name: Deploy to us-central1
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy to Cloud Run (us-central1)
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ needs.build-and-push.outputs.image_tag }} \
             --region ${{ env.REGION_1 }} \
             --allow-unauthenticated \
-            --project ${{ env.PROJECT_ID }} \
+            --project ${{ env.PROJECT_ID }}
+
+  deploy-asia-south1:
+    name: Deploy to asia-south1
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy to Cloud Run (asia-south1)
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ needs.build-and-push.outputs.image_tag }} \
             --region ${{ env.REGION_2 }} \
             --allow-unauthenticated \
-            --project ${{ env.PROJECT_ID }} \
+            --project ${{ env.PROJECT_ID }}

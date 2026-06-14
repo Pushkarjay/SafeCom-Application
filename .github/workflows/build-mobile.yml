@@ -59,6 +59,20 @@ jobs:
           channel: stable
           version: latest
 
+      - name: Cache Flutter pub cache
+        uses: actions/cache@v4
+        with:
+          path: /opt/hostedtoolcache/flutter
+          key: flutter-customer-${{ runner.os }}-${{ hashFiles('mobile_customer/pubspec.lock') }}
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-customer-${{ runner.os }}-${{ hashFiles('mobile_customer/android/*.gradle*', 'mobile_customer/android/gradle/wrapper/gradle-wrapper.properties') }}
+
       - name: Decode keystore
         run: |
           mkdir -p "$HOME/.android"
@@ -97,6 +111,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze
 
       - name: Build APK
         run: ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE="$HOME/.android/safecom-keystore.jks" flutter build apk --release
@@ -142,6 +159,20 @@ jobs:
           channel: stable
           version: latest
 
+      - name: Cache Flutter pub cache
+        uses: actions/cache@v4
+        with:
+          path: /opt/hostedtoolcache/flutter
+          key: flutter-employee-${{ runner.os }}-${{ hashFiles('mobile_employee/pubspec.lock') }}
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-employee-${{ runner.os }}-${{ hashFiles('mobile_employee/android/*.gradle*', 'mobile_employee/android/gradle/wrapper/gradle-wrapper.properties') }}
+
       - name: Decode keystore
         run: |
           mkdir -p "$HOME/.android"
@@ -176,6 +207,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze
 
       - name: Build APK
         run: ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE="$HOME/.android/safecom-keystore.jks" flutter build apk --release
@@ -215,19 +249,11 @@ jobs:
           name: employee-app
           path: artifacts/employee
 
-      - name: Prepare customer AAB
-        run: |
-          find artifacts/customer -name '*.aab' -exec cp {} artifacts/customer/app-release.aab \;
-
-      - name: Prepare employee AAB
-        run: |
-          find artifacts/employee -name '*.aab' -exec cp {} artifacts/employee/app-release.aab \;
-
       - uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
           packageName: ${{ env.CUSTOMER_PACKAGE }}
-          releaseFiles: artifacts/customer/app-release.aab
+          releaseFiles: artifacts/customer/**/*.aab
           track: ${{ inputs.release_track || 'internal' }}
           status: completed
 
@@ -235,6 +261,6 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
           packageName: ${{ env.EMPLOYEE_PACKAGE }}
-          releaseFiles: artifacts/employee/app-release.aab
+          releaseFiles: artifacts/employee/**/*.aab
           track: ${{ inputs.release_track || 'internal' }}
           status: completed
