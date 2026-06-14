@@ -41,5 +41,8 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
+      - name: Show authenticated account
+        run: gcloud auth list --filter=status:ACTIVE --format='value(account)'
+
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools@13 deploy --only hosting:${{ env.HOSTING_SITE }} --project ${{ env.PROJECT_ID }}

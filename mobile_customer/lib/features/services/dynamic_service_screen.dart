@@ -438,7 +438,7 @@ class DynamicServiceScreen extends ConsumerWidget {
                                 serviceName: title,
                                 packageLabel: group.name,
                                 estimatedTotal: flow.totalAmount,
-                                serviceTypeId: widget.serviceId,
+                                serviceTypeId: serviceId,
                                 items: allItems
                                     .map((i) => ActiveOrderLineItem(
                                           name: _buildItemName(i),
