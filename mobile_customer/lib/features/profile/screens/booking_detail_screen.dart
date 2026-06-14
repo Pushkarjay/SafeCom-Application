@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_customer/core/config/api_config.dart';
 import 'package:mobile_customer/features/profile/providers/booking_provider.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 

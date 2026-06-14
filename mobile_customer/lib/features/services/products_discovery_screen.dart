@@ -6,7 +6,6 @@ import 'package:mobile_customer/data/datasources/api_service.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/cart_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
-import 'package:mobile_customer/routes/app_router.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
 /// Provider that fetches all master products from the backend

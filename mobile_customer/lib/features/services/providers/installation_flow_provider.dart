@@ -192,7 +192,6 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
   final PricingRepository _repo;
   Map<String, List<String>> _dependencyMap = {};
   Map<String, String> _sourceProductKeys = {};
-  Map<String, int> _slotMaxConstraints = {};
 
   InstallationFlowNotifier(this._repo) : super(InstallationFlowState(isLoading: true)) {
     _loadConfig();

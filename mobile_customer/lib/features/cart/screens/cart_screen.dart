@@ -23,7 +23,7 @@ class CartScreen extends ConsumerWidget {
         actions: [
           if (cartState.items.isNotEmpty)
             TextButton(
-              onPressed: () => ref.read(data_cart.cartProvider.notifier).clearCart(),
+              onPressed: () => ref.read(cartProvider.notifier).clearCart(),
               child: const Text('Clear All', style: TextStyle(color: AppColors.error)),
             ),
         ],
@@ -38,14 +38,14 @@ class CartScreen extends ConsumerWidget {
                 return _CartItemCard(
                   item: item,
                   onIncrement: () {
-                    ref.read(data_cart.cartProvider.notifier).updateQuantity(item.product.id, item.quantity + 1);
+                    ref.read(cartProvider.notifier).updateQuantity(item.product.id, item.quantity + 1);
                   },
                   onDecrement: () {
                     if (item.quantity > 1) {
-                      ref.read(data_cart.cartProvider.notifier).updateQuantity(item.product.id, item.quantity - 1);
+                      ref.read(cartProvider.notifier).updateQuantity(item.product.id, item.quantity - 1);
                     }
                   },
-                  onRemove: () => ref.read(data_cart.cartProvider.notifier).removeFromCart(item.product.id),
+                  onRemove: () => ref.read(cartProvider.notifier).removeFromCart(item.product.id),
                 );
               },
             ),
@@ -162,8 +162,8 @@ class _CartItemCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-'Rs ${item.product.basePrice.toStringAsFixed(0)} each',
-                ],
+                  'Rs ${item.product.basePrice.toStringAsFixed(0)} each',
+                ),
               ],
             ),
           ),
