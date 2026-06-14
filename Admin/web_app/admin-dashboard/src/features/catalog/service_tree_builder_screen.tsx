@@ -333,7 +333,7 @@ export default function ServiceTreeBuilderScreen() {
       // Wrap them as a single clubbed ProductSlot so the tree renders correctly.
       let normalized = (data.categories as any[]).map((cat: any) => ({
         ...cat,
-        setups: (cat.setups || []).map((s: any) => {
+        setups: (cat.setups || []).filter((s: any) => !(s.key?.startsWith?.('_'))).map((s: any) => {
           if (!Array.isArray(s.products) && Array.isArray(s.children)) {
             return { ...s, products: [{ key: s.key, isClubbed: true, options: s.children }] }
           }
