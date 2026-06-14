@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { useAuthStore } from '@core/services/auth_service'
+import { useServicesStore } from '@core/services/services_store'
 import './catalog_screen.css'
 import './installation_builder.css'
 
@@ -312,6 +313,9 @@ export default function ServiceTreeBuilderScreen() {
     node: TreeNode
     allSlots: ProductSlot[]
   } | null>(null)
+  // Category edit modal for rename + service mapping
+  const [showCategoryEdit, setShowCategoryEdit] = useState<{ key: string; currentMapping: string[] } | null>(null)
+  const servicesList = useServicesStore((state) => state.services)
 
   const loadData = useCallback(async () => {
     if (!firebaseUser || !serviceId) return
@@ -375,6 +379,10 @@ export default function ServiceTreeBuilderScreen() {
   }, [firebaseUser, serviceId])
 
   useEffect(() => { loadData() }, [loadData])
+
+  // Fetch services list for service mapping dropdown
+  const { fetchServices } = useServicesStore()
+  useEffect(() => { fetchServices() }, [fetchServices])
 
   const toggle = (set: Set<string>, key: string, setter: (s: Set<string>) => void) => {
     const next = new Set(set)
@@ -595,6 +603,29 @@ export default function ServiceTreeBuilderScreen() {
     setSaving(true)
     try {
       await adminDatasource.serviceRenameCategory(serviceId, oldName, safeKey(newName.trim()))
+      await loadData()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
+    finally { setSaving(false) }
+  }
+
+  const openCategoryEdit = async (categoryKey: string) => {
+    // Fetch current service mapping for this category
+    try {
+      const config = await adminDatasource.getServiceConfig(serviceId!)
+      const cat = config.categories.find((c: any) => c.key === categoryKey)
+      const mapping = Array.isArray((cat as any)?._serviceMapping) ? (cat as any)._serviceMapping : []
+      setShowCategoryEdit({ key: categoryKey, currentMapping: mapping })
+    } catch {
+      setShowCategoryEdit({ key: categoryKey, currentMapping: [] })
+    }
+  }
+
+  const saveServiceMapping = async (categoryKey: string, serviceTypes: string[]) => {
+    if (!serviceId) return
+    setSaving(true)
+    try {
+      await adminDatasource.serviceSetCategoryServiceMapping(serviceId, categoryKey, serviceTypes)
+      setShowCategoryEdit(null)
       await loadData()
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
     finally { setSaving(false) }
@@ -1391,7 +1422,7 @@ export default function ServiceTreeBuilderScreen() {
                           await loadData();
                         } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
                       }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
-                      <button className="icon-btn" onClick={() => renameCategory(cat.key)} title="Rename Category" style={{ marginRight: '4px' }}>✏️</button>
+                      <button className="icon-btn" onClick={() => openCategoryEdit(cat.key)} title="Edit Category (rename + service mapping)" style={{ marginRight: '4px' }}>✏️</button>
                       <button
                         className={`icon-btn ${cat.active === false ? 'danger' : ''}`}
                         onClick={() => toggleCategoryActive(cat.key, cat.active !== false)}
@@ -1710,6 +1741,76 @@ export default function ServiceTreeBuilderScreen() {
             </div>
             <div className="modal-footer">
               <button className="secondary-btn" onClick={() => setShowDepModal(null)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Edit Modal — rename + service mapping */}
+      {showCategoryEdit && (
+        <div className="modal-overlay" onClick={() => setShowCategoryEdit(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <h2>Edit Category — "{showCategoryEdit.key}"</h2>
+              <button className="icon-btn" onClick={() => setShowCategoryEdit(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>Rename</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    className="ib-search-input"
+                    style={{ flex: 1 }}
+                    defaultValue={showCategoryEdit.key}
+                    id="cat-rename-input"
+                    placeholder="New category name"
+                  />
+                  <button className="secondary-btn" onClick={() => {
+                    const inp = document.getElementById('cat-rename-input') as HTMLInputElement
+                    if (inp?.value?.trim() && inp.value.trim() !== showCategoryEdit.key) {
+                      renameCategory(showCategoryEdit.key)
+                    }
+                  }}>Rename</button>
+                </div>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>
+                  Service Mapping — which services should see this category's recommendations?
+                </label>
+                <p className="hint-text" style={{ fontSize: 11, marginBottom: 8, color: '#666' }}>
+                  Select one or more services. Leave empty to show in all contexts.
+                </p>
+                <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 8, padding: 8 }}>
+                  {servicesList.length === 0 ? (
+                    <p className="hint-text" style={{ padding: 8 }}>Loading services...</p>
+                  ) : (
+                    servicesList.map(svc => {
+                      const isChecked = showCategoryEdit.currentMapping.includes(svc.id)
+                      return (
+                        <label key={svc.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', cursor: 'pointer', borderRadius: 6, background: isChecked ? '#f0fdf4' : 'transparent' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              const next = new Set(showCategoryEdit.currentMapping)
+                              isChecked ? next.delete(svc.id) : next.add(svc.id)
+                              setShowCategoryEdit({ ...showCategoryEdit, currentMapping: Array.from(next) })
+                            }}
+                          />
+                          <span>{svc.icon} {svc.title}</span>
+                          <span style={{ color: '#94a3b8', fontSize: 11, marginLeft: 'auto' }}>{svc.id}</span>
+                        </label>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="secondary-btn" onClick={() => setShowCategoryEdit(null)}>Cancel</button>
+              <button className="primary-btn" onClick={() => saveServiceMapping(showCategoryEdit.key, showCategoryEdit.currentMapping)} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Mapping'}
+              </button>
             </div>
           </div>
         </div>

@@ -97,6 +97,7 @@ class RepairEstimateScreen extends ConsumerWidget {
                           serviceName: 'Camera Repair',
                           packageLabel: state.selectedIssue.title,
                           estimatedTotal: state.totalAmount,
+                          serviceTypeId: 'repair',
                           items: state.items.map((i) => ActiveOrderLineItem(
                             name: i.name,
                             quantity: i.quantity,

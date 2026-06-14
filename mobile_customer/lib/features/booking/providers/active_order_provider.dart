@@ -19,12 +19,14 @@ class ActiveOrderSummary {
   final String packageLabel;
   final double estimatedTotal;
   final List<ActiveOrderLineItem> items;
+  final String? serviceTypeId;
 
   const ActiveOrderSummary({
     required this.serviceName,
     required this.packageLabel,
     required this.estimatedTotal,
     this.items = const [],
+    this.serviceTypeId,
   });
 }
 

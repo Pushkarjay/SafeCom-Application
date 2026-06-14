@@ -29,3 +29,10 @@ final productDetailProvider = FutureProvider.family<MasterProduct?, String>((ref
   final data = await apiService.getProduct(productId);
   return MasterProduct.fromJson(data);
 });
+
+/// Provider for fetching service-specific recommendations from the Recommendation_Addons tree.
+/// The [serviceType] param filters categories by their _serviceMapping field.
+final serviceRecommendationsProvider = FutureProvider.family<InstallationPricingContract?, String>((ref, serviceType) async {
+  final repository = ref.watch(serviceCatalogRepositoryProvider);
+  return repository.getDynamicServicePricing('recommendations', serviceType: serviceType);
+});

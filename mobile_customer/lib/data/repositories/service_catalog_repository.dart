@@ -21,8 +21,8 @@ class ServiceCatalogRepository {
         .toList(growable: false);
   }
 
-  Future<InstallationPricingContract> getDynamicServicePricing(String serviceId) {
-    return _dataSource.getDynamicServicePricing(serviceId);
+  Future<InstallationPricingContract> getDynamicServicePricing(String serviceId, {String? serviceType}) {
+    return _dataSource.getDynamicServicePricing(serviceId, serviceType: serviceType);
   }
 
   Future<RecommendationCatalogResponse> getRecommendations({

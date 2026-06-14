@@ -94,7 +94,7 @@ class SchedulingScreen extends ConsumerWidget {
       if (activeOrder?.serviceName == 'Product Purchase') {
         context.push(AppRoutes.payment);
       } else {
-        context.push(AppRoutes.recommendation);
+        context.push(AppRoutes.recommendation, extra: activeOrder?.serviceTypeId);
       }
     }
 

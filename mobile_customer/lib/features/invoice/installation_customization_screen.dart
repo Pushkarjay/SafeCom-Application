@@ -205,6 +205,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                                 serviceName: category.name,
                                 packageLabel: group.name,
                                 estimatedTotal: flow.totalAmount,
+                                serviceTypeId: 'installation',
                                 items: allItems
                                     .map((i) => ActiveOrderLineItem(
                                           name: _buildItemName(i),

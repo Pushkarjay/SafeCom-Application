@@ -27,6 +27,7 @@ class AppRoutes {
   static const accessoriesEstimate = '/accessories-estimate';
   static const scheduling = '/scheduling';
   static const recommendation = '/recommendation';
+  static const recommendationWithService = '/recommendation/:serviceType';
   static const payment = '/payment';
   static const confirmation = '/confirmation';
 }

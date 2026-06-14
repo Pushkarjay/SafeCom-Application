@@ -53,6 +53,7 @@ class AmcPlanScreen extends ConsumerWidget {
                           serviceName: 'AMC Service',
                           packageLabel: plan.name,
                           estimatedTotal: plan.price,
+                          serviceTypeId: 'amc',
                           items: [
                             ActiveOrderLineItem(
                               name: plan.name,

@@ -775,10 +775,14 @@ export const getAccessories = async (req: Request, res: Response) => {
  * Generic handler: parse any service document into the standard pricing format
  * (categories → groups → mappedProducts with clubbed options resolved).
  * Same logic as getInstallationPricing but works for any service.
+ *
+ * Query params:
+ *   serviceType - if provided, only categories whose _serviceMapping contains this value are returned
  */
 export const getDynamicServicePricing = async (req: Request, res: Response) => {
   try {
     const serviceId = req.params.serviceId as string;
+    const serviceTypeFilter = req.query.serviceType as string | undefined;
     const db = getDb();
 
     // Resolve serviceId to actual Firestore document ID
@@ -800,6 +804,12 @@ export const getDynamicServicePricing = async (req: Request, res: Response) => {
         if (categoryKey.startsWith('_')) return false;
         const catData = data[categoryKey] as Record<string, unknown>;
         if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
+        // If serviceType filter is provided, only include categories whose _serviceMapping contains it
+        if (serviceTypeFilter) {
+          const mapping = catData?.['_serviceMapping'];
+          const mappingArr = Array.isArray(mapping) ? mapping : (typeof mapping === 'string' ? [mapping] : []);
+          if (mappingArr.length > 0 && !mappingArr.includes(serviceTypeFilter)) return false;
+        }
         return true;
       }))
       .map(([categoryKey, setups]) => {

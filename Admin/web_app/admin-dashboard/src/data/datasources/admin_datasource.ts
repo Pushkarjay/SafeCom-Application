@@ -449,6 +449,11 @@ export class AdminDatasource {
     })
   }
 
+  async serviceSetCategoryServiceMapping(serviceId: string, categoryKey: string, serviceTypes: string[]): Promise<void> {
+    // Sets _serviceMapping on a category using the dynamic-field endpoint
+    await this.serviceUpdateDynamicField(serviceId, categoryKey, '', ['_serviceMapping'], serviceTypes)
+  }
+
   async serviceRenameSetup(serviceId: string, categoryKey: string, setupKey: string, newName: string): Promise<void> {
     await this.fetchJson(`${BASE_URL}/catalog/services-admin/config/${encodeURIComponent(serviceId)}/category/${encodeURIComponent(categoryKey)}/setup/${encodeURIComponent(setupKey)}/rename`, {
       method: 'POST',

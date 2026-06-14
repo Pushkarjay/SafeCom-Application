@@ -22,8 +22,8 @@ class ServiceCatalogApiDataSource {
     return RecommendationCatalogResponse.fromJson(response);
   }
 
-  Future<InstallationPricingContract> getDynamicServicePricing(String serviceId) async {
-    final response = await _apiService.getDynamicServicePricing(serviceId);
+  Future<InstallationPricingContract> getDynamicServicePricing(String serviceId, {String? serviceType}) async {
+    final response = await _apiService.getDynamicServicePricing(serviceId, serviceType: serviceType);
     return InstallationPricingContract.fromJson(response);
   }
 
