@@ -34,5 +34,5 @@ final productDetailProvider = FutureProvider.family<MasterProduct?, String>((ref
 /// The [serviceType] param filters categories by their _serviceMapping field.
 final serviceRecommendationsProvider = FutureProvider.family<InstallationPricingContract?, String>((ref, serviceType) async {
   final repository = ref.watch(serviceCatalogRepositoryProvider);
-  return repository.getDynamicServicePricing('recommendations', serviceType: serviceType);
+  return repository.getDynamicServicePricing('Recommendation_Addons', serviceType: serviceType);
 });

@@ -1422,7 +1422,8 @@ export default function ServiceTreeBuilderScreen() {
                           await loadData();
                         } catch (err) { setError(err instanceof Error ? err.message : 'Failed') }
                       }} style={{ marginRight: '6px', fontSize: '11px', padding: '4px 8px', background: '#8b5cf6', color: '#fff' }}>+ Branch</button>
-                      <button className="icon-btn" onClick={() => openCategoryEdit(cat.key)} title="Edit Category (rename + service mapping)" style={{ marginRight: '4px' }}>✏️</button>
+                      <button className="icon-btn" onClick={() => renameCategory(cat.key)} title="Rename category" style={{ marginRight: '4px' }}>✏️</button>
+                      <button className="icon-btn" onClick={() => openCategoryEdit(cat.key)} title="Map this category to services" style={{ marginRight: '4px', fontSize: '13px' }}>🔗</button>
                       <button
                         className={`icon-btn ${cat.active === false ? 'danger' : ''}`}
                         onClick={() => toggleCategoryActive(cat.key, cat.active !== false)}
@@ -1746,33 +1747,15 @@ export default function ServiceTreeBuilderScreen() {
         </div>
       )}
 
-      {/* Category Edit Modal — rename + service mapping */}
+      {/* Service Mapping Modal — link category to services */}
       {showCategoryEdit && (
         <div className="modal-overlay" onClick={() => setShowCategoryEdit(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
             <div className="modal-header">
-              <h2>Edit Category — "{showCategoryEdit.key}"</h2>
+              <h2>Service Mapping — "{showCategoryEdit.key}"</h2>
               <button className="icon-btn" onClick={() => setShowCategoryEdit(null)}>×</button>
             </div>
             <div className="modal-body">
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>Rename</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    className="ib-search-input"
-                    style={{ flex: 1 }}
-                    defaultValue={showCategoryEdit.key}
-                    id="cat-rename-input"
-                    placeholder="New category name"
-                  />
-                  <button className="secondary-btn" onClick={() => {
-                    const inp = document.getElementById('cat-rename-input') as HTMLInputElement
-                    if (inp?.value?.trim() && inp.value.trim() !== showCategoryEdit.key) {
-                      renameCategory(showCategoryEdit.key)
-                    }
-                  }}>Rename</button>
-                </div>
-              </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>
                   Service Mapping — which services should see this category's recommendations?

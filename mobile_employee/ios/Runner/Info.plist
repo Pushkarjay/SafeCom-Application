@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SafeCom Employee uses the camera to capture before/after photos of job sites for work documentation.</string>
 	<key>GMSApiKey</key>
 	<string>YOUR_GOOGLE_MAPS_API_KEY</string>
 	<key>LSRequiresIPhoneOS</key>
