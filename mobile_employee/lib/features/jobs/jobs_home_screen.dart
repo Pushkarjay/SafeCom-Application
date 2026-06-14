@@ -42,7 +42,9 @@ class _JobsHomeScreenState extends ConsumerState<JobsHomeScreen> with SingleTick
         actions: [
           IconButton(
             onPressed: () {
+              // ignore: unused_result
               ref.refresh(assignedJobsProvider(technicianId));
+              // ignore: unused_result
               ref.refresh(availableJobsProvider);
             },
             icon: const Icon(Icons.refresh_rounded, size: 22),

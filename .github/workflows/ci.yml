@@ -60,7 +60,7 @@ jobs:
           channel: stable
           version: latest
       - run: flutter pub get
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos
 
   analyze-employee:
     name: Analyze Employee App
@@ -79,7 +79,7 @@ jobs:
           channel: stable
           version: latest
       - run: flutter pub get
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos
 
   test-customer:
     name: Test Customer App

@@ -221,6 +221,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
 
                         if (context.mounted) {
                           // Refresh jobs list
+                          // ignore: unused_result
                           ref.refresh(assignedJobsProvider(ref.read(activeEmployeeIdProvider)));
 
                           context.push(

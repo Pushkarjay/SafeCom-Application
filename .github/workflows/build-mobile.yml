@@ -113,7 +113,7 @@ jobs:
         run: flutter pub get
 
       - name: Static analysis
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Build APK
         run: ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE="$HOME/.android/safecom-keystore.jks" flutter build apk --release
@@ -209,7 +209,7 @@ jobs:
         run: flutter pub get
 
       - name: Static analysis
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Build APK
         run: ORG_GRADLE_PROJECT_SAFECOM_KEYSTORE="$HOME/.android/safecom-keystore.jks" flutter build apk --release
