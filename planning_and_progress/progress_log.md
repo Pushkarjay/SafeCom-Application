@@ -219,4 +219,131 @@
 - **Backend API Fixes:** Registered \installationAdminRouter\ in \pp.ts\ to fix 404 errors. Added category-level CRUD endpoints and branch creation endpoints to support infinite nesting logic directly at the category level (without needing a setup key).
 - **Admin Dashboard Fixes:** Fixed \dmin_datasource.ts\ to properly route category-level vs setup-level paths. Added \serviceAddBranch\ and UI buttons (\+ Branch\) to enable admins to create empty branch folders.
 - **Customer App UI Resolution:** Overhauled the \InstallationFlowProvider\ to maintain the deeply nested \clubbedOptions\ tree structure instead of flattening it. Implemented a recursive drill-down selection popup (\ClubbedProductSelector\) allowing customers to select specific variants across multiple nesting levels. Updated \InvoiceTable\ to support interactive \Widget\ elements within rows.
-- **Build & Deploy Automation:** Created a script to automate dual-region backend deployment (Cloud Run), Vite building for Admin Dashboard, and Flutter builds (APK/AAB) for both Mobile apps, saving all artifacts natively to \elease_assets\.
+- **Build & Deploy Automation:** Created a script to automate dual-region backend deployment (Cloud Run), Vite building for Admin Dashboard, and Flutter builds (APK/AAB) for both Mobile apps, saving all artifacts natively to \
+elease_assets\.
+
+---
+
+## 2026-05-09 (Architecture Documentation)
+- Added comprehensive Architecture documentation with 20+ sections covering high-level architecture, component diagrams, database schema, API flows, mobile navigation, dependency graphs, service boundaries, microservice suggestions, event flows, auth flow, runtime execution, state management, Firestore analysis, security analysis, performance bottlenecks, recommended refactors, shared modules, sequence diagrams, data flow diagrams, and architecture report.
+- Added Mermaid diagram source files (.mmd) for all architecture components
+- Added SVG visual exports for architecture diagrams
+- Created MASTER_ARCHITECTURE_INDEX.md with executive summary and architecture scorecard (7/10)
+- Architecture assessment identified 296-434 hours of technical debt estimation
+
+## 2026-05-14 (Phase 4: Payment Integration & UX Fixes)
+- **Razorpay Integration:** Fixed minimum charge to Rs 100; booking records now store amountPaid and totalAmount fields
+- **Phone Persistence:** Fixed backend PATCH address schema to properly save phone numbers; booking amountPaid field working
+- **Navigation Fixes:** Fixed phone redirect loop — only redirect for payment/confirmation/profile routes; skip/back navigate to home
+- **Customer PATCH:** Schema now accepts nullable address/status; updateDocument filters null values
+- **Checkout Flow:** Fixed checkout amount calculation, navigation routing, phone persistence, app icon, and phone collection redirect
+- **TS Types:** Added totalAmount/amountPaid/paymentId/orderId to TypeScript interfaces
+- **Product Dependency Engine (v1.3.0):** Admin-controlled quantity auto-mapping system
+- **Backend Branch Resolution:** Branch nodes now resolved via findFirstLeafInTree; renderType and collectiveValidation added to ClubbedOption and MappedProduct
+- **Maintenance Tree Structure:** WIP conversion of Maintenance to tree structure (backend + flow provider)
+- **Dynamic Service Screen:** Service placeholder replaced with dynamic service screen
+
+## 2026-05-15 (UI Overhaul & Admin Dashboard Redesign)
+- **Admin Dashboard Redesign:** Comprehensive redesign with global design system, unified CSS variables, improved contrast and readability across all screens
+- **Frontend-Design Skill Applied:** Industrial Luxury aesthetic with dark command-center sidebar (charcoal/amber), grain texture, warm stone content area, staggered animations; Outfit/Plus Jakarta Sans typography with richer indigo-noir palette
+- **Light Theme:** Animated counters, skeleton loading states, logo integration
+- **Logo Fixes:** SafeCom logo added to customer app screens (login, phone auth, phone collection, location, about) via shared logo widget; visual-only version for login screen; local logo from public folder
+- **Legal & Policy Pages:** Added Privacy Policy, Terms of Service, Refund Policy, Data Collection, Account Deletion, and Contact pages for Play Store compliance — deployed via Firebase
+- **Customer Landing Page:** Redesigned with light editorial theme, WhatsApp popup, proper alignment/spacing, developer email fix; mobile-first redesign with hamburger nav, vertical process flow, stacked cards, optimized touch targets, WhatsApp CTA
+- **Action Button Fixes:** All action buttons (OPT/LIST badge, +Option, +Branch, DependsOn, RenderConfig, Rename, Delete) at EVERY product level; horizontal layout fixed
+- **Service ID Normalization:** Trim + spaces-to-underscores normalization in service creator; handleSave deduplication
+- **Case-Insensitive Lookup:** findAllServiceDoc helper prevents 404 on ID case mismatch (e.g. 'Amc' vs 'AMC')
+- **Nested Camera LIST Tree:** Branch selector and dependency aggregation for camera LIST mode
+- **Expand/Collapse Controls:** Expand Below/Collapse Below per setup; Expand All expands clubs+branches; depth-based row colors (heatmap)
+
+## 2026-05-17 (Admin Dashboard Overhaul & Audit Resolution)
+- **Admin Dashboard UI/UX Overhaul:** Major overhaul across 63 files — fixed navigation bugs, enabled job CRUD with Invoice PDF generation, fixed backend job/technician endpoints, improved employee mobile app
+- **Mobile Preview Redesign:** Dual phone frames (customer + employee), proper component editors, CMS deduplication, SDUI injection
+- **Serviceable Areas:** Wired to Firestore — admin CRUD and SDUI now share same data; promo banner linked to serviceability with hideWhenServiceable visibility field
+- **27 Audit Issues Resolved:** Broken routes fixed, deprecated endpoints removed, dead code eliminated, hardcoded values made dynamic
+- **Firebase Cache:** Added .firebase cache to gitignore
+
+## 2026-05-18 (Mobile Customer UI Redesign & Pricing Fixes)
+- **Premium Light Theme:** Redesigned mobile_customer UI with premium light theme, unified color constants across the app
+- **Duplicate Prevention:** Fixed duplicate booking prevention in customer app
+- **GST-Inclusive Pricing:** All prices now show as GST-inclusive
+- **On-Site Payment Flow:** Added on-site payment collection option
+- **Book Flow Expansion:** Expanded booking flow, pricing calculation, and admin services
+- **Booking Charge Clarification:** Fixed pricing breakdown — booking charge is extra (not included in product price); updated booking detail screen
+- **Amber/Charcoal Theme:** Replaced all dark navy/blue colors with warm amber tones; fixed text wrapping issues
+
+## 2026-05-19 (Backend Standardization & Audit Resolution)
+- **Response Format Standardization:** All backend responses standardized to consistent success data shape
+- **Audit_01 Resolution:** Fixed unsafe doc.data() spreads, auth bypass vulnerabilities, mock payment guard, and Flutter lint warnings (32 files modified)
+- **Cart State Fix:** Fixed premature cart clearing on proceed to checkout; added state cleanup after payment
+- **Express Routes Reordered:** Fixed route priority issues, removed dead code in servicesAdmin, added maintenance admin helpers
+
+## 2026-06-05 (Admin CRUD Fixes & Database Corrections)
+- **Admin CRUD Bug Resolution:** Fixed admin CRUD bugs, added missing product routes, deployed backend + frontend (28 files)
+- **Firestore DB Name:** Corrected Firestore database name in frontend fallback configuration; updated environment URL
+
+## 2026-06-08 (Activate/Deactivate Toggle & Audit Updates)
+- **Admin Dashboard Audit:** Comprehensive audit of admin dashboard functions; fixed quantity/dependency engine in customer app
+- **LIST Mode Fix:** LIST mode now displays correct branch/product names instead of Firestore slot keys
+- **Activate/Deactivate Toggle:** Added toggle for categories and setups across all services (backward-compatible)
+- **Google Services:** Corrected google-services.json SHA hash; bumped customer app to v1.3.5+13
+- **Audit Documentation:** Updated audit with Issue 6 — branch/sub-branch name fix in LIST mode
+
+## 2026-06-11 (RenderType Crash Fix)
+- **Installation Screen Fix:** Prevented silent crash on Installation screen from renderType Map field in Firestore; 18 files modified with robust null-safety
+
+## 2026-06-12 (CI/CD Pipelines & Dynamic Services)
+- **GitHub Actions CI/CD:** Added 4 pipeline files for deployment and mobile builds:
+  - Main CI/CD pipeline with build and deploy stages
+  - Auto version bump on workflow_dispatch
+  - Flutter setup compatibility fixes (v1, v4 with Node24)
+  - Contents write permission for version bump push
+- **Dynamic Services:** Made services fully dynamic across admin, backend, and mobile app:
+  - Dynamic service screen replaces service placeholder
+  - Services read configuration from Firestore at runtime
+  - _meta fields properly extracted in GET /list endpoint
+  - Duplicate nav items removed and Products page simplified
+- **Mobile Build Pipeline:** Google services JSON from secrets; keystore decode for employee job
+- **API Base URL:** Updated mobile API base URL to correct asia-south1 Cloud Run service
+- **Build Bumps:** Customer v1.3.6+15, Employee v1.1.1+8→+9→+10
+- **CI Fix:** Use $HOME instead of runner.home for keystore path in CI
+
+---
+
+## Overall Progress Summary
+
+### By Application
+| Application | Status | Key Metrics |
+|-------------|--------|-------------|
+| Customer Mobile App | ✅ Active (v1.3.6) | Auth, booking, payment, profile, dynamic services |
+| Employee Mobile App | ✅ Active (v1.1.1) | Job management, invoice, map nav, notifications |
+| Admin Web Dashboard | ✅ Active | Full CRUD, service tree, CMS, user/tech/job/payment mgmt |
+| Backend API (us-central1) | ✅ Active | All core services, dual-region deployment |
+| Backend API (asia-south1) | ✅ Active | Mobile-optimized API endpoints |
+| Customer Landing Page | ✅ Active | Legal policies, WhatsApp CTA, mobile-first redesign |
+| CI/CD Pipeline | ✅ Active | GitHub Actions with automated build + deploy |
+
+### Total Development Progress
+- **Total Commits:** 155 (152 unique)
+- **Documentation Files:** 86+ across all directories
+- **Architecture Sections:** 20 comprehensive documents
+- **SRS Documents:** 5 (Index, Client, Employee, Admin, Backend)
+- **Deployed Services:** 4 (2 backend regions, 1 admin UI, 1 landing)
+- **Firestore Collections:** 12 active (admins, customers, employees, catalog_product, Services, sdui_layouts, Invoices, Banners, Bookings, Locations, Offers, Orders) + legacy
+
+### Architecture Scorecard
+| Dimension | Score (1-10) | Notes |
+|-----------|-------------|-------|
+| Scalability | 6 | Monolith; microservices proposed for future |
+| Maintainability | 7 | Good modularity, Flutter Riverpod, React TypeScript |
+| Security | 7 | Firebase Auth + JWT, Helmet, CORS |
+| Performance | 6 | In-memory filtering, no caching layer |
+| Data Architecture | 8 | Firestore with nested tree + normalized product catalog |
+| UI/UX | 8 | Premium light theme, mobile-first, SDUI pattern |
+| Deployment | 7 | Dual-region Cloud Run + Firebase Hosting + CI/CD |
+| **Overall** | **7/10** | Production-ready with identified improvement areas |
+
+---
+
+*Last Updated: 2026-06-14*
+*Author: Claude Code Assistant (Documentation Update)*
