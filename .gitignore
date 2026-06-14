@@ -160,6 +160,11 @@ token.txt
 nul
 NUL
 NUL.*
+firestore_dump.txt
+installation.json
+
+# TypeScript incremental build info
+*.tsbuildinfo
 
 # ============================================================================
 # Graphify Output (generated)

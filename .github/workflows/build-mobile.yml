@@ -215,6 +215,14 @@ jobs:
           name: employee-app
           path: artifacts/employee
 
+      - name: Prepare customer AAB
+        run: |
+          find artifacts/customer -name '*.aab' -exec cp {} artifacts/customer/app-release.aab \;
+
+      - name: Prepare employee AAB
+        run: |
+          find artifacts/employee -name '*.aab' -exec cp {} artifacts/employee/app-release.aab \;
+
       - uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
