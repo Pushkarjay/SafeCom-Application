@@ -274,10 +274,26 @@ Customer {
 - **Booking Summary:** Service name, items, estimated total
 
 ### Recommendation Screen (`recommendation_screen.dart`)
-- **Purpose:** Cross-sell/upsell at checkout
-- **Features:** Product recommendations with variant selectors
-- **Data:** `GET /api/catalog-public/recommendations`
-- **Behavior:** Added items reflected in total before payment
+- **Purpose:** Cross-sell/upsell at checkout — shows service-specific recommended add-ons
+- **Modes:**
+  1. **Tree Mode** (new, preferred): When `serviceType` parameter is provided. Fetches from `Recommendation_Addons` service tree filtered by service type.
+  2. **Legacy Mode** (fallback): When no `serviceType`, fetches from `catalog_recommendations` collection (old behavior)
+- **Tree Mode Features:**
+  - **Data:** `GET /api/catalog-public/services/recommendations/pricing?serviceType=X`
+  - Category chips row (horizontal scroll) — shows each category mapped to the current service
+  - Setup/Groups filter chips below categories
+  - Product cards with selection checkboxes and quantity controls
+  - Clubbed product groups with nested option selection
+  - "Continue with Selection" / "Skip & Continue" buttons
+  - Supports all rendering features: clubbed options, branches, nested trees
+- **Entry Points:**
+  - After scheduling a service → push to `/recommendation` with `extra: serviceTypeId`
+  - `ActiveOrderSummary.serviceTypeId` set by each service flow (installation, amc, repair, etc.)
+  - From home screen SDUI (legacy, no serviceType)
+- **Service Type IDs used for recommendation filtering:**
+  - `installation`, `maintenance`, `amc`, `repair`, `upgrade`, `accessories`
+  - Dynamic services use their safe ID
+- **Admin Setup:** Admin maps categories in `Recommendation_Addons` builder to service types using ✏️ edit → Service Mapping checkboxes
 
 ### Payment Screen (`payment_screen.dart`)
 - **Integration:** Razorpay checkout
@@ -521,7 +537,8 @@ class AppRoutes {
 | 25 | `/accessories` | `AccessoriesScreen` | No | Accessories catalog |
 | 26 | `/accessories-estimate` | `AccessoriesEstimateScreen` | No | Uses `state.extra` for entries |
 | 27 | `/scheduling` | `SchedulingScreen` | No | Date/time slot picker |
-| 28 | `/recommendation` | `RecommendationScreen` | No | Cross-sell/upsell |
+| 28 | `/recommendation` | `RecommendationScreen` | No | Cross-sell/upsell (accepts `serviceType` via extra) |
+| 28a | `/recommendation/:serviceType` | `RecommendationScreen` | No | Service-specific recommendations from tree |
 | 29 | `/payment` | `PaymentScreen` | **YES** | Razorpay checkout |
 | 30 | `/confirmation` | `BookingConfirmationScreen` | **YES** | Post-payment confirmation |
 
@@ -966,6 +983,7 @@ Serviceable? ──Yes──→ GET /api/sdui/layout?screen=home&location=
 | GET | `/api/catalog-public/accessories` | None | Accessories |
 | GET | `/api/catalog-public/products` | None | All products |
 | GET | `/api/catalog-public/recommendations` | None | Recommendations |
+| GET | `/api/catalog-public/services/:serviceId/pricing?serviceType=X` | None | Dynamic service pricing (filtered by service type) |
 
 ### SDUI
 | Method | Endpoint | Auth | Purpose |

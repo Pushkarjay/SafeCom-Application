@@ -97,6 +97,7 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
                           serviceName: state.selectedType ?? 'Maintenance',
                           packageLabel: '${state.selectedPackage} Plan',
                           estimatedTotal: state.totalAmount,
+                          serviceTypeId: 'maintenance',
                           items: state.items.map((i) => ActiveOrderLineItem(
                             name: i.name,
                             quantity: i.quantity,

@@ -115,6 +115,7 @@ class _AccessoriesEstimateScreenState extends ConsumerState<AccessoriesEstimateS
                                 serviceName: 'Accessories',
                                 packageLabel: 'Selected items',
                                 estimatedTotal: total,
+                                serviceTypeId: 'accessories',
                                 items: rows.where((r) => r.quantity > 0).map((r) => ActiveOrderLineItem(
                                   name: r.name,
                                   quantity: r.quantity,

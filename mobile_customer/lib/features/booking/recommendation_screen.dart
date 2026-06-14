@@ -7,7 +7,6 @@ import 'package:mobile_customer/data/providers/data_providers.dart';
 import 'package:mobile_customer/features/services/providers/product_selection_provider.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
-// Provider for selected accessories (simple products without variants)
 final selectedAccessoriesProvider =
     StateNotifierProvider<SelectedAccessoriesNotifier, List<String>>((ref) {
   return SelectedAccessoriesNotifier();
@@ -43,8 +42,20 @@ final recommendationProvider = FutureProvider<RecommendationCatalogResponse>((re
 });
 
 class RecommendationScreen extends ConsumerWidget {
-  const RecommendationScreen({super.key});
+  final String? serviceType;
 
+  const RecommendationScreen({super.key, this.serviceType});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (serviceType != null && serviceType!.isNotEmpty) {
+      return _RecommendationTreeScreen(serviceType: serviceType!);
+    }
+    return _LegacyRecommendationScreen();
+  }
+}
+
+class _LegacyRecommendationScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recommendations = ref.watch(recommendationProvider);
@@ -87,7 +98,6 @@ class RecommendationScreen extends ConsumerWidget {
             );
           }
 
-          // Collect all product IDs across all recommendations
           final allProductIds = <String>[];
           for (final rec in recs) {
             for (final pid in rec.productIds) {
@@ -95,7 +105,6 @@ class RecommendationScreen extends ConsumerWidget {
             }
           }
 
-          // Compute the combined list of selected product IDs (simple + complex)
           final List<String> effectiveSelectedIds = [];
           for (final id in allProductIds) {
             final productAsync = ref.watch(productDetailProvider(id));
@@ -122,7 +131,6 @@ class RecommendationScreen extends ConsumerWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Recommendation header
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
@@ -155,7 +163,6 @@ class RecommendationScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        // Products for this recommendation
                         ...rec.productIds.map((productId) {
                           final productAsync = ref.watch(productDetailProvider(productId));
                           return productAsync.when(
@@ -194,7 +201,6 @@ class RecommendationScreen extends ConsumerWidget {
                   },
                 ),
               ),
-              // Selected items summary and buttons
               _buildBottomSection(context, ref, effectiveSelectedIds),
             ],
           );
@@ -320,7 +326,7 @@ class RecommendationScreen extends ConsumerWidget {
     );
   }
 
-  bool _isProductComplete(MasterProduct product, Map<String, String> selections) {
+  static bool _isProductComplete(MasterProduct product, Map<String, String> selections) {
     for (final variant in product.variants) {
       if (variant.required && !selections.containsKey(variant.variantId)) {
         return false;
@@ -402,6 +408,416 @@ class RecommendationScreen extends ConsumerWidget {
   }
 }
 
+class _RecommendationTreeScreen extends ConsumerStatefulWidget {
+  final String serviceType;
+
+  const _RecommendationTreeScreen({required this.serviceType});
+
+  @override
+  ConsumerState<_RecommendationTreeScreen> createState() => _RecommendationTreeScreenState();
+}
+
+class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeScreen> {
+  String? _selectedCategoryId;
+  String? _selectedGroupId;
+  final Map<String, int> _quantities = {};
+  final Set<String> _selectedLeaves = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final configAsync = ref.watch(serviceRecommendationsProvider(widget.serviceType));
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Recommended Add-ons'),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        actions: [
+          TextButton(
+            onPressed: () => context.push(AppRoutes.payment),
+            child: const Text('Skip'),
+          ),
+        ],
+      ),
+      body: configAsync.when(
+        data: (config) {
+          if (config == null || config.categories.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'No recommendations available for this service.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            );
+          }
+
+          // Auto-select first category and first group if nothing selected
+          if (_selectedCategoryId == null) {
+            _selectedCategoryId = config.categories.first.id;
+            if (config.categories.first.groups.isNotEmpty) {
+              _selectedGroupId = config.categories.first.groups.first.id;
+            }
+          }
+
+          final selectedCat = config.categories.cast<InstallationCategory?>().firstWhere(
+            (c) => c?.id == _selectedCategoryId,
+            orElse: () => null,
+          );
+
+          return Column(
+            children: [
+              // Category chips
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: config.categories.map((cat) {
+                      final isSelected = cat.id == _selectedCategoryId;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(cat.name, style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          )),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _selectedCategoryId = cat.id;
+                                _selectedGroupId = cat.groups.isNotEmpty ? cat.groups.first.id : null;
+                              });
+                            }
+                          },
+                          selectedColor: AppColors.secondaryLight,
+                          backgroundColor: AppColors.surfaceVariant,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              if (selectedCat != null && selectedCat.groups.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: selectedCat.groups.map((group) {
+                        final isSelected = group.id == _selectedGroupId;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: FilterChip(
+                            label: Text(group.name, style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                            )),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) setState(() => _selectedGroupId = group.id);
+                            },
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+              Expanded(
+                child: selectedCat != null ? _buildCategoryContent(selectedCat) : const SizedBox.shrink(),
+              ),
+              _buildTreeBottomSection(),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('Failed to load recommendations: $error'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryContent(InstallationCategory category) {
+    if (category.groups.isEmpty) {
+      return const Center(child: Text('No setups in this category'));
+    }
+
+    if (_selectedGroupId == null || !category.groups.any((g) => g.id == _selectedGroupId)) {
+      return const SizedBox.shrink();
+    }
+
+    final group = category.groups.firstWhere((g) => g.id == _selectedGroupId);
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      children: group.mappedProducts.map((product) {
+        return _buildProductCard(product);
+      }).toList(),
+    );
+  }
+
+  Widget _buildProductCard(MappedProduct mappedProduct) {
+    final productKey = mappedProduct.productKey;
+    final defaultQty = mappedProduct.defaultQty;
+    final currentQty = _quantities[productKey] ?? defaultQty;
+    final isSelected = _selectedLeaves.contains(productKey);
+
+    if (mappedProduct.isClubbed && mappedProduct.clubbedOptions.isNotEmpty) {
+      return _buildClubbedProductCard(mappedProduct);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.secondaryLight : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? AppColors.secondary : AppColors.border,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: isSelected,
+                onChanged: (val) {
+                  setState(() {
+                    val == true
+                        ? _selectedLeaves.add(productKey)
+                        : _selectedLeaves.remove(productKey);
+                  });
+                },
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      mappedProduct.product.productName,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                    if (mappedProduct.product.description.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        mappedProduct.product.description,
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Text(
+                '₹${mappedProduct.product.basePrice.toStringAsFixed(0)}',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+            ],
+          ),
+          if (isSelected && currentQty > 0 && mappedProduct.minQty != mappedProduct.maxQty)
+            Padding(
+              padding: const EdgeInsets.only(left: 44, top: 8),
+              child: Row(
+                children: [
+                  const Text('Qty: ', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  _buildQtyControl(productKey, currentQty, mappedProduct.minQty, mappedProduct.maxQty),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClubbedProductCard(MappedProduct mappedProduct) {
+    final productKey = mappedProduct.productKey;
+    final firstLeaf = _findFirstLeaf(mappedProduct.clubbedOptions);
+    final isSelected = _selectedLeaves.contains(productKey);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.secondaryLight : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? AppColors.secondary : AppColors.border,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Checkbox(
+                value: isSelected,
+                onChanged: (val) {
+                  setState(() {
+                    val == true
+                        ? _selectedLeaves.add(productKey)
+                        : _selectedLeaves.remove(productKey);
+                  });
+                },
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  mappedProduct.displayLabel ?? mappedProduct.product.productName,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ),
+              if (firstLeaf != null)
+                Text(
+                  '₹${firstLeaf.price.toStringAsFixed(0)}',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+            ],
+          ),
+          if (isSelected && mappedProduct.clubbedOptions.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...mappedProduct.clubbedOptions.map((opt) {
+              return _buildClubbedOptionTile(opt, productKey, 0);
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClubbedOptionTile(ClubbedOption option, String parentProductKey, int depth) {
+    if (option.isLeaf) {
+      final isOptSelected = _selectedLeaves.contains('${parentProductKey}__${option.optionKey}');
+      return Padding(
+        padding: EdgeInsets.only(left: 16.0 * depth, bottom: 4),
+        child: Row(
+          children: [
+            Checkbox(
+              value: isOptSelected,
+              onChanged: (val) {
+                setState(() {
+                  val == true
+                      ? _selectedLeaves.add('${parentProductKey}__${option.optionKey}')
+                      : _selectedLeaves.remove('${parentProductKey}__${option.optionKey}');
+                });
+              },
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              visualDensity: VisualDensity.compact,
+            ),
+            const SizedBox(width: 4),
+            Expanded(child: Text(option.label, style: const TextStyle(fontSize: 13))),
+            Text('₹${option.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 16.0 * depth, top: 4, bottom: 2),
+          child: Text(option.label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondary)),
+        ),
+        ...option.children.map((child) => _buildClubbedOptionTile(child, parentProductKey, depth + 1)),
+      ],
+    );
+  }
+
+  Widget _buildQtyControl(String key, int currentQty, int minQty, int maxQty) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _qtyButton(Icons.remove, currentQty > minQty ? () {
+          setState(() => _quantities[key] = currentQty - 1);
+        } : null),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text('$currentQty', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+        ),
+        _qtyButton(Icons.add, currentQty < maxQty ? () {
+          setState(() => _quantities[key] = currentQty + 1);
+        } : null),
+      ],
+    );
+  }
+
+  Widget _qtyButton(IconData icon, VoidCallback? onPressed) {
+    return SizedBox(
+      width: 28, height: 28,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Icon(icon, size: 16),
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          backgroundColor: AppColors.surfaceVariant,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTreeBottomSection() {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FilledButton(
+              onPressed: _selectedLeaves.isNotEmpty ? () => context.push(AppRoutes.payment) : null,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('Continue with Selection'),
+              ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: () => context.push(AppRoutes.payment),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('Skip & Continue'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  ClubbedOption? _findFirstLeaf(List<ClubbedOption> options) {
+    for (final opt in options) {
+      if (opt.isLeaf) return opt;
+      final child = _findFirstLeaf(opt.children);
+      if (child != null) return child;
+    }
+    return null;
+  }
+}
+
 class _ProductVariantSelectorSheet extends ConsumerStatefulWidget {
   final MasterProduct product;
   const _ProductVariantSelectorSheet({required this.product});
@@ -419,7 +835,6 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
     final selections = productSelections[productId]?.variantSelections ?? {};
     final variants = product.variants;
 
-    // Determine current variant index: first variant with no selection
     int currentIndex = -1;
     for (int i = 0; i < variants.length; i++) {
       final v = variants[i];
@@ -437,7 +852,6 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
       ),
       child: Column(
         children: [
-          // Drag handle
           Container(
             margin: const EdgeInsets.symmetric(vertical: 12),
             width: 40,
@@ -447,7 +861,6 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          // Breadcrumb trail
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -473,7 +886,6 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
             ),
           ),
           const Divider(height: 1),
-          // Content
           Expanded(
             child: currentIndex == -1
                 ? _buildCompletionView(context, product, selections)
@@ -508,7 +920,6 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
                 onChanged: (val) {
                   if (val != null) {
                     ref.read(productSelectionProvider.notifier).selectOption(product.id, variant.variantId, val);
-                    // Also update the selectedAccessoriesProvider to reflect completion status
                     final updatedSelections = ref.read(productSelectionProvider)[product.id]?.variantSelections ?? {};
                     final isNowComplete = _isProductComplete(product, updatedSelections);
                     ref.read(selectedAccessoriesProvider.notifier).setSelected(product.id, isNowComplete);
@@ -544,7 +955,6 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
           const SizedBox(height: 32),
           FilledButton(
             onPressed: () {
-              // Ensure selection is marked (should already be true)
               ref.read(selectedAccessoriesProvider.notifier).setSelected(product.id, true);
               Navigator.pop(context);
             },

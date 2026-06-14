@@ -24,9 +24,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - uses: google-github-actions/setup-gcloud@v2
+
       - name: Deploy to Firebase Hosting
-        run: |
-          SA_EMAIL=$(gcloud auth list --filter=status:ACTIVE --format='value(account)')
-          echo "Authenticated as: $SA_EMAIL"
-          echo "Deploying site: ${{ env.HOSTING_SITE }}"
-          npx firebase-tools@13 deploy --only hosting:${{ env.HOSTING_SITE }} --project ${{ env.PROJECT_ID }}
+        run: npx firebase-tools@13 deploy --only hosting:${{ env.HOSTING_SITE }} --project ${{ env.PROJECT_ID }}

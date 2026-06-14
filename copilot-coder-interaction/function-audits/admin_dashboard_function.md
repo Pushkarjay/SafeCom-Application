@@ -968,6 +968,36 @@ Cable: { min q: -2, default q: 0 }
 | PATCH | `/api/catalog/services/:id` | Admin | Update service |
 | DELETE | `/api/catalog/services/:id` | Admin | Delete service |
 
+### Recommendation_Addons Service Mapping (NEW)
+| Feature | Description |
+|---------|-------------|
+| Purpose | Categories in `Recommendation_Addons` can be mapped to specific services |
+| Mechanism | Each category has a `_serviceMapping` field (array of service IDs) |
+| Admin UI | Click ✏️ on any category → Service Mapping checkboxes → select from existing services |
+| Backend | `GET /api/catalog-public/services/:serviceId/pricing?serviceType=X` filters categories by `_serviceMapping` |
+| Customer Effect | After booking a service, customer sees only recommendations whose category maps to that service |
+| Storage | `Services/Recommendation_Addons/{categoryKey}/_serviceMapping` → e.g., `["installation", "amc"]` |
+
+**Admin setup instructions:**
+1. Go to `Catalog → Services → Service Builder`
+2. Select the `Recommendation_Addons` service (or navigate to `/catalog/builder/Recommendation_Addons`)
+3. Create categories matching your recommendation contexts (e.g., "Recommendation after Installation", "Recommendation after AMC")
+4. Click the ✏️ icon on a category to open the Edit Category modal
+5. In the "Service Mapping" section, check the service(s) this category applies to
+6. Click "Save Mapping"
+7. Each category can map to one or more services (or none = shows in all contexts)
+8. Add setups and products under each category as before
+
+**Important:** The service type IDs used for mapping match the `displayMap` in `catalogService.ts`:
+- `installation` → Installation service
+- `maintenance` → Maintenance service  
+- `amc` → AMC Plans
+- `repair` → Camera Repair
+- `upgrade` → System Upgrade
+- `accessories` → Accessories
+
+For dynamically created services, their safe ID (lowercase, underscores) is used.
+
 ### Catalog Recommendations
 | Method | Endpoint | Auth | Purpose |
 |--------|----------|------|---------|
@@ -1050,6 +1080,7 @@ Cable: { min q: -2, default q: 0 }
 | GET | `/api/catalog-public/accessories` | None | Accessories |
 | GET | `/api/catalog-public/products` | None | All products |
 | GET | `/api/catalog-public/recommendations` | None | Recommendations |
+| GET | `/api/catalog-public/services/:serviceId/pricing?serviceType=X` | None | Dynamic service pricing filtered by service type |
 
 ### SDUI Public
 | Method | Endpoint | Auth | Purpose |

@@ -127,6 +127,7 @@ class _UpgradeEstimateScreenState extends ConsumerState<UpgradeEstimateScreen> {
                           serviceName: 'System Upgrade',
                           packageLabel: widget.bundle.name,
                           estimatedTotal: total,
+                          serviceTypeId: 'upgrade',
                           items: [
                             ActiveOrderLineItem(name: 'Upgrade Bundle', quantity: 1, unitPrice: baseAmount),
                             if (installationQty > 0) ActiveOrderLineItem(name: 'Installation Support', quantity: installationQty, unitPrice: 499),

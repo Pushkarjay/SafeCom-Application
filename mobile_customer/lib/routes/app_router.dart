@@ -232,6 +232,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final serviceType = state.extra as String?;
           return RecommendationScreen(serviceType: serviceType);
         },
+        routes: [
+          GoRoute(
+            path: ':serviceType',
+            builder: (context, state) {
+              final serviceType = state.pathParameters['serviceType'] ?? '';
+              return RecommendationScreen(serviceType: serviceType);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.payment,
