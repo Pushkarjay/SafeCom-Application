@@ -7,5 +7,8 @@ void main() {
   testWidgets('App renders without errors', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: SafeComEmployeeApp()));
     await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(SafeComEmployeeApp), findsOneWidget);
   });
 }
