@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
-import 'package:mobile_customer/data/providers/cart_provider.dart' as data_cart;
+import 'package:mobile_customer/data/providers/cart_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 
@@ -12,7 +12,7 @@ class CartScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cartState = ref.watch(data_cart.cartProvider);
+    final cartState = ref.watch(cartProvider);
     final cartItems = cartState.items;
     final totalAmount = cartState.subtotal;
     final itemCount = cartState.totalItems;

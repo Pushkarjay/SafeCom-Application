@@ -252,7 +252,7 @@ class RecommendationScreen extends ConsumerWidget {
 
   Widget _buildComplexProductCard(BuildContext context, WidgetRef ref, MasterProduct product, Map<String, String> selections, bool isComplete) {
     final selectedSummary = selections.entries.map((e) {
-      final variant = product.variants!.firstWhere((v) => v.variantId == e.key);
+      final variant = product.variants.firstWhere((v) => v.variantId == e.key);
       return '${variant.name}: ${e.value}';
     }).join(', ');
 
