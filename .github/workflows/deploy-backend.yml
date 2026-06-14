@@ -89,7 +89,8 @@ jobs:
             --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ needs.build-and-push.outputs.image_tag }} \
             --region ${{ env.REGION_1 }} \
             --allow-unauthenticated \
-            --project ${{ env.PROJECT_ID }}
+            --project ${{ env.PROJECT_ID }} \
+            --update-env-vars=^~^NODE_ENV=${{ secrets.NODE_ENV }}~RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }}~RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}~FIRESTORE_DB_ID=${{ secrets.FIRESTORE_DB_ID }}~CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}~JWT_SECRET=${{ secrets.JWT_SECRET }}
 
   deploy-asia-south1:
     name: Deploy to asia-south1
@@ -114,4 +115,5 @@ jobs:
             --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ needs.build-and-push.outputs.image_tag }} \
             --region ${{ env.REGION_2 }} \
             --allow-unauthenticated \
-            --project ${{ env.PROJECT_ID }}
+            --project ${{ env.PROJECT_ID }} \
+            --update-env-vars=^~^NODE_ENV=${{ secrets.NODE_ENV }}~RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }}~RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}~FIRESTORE_DB_ID=${{ secrets.FIRESTORE_DB_ID }}~CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}~JWT_SECRET=${{ secrets.JWT_SECRET }}
