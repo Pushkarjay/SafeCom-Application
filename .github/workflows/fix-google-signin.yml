@@ -1,5 +1,6 @@
-name: Fix Google Sign-In SHA-1
-on: workflow_dispatch
+name: Fix Google Sign-In
+on:
+  workflow_dispatch:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
