@@ -1,0 +1,43 @@
+name: Fix Google Sign-In SHA-1
+on: workflow_dispatch
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+jobs:
+  add-sha:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.SAFECOM_KEYSTORE }}" | base64 -d > safecom-keystore.jks
+      - name: Get SHA-1
+        id: sha
+        run: |
+          SHA1=$(keytool -list -v -keystore safecom-keystore.jks -storepass "${{ secrets.SAFECOM_KEYSTORE_PASSWORD }}" 2>/dev/null | grep "SHA1:" | awk '{print $2}')
+          echo "sha1=$SHA1" >> "$GITHUB_OUTPUT"
+          echo "Release SHA1: $SHA1"
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Add SHA-1 to Firebase
+        run: |
+          SHA1="${{ steps.sha.outputs.sha1 }}"
+          TOKEN=$(gcloud auth print-access-token)
+          HEADERS="Authorization: Bearer $TOKEN"
+          CUSTOMER_APP="1:177425757120:android:4e14b54b69af9c6a2d0e25"
+          EMPLOYEE_APP="1:177425757120:android:9a0967ab3c873ca32d0e25"
+          for APP in "$CUSTOMER_APP" "$EMPLOYEE_APP"; do
+            echo "Adding SHA-1 $SHA1 to $APP"
+            curl -s -X POST -H "$HEADERS" -H "Content-Type: application/json" \
+              "https://firebase.googleapis.com/v1beta1/projects/safecom-application-01/androidApps/$APP/sha" \
+              -d "{\"shaHash\": \"$SHA1\", \"certType\": \"SHA1\"}"
+          done
+      - name: Cleanup
+        if: always()
+        run: rm -f safecom-keystore.jks
