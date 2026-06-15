@@ -1,5 +1,8 @@
 name: Add Play Signing SHA1
-on: [workflow_dispatch]
+on:
+  push:
+    paths:
+      - '.github/workflows/play-signing-fix.yml'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
