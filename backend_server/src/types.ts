@@ -265,6 +265,7 @@ export interface SavedAddress {
   id: string;
   label: string;         // e.g. "Home", "Office", "Other"
   address: string;       // Full address string
+  pincode?: string;      // Optional pincode/zip
   latitude: number;
   longitude: number;
   isDefault: boolean;

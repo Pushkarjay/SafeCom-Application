@@ -7,6 +7,7 @@ import { SavedAddress } from '../types.js'
 const addressSchema = z.object({
   label: z.string().min(1, 'Label is required'),
   address: z.string().min(1, 'Address is required'),
+  pincode: z.string().optional(),
   latitude: z.number(),
   longitude: z.number(),
   isDefault: z.boolean().optional().default(false),
@@ -54,6 +55,7 @@ addressesRouter.post('/:customerId/addresses', verifyFirebaseIdToken, async (req
       id: `addr_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       label: parsed.data.label,
       address: parsed.data.address,
+      pincode: parsed.data.pincode,
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
       isDefault: parsed.data.isDefault || addresses.length === 0,

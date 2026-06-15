@@ -6,17 +6,59 @@ import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
+import 'package:mobile_customer/features/profile/models/saved_address.dart';
+import 'package:mobile_customer/features/profile/providers/address_provider.dart';
+import 'package:mobile_customer/features/profile/screens/address_form_screen.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
-class SchedulingScreen extends ConsumerWidget {
+class SchedulingScreen extends ConsumerStatefulWidget {
   const SchedulingScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SchedulingScreen> createState() => _SchedulingScreenState();
+}
+
+class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initAddresses());
+  }
+
+  void _initAddresses() {
+    final customer = ref.read(authProvider).customer;
+    final cid = customer?.id;
+    if (cid != null) {
+      ref.read(addressProvider.notifier).loadAddresses(cid).then((_) {
+        final state = ref.read(addressProvider);
+        final defaultAddr = state.defaultAddress;
+        if (defaultAddr != null) {
+          ref.read(bookingFlowProvider.notifier).selectAddress(defaultAddr);
+        }
+      });
+    }
+  }
+
+  void _openAddAddress() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddressFormScreen()),
+    ).then((_) {
+      final customer = ref.read(authProvider).customer;
+      final cid = customer?.id;
+      if (cid != null) {
+        ref.read(addressProvider.notifier).loadAddresses(cid);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final booking = ref.watch(bookingFlowProvider);
     final activeOrder = ref.watch(activeOrderProvider);
     final authState = ref.watch(authProvider);
     final locationState = ref.watch(locationProvider);
+    final addressState = ref.watch(addressProvider);
     final notifier = ref.read(bookingFlowProvider.notifier);
 
     final dateOptions = List.generate(
@@ -33,9 +75,9 @@ class SchedulingScreen extends ConsumerWidget {
     ];
 
     void handleContinue() {
-      if (locationState.location == 'Fetching location...' || locationState.location.isEmpty || locationState.latitude == null) {
+      if (booking.selectedAddress == null) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(content: Text('Please set your delivery location first.'), behavior: SnackBarBehavior.floating),
+          const SnackBar(content: Text('Please select a service address.'), behavior: SnackBarBehavior.floating),
         );
         return;
       }
@@ -157,6 +199,83 @@ class SchedulingScreen extends ConsumerWidget {
                 ],
               ),
             ),
+          Container(
+            margin: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderLight),
+              boxShadow: [
+                BoxShadow(color: AppColors.shadowLight, blurRadius: 8, offset: const Offset(0, 2)),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_rounded, size: 18, color: AppColors.secondary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Service Address',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                    ),
+                    const Spacer(),
+                    if (authState.isAuthenticated)
+                      TextButton.icon(
+                        onPressed: _openAddAddress,
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('Add', style: TextStyle(fontSize: 12)),
+                        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (!authState.isAuthenticated)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.warningLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: AppColors.warning),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Sign in to manage your addresses',
+                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (addressState.isLoading)
+                  const Center(child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ))
+                else if (addressState.addresses.isEmpty)
+                  _buildEmptyAddress()
+                else
+                  ...addressState.addresses.map((addr) => _buildAddressTile(addr, booking)),
+                if (addressState.addresses.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _openAddAddress,
+                        icon: const Icon(Icons.add_location_alt_outlined, size: 16),
+                        label: const Text('Add New Address'),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           const Text(
             'Select Date',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary),
@@ -293,6 +412,108 @@ class SchedulingScreen extends ConsumerWidget {
               onPressed: handleContinue,
               child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyAddress() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight, style: BorderStyle.solid),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.location_off_rounded, size: 32, color: AppColors.textMuted.withOpacity(0.5)),
+          const SizedBox(height: 8),
+          const Text(
+            'No saved addresses',
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _openAddAddress,
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: const Text('Add Address'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressTile(SavedAddress addr, BookingFlowState booking) {
+    final isSelected = booking.selectedAddress?.id == addr.id;
+    final isDefault = addr.isDefault;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => ref.read(bookingFlowProvider.notifier).selectAddress(addr),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.secondaryLight : AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? AppColors.secondary : AppColors.borderLight,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 20, height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? AppColors.secondary : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected ? AppColors.secondary : AppColors.border,
+                    width: isSelected ? 5 : 2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          addr.label,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
+                        ),
+                        if (isDefault) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'DEFAULT',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.secondary, letterSpacing: 0.3),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      addr.address,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

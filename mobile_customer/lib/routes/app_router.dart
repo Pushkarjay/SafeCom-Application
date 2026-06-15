@@ -20,6 +20,7 @@ import 'package:mobile_customer/features/location/location_picker_screen.dart';
 import 'package:mobile_customer/features/auth/screens/login_screen.dart';
 import 'package:mobile_customer/features/auth/screens/phone_auth_screen.dart';
 import 'package:mobile_customer/features/auth/screens/phone_collection_screen.dart';
+import 'package:mobile_customer/features/profile/models/saved_address.dart';
 import 'package:mobile_customer/features/profile/screens/profile_screen.dart';
 import 'package:mobile_customer/features/profile/screens/order_history_screen.dart';
 import 'package:mobile_customer/features/profile/screens/booking_detail_screen.dart';
@@ -139,7 +140,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.addressForm,
         builder: (context, state) {
-          final address = state.extra;
+          final address = state.extra as SavedAddress?;
           return AddressFormScreen(existingAddress: address);
         },
       ),

@@ -259,11 +259,10 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAddresses(String customerId) async {
+  Future<Map<String, dynamic>> getAddresses(String customerId) async {
     try {
       final response = await _dio.get('/customers/$customerId/addresses');
-      return (response.data['data'] as List<dynamic>?)
-              ?.cast<Map<String, dynamic>>() ?? [];
+      return response.data['data'] as Map<String, dynamic>? ?? {};
     } catch (e) {
       throw Exception('Failed to fetch addresses: $e');
     }
@@ -280,7 +279,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> updateAddress(String customerId, String addressId, Map<String, dynamic> address) async {
     try {
-      final response = await _dio.put('/customers/$customerId/addresses/$addressId', data: address);
+      final response = await _dio.patch('/customers/$customerId/addresses/$addressId', data: address);
       return response.data as Map<String, dynamic>;
     } catch (e) {
       throw Exception('Failed to update address: $e');
