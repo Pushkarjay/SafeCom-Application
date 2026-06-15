@@ -8,7 +8,6 @@ import 'package:mobile_customer/features/booking/providers/active_order_provider
 
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
-import 'package:mobile_customer/features/home/widgets/location_header.dart';
 import 'package:mobile_customer/features/services/providers/dynamic_service_provider.dart';
 import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';

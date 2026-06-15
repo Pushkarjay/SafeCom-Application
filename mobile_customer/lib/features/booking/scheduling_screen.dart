@@ -5,7 +5,6 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
-import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/profile/models/saved_address.dart';
 import 'package:mobile_customer/features/profile/providers/address_provider.dart';
 import 'package:mobile_customer/features/profile/screens/address_form_screen.dart';
@@ -57,7 +56,6 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
     final booking = ref.watch(bookingFlowProvider);
     final activeOrder = ref.watch(activeOrderProvider);
     final authState = ref.watch(authProvider);
-    final locationState = ref.watch(locationProvider);
     final addressState = ref.watch(addressProvider);
     final notifier = ref.read(bookingFlowProvider.notifier);
 
