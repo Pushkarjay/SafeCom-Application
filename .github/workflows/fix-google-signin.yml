@@ -22,20 +22,40 @@ jobs:
         run: |
           SHA1=$(keytool -list -v -keystore safecom-keystore.jks -storepass "${{ secrets.SAFECOM_KEYSTORE_PASSWORD }}" 2>/dev/null | grep "SHA1:" | awk '{print $2}')
           echo "sha1=$SHA1" >> "$GITHUB_OUTPUT"
-          echo "Upload keystore SHA1: $SHA1"
+          echo "UPLOAD_SHA1=$SHA1"
 
-      - name: Get Play App Signing SHA-1 from Play Console
+      - name: Get Play App Signing SHA-1
         id: playsigning
         env:
           PLAY_SA: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
         run: |
           echo "$PLAY_SA" > play-sa.json
-          TOKEN=$(gcloud auth activate-service-account --key-file=play-sa.json 2>/dev/null && gcloud auth print-access-token)
+          echo "Activating Play Store SA..."
+          gcloud auth activate-service-account --key-file=play-sa.json 2>&1
+          TOKEN=$(gcloud auth print-access-token)
           for PACKAGE in "com.safecom.customer" "com.safecom.employee"; do
             echo "=== $PACKAGE ==="
-            RESP=$(curl -s -H "Authorization: Bearer $TOKEN" \
-              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE/edits")
-            echo "App edit response: $RESP"
+            curl -s -H "Authorization: Bearer $TOKEN" \
+              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE"
+            echo ""
+            # Try getting the edit-based signing info
+            EDIT=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE/edits" \
+              -H "Content-Type: application/json" -d '{}')
+            EDIT_ID=$(echo "$EDIT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+            echo "Edit ID: $EDIT_ID"
+            if [ -n "$EDIT_ID" ]; then
+              curl -s -H "Authorization: Bearer $TOKEN" \
+                "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE/edits/$EDIT_ID/bundles"
+              echo ""
+              curl -s -H "Authorization: Bearer $TOKEN" \
+                "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE/edits/$EDIT_ID/apks"
+              echo ""
+              # Delete the empty edit
+              curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
+                "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE/edits/$EDIT_ID"
+              echo ""
+            fi
           done
 
       - id: auth
@@ -43,23 +63,26 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Add all SHA-1s to Firebase
+      - name: Add upload SHA-1 to Firebase
         run: |
-          UPLOAD_SHA1="${{ steps.sha.outputs.sha1 }}"
+          SHA1="${{ steps.sha.outputs.sha1 }}"
           TOKEN=$(gcloud auth print-access-token)
-          HEADERS="Authorization: Bearer $TOKEN"
           CUSTOMER_APP="1:177425757120:android:4e14b54b69af9c6a2d0e25"
           EMPLOYEE_APP="1:177425757120:android:9a0967ab3c873ca32d0e25"
-
           for APP in "$CUSTOMER_APP" "$EMPLOYEE_APP"; do
-            echo "Adding upload key SHA-1 $UPLOAD_SHA1 to $APP"
-            RESP=$(curl -s -w "\n%{http_code}" -X POST -H "$HEADERS" -H "Content-Type: application/json" \
+            echo "Adding $SHA1 to $APP..."
+            RESP=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
               "https://firebase.googleapis.com/v1beta1/projects/safecom-application-01/androidApps/$APP/sha" \
-              -d "{\"shaHash\": \"$UPLOAD_SHA1\", \"certType\": \"SHA1\"}")
-            BODY=$(echo "$RESP" | head -n -1)
-            CODE=$(echo "$RESP" | tail -1)
-            echo "HTTP $CODE: $BODY"
+              -d "{\"shaHash\": \"$SHA1\", \"certType\": \"SHA1\"}")
+            echo "$RESP"
           done
+
+      - name: List final Firebase SHA-1s
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          curl -s -H "Authorization: Bearer $TOKEN" \
+            "https://firebase.googleapis.com/v1beta1/projects/safecom-application-01/androidApps" | python3 -m json.tool
 
       - name: Cleanup
         if: always()
