@@ -22,14 +22,16 @@ async function main() {
   console.log(`Edit ID: ${editId}`);
 
   // 2. Get current app details
+  let details;
   try {
-    const details = await androidPublisher.edits.details.get({ packageName, editId });
+    details = await androidPublisher.edits.details.get({ packageName, editId });
     console.log('Current details:', JSON.stringify(details.data, null, 2));
   } catch (e) {
     console.log('No details set yet:', e.message);
   }
 
-  // 3. Get/update store listing
+  // 3. Update store listing in default language (en-GB) and en-US
+  const defaultLang = (details?.data?.defaultLanguage) || 'en-GB';
   const title = process.env.APP_TITLE || 'SafeCom Employee';
   const shortDesc = process.env.SHORT_DESC || 'Job management for SafeCom service technicians';
   const fullDesc = process.env.FULL_DESC || [
@@ -44,48 +46,19 @@ async function main() {
     '• Real-time job updates and notifications',
   ].join('\n');
 
-  console.log(`Updating listing for en-US...`);
-  await androidPublisher.edits.listings.update({
-    packageName,
-    editId,
-    language: 'en-US',
-    requestBody: {
-      title,
-      shortDescription: shortDesc,
-      fullDescription: fullDesc,
-    },
-  });
-  console.log('Listing updated.');
+  const listingBody = { title, shortDescription: shortDesc, fullDescription: fullDesc };
 
-  // 4. Set privacy policy if provided
-  const privacyPolicy = process.env.PRIVACY_POLICY_URL;
-  if (privacyPolicy) {
-    console.log('Setting privacy policy...');
-    await androidPublisher.edits.details.update({
-      packageName,
-      editId,
-      requestBody: {
-        contactEmail: process.env.CONTACT_EMAIL || 'support@safecom.in',
-        contactPhone: process.env.CONTACT_PHONE || '',
-        contactWebsite: process.env.CONTACT_WEBSITE || 'https://safecom.in',
-        defaultLanguage: 'en-US',
-        usesShortCode: false,
-        usesAudio: false,
-        usesCamera: false,
-        usesLocation: true,
-        usesNfc: false,
-        usesSms: false,
-        usesVr: false,
-        usesMultiscreen: false,
-        isGame: false,
-        isAdsEnabled: false,
-        privacyPolicy,
-      },
-    });
-    console.log('Privacy policy set.');
+  for (const lang of [defaultLang, ...(defaultLang !== 'en-US' ? ['en-US'] : [])]) {
+    try {
+      console.log(`Updating listing for ${lang}...`);
+      await androidPublisher.edits.listings.update({ packageName, editId, language: lang, requestBody: listingBody });
+      console.log(`${lang} listing updated.`);
+    } catch (e) {
+      console.log(`Skipping ${lang}: ${e.message}`);
+    }
   }
 
-  // 5. Commit the edit
+  // 4. Commit the edit
   console.log('Committing edit...');
   await androidPublisher.edits.commit({ packageName, editId });
   console.log('Edit committed successfully!');
