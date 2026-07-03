@@ -1,0 +1,52 @@
+name: Setup Play Store Listing
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which app to update
+        type: choice
+        default: employee
+        options: [customer, employee]
+      title:
+        description: App title (leave blank for default)
+        type: string
+        required: false
+      short_description:
+        description: Short description (80 chars max)
+        type: string
+        required: false
+      full_description:
+        description: Full description
+        type: string
+        required: false
+      privacy_policy_url:
+        description: Privacy policy URL
+        type: string
+        required: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  setup-listing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install googleapis
+        run: npm install googleapis
+
+      - name: Update Play Store listing
+        run: node scripts/setup-play-listing.js
+        env:
+          SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
+          APP: ${{ inputs.app }}
+          APP_TITLE: ${{ inputs.title }}
+          SHORT_DESC: ${{ inputs.short_description }}
+          FULL_DESC: ${{ inputs.full_description }}
+          PRIVACY_POLICY_URL: ${{ inputs.privacy_policy_url }}
