@@ -5,6 +5,7 @@ final homeServicesProvider = FutureProvider<List<HomeServiceItem>>((ref) async {
   final repository = ref.watch(serviceCatalogRepositoryProvider);
   final services = await repository.getCustomerServices();
   return services
+      .where((item) => item.enabled)
       .map(
         (item) => HomeServiceItem(
           id: item.id,

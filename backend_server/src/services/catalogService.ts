@@ -265,12 +265,14 @@ export const getServices = async (req: Request, res: Response) => {
       if (display) {
         const data = doc.data() || {};
         const meta = data._meta as Record<string, unknown> | undefined;
+        const enabled = meta?.enabled as boolean ?? true;
+        if (!enabled) continue;
         // Use _meta overrides if available, otherwise use hardcoded defaults
         services.push({
           id: display.id,
           title: (meta?.title as string) || display.title,
           icon: (meta?.icon as string) || display.icon,
-          enabled: meta?.enabled as boolean ?? true,
+          enabled,
         });
         seenIds.add(doc.id.toLowerCase());
       }
@@ -283,9 +285,11 @@ export const getServices = async (req: Request, res: Response) => {
       
       if (!meta || seenIds.has(doc.id.toLowerCase())) continue;
       
+      const enabled = meta.enabled as boolean ?? true;
+      if (!enabled) continue;
+
       const title = (meta.title as string) || doc.id;
       const icon = (meta.icon as string) || '🔧';
-      const enabled = meta.enabled as boolean ?? true;
       const safeId = doc.id
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '_')
