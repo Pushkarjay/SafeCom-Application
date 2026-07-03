@@ -37,6 +37,20 @@ class ActiveOrderNotifier extends StateNotifier<ActiveOrderSummary?> {
     state = summary;
   }
 
+  void addItems(List<ActiveOrderLineItem> additionalItems) {
+    if (state == null) return;
+    final currentItems = List<ActiveOrderLineItem>.from(state!.items);
+    currentItems.addAll(additionalItems);
+    final additionalTotal = additionalItems.fold<double>(0, (sum, item) => sum + item.amount);
+    state = ActiveOrderSummary(
+      serviceName: state!.serviceName,
+      packageLabel: state!.packageLabel,
+      estimatedTotal: state!.estimatedTotal + additionalTotal,
+      items: currentItems,
+      serviceTypeId: state!.serviceTypeId,
+    );
+  }
+
   void clear() {
     state = null;
   }

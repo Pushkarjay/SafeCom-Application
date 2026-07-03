@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/data_providers.dart';
+import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/services/providers/product_selection_provider.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
@@ -384,7 +385,27 @@ class _LegacyRecommendationScreen extends ConsumerWidget {
             const SizedBox(height: 12),
           ],
           FilledButton(
-            onPressed: effectiveSelectedIds.isNotEmpty ? () => context.push(AppRoutes.payment) : null,
+            onPressed: effectiveSelectedIds.isNotEmpty
+                ? () async {
+                    final newItems = <ActiveOrderLineItem>[];
+                    for (final id in effectiveSelectedIds) {
+                      try {
+                        final product = await ref.read(productDetailProvider(id).future);
+                        if (product != null) {
+                          newItems.add(ActiveOrderLineItem(
+                            name: product.productName,
+                            quantity: 1,
+                            unitPrice: product.basePrice,
+                          ));
+                        }
+                      } catch (_) {}
+                    }
+                    if (newItems.isNotEmpty) {
+                      ref.read(activeOrderProvider.notifier).addItems(newItems);
+                    }
+                    if (context.mounted) context.push(AppRoutes.payment);
+                  }
+                : null,
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text('Continue with Selection'),
@@ -422,6 +443,7 @@ class _RecommendationTreeScreen extends ConsumerStatefulWidget {
 class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeScreen> {
   final Set<String> _selectedProductKeys = {};
   final Map<String, int> _quantities = {};
+  List<_DisplayItem> _flatItems = [];
 
   @override
   Widget build(BuildContext context) {
@@ -457,7 +479,8 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
             );
           }
 
-          final flatItems = <_DisplayItem>[];
+          _flatItems = <_DisplayItem>[];
+          final flatItems = _flatItems;
           for (final cat in config.categories) {
             final groups = widget.serviceName != null
                 ? _bestMatchingGroups(cat.groups, widget.serviceName!)
@@ -687,7 +710,25 @@ class _RecommendationTreeScreenState extends ConsumerState<_RecommendationTreeSc
           mainAxisSize: MainAxisSize.min,
           children: [
             FilledButton(
-              onPressed: _selectedProductKeys.isNotEmpty ? () => context.push(AppRoutes.payment) : null,
+              onPressed: _selectedProductKeys.isNotEmpty
+                  ? () {
+                      final newItems = <ActiveOrderLineItem>[];
+                      for (final key in _selectedProductKeys) {
+                        try {
+                          final item = _flatItems.firstWhere((i) => i.key == key);
+                          newItems.add(ActiveOrderLineItem(
+                            name: item.productName,
+                            quantity: _quantities[key] ?? item.defaultQty,
+                            unitPrice: item.price,
+                          ));
+                        } catch (_) {}
+                      }
+                      if (newItems.isNotEmpty) {
+                        ref.read(activeOrderProvider.notifier).addItems(newItems);
+                      }
+                      if (context.mounted) context.push(AppRoutes.payment);
+                    }
+                  : null,
               child: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Text('Continue with Selection'),

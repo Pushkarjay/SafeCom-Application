@@ -10,6 +10,7 @@ import 'package:mobile_customer/data/datasources/api_service.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
+import 'package:mobile_customer/features/booking/recommendation_screen.dart';
 import 'package:mobile_customer/features/booking/services/razorpay_payment_service.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/services/providers/product_selection_provider.dart';
@@ -138,6 +139,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       ref.read(bookingFlowProvider.notifier).reset();
       ref.read(productSelectionProvider.notifier).clearAll();
       ref.read(data_cart.cartProvider.notifier).clearCart();
+      ref.read(selectedAccessoriesProvider.notifier).clear();
 
       messenger.showSnackBar(
         SnackBar(

@@ -5,6 +5,7 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
+import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/profile/models/saved_address.dart';
 import 'package:mobile_customer/features/profile/providers/address_provider.dart';
 import 'package:mobile_customer/features/profile/screens/address_form_screen.dart';
@@ -49,6 +50,55 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
         ref.read(addressProvider.notifier).loadAddresses(cid);
       }
     });
+  }
+
+  Future<void> _useCurrentLocation() async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final service = ref.read(locationServiceProvider);
+      final hasPermission = await service.isPermissionGranted();
+      if (!hasPermission) {
+        await service.requestPermission();
+      }
+      final position = await service.fetchCurrentPosition();
+      final address = await service.reverseGeocode(position.latitude, position.longitude);
+
+      await ref.read(locationProvider.notifier).setSelectedLocation(
+        address,
+        position.latitude,
+        position.longitude,
+      );
+
+      final tempAddress = SavedAddress(
+        id: 'current_location',
+        label: 'Current Location',
+        address: address,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        isDefault: false,
+      );
+      ref.read(bookingFlowProvider.notifier).selectAddress(tempAddress);
+
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Location set: $address'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Could not fetch current location. Please check location permissions.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -228,6 +278,51 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
                         style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
                       ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  margin: EdgeInsets.zero,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: AppColors.borderLight),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _useCurrentLocation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryLight,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.my_location_rounded, size: 18, color: AppColors.secondary),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Use Current Location',
+                                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
+                                ),
+                                Text(
+                                  'Auto-detect your location via GPS',
+                                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 if (!authState.isAuthenticated)
