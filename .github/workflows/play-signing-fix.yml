@@ -1,8 +1,6 @@
 name: Add Play Signing SHA1
 on:
-  push:
-    paths:
-      - '.github/workflows/play-signing-fix.yml'
+  workflow_dispatch:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -26,6 +24,7 @@ jobs:
 
       - name: Get Play App Signing SHA-1
         id: signing
+        continue-on-error: true
         run: |
           TOKEN=$(gcloud auth print-access-token)
           for PACKAGE in "com.safecom.customer" "com.safecom.employee"; do
