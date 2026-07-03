@@ -5,8 +5,6 @@ class AppRoutes {
   static const jobDetail = '/job-detail';
   static const workCompletion = '/work-completion';
   static const profile = '/profile';
-  static const photoCapture = '/photo-capture';
-  static const photoGallery = '/photo-gallery';
   static const map = '/map';
   static const locationPicker = '/location-picker';
   static const earnings = '/earnings';

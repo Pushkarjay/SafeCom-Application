@@ -8,8 +8,6 @@ import 'package:mobile_employee/features/auth/splash_screen.dart';
 import 'package:mobile_employee/features/jobs/job_detail_screen.dart';
 import 'package:mobile_employee/features/jobs/jobs_home_screen.dart';
 import 'package:mobile_employee/features/jobs/work_completion_screen.dart';
-import 'package:mobile_employee/features/photos/photo_capture_screen.dart';
-import 'package:mobile_employee/features/photos/photo_gallery_screen.dart';
 import 'package:mobile_employee/features/map/map_screen.dart';
 import 'package:mobile_employee/features/map/location_picker_screen.dart';
 import 'package:mobile_employee/features/earnings/earnings_screen.dart';
@@ -58,39 +56,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.profile,
         builder: (context, state) => const EmployeeProfileScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.photoCapture,
-        builder: (context, state) {
-          final params = state.extra as Map<String, dynamic>?;
-          if (params != null) {
-            return PhotoCaptureScreen(
-              jobId: params['jobId'] ?? '',
-              customerName: params['customerName'] ?? '',
-              isBeforePhoto: params['isBeforePhoto'] ?? true,
-            );
-          }
-          return const Scaffold(
-            body: Center(child: Text('Invalid parameters')),
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.photoGallery,
-        builder: (context, state) {
-          final params = state.extra as Map<String, dynamic>?;
-          if (params != null) {
-            return PhotoGalleryScreen(
-              jobId: params['jobId'] ?? '',
-              customerName: params['customerName'] ?? '',
-              initialBeforePhotos: params['beforePhotos']?.cast<String>(),
-              initialAfterPhotos: params['afterPhotos']?.cast<String>(),
-            );
-          }
-          return const Scaffold(
-            body: Center(child: Text('Invalid parameters')),
-          );
-        },
       ),
       GoRoute(
         path: AppRoutes.map,
