@@ -20,7 +20,7 @@ const createOrderSchema = z.object({
 const verifyPaymentSchema = z.object({
   orderId: z.string().trim().min(1),
   paymentId: z.string().trim().min(1),
-  signature: z.string().trim().optional(),
+  signature: z.string().trim().min(1, 'Payment signature is required for verification'),
   amount: z.number().positive(),
   currency: z.string().trim().min(3).max(3).default('INR'),
   customerId: z.string().trim().min(1).optional(),

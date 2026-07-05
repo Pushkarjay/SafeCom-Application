@@ -59,6 +59,15 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
 
     try {
+      if (response.signature == null || response.signature!.isEmpty) {
+        setState(() => _isProcessing = false);
+        messenger.showSnackBar(const SnackBar(
+          content: Text('Payment completed but signature missing. Contact support.'),
+          backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating,
+        ));
+        return;
+      }
+
       final activeOrder = ref.read(activeOrderProvider);
       final booking = ref.read(bookingFlowProvider);
       final authState = ref.read(authProvider);
@@ -67,7 +76,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       final verification = await ref.read(razorpayPaymentServiceProvider).verifyPayment(
             orderId: checkoutOrder.orderId,
             paymentId: response.paymentId ?? '',
-            signature: response.signature ?? '',
+            signature: response.signature!,
             amountRupees: checkoutOrder.amountPaise / 100,
             customerId: authState.customer?.id,
             customerName: authState.customer?.name,
