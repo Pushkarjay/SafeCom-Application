@@ -23,6 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Build artifacts
+tsconfig.tsbuildinfo
+
 # Environment variables
 .env
 .env.local
