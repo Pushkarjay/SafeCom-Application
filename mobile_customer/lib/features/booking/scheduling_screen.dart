@@ -39,17 +39,28 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
     }
   }
 
-  void _openAddAddress() {
-    Navigator.push(
+  void _openAddAddress() async {
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const AddressFormScreen()),
-    ).then((_) {
-      final customer = ref.read(authProvider).customer;
-      final cid = customer?.id;
-      if (cid != null) {
-        ref.read(addressProvider.notifier).loadAddresses(cid);
+    );
+    final customer = ref.read(authProvider).customer;
+    final cid = customer?.id;
+    if (cid != null) {
+      await ref.read(addressProvider.notifier).loadAddresses(cid);
+      final addresses = ref.read(addressProvider).addresses;
+      if (addresses.isNotEmpty) {
+        final last = addresses.last;
+        ref.read(bookingFlowProvider.notifier).selectAddress(last);
+        if (last.latitude != 0.0 && last.longitude != 0.0) {
+          ref.read(locationProvider.notifier).setSelectedLocation(
+            last.address,
+            last.latitude,
+            last.longitude,
+          );
+        }
       }
-    });
+    }
   }
 
   Future<void> _useCurrentLocation() async {
@@ -545,7 +556,16 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => ref.read(bookingFlowProvider.notifier).selectAddress(addr),
+        onTap: () {
+          ref.read(bookingFlowProvider.notifier).selectAddress(addr);
+          if (addr.latitude != 0.0 && addr.longitude != 0.0) {
+            ref.read(locationProvider.notifier).setSelectedLocation(
+              addr.address,
+              addr.latitude,
+              addr.longitude,
+            );
+          }
+        },
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(

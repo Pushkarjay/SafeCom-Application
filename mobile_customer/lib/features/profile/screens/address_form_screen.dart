@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
+import 'package:mobile_customer/features/location/location_picker_screen.dart';
+import 'package:mobile_customer/features/location/providers/location_provider.dart';
 import 'package:mobile_customer/features/profile/models/saved_address.dart';
 import 'package:mobile_customer/features/profile/providers/address_provider.dart';
 
@@ -21,6 +23,9 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   late String _selectedLabel;
   late bool _isDefault;
   bool _isSaving = false;
+  double? _pickedLat;
+  double? _pickedLng;
+  String? _pickedAddress;
 
   bool get _isEditing => widget.existingAddress != null;
 
@@ -31,6 +36,11 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     _pincodeController = TextEditingController(text: widget.existingAddress?.pincode ?? '');
     _selectedLabel = widget.existingAddress?.label ?? 'Home';
     _isDefault = widget.existingAddress?.isDefault ?? false;
+    if (widget.existingAddress != null && widget.existingAddress!.latitude != 0.0) {
+      _pickedLat = widget.existingAddress!.latitude;
+      _pickedLng = widget.existingAddress!.longitude;
+      _pickedAddress = widget.existingAddress!.address;
+    }
   }
 
   @override
@@ -38,6 +48,24 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     _addressController.dispose();
     _pincodeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openLocationPicker() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
+    );
+    final locationState = ref.read(locationProvider);
+    if (locationState.latitude != null && locationState.longitude != null) {
+      setState(() {
+        _pickedLat = locationState.latitude;
+        _pickedLng = locationState.longitude;
+        _pickedAddress = locationState.location;
+      });
+      if (_addressController.text.trim().isEmpty && _pickedAddress != null) {
+        _addressController.text = _pickedAddress!;
+      }
+    }
   }
 
   Future<void> _save() async {
@@ -56,8 +84,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       label: _selectedLabel,
       address: _addressController.text.trim(),
       pincode: _pincodeController.text.trim().isNotEmpty ? _pincodeController.text.trim() : null,
-      latitude: widget.existingAddress?.latitude ?? 0.0,
-      longitude: widget.existingAddress?.longitude ?? 0.0,
+      latitude: _pickedLat ?? widget.existingAddress?.latitude ?? 0.0,
+      longitude: _pickedLng ?? widget.existingAddress?.longitude ?? 0.0,
       isDefault: _isDefault,
     );
 
@@ -199,6 +227,73 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                       maxLength: 6,
                     ),
                     const SizedBox(height: 8),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: _openLocationPicker,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _pickedLat != null ? AppColors.secondaryLight : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _pickedLat != null ? AppColors.secondary.withOpacity(0.3) : AppColors.borderLight,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _pickedLat != null ? Icons.location_on_rounded : Icons.map_outlined,
+                              size: 20,
+                              color: _pickedLat != null ? AppColors.secondary : AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _pickedLat != null ? 'Location Set' : 'Pick on Map',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: _pickedLat != null ? AppColors.secondary : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  if (_pickedAddress != null)
+                                    Text(
+                                      _pickedAddress!,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                    ),
+                                  if (_pickedLat != null)
+                                    Text(
+                                      '${_pickedLat!.toStringAsFixed(6)}, ${_pickedLng!.toStringAsFixed(6)}',
+                                      style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if (_pickedLat != null)
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 16),
+                                onPressed: () => setState(() {
+                                  _pickedLat = null;
+                                  _pickedLng = null;
+                                  _pickedAddress = null;
+                                }),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                color: AppColors.textMuted,
+                              )
+                            else
+                              const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     CheckboxListTile(
                       value: _isDefault,
                       onChanged: (v) => setState(() => _isDefault = v ?? false),
