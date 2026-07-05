@@ -83,7 +83,9 @@ export class AdminDatasource {
       totalJobs: Number(item.totalJobs || item.completedJobs || 0),
       rating: Number(item.rating || 0),
       status: (item.status === 'active' ? 'available' : item.status === 'inactive' ? 'inactive' : 'available') as 'available' | 'on-job' | 'inactive',
-      joiningDate: String(item.joinDate || item.joiningDate || item.createdAt || new Date().toISOString())
+      joiningDate: String(item.joinDate || item.joiningDate || item.createdAt || new Date().toISOString()),
+      lastPassword: item.lastPassword || undefined,
+      lastPasswordUpdatedAt: item.lastPasswordUpdatedAt || undefined
     }))
   }
 

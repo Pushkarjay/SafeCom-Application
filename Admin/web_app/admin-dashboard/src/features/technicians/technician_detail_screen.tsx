@@ -45,6 +45,7 @@ export default function TechnicianDetailScreen() {
           const found = allTechnicians.find(t => t.id === id)
           if (found) {
             setTechnician(found)
+            if (found.lastPassword) setPassword(found.lastPassword)
             const allJobs = await adminDatasource.getJobs('all', 1)
             const techJobs = allJobs.filter(j => j.technicianId === id)
             setJobs(techJobs)
@@ -296,6 +297,9 @@ export default function TechnicianDetailScreen() {
             <div className="info-item"><label>Location</label><p>{technician.location}</p></div>
             <div className="info-item"><label>Total Jobs</label><p className="amount">{technician.totalJobs}</p></div>
             <div className="info-item"><label>Joining Date</label><p>{new Date(technician.joiningDate).toLocaleDateString()}</p></div>
+            {technician.lastPassword && (
+              <div className="info-item"><label>Password</label><p style={{ fontFamily: 'monospace' }}>{technician.lastPassword}</p></div>
+            )}
           </div>
           <div className="stats-row">
             <div className="stat"><span className="stat-value">{completedJobs}</span><span className="stat-label">Completed Jobs</span></div>

@@ -55,6 +55,8 @@ export interface Technician {
   rating: number
   status: 'available' | 'on-job' | 'inactive'
   joiningDate: string
+  lastPassword?: string
+  lastPasswordUpdatedAt?: string
 }
 
 export interface Job {

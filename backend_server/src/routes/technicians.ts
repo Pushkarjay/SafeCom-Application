@@ -114,10 +114,12 @@ techniciansRouter.post('/', authenticateToken, requireRole(['admin']), async (re
       rating: 0,
       joinDate: new Date().toISOString(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      lastPassword: parsed.data.password,
+      lastPasswordUpdatedAt: new Date().toISOString()
     })
 
-    return res.status(201).json({ success: true, data: { id: employeeId, ...parsed.data, totalJobs: 0, rating: 0 } })
+    return res.status(201).json({ success: true, data: { id: employeeId, ...parsed.data, totalJobs: 0, rating: 0, lastPassword: parsed.data.password } })
   } catch (error) {
     console.error('Firestore create employee failed:', error)
     return res.status(500).json({ success: false, message: 'Failed to create employee' })
@@ -131,6 +133,12 @@ techniciansRouter.post('/:id/password', authenticateToken, requireRole(['admin']
   }
   try {
     await getAuth().updateUser(req.params.id as string, { password })
+    const db = getDb()
+    await db.collection('employees').doc(req.params.id as string).update({
+      lastPassword: password,
+      lastPasswordUpdatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })
     return res.json({ success: true, message: 'Password updated' })
   } catch (error: any) {
     console.error('Failed to update Firebase Auth password:', error)
