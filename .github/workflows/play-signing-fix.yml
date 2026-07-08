@@ -1,4 +1,5 @@
 name: Add Play Signing SHA1
+run-name: Add Play Signing SHA1 (${{ github.ref_name }})
 on:
   workflow_dispatch:
 
