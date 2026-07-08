@@ -11,7 +11,12 @@ class EmployeeDatasource {
     final endpoint = employeeId.isEmpty ? '/employees/me' : '/employees/$employeeId';
     final response = await _apiService.get(endpoint);
     if (response.statusCode == 200 && response.data is Map) {
-      return EmployeeProfile.fromJson(Map<String, dynamic>.from(response.data as Map));
+      final body = Map<String, dynamic>.from(response.data as Map);
+      final employeeData = body['data'];
+      if (employeeData is Map) {
+        return EmployeeProfile.fromJson(Map<String, dynamic>.from(employeeData));
+      }
+      return EmployeeProfile.fromJson(body);
     }
 
     throw Exception('Failed to load employee profile');

@@ -144,12 +144,6 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       setState(() { _isProcessing = false; _checkoutOrder = null; });
 
-      ref.read(activeOrderProvider.notifier).clear();
-      ref.read(bookingFlowProvider.notifier).reset();
-      ref.read(productSelectionProvider.notifier).clearAll();
-      ref.read(data_cart.cartProvider.notifier).clearCart();
-      ref.read(selectedAccessoriesProvider.notifier).clear();
-
       messenger.showSnackBar(
         SnackBar(
           content: Text('Payment verified! Booking created for ${booking.selectedTimeSlot}'),

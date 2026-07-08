@@ -468,6 +468,7 @@ export const getMaintenancePricing = async (req: Request, res: Response) => {
 
     const categories = sortByOrder(Object.entries(data)
       .filter(([categoryKey]) => {
+        if (categoryKey === '_meta') return false;
         const catData = data[categoryKey] as Record<string, unknown>;
         if (catData && typeof catData === 'object' && catData[ACTIVE_META_KEY] === false) return false;
         return true;
@@ -579,7 +580,7 @@ export const getRepairPricing = async (req: Request, res: Response) => {
     const templates: Array<{ key: string; name: string; unitPrice: number; quantity: number; canEditQuantity: boolean }> = [];
 
     for (const [issueName, products] of Object.entries(data)) {
-      if (issueName === ACTIVE_META_KEY) continue; // skip active metadata
+      if (issueName === '_meta' || issueName === ACTIVE_META_KEY) continue; // skip metadata
       const issueProducts = products as Record<string, unknown>;
       if (typeof issueProducts === 'object' && issueProducts[ACTIVE_META_KEY] === false) continue;
       let visitFee = 0;
@@ -654,7 +655,7 @@ export const getAmcConfig = async (req: Request, res: Response) => {
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
     const plans = Object.entries(data)
-      .filter(([planName]) => planName !== ACTIVE_META_KEY)
+      .filter(([planName]) => planName !== '_meta' && planName !== ACTIVE_META_KEY)
       .filter(([planName]) => {
         const planData = data[planName] as Record<string, unknown>;
         if (planData && typeof planData === 'object' && planData[ACTIVE_META_KEY] === false) return false;
@@ -712,7 +713,7 @@ export const getUpgradeBundles = async (req: Request, res: Response) => {
     productSnapshot.docs.forEach((doc) => productMap.set(doc.id, doc.data()));
 
     const bundles = Object.entries(data)
-      .filter(([bundleName]) => bundleName !== ACTIVE_META_KEY)
+      .filter(([bundleName]) => bundleName !== '_meta' && bundleName !== ACTIVE_META_KEY)
       .filter(([bundleName]) => {
         const bundleData = data[bundleName] as Record<string, unknown>;
         if (bundleData && typeof bundleData === 'object' && bundleData[ACTIVE_META_KEY] === false) return false;

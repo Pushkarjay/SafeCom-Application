@@ -6,6 +6,9 @@ import 'package:mobile_customer/core/config/api_config.dart' show ApiConfig;
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
+import 'package:mobile_customer/features/product_selection/providers/product_selection_provider.dart';
+import 'package:mobile_customer/features/services/providers/cart_provider.dart' as data_cart;
+import 'package:mobile_customer/features/invoice/providers/selected_accessories_provider.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class BookingConfirmationScreen extends ConsumerWidget {
@@ -24,10 +27,17 @@ class BookingConfirmationScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(AppRoutes.home),
-        ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              ref.read(activeOrderProvider.notifier).clear();
+              ref.read(bookingFlowProvider.notifier).reset();
+              ref.read(productSelectionProvider.notifier).clearAll();
+              ref.read(data_cart.cartProvider.notifier).clearCart();
+              ref.read(selectedAccessoriesProvider.notifier).clear();
+              context.go(AppRoutes.home);
+            },
+          ),
         title: const Text('Booking Confirmed'),
         automaticallyImplyLeading: false,
       ),
@@ -250,7 +260,14 @@ class BookingConfirmationScreen extends ConsumerWidget {
           child: SizedBox(
             height: 48,
             child: FilledButton(
-              onPressed: () => context.go(AppRoutes.home),
+              onPressed: () {
+                ref.read(activeOrderProvider.notifier).clear();
+                ref.read(bookingFlowProvider.notifier).reset();
+                ref.read(productSelectionProvider.notifier).clearAll();
+                ref.read(data_cart.cartProvider.notifier).clearCart();
+                ref.read(selectedAccessoriesProvider.notifier).clear();
+                context.go(AppRoutes.home);
+              },
               child: const Text('Back to Home', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),

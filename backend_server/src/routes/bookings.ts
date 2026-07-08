@@ -52,9 +52,9 @@ function generateCanonicalInvoice(
 ): CanonicalInvoice {
   const subtotal = request.lineItems.reduce((sum, item) => sum + item.lineTotal, 0)
   
-  // TODO: Fetch from Firestore `config/taxes` doc instead of hardcoding
-  const gstRate = 18
-  const taxAmount = Math.round((subtotal * gstRate) / 100 * 100) / 100
+  // Prices are GST-inclusive from the customer app; no additional tax added
+  const gstRate = 0
+  const taxAmount = 0
   const grandTotal = subtotal + taxAmount
   const advanceAmount = request.amountPaid ?? 0
   

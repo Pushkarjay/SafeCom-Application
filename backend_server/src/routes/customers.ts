@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { queryCollection, getDocument, createDocument, updateDocument, deleteDocument, getDb } from '../services/firestore.js'
 import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
-import { authenticateToken, requireRole } from '../middleware/auth.js'
+import { authenticateToken, requireRole, AuthenticatedRequest } from '../middleware/auth.js'
 import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 
 const customerCreateSchema = z.object({
@@ -43,11 +43,19 @@ customersRouter.get('/', authenticateToken, requireRole(['admin']), async (req, 
   }
 })
 
-// GET /customers/:id - Get single customer
-customersRouter.get('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+// GET /customers/:id - Get single customer (own profile or admin)
+customersRouter.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
+    const uid = (req as unknown as { firebaseUid?: string }).firebaseUid
+    const targetId = req.params.id as string
+
+    // Allow if authenticated user is accessing their own profile, or if admin
+    if (uid !== targetId && req.user?.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Forbidden: can only access your own profile' })
+    }
+
     const db = getDb()
-    const doc = await db.collection('customers').doc(req.params.id as string).get()
+    const doc = await db.collection('customers').doc(targetId).get()
     
     if (!doc.exists) {
       return res.status(404).json({ success: false, message: 'Customer not found' })
