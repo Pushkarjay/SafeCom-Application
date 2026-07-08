@@ -28,4 +28,9 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - name: List Firebase SHA-1s
         run: |
-          gcloud firebase android apps list --project=safecom-application-01
+          TOKEN=$(gcloud auth print-access-token)
+          curl -s -H "Authorization: Bearer $TOKEN" \
+            "https://firebase.googleapis.com/v1beta1/projects/safecom-application-01/androidApps" | python3 -c "
+import sys,json
+for a in json.load(sys.stdin).get('apps',[]):
+    print(f\"{a['displayName']}: SHA1={a.get('sha1Hashes',[])}\")"
