@@ -1,5 +1,10 @@
 name: Play App Signing Diagnostic
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   check-signing:
     runs-on: ubuntu-latest
