@@ -1,0 +1,154 @@
+{
+  "project_info": {
+    "project_number": "177425757120",
+    "project_id": "safecom-application-01",
+    "storage_bucket": "safecom-application-01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:177425757120:android:4e14b54b69af9c6a2d0e25",
+        "android_client_info": {
+          "package_name": "com.safecom.customer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "177425757120-8hnp573cqv0e21dluft2sqjh8u3ofn0j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.customer",
+            "certificate_hash": "54faea509a4b4d022551ae7e77aadadf0dd7f084"
+          }
+        },
+        {
+          "client_id": "177425757120-sj4jn4lch8b6d8bagbc5ohnh2q1f6akv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.customer",
+            "certificate_hash": "9b41051e5c647fb34af44c4fa0c8dd662e0dfbb0"
+          }
+        },
+        {
+          "client_id": "177425757120-vh5r5btq03kf318cta19p90vaqeqi0iq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.customer",
+            "certificate_hash": "381eaea1a5310ef38e5828a8b2b32a6da3ea1730"
+          }
+        },
+        {
+          "client_id": "177425757120-12f6e2ad20b8aa35.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.customer",
+            "certificate_hash": "12f6e2ad20b8aa3548c143d346a75dcf34c59e902ce593cf33f3bb19d5044b49"
+          }
+        },
+        {
+          "client_id": "177425757120-7abb173f13d2ce4c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.customer",
+            "certificate_hash": "7abb173f13d2ce4ce1f40d537dd74fedf118baa6936d96ac1864fa78317fc839"
+          }
+        },
+        {
+          "client_id": "177425757120-efaeabc26708e39028.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.customer",
+            "certificate_hash": "efaeabc26708e3902837d1b4837ab4088b641abb405d685a441afbd49478638d"
+          }
+        },
+        {
+          "client_id": "177425757120-8qjlgdfeen9tf3n58r5ctfnilnnvc88u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEmxiDM2ObMB4BDx8kL1Q4QRIH_rZYE1k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "177425757120-8qjlgdfeen9tf3n58r5ctfnilnnvc88u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "177425757120-6k2jtm4imkh5gbfssrnjtc66iov7ltg7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.safecom.customer"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:177425757120:android:9a0967ab3c873ca32d0e25",
+        "android_client_info": {
+          "package_name": "com.safecom.employee"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "177425757120-56bf12l8rg0j8m3fo9s34k01sh92382l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.employee",
+            "certificate_hash": "54faea509a4b4d022551ae7e77aadadf0dd7f084"
+          }
+        },
+        {
+          "client_id": "177425757120-f8s556mf66faetr20fmnlee0v8qsqemf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.employee",
+            "certificate_hash": "862377dccdc15772a260e595a18ac18b88278c33"
+          }
+        },
+        {
+          "client_id": "177425757120-jhclhnvvhghflm11jbd9rnt49duij2em.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safecom.employee",
+            "certificate_hash": "381eaea1a5310ef38e5828a8b2b32a6da3ea1730"
+          }
+        },
+        {
+          "client_id": "177425757120-8qjlgdfeen9tf3n58r5ctfnilnnvc88u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEmxiDM2ObMB4BDx8kL1Q4QRIH_rZYE1k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "177425757120-8qjlgdfeen9tf3n58r5ctfnilnnvc88u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "177425757120-6k2jtm4imkh5gbfssrnjtc66iov7ltg7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.safecom.customer"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

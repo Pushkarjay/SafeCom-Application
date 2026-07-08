@@ -6,9 +6,9 @@ import 'package:mobile_customer/core/config/api_config.dart' show ApiConfig;
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
 import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/location/providers/location_provider.dart';
-import 'package:mobile_customer/features/product_selection/providers/product_selection_provider.dart';
-import 'package:mobile_customer/features/services/providers/cart_provider.dart' as data_cart;
-import 'package:mobile_customer/features/invoice/providers/selected_accessories_provider.dart';
+import 'package:mobile_customer/features/services/providers/product_selection_provider.dart';
+import 'package:mobile_customer/data/providers/cart_provider.dart' as data_cart;
+import 'package:mobile_customer/features/booking/recommendation_screen.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
 class BookingConfirmationScreen extends ConsumerWidget {
