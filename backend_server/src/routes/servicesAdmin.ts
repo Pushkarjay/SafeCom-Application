@@ -474,10 +474,18 @@ servicesAdminRouter.delete('/config/:serviceId/category/:key', authenticateToken
     if (key.includes('.')) {
       await deleteNested(docRef, [key]);
     } else {
-      await docRef.update({ [key]: FieldValue.delete() });
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(docRef);
+        if (!doc.exists) throw new Error('Service not found');
+        const data = doc.data()!;
+        if (!data[key]) throw new Error('Category not found');
+        delete data[key];
+        transaction.set(docRef, data);
+      });
     }
     res.json({ success: true, message: `Category "${key}" deleted` });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] DELETE category error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to delete category' });
   }
 });
