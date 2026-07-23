@@ -1160,21 +1160,35 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/rename', auth
     
     const db = getDb();
     const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
+    const hasDots = [categoryKey, newName].some(s => s.includes('.'));
     
-    await db.runTransaction(async (transaction) => {
-       const doc = await transaction.get(serviceRef);
-       if (!doc.exists) throw new Error('Service not found');
-       const data = doc.data()!;
-       const categoryData = data[categoryKey];
-       if (!categoryData) throw new Error('Category not found');
-       
-       transaction.update(serviceRef, {
-         [newName]: categoryData,
-         [categoryKey]: FieldValue.delete()
-       });
-    });
+    if (!hasDots) {
+      await db.runTransaction(async (transaction) => {
+         const doc = await transaction.get(serviceRef);
+         if (!doc.exists) throw new Error('Service not found');
+         const data = doc.data()!;
+         const categoryData = data[categoryKey];
+         if (!categoryData) throw new Error('Category not found');
+         
+         transaction.update(serviceRef, {
+           [newName]: categoryData,
+           [categoryKey]: FieldValue.delete()
+         });
+      });
+    } else {
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(serviceRef);
+        if (!doc.exists) throw new Error('Service not found');
+        const data = doc.data()!;
+        if (!data[categoryKey]) throw new Error('Category not found');
+        data[newName] = data[categoryKey];
+        delete data[categoryKey];
+        transaction.set(serviceRef, data);
+      });
+    }
     res.json({ success: true, message: `Category renamed to ${newName}` });
   } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST category rename error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to rename category' });
   }
 });
