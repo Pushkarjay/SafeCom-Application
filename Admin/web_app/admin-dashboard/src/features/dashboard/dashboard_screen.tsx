@@ -1,9 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { DashboardMetrics } from '@data/models/admin_models'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { usePollingData } from '@/core/hooks/usePollingData'
 import { useCounter } from '@/core/hooks/useCounter'
 import './dashboard_screen.css'
 
@@ -14,20 +13,8 @@ function AnimatedMetric({ value, suffix = '' }: { value: number; suffix?: string
 
 function LastUpdatedIndicator({ lastUpdated }: { lastUpdated: Date | null }) {
   if (!lastUpdated) return null
-  
-  const now = new Date()
-  const diffMs = now.getTime() - lastUpdated.getTime()
-  const diffSecs = Math.floor(diffMs / 1000)
-  
-  let timeAgo: string
-  if (diffSecs < 60) {
-    timeAgo = `${diffSecs}s ago`
-  } else if (diffSecs < 3600) {
-    timeAgo = `${Math.floor(diffSecs / 60)}m ago`
-  } else {
-    timeAgo = `${Math.floor(diffSecs / 3600)}h ago`
-  }
-  
+  const diffSecs = Math.floor((Date.now() - lastUpdated.getTime()) / 1000)
+  const timeAgo = diffSecs < 60 ? `${diffSecs}s ago` : diffSecs < 3600 ? `${Math.floor(diffSecs / 60)}m ago` : `${Math.floor(diffSecs / 3600)}h ago`
   return (
     <div className="last-updated-indicator">
       <span className="update-dot" />
@@ -36,22 +23,9 @@ function LastUpdatedIndicator({ lastUpdated }: { lastUpdated: Date | null }) {
   )
 }
 
-function RefreshButton({ 
-  onRefresh, 
-  isLoading, 
-  isPolling 
-}: { 
-  onRefresh: () => Promise<void>
-  isLoading: boolean
-  isPolling: boolean
-}) {
+function RefreshButton({ onRefresh, isLoading, isPolling }: { onRefresh: () => Promise<void>; isLoading: boolean; isPolling: boolean }) {
   return (
-    <button 
-      className={`refresh-button ${isPolling ? 'polling' : ''}`}
-      onClick={onRefresh}
-      disabled={isLoading}
-      title={isPolling ? 'Auto-refresh active (30s)' : 'Click to refresh'}
-    >
+    <button className={`refresh-button ${isPolling ? 'polling' : ''}`} onClick={onRefresh} disabled={isLoading} title={isPolling ? 'Auto-refresh active (30s)' : 'Click to refresh'}>
       <span className={`refresh-icon ${isLoading ? 'spinning' : ''}`} />
       {isPolling && <span className="pulse-ring" />}
     </button>
@@ -83,33 +57,61 @@ function DashboardSkeleton() {
 
 export default function DashboardScreen() {
   const navigate = useNavigate()
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [isPolling, setIsPolling] = useState(false)
   const [showReports, setShowReports] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const isMountedRef = useRef(true)
 
-  const {
-    data: metrics,
-    isLoading,
-    error,
-    lastUpdated,
-    isPolling,
-    refresh,
-  } = usePollingData<DashboardMetrics | null>({
-    fetchFn: async () => {
+  const loadMetrics = useCallback(async () => {
+    try {
+      setError(null)
       const data = await adminDatasource.getDashboardMetrics()
-      return data
-    },
-    intervalMs: 30000,
-    enabled: true,
-  })
+      if (isMountedRef.current) {
+        setMetrics(data)
+        setLastUpdated(new Date())
+        setIsLoading(false)
+      }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to load metrics')
+      if (isMountedRef.current) {
+        setError(error)
+        setIsLoading(false)
+      }
+    }
+  }, [])
 
   const handleRefresh = useCallback(async () => {
-    await refresh()
-  }, [refresh])
+    setIsLoading(true)
+    await loadMetrics()
+  }, [loadMetrics])
 
-  if (isLoading) {
+  useEffect(() => {
+    isMountedRef.current = true
+    loadMetrics()
+
+    const interval = setInterval(() => {
+      loadMetrics()
+    }, 30000)
+    intervalRef.current = interval
+    setIsPolling(true)
+
+    return () => {
+      isMountedRef.current = false
+      clearInterval(interval)
+      intervalRef.current = null
+      setIsPolling(false)
+    }
+  }, [loadMetrics])
+
+  if (isLoading && !metrics) {
     return <DashboardSkeleton />
   }
 
-  if (error) {
+  if (error && !metrics) {
     return (
       <div className="dashboard-screen">
         <div className="dashboard-error">
@@ -128,11 +130,7 @@ export default function DashboardScreen() {
       acc[date] += booking.amount
       return acc
     }, {} as Record<string, number>)
-
-    return Object.keys(grouped).slice(0, 7).map(date => ({
-      date,
-      revenue: grouped[date]
-    })).reverse()
+    return Object.keys(grouped).slice(0, 7).map(date => ({ date, revenue: grouped[date] })).reverse()
   }, [metrics?.recentBookings])
 
   return (
@@ -146,80 +144,35 @@ export default function DashboardScreen() {
       </header>
 
       <div className="metrics-grid stagger">
-        <div className="metric-card">
-          <div className="metric-icon breathe">👥</div>
-          <div className="metric-content">
-            <p className="metric-label">Total Customers</p>
-            <p className="metric-value">
-              <AnimatedMetric value={metrics?.totalCustomers ?? 0} />
-            </p>
+        {[
+          { label: 'Total Customers', value: metrics?.totalCustomers ?? 0, icon: '👥', delay: '0s' },
+          { label: 'Active Technicians', value: metrics?.activeTechnicians ?? 0, icon: '🔧', delay: '0.3s' },
+          { label: 'Pending Jobs', value: metrics?.pendingJobs ?? 0, icon: '⏳', delay: '0.6s' },
+          { label: 'Total Revenue', value: Math.floor((metrics?.totalRevenue ?? 0) / 100000), icon: '💰', delay: '0.9s', prefix: '₹', suffix: 'L' },
+          { label: 'Completion Rate', value: metrics?.completionRate ?? 0, icon: '✅', delay: '1.2s', suffix: '%' },
+          { label: 'Avg Response Time', value: metrics?.avgResponseTime ?? 0, icon: '⏱️', delay: '1.5s', suffix: 'h' },
+        ].map((metric) => (
+          <div key={metric.label} className="metric-card">
+            <div className="metric-icon breathe" style={{ animationDelay: metric.delay }}>{metric.icon}</div>
+            <div className="metric-content">
+              <p className="metric-label">{metric.label}</p>
+              <p className="metric-value">
+                {metric.prefix && <span>{metric.prefix}</span>}
+                <AnimatedMetric value={metric.value} />
+                {metric.suffix && <span>{metric.suffix}</span>}
+              </p>
+            </div>
           </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-icon breathe" style={{ animationDelay: '0.3s' }}>🔧</div>
-          <div className="metric-content">
-            <p className="metric-label">Active Technicians</p>
-            <p className="metric-value">
-              <AnimatedMetric value={metrics?.activeTechnicians ?? 0} />
-            </p>
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-icon breathe" style={{ animationDelay: '0.6s' }}>⏳</div>
-          <div className="metric-content">
-            <p className="metric-label">Pending Jobs</p>
-            <p className="metric-value">
-              <AnimatedMetric value={metrics?.pendingJobs ?? 0} />
-            </p>
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-icon breathe" style={{ animationDelay: '0.9s' }}>💰</div>
-          <div className="metric-content">
-            <p className="metric-label">Total Revenue</p>
-            <p className="metric-value">
-              ₹<AnimatedMetric value={Math.floor((metrics?.totalRevenue ?? 0) / 100000)} />L
-            </p>
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-icon breathe" style={{ animationDelay: '1.2s' }}>✅</div>
-          <div className="metric-content">
-            <p className="metric-label">Completion Rate</p>
-            <p className="metric-value">
-              <AnimatedMetric value={metrics?.completionRate ?? 0} suffix="%" />
-            </p>
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-icon breathe" style={{ animationDelay: '1.5s' }}>⏱️</div>
-          <div className="metric-content">
-            <p className="metric-label">Avg Response Time</p>
-            <p className="metric-value">
-              <AnimatedMetric value={metrics?.avgResponseTime ?? 0} suffix="h" />
-            </p>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div className="dashboard-sections slide-up">
         <div className="dashboard-section">
           <h2>Quick Actions</h2>
           <div className="actions-grid">
-            <button className="action-button" onClick={() => navigate('/technicians/new')}>
-              <span>➕</span> Add Technician
-            </button>
-            <button className="action-button" onClick={() => navigate('/jobs/new')}>
-              <span>➕</span> Create Job
-            </button>
-            <button className="action-button" onClick={() => setShowReports(!showReports)}>
-              <span>📊</span> {showReports ? 'Hide Reports' : 'View Reports'}
-            </button>
+            <button className="action-button" onClick={() => navigate('/technicians/new')}><span>➕</span> Add Technician</button>
+            <button className="action-button" onClick={() => navigate('/jobs/new')}><span>➕</span> Create Job</button>
+            <button className="action-button" onClick={() => setShowReports(!showReports)}><span>📊</span> {showReports ? 'Hide Reports' : 'View Reports'}</button>
           </div>
         </div>
 
@@ -232,14 +185,7 @@ export default function DashboardScreen() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
                   <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#78716c' }} />
                   <YAxis tick={{ fontSize: 12, fill: '#78716c' }} />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#fff',
-                      border: '1px solid #e7e5e4',
-                      borderRadius: 8,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
-                    }}
-                  />
+                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e7e5e4', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }} />
                   <Line type="monotone" dataKey="revenue" stroke="#d97706" strokeWidth={2} dot={{ fill: '#d97706', strokeWidth: 2 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -251,42 +197,18 @@ export default function DashboardScreen() {
           <h2>System Status</h2>
           <div className="status-list">
             <div className="status-item">
-              <span
-                className={`status-indicator ${
-                  metrics?.systemHealth?.firestore === 'healthy'
-                    ? 'active'
-                    : metrics?.systemHealth?.firestore === 'degraded'
-                      ? 'warning'
-                      : 'error'
-                }`}
-              ></span>
+              <span className={`status-indicator ${metrics?.systemHealth?.firestore === 'healthy' ? 'active' : metrics?.systemHealth?.firestore === 'degraded' ? 'warning' : 'error'}`}></span>
               <span>Firestore: {metrics?.systemHealth?.firestore || 'checking...'}</span>
             </div>
             <div className="status-item">
-              <span
-                className={`status-indicator ${
-                  metrics?.systemHealth?.auth === 'healthy'
-                    ? 'active'
-                    : metrics?.systemHealth?.auth === 'degraded'
-                      ? 'warning'
-                      : 'error'
-                }`}
-              ></span>
+              <span className={`status-indicator ${metrics?.systemHealth?.auth === 'healthy' ? 'active' : metrics?.systemHealth?.auth === 'degraded' ? 'warning' : 'error'}`}></span>
               <span>Firebase Auth: {metrics?.systemHealth?.auth || 'checking...'}</span>
             </div>
-            <div className="status-item">
-              <span className="status-indicator active"></span>
-              <span>Payment Gateway: Active</span>
-            </div>
-            <div className="status-item">
-              <span className="status-indicator active"></span>
-              <span>Notification Service: Running</span>
-            </div>
+            <div className="status-item"><span className="status-indicator active"></span><span>Payment Gateway: Active</span></div>
+            <div className="status-item"><span className="status-indicator active"></span><span>Notification Service: Running</span></div>
             {metrics?.systemHealth?.lastCheck && (
               <div className="status-item">
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  Last checked: {new Date(metrics.systemHealth.lastCheck).toLocaleTimeString()}
-                </span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Last checked: {new Date(metrics.systemHealth.lastCheck).toLocaleTimeString()}</span>
               </div>
             )}
           </div>
@@ -325,9 +247,7 @@ export default function DashboardScreen() {
                 <div key={booking.bookingId} className="table-row">
                   <div className="col-service">{booking.serviceType}</div>
                   <div className="col-amount">₹{booking.amount.toLocaleString()}</div>
-                  <div className="col-status">
-                    <span className={`status-badge ${booking.status.toLowerCase()}`}>{booking.status}</span>
-                  </div>
+                  <div className="col-status"><span className={`status-badge ${booking.status.toLowerCase()}`}>{booking.status}</span></div>
                   <div className="col-date">{new Date(booking.createdAt).toLocaleDateString()}</div>
                 </div>
               ))}
