@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useAuthStore } from '@/core/services/auth_service'
 
 export interface UsePollingDataOptions<T> {
@@ -17,8 +17,6 @@ export interface UsePollingDataResult<T> {
   lastUpdated: Date | null
   isPolling: boolean
   refresh: () => Promise<void>
-  startPolling: () => void
-  stopPolling: () => void
 }
 
 export function usePollingData<T>({
@@ -34,79 +32,79 @@ export function usePollingData<T>({
   const [error, setError] = useState<Error | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [isPolling, setIsPolling] = useState(false)
-  
+
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isMountedRef = useRef(true)
   const fetchFnRef = useRef(fetchFn)
   const enabledRef = useRef(enabled)
+  const onErrorRef = useRef(onError)
+  const onSuccessRef = useRef(onSuccess)
 
   fetchFnRef.current = fetchFn
   enabledRef.current = enabled
+  onErrorRef.current = onError
+  onSuccessRef.current = onSuccess
 
-  const fetchData = useCallback(async () => {
-    if (!isAuthenticated || !enabledRef.current || !isMountedRef.current) return
+  const executeFetch = useCallback(async () => {
+    if (!isMountedRef.current) return
+
+    const auth = useAuthStore.getState().isAuthenticated
+    const enabledFlag = enabledRef.current
+    const fn = fetchFnRef.current
+    const errCb = onErrorRef.current
+    const successCb = onSuccessRef.current
+
+    if (!auth || !enabledFlag) return
 
     try {
       setError(null)
-      const result = await fetchFnRef.current()
+      const result = await fn()
       if (isMountedRef.current) {
         setData(result)
         setLastUpdated(new Date())
-        onSuccess?.(result)
+        successCb?.(result)
       }
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('An unknown error occurred')
+      const error = err instanceof Error ? err : new Error('An unknown data occurred')
       if (isMountedRef.current) {
         setError(error)
-        onError?.(error)
+        errCb?.(error)
       }
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false)
       }
     }
-  }, [isAuthenticated, onError, onSuccess])
+  }, [])
 
   const refresh = useCallback(async () => {
     if (isMountedRef.current) {
       setIsLoading(true)
-      await fetchData()
+      await executeFetch()
     }
-  }, [fetchData])
-
-  const startPolling = useCallback(() => {
-    if (intervalRef.current) return
-    
-    setIsPolling(true)
-    intervalRef.current = setInterval(() => {
-      if (isMountedRef.current && isAuthenticated && enabledRef.current) {
-        fetchData()
-      }
-    }, intervalMs)
-  }, [fetchData, intervalMs, isAuthenticated])
-
-  const stopPolling = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-      setIsPolling(false)
-    }
-  }, [])
+  }, [executeFetch])
 
   useEffect(() => {
     isMountedRef.current = true
-    fetchData()
-    
+    executeFetch()
+
     if (enabled && isAuthenticated) {
-      startPolling()
+      setIsPolling(true)
+      intervalRef.current = setInterval(() => {
+        executeFetch()
+      }, intervalMs)
     }
 
     return () => {
       isMountedRef.current = false
-      stopPolling()
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+      setIsPolling(false)
     }
-  }, [enabled, isAuthenticated, ...deps, startPolling, stopPolling, fetchData])
+  }, [enabled, isAuthenticated, intervalMs, executeFetch, ...deps])
 
   return {
     data,
@@ -115,7 +113,5 @@ export function usePollingData<T>({
     lastUpdated,
     isPolling,
     refresh,
-    startPolling,
-    stopPolling,
   }
 }
