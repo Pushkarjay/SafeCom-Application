@@ -1,15 +1,61 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminDatasource } from '@data/datasources/admin_datasource'
 import { DashboardMetrics } from '@data/models/admin_models'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { useAuthenticatedData } from '@/core/hooks/useAuthenticatedData'
+import { usePollingData } from '@/core/hooks/usePollingData'
 import { useCounter } from '@/core/hooks/useCounter'
 import './dashboard_screen.css'
 
 function AnimatedMetric({ value, suffix = '' }: { value: number; suffix?: string }) {
   const count = useCounter(value, 1200)
   return <>{count.toLocaleString()}{suffix}</>
+}
+
+function LastUpdatedIndicator({ lastUpdated }: { lastUpdated: Date | null }) {
+  if (!lastUpdated) return null
+  
+  const now = new Date()
+  const diffMs = now.getTime() - lastUpdated.getTime()
+  const diffSecs = Math.floor(diffMs / 1000)
+  
+  let timeAgo: string
+  if (diffSecs < 60) {
+    timeAgo = `${diffSecs}s ago`
+  } else if (diffSecs < 3600) {
+    timeAgo = `${Math.floor(diffSecs / 60)}m ago`
+  } else {
+    timeAgo = `${Math.floor(diffSecs / 3600)}h ago`
+  }
+  
+  return (
+    <div className="last-updated-indicator">
+      <span className="update-dot" />
+      <span>Updated {timeAgo}</span>
+    </div>
+  )
+}
+
+function RefreshButton({ 
+  onRefresh, 
+  isLoading, 
+  isPolling 
+}: { 
+  onRefresh: () => Promise<void>
+  isLoading: boolean
+  isPolling: boolean
+}) {
+  return (
+    <button 
+      className={`refresh-button ${isPolling ? 'polling' : ''}`}
+      onClick={onRefresh}
+      disabled={isLoading}
+      title={isPolling ? 'Auto-refresh active (30s)' : 'Click to refresh'}
+    >
+      <span className={`refresh-icon ${isLoading ? 'spinning' : ''}`} />
+      {isPolling && <span className="pulse-ring" />}
+    </button>
+  )
 }
 
 function DashboardSkeleton() {
@@ -37,25 +83,44 @@ function DashboardSkeleton() {
 
 export default function DashboardScreen() {
   const navigate = useNavigate()
-  const { data: metrics, isLoading, error } = useAuthenticatedData<DashboardMetrics | null>(
-    async () => {
+  const [showReports, setShowReports] = useState(false)
+
+  const {
+    data: metrics,
+    isLoading,
+    error,
+    lastUpdated,
+    isPolling,
+    refresh,
+  } = usePollingData<DashboardMetrics | null>({
+    fetchFn: async () => {
       const data = await adminDatasource.getDashboardMetrics()
       return data
     },
-    []
-  )
+    intervalMs: 30000,
+    enabled: true,
+  })
 
-  const [showReports, setShowReports] = useState(false)
+  const handleRefresh = useCallback(async () => {
+    await refresh()
+  }, [refresh])
 
   if (isLoading) {
     return <DashboardSkeleton />
   }
 
   if (error) {
-    return <div className="dashboard-error">Failed to load metrics</div>
+    return (
+      <div className="dashboard-screen">
+        <div className="dashboard-error">
+          <p>Failed to load metrics</p>
+          <button className="retry-button" onClick={handleRefresh}>Retry</button>
+        </div>
+      </div>
+    )
   }
 
-  const getChartData = () => {
+  const getChartData = useCallback(() => {
     if (!metrics?.recentBookings) return []
     const grouped = metrics.recentBookings.reduce((acc, booking) => {
       const date = new Date(booking.createdAt).toLocaleDateString()
@@ -68,11 +133,17 @@ export default function DashboardScreen() {
       date,
       revenue: grouped[date]
     })).reverse()
-  }
+  }, [metrics?.recentBookings])
 
   return (
     <div className="dashboard-screen">
-      <h1 className="slide-up">Dashboard</h1>
+      <header className="dashboard-header">
+        <h1 className="slide-up">Dashboard</h1>
+        <div className="header-actions">
+          <LastUpdatedIndicator lastUpdated={lastUpdated} />
+          <RefreshButton onRefresh={handleRefresh} isLoading={isLoading} isPolling={isPolling} />
+        </div>
+      </header>
 
       <div className="metrics-grid stagger">
         <div className="metric-card">
@@ -80,7 +151,7 @@ export default function DashboardScreen() {
           <div className="metric-content">
             <p className="metric-label">Total Customers</p>
             <p className="metric-value">
-              <AnimatedMetric value={metrics.totalCustomers} />
+              <AnimatedMetric value={metrics?.totalCustomers ?? 0} />
             </p>
           </div>
         </div>
@@ -90,7 +161,7 @@ export default function DashboardScreen() {
           <div className="metric-content">
             <p className="metric-label">Active Technicians</p>
             <p className="metric-value">
-              <AnimatedMetric value={metrics.activeTechnicians} />
+              <AnimatedMetric value={metrics?.activeTechnicians ?? 0} />
             </p>
           </div>
         </div>
@@ -100,7 +171,7 @@ export default function DashboardScreen() {
           <div className="metric-content">
             <p className="metric-label">Pending Jobs</p>
             <p className="metric-value">
-              <AnimatedMetric value={metrics.pendingJobs} />
+              <AnimatedMetric value={metrics?.pendingJobs ?? 0} />
             </p>
           </div>
         </div>
@@ -110,7 +181,7 @@ export default function DashboardScreen() {
           <div className="metric-content">
             <p className="metric-label">Total Revenue</p>
             <p className="metric-value">
-              ₹<AnimatedMetric value={Math.floor(metrics.totalRevenue / 100000)} />L
+              ₹<AnimatedMetric value={Math.floor((metrics?.totalRevenue ?? 0) / 100000)} />L
             </p>
           </div>
         </div>
@@ -120,7 +191,7 @@ export default function DashboardScreen() {
           <div className="metric-content">
             <p className="metric-label">Completion Rate</p>
             <p className="metric-value">
-              <AnimatedMetric value={metrics.completionRate} suffix="%" />
+              <AnimatedMetric value={metrics?.completionRate ?? 0} suffix="%" />
             </p>
           </div>
         </div>
@@ -130,7 +201,7 @@ export default function DashboardScreen() {
           <div className="metric-content">
             <p className="metric-label">Avg Response Time</p>
             <p className="metric-value">
-              <AnimatedMetric value={metrics.avgResponseTime} suffix="h" />
+              <AnimatedMetric value={metrics?.avgResponseTime ?? 0} suffix="h" />
             </p>
           </div>
         </div>
@@ -182,26 +253,26 @@ export default function DashboardScreen() {
             <div className="status-item">
               <span
                 className={`status-indicator ${
-                  metrics.systemHealth?.firestore === 'healthy'
+                  metrics?.systemHealth?.firestore === 'healthy'
                     ? 'active'
-                    : metrics.systemHealth?.firestore === 'degraded'
+                    : metrics?.systemHealth?.firestore === 'degraded'
                       ? 'warning'
                       : 'error'
                 }`}
               ></span>
-              <span>Firestore: {metrics.systemHealth?.firestore || 'checking...'}</span>
+              <span>Firestore: {metrics?.systemHealth?.firestore || 'checking...'}</span>
             </div>
             <div className="status-item">
               <span
                 className={`status-indicator ${
-                  metrics.systemHealth?.auth === 'healthy'
+                  metrics?.systemHealth?.auth === 'healthy'
                     ? 'active'
-                    : metrics.systemHealth?.auth === 'degraded'
+                    : metrics?.systemHealth?.auth === 'degraded'
                       ? 'warning'
                       : 'error'
                 }`}
               ></span>
-              <span>Firebase Auth: {metrics.systemHealth?.auth || 'checking...'}</span>
+              <span>Firebase Auth: {metrics?.systemHealth?.auth || 'checking...'}</span>
             </div>
             <div className="status-item">
               <span className="status-indicator active"></span>
@@ -211,7 +282,7 @@ export default function DashboardScreen() {
               <span className="status-indicator active"></span>
               <span>Notification Service: Running</span>
             </div>
-            {metrics.systemHealth?.lastCheck && (
+            {metrics?.systemHealth?.lastCheck && (
               <div className="status-item">
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   Last checked: {new Date(metrics.systemHealth.lastCheck).toLocaleTimeString()}
@@ -221,7 +292,7 @@ export default function DashboardScreen() {
           </div>
         </div>
 
-        {metrics.topPerformingTechnicians && metrics.topPerformingTechnicians.length > 0 && (
+        {metrics?.topPerformingTechnicians && metrics.topPerformingTechnicians.length > 0 && (
           <div className="dashboard-section">
             <h2>Top Performing Technicians</h2>
             <div className="technician-list">
@@ -240,7 +311,7 @@ export default function DashboardScreen() {
           </div>
         )}
 
-        {metrics.recentBookings && metrics.recentBookings.length > 0 && (
+        {metrics?.recentBookings && metrics.recentBookings.length > 0 && (
           <div className="dashboard-section">
             <h2>Recent Bookings</h2>
             <div className="bookings-table">

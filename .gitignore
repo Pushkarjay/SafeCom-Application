@@ -180,3 +180,11 @@ graphify-out/
 # Firebase Hosting Cache
 # ============================================================================
 .firebase/hosting.*.cache
+
+# Additional credential patterns
+credentials*.json
+service_account*.json
+serviceAccountKey*.json
+private_credentials_local/
+_local_backups/
+**/secrets/

@@ -248,24 +248,14 @@ function setNested(path: string[], value: unknown): Record<string, unknown> {
 }
 
 /**
- * Delete a field at a nested path, handling dots in key names correctly.
+ * Delete a field at a nested path, handling special characters in key names.
  * Reads the full doc, removes the key from memory, writes back with set().
- * Falls back to update() with dot-notation when no path segment has a dot (faster).
  */
 async function deleteNested(
   docRef: FirebaseFirestore.DocumentReference,
   path: string[],
   transaction?: FirebaseFirestore.Transaction
 ): Promise<void> {
-  const hasDots = path.some(s => s.includes('.'));
-  if (!hasDots) {
-    // Fast path — no dots, use update() with FieldValue.delete()
-    const upd: Record<string, unknown> = {};
-    upd[path.join('.')] = FieldValue.delete();
-    await docRef.update(upd);
-    return;
-  }
-  // Slow path — dots present, read/modify/write in a transaction
   const db = getDb();
   await db.runTransaction(async (txn) => {
     const snap = await txn.get(docRef);
@@ -520,15 +510,10 @@ servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setu
     const setupKey = String(req.params.setupKey);
     const db = getDb();
     const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    const path = [categoryKey, setupKey];
-    if (path.some(s => s.includes('.'))) {
-      await deleteNested(docRef, path);
-    } else {
-      await docRef.update({ [`${categoryKey}.${setupKey}`]: FieldValue.delete() });
-    }
+    await deleteNested(docRef, [categoryKey, setupKey]);
     res.json({ success: true, message: `Setup "${setupKey}" deleted from category "${categoryKey}"` });
-  } catch (error) {
-    console.error('[SERVICES-ADMIN] DELETE setup error:', error);
+  } catch (error: any) {
+    console.error('[SERVICES-ADMIN] DELETE setup error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to delete setup' });
   }
 });
@@ -629,12 +614,7 @@ servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/product/:pr
     const productKey = String(req.params.productKey);
     const db = getDb();
     const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    const path = [categoryKey, productKey];
-    if (path.some(s => s.includes('.'))) {
-      await deleteNested(docRef, path);
-    } else {
-      await docRef.update({ [`${categoryKey}.${productKey}`]: FieldValue.delete() });
-    }
+    await deleteNested(docRef, [categoryKey, productKey]);
     res.json({ success: true, message: `Product "${productKey}" removed from category` });
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] DELETE product error:', error?.message || error);
@@ -651,12 +631,7 @@ servicesAdminRouter.delete('/config/:serviceId/category/:categoryKey/setup/:setu
     const productKey = String(req.params.productKey);
     const db = getDb();
     const docRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    const path = [categoryKey, setupKey, productKey];
-    if (path.some(s => s.includes('.'))) {
-      await deleteNested(docRef, path);
-    } else {
-      await docRef.update({ [`${categoryKey}.${setupKey}.${productKey}`]: FieldValue.delete() });
-    }
+    await deleteNested(docRef, [categoryKey, setupKey, productKey]);
     res.json({ success: true, message: `Product "${productKey}" removed` });
   } catch (error: any) {
     console.error('[SERVICES-ADMIN] DELETE product error:', error?.message || error);
@@ -1006,42 +981,19 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/node/rename',
 
     const db = getDb();
     const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    const hasDots = [categoryKey, ...nodePath, newName].some(s => s.includes('.'));
-
-    if (!hasDots) {
-      await db.runTransaction(async (transaction) => {
-         const doc = await transaction.get(serviceRef);
-         if (!doc.exists) throw new Error('Service not found');
-         const data = doc.data()!;
-         let target = data[categoryKey];
-         if (!target) throw new Error('Category not found');
-         for (const p of nodePath) {
-            if (target[p] === undefined) throw new Error(`Node path not found`);
-            target = target[p];
-         }
-         const parentPath = nodePath.slice(0, -1);
-         const oldName = nodePath[nodePath.length - 1];
-         const firestoreParentPath = parentPath.length > 0 ? `${categoryKey}.${parentPath.join('.')}` : `${categoryKey}`;
-         transaction.update(serviceRef, {
-           [`${firestoreParentPath}.${newName}`]: target,
-           [`${firestoreParentPath}.${oldName}`]: FieldValue.delete()
-         });
-      });
-    } else {
-      await db.runTransaction(async (transaction) => {
-        const doc = await transaction.get(serviceRef);
-        if (!doc.exists) throw new Error('Service not found');
-        const data = doc.data()!;
-        let current = data[categoryKey];
-        if (!current) throw new Error('Category not found');
-        const parentPath = nodePath.slice(0, -1);
-        for (const p of parentPath) { current = current[p]; }
-        const oldName = nodePath[nodePath.length - 1];
-        current[newName] = current[oldName];
-        delete current[oldName];
-        transaction.set(serviceRef, data);
-      });
-    }
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(serviceRef);
+      if (!doc.exists) throw new Error('Service not found');
+      const data = doc.data()!;
+      let current = data[categoryKey];
+      if (!current) throw new Error('Category not found');
+      const parentPath = nodePath.slice(0, -1);
+      for (const p of parentPath) { current = current[p]; }
+      const oldName = nodePath[nodePath.length - 1];
+      current[newName] = current[oldName];
+      delete current[oldName];
+      transaction.set(serviceRef, data);
+    });
 
     res.json({ success: true, message: `Node renamed to ${newName}` });
   } catch (error: any) {
@@ -1113,42 +1065,20 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     
     const db = getDb();
     const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    const hasDots = [categoryKey, setupKey, ...nodePath, newName].some(s => s.includes('.'));
 
-    if (!hasDots) {
-      await db.runTransaction(async (transaction) => {
-         const doc = await transaction.get(serviceRef);
-         if (!doc.exists) throw new Error('Service not found');
-         const data = doc.data()!;
-         let target = data[categoryKey]?.[setupKey];
-         if (!target) throw new Error('Setup not found');
-         for (const p of nodePath) {
-            if (target[p] === undefined) throw new Error(`Node path not found`);
-            target = target[p];
-         }
-         const parentPath = nodePath.slice(0, -1);
-         const oldName = nodePath[nodePath.length - 1];
-         const firestoreParentPath = parentPath.length > 0 ? `${categoryKey}.${setupKey}.${parentPath.join('.')}` : `${categoryKey}.${setupKey}`;
-         transaction.update(serviceRef, {
-           [`${firestoreParentPath}.${newName}`]: target,
-           [`${firestoreParentPath}.${oldName}`]: FieldValue.delete()
-         });
-      });
-    } else {
-      await db.runTransaction(async (transaction) => {
-        const doc = await transaction.get(serviceRef);
-        if (!doc.exists) throw new Error('Service not found');
-        const data = doc.data()!;
-        let current = data[categoryKey]?.[setupKey];
-        if (!current) throw new Error('Setup not found');
-        const parentPath = nodePath.slice(0, -1);
-        for (const p of parentPath) { current = current[p]; }
-        const oldName = nodePath[nodePath.length - 1];
-        current[newName] = current[oldName];
-        delete current[oldName];
-        transaction.set(serviceRef, data);
-      });
-    }
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(serviceRef);
+      if (!doc.exists) throw new Error('Service not found');
+      const data = doc.data()!;
+      let current = data[categoryKey]?.[setupKey];
+      if (!current) throw new Error('Setup not found');
+      const parentPath = nodePath.slice(0, -1);
+      for (const p of parentPath) { current = current[p]; }
+      const oldName = nodePath[nodePath.length - 1];
+      current[newName] = current[oldName];
+      delete current[oldName];
+      transaction.set(serviceRef, data);
+    });
     
     res.json({ success: true, message: `Node renamed to ${newName}` });
   } catch (error: any) {
@@ -1212,32 +1142,18 @@ servicesAdminRouter.post('/config/:serviceId/category/:categoryKey/setup/:setupK
     
     const db = getDb();
     const serviceRef = db.collection(SERVICE_COLLECTION).doc(serviceId);
-    const hasDots = [categoryKey, setupKey, newName].some(s => s.includes('.'));
     
-    if (!hasDots) {
-      await db.runTransaction(async (transaction) => {
-         const doc = await transaction.get(serviceRef);
-         if (!doc.exists) throw new Error('Service not found');
-         const data = doc.data()!;
-         const setupData = data[categoryKey]?.[setupKey];
-         if (!setupData) throw new Error('Setup not found');
-         transaction.update(serviceRef, {
-           [`${categoryKey}.${newName}`]: setupData,
-           [`${categoryKey}.${setupKey}`]: FieldValue.delete()
-         });
-      });
-    } else {
-      await db.runTransaction(async (transaction) => {
-        const doc = await transaction.get(serviceRef);
-        if (!doc.exists) throw new Error('Service not found');
-        const data = doc.data()!;
-        data[categoryKey][newName] = data[categoryKey][setupKey];
-        delete data[categoryKey][setupKey];
-        transaction.set(serviceRef, data);
-      });
-    }
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(serviceRef);
+      if (!doc.exists) throw new Error('Service not found');
+      const data = doc.data()!;
+      data[categoryKey][newName] = data[categoryKey][setupKey];
+      delete data[categoryKey][setupKey];
+      transaction.set(serviceRef, data);
+    });
     res.json({ success: true, message: `Setup renamed to ${newName}` });
   } catch (error: any) {
+    console.error('[SERVICES-ADMIN] POST setup rename error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to rename setup' });
   }
 });

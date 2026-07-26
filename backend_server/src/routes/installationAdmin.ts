@@ -213,20 +213,13 @@ function setNested(path: string[], value: unknown): Record<string, unknown> {
 }
 
 /**
- * Delete a field at a nested path, handling dots in key names correctly.
- * Falls back to update() with dot-notation when no path segment has a dot (faster).
+ * Delete a field at a nested path, handling special characters in key names.
+ * Reads the full doc, removes the key from memory, writes back with set().
  */
 async function deleteNested(
   docRef: FirebaseFirestore.DocumentReference,
   path: string[]
 ): Promise<void> {
-  const hasDots = path.some(s => s.includes('.'));
-  if (!hasDots) {
-    const upd: Record<string, unknown> = {};
-    upd[path.join('.')] = FieldValue.delete();
-    await docRef.update(upd);
-    return;
-  }
   const db = getDb();
   await db.runTransaction(async (txn) => {
     const snap = await txn.get(docRef);
@@ -334,12 +327,10 @@ installationAdminRouter.delete('/category/:key', authenticateToken, requireRole(
   try {
     const categoryKey = req.params.key as string;
     const db = getDb();
-    await db.collection(SERVICE_COLLECTION).doc('Installation').update({
-      [categoryKey]: FieldValue.delete()
-    });
+    await deleteNested(db.collection(SERVICE_COLLECTION).doc('Installation'), [categoryKey]);
     res.json({ success: true, message: `Category "${categoryKey}" deleted` });
-  } catch (error) {
-    console.error('[INSTALL-ADMIN] DELETE category error:', error);
+  } catch (error: any) {
+    console.error('[INSTALL-ADMIN] DELETE category error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to delete category' });
   }
 });
@@ -368,13 +359,10 @@ installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey', authent
   try {
     const { categoryKey, setupKey } = req.params;
     const db = getDb();
-    const path = `${categoryKey}.${setupKey}`;
-    await db.collection(SERVICE_COLLECTION).doc('Installation').update({
-      [path]: FieldValue.delete()
-    });
+    await deleteNested(db.collection(SERVICE_COLLECTION).doc('Installation'), [categoryKey, setupKey]);
     res.json({ success: true, message: `Setup "${setupKey}" deleted from "${categoryKey}"` });
-  } catch (error) {
-    console.error('[INSTALL-ADMIN] DELETE setup error:', error);
+  } catch (error: any) {
+    console.error('[INSTALL-ADMIN] DELETE setup error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to delete setup' });
   }
 });
@@ -435,13 +423,10 @@ installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey/product/:
   try {
     const { categoryKey, setupKey, productKey } = req.params;
     const db = getDb();
-    const path = `${categoryKey}.${setupKey}.${productKey}`;
-    await db.collection(SERVICE_COLLECTION).doc('Installation').update({
-      [path]: FieldValue.delete()
-    });
+    await deleteNested(db.collection(SERVICE_COLLECTION).doc('Installation'), [categoryKey, setupKey, productKey]);
     res.json({ success: true, message: `Product slot "${productKey}" removed` });
-  } catch (error) {
-    console.error('[INSTALL-ADMIN] DELETE product error:', error);
+  } catch (error: any) {
+    console.error('[INSTALL-ADMIN] DELETE product error:', error?.message || error);
     res.status(500).json({ success: false, error: 'Failed to delete product' });
   }
 });
@@ -524,14 +509,11 @@ installationAdminRouter.delete(
       }
 
       const db = getDb();
-      const firestorePath = `${categoryKey}.${setupKey}.${nodePath.join('.')}`;
-      await db.collection(SERVICE_COLLECTION).doc('Installation').update({
-        [firestorePath]: FieldValue.delete()
-      });
+      await deleteNested(db.collection(SERVICE_COLLECTION).doc('Installation'), [categoryKey, setupKey, ...nodePath]);
 
       res.json({ success: true, message: `Node removed` });
-    } catch (error) {
-      console.error('[INSTALL-ADMIN] DELETE node error:', error);
+    } catch (error: any) {
+      console.error('[INSTALL-ADMIN] DELETE node error:', error?.message || error);
       res.status(500).json({ success: false, error: 'Failed to delete node' });
     }
   }
