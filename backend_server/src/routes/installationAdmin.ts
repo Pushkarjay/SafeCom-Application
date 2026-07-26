@@ -357,7 +357,8 @@ installationAdminRouter.post('/category/:categoryKey/setup', authenticateToken, 
 // ─── DELETE /category/:categoryKey/setup/:setupKey — Delete a setup
 installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
-    const { categoryKey, setupKey } = req.params;
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
     const db = getDb();
     await deleteNested(db.collection(SERVICE_COLLECTION).doc('Installation'), [categoryKey, setupKey]);
     res.json({ success: true, message: `Setup "${setupKey}" deleted from "${categoryKey}"` });
@@ -421,7 +422,9 @@ installationAdminRouter.post('/category/:categoryKey/setup/:setupKey/product', a
 // ─── DELETE /category/:cat/setup/:setup/product/:productKey — Delete product slot
 installationAdminRouter.delete('/category/:categoryKey/setup/:setupKey/product/:productKey', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
-    const { categoryKey, setupKey, productKey } = req.params;
+    const categoryKey = String(req.params.categoryKey);
+    const setupKey = String(req.params.setupKey);
+    const productKey = String(req.params.productKey);
     const db = getDb();
     await deleteNested(db.collection(SERVICE_COLLECTION).doc('Installation'), [categoryKey, setupKey, productKey]);
     res.json({ success: true, message: `Product slot "${productKey}" removed` });
