@@ -89,6 +89,17 @@ export default function DashboardScreen() {
     await loadMetrics()
   }, [loadMetrics])
 
+  const getChartData = useCallback(() => {
+    if (!metrics?.recentBookings) return []
+    const grouped = metrics.recentBookings.reduce((acc, booking) => {
+      const date = new Date(booking.createdAt).toLocaleDateString()
+      if (!acc[date]) acc[date] = 0
+      acc[date] += booking.amount
+      return acc
+    }, {} as Record<string, number>)
+    return Object.keys(grouped).slice(0, 7).map(date => ({ date, revenue: grouped[date] })).reverse()
+  }, [metrics?.recentBookings])
+
   useEffect(() => {
     isMountedRef.current = true
     loadMetrics()
@@ -121,17 +132,6 @@ export default function DashboardScreen() {
       </div>
     )
   }
-
-  const getChartData = useCallback(() => {
-    if (!metrics?.recentBookings) return []
-    const grouped = metrics.recentBookings.reduce((acc, booking) => {
-      const date = new Date(booking.createdAt).toLocaleDateString()
-      if (!acc[date]) acc[date] = 0
-      acc[date] += booking.amount
-      return acc
-    }, {} as Record<string, number>)
-    return Object.keys(grouped).slice(0, 7).map(date => ({ date, revenue: grouped[date] })).reverse()
-  }, [metrics?.recentBookings])
 
   return (
     <div className="dashboard-screen">
