@@ -148,7 +148,7 @@ export default function DashboardScreen() {
           { label: 'Total Customers', value: metrics?.totalCustomers ?? 0, icon: '👥', delay: '0s' },
           { label: 'Active Technicians', value: metrics?.activeTechnicians ?? 0, icon: '🔧', delay: '0.3s' },
           { label: 'Pending Jobs', value: metrics?.pendingJobs ?? 0, icon: '⏳', delay: '0.6s' },
-          { label: 'Total Revenue', value: Math.floor((metrics?.totalRevenue ?? 0) / 100000), icon: '💰', delay: '0.9s', prefix: '₹', suffix: 'L' },
+          { label: 'Total Revenue', value: metrics?.totalRevenue ?? 0, icon: '💰', delay: '0.9s', prefix: '₹' },
           { label: 'Completion Rate', value: metrics?.completionRate ?? 0, icon: '✅', delay: '1.2s', suffix: '%' },
           { label: 'Avg Response Time', value: metrics?.avgResponseTime ?? 0, icon: '⏱️', delay: '1.5s', suffix: 'h' },
         ].map((metric) => (
