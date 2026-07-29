@@ -21,8 +21,8 @@ class BookingConfirmationScreen extends ConsumerWidget {
     final locationState = ref.watch(locationProvider);
     const bookingAmount = ApiConfig.minimumPaymentAmount;
     final productTotal = activeOrder?.estimatedTotal ?? 0;
-    final grandTotal = productTotal + bookingAmount;
-    final remainingAmount = productTotal;
+    final grandTotal = productTotal;
+    final remainingAmount = grandTotal - bookingAmount;
     final hasItems = activeOrder != null && activeOrder.items.isNotEmpty;
 
     return Scaffold(
@@ -173,27 +173,15 @@ class BookingConfirmationScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      const Text('Product / Service Total', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                      Text('Rs ${productTotal.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ]),
-                    const SizedBox(height: 6),
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      const Text('Booking Charge', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                      Text('Rs ${bookingAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      const Text('Total Bill', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Rs ${grandTotal.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
                     ]),
                     const SizedBox(height: 6),
                     const Divider(color: AppColors.borderLight),
                     const SizedBox(height: 6),
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      const Text('Grand Total', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.primary)),
-                      Text('Rs ${grandTotal.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.secondary)),
-                    ]),
-                    const SizedBox(height: 8),
-                    const Divider(color: AppColors.borderLight),
-                    const SizedBox(height: 8),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       const Text('Paid Now (Booking)', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                      Text('Rs ${bookingAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.success)),
+                      Text('Rs ${bookingAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
                     ]),
                     const SizedBox(height: 6),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -234,10 +222,10 @@ class BookingConfirmationScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      '• The Rs 100 booking charge is an extra fee added on top of the product price to confirm the visit.\n'
-                      '• The remaining product/service amount must be paid directly to the technician before work starts.\n'
-                      '• The technician will handle payment via QR, card, cash, or other methods.\n'
-                      '• Work will start only after on-site payment confirmation.',
+                        '• The total bill includes the booking charge. The Rs 100 booking advance is paid now.'
+                       '• The remaining amount must be paid directly to the technician before work starts.'
+                       '• The technician will handle payment via QR, card, cash, or other methods.\n'
+                       '• Work will start only after on-site payment confirmation.',
                       style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
                     ),
                   ],

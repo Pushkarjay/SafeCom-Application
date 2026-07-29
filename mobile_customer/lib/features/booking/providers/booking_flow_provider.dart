@@ -5,11 +5,13 @@ class BookingFlowState {
   final DateTime selectedDate;
   final String selectedTimeSlot;
   final SavedAddress? selectedAddress;
+  final String? customTextBoxValue;
 
   const BookingFlowState({
     required this.selectedDate,
     required this.selectedTimeSlot,
     this.selectedAddress,
+    this.customTextBoxValue,
   });
 
   BookingFlowState copyWith({
@@ -17,11 +19,14 @@ class BookingFlowState {
     String? selectedTimeSlot,
     SavedAddress? selectedAddress,
     bool clearAddress = false,
+    String? customTextBoxValue,
+    bool clearCustomTextBox = false,
   }) {
     return BookingFlowState(
       selectedDate: selectedDate ?? this.selectedDate,
       selectedTimeSlot: selectedTimeSlot ?? this.selectedTimeSlot,
       selectedAddress: clearAddress ? null : (selectedAddress ?? this.selectedAddress),
+      customTextBoxValue: clearCustomTextBox ? null : (customTextBoxValue ?? this.customTextBoxValue),
     );
   }
 }
@@ -31,7 +36,7 @@ class BookingFlowNotifier extends StateNotifier<BookingFlowState> {
       : super(
           BookingFlowState(
             selectedDate: DateTime.now().add(const Duration(days: 1)),
-            selectedTimeSlot: '10:00 AM - 12:00 PM',
+            selectedTimeSlot: '08:00',
           ),
         );
 
@@ -47,10 +52,14 @@ class BookingFlowNotifier extends StateNotifier<BookingFlowState> {
     state = state.copyWith(selectedAddress: address);
   }
 
+  void setCustomTextBoxValue(String? value) {
+    state = state.copyWith(customTextBoxValue: value);
+  }
+
   void reset() {
     state = BookingFlowState(
       selectedDate: DateTime.now().add(const Duration(days: 1)),
-      selectedTimeSlot: '10:00 AM - 12:00 PM',
+      selectedTimeSlot: '08:00',
     );
   }
 }

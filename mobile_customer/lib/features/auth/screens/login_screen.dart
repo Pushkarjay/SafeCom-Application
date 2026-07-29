@@ -115,15 +115,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             child: const SafeComLogo(size: 64, showText: false),
                           ),
                           const SizedBox(height: 20),
-                          const Text(
-                            'SafeCom',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -0.5,
-                            ),
+const Text(
+                          'SafeCom',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.5,
                           ),
+                        ),
                           const SizedBox(height: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),

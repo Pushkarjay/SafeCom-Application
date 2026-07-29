@@ -1,7 +1,7 @@
 class Customer {
   final String? id;
   final String name;
-  final String email;
+  final String? email;
   final String phone;
   final String? profileImage;
   final String? address;
@@ -13,7 +13,7 @@ class Customer {
   Customer({
     this.id,
     required this.name,
-    required this.email,
+    this.email,
     required this.phone,
     this.profileImage,
     this.address,

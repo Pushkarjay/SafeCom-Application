@@ -52,7 +52,7 @@ export default function InvoiceGeneratorModal({ job, onClose }: InvoiceGenerator
       <body>
         <div class="header">
           <div class="company">
-            <h1>SafeCom Services</h1>
+            <h1>IT & Security Solutions</h1>
             <p>123 Tech Park, Sector 4</p>
             <p>New Delhi, India</p>
           </div>
@@ -117,7 +117,7 @@ export default function InvoiceGeneratorModal({ job, onClose }: InvoiceGenerator
         <div className="modal-body" style={{ padding: '24px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', margin: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
             <div>
-              <h3 style={{ margin: 0, color: '#1e293b' }}>SafeCom Services</h3>
+              <h3 style={{ margin: 0, color: '#1e293b' }}>IT & Security Solutions</h3>
               <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#64748b' }}>123 Tech Park, Sector 4</p>
               <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>New Delhi, India</p>
             </div>

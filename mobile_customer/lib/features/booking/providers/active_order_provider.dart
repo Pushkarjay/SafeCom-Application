@@ -20,6 +20,7 @@ class ActiveOrderSummary {
   final double estimatedTotal;
   final List<ActiveOrderLineItem> items;
   final String? serviceTypeId;
+  final String? customTextBoxValue;
 
   const ActiveOrderSummary({
     required this.serviceName,
@@ -27,6 +28,7 @@ class ActiveOrderSummary {
     required this.estimatedTotal,
     this.items = const [],
     this.serviceTypeId,
+    this.customTextBoxValue,
   });
 }
 
@@ -48,6 +50,7 @@ class ActiveOrderNotifier extends StateNotifier<ActiveOrderSummary?> {
       estimatedTotal: state!.estimatedTotal + additionalTotal,
       items: currentItems,
       serviceTypeId: state!.serviceTypeId,
+      customTextBoxValue: state!.customTextBoxValue,
     );
   }
 

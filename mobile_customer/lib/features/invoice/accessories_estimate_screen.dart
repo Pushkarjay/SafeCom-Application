@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
+import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
@@ -60,23 +61,29 @@ class _AccessoriesEstimateScreenState extends ConsumerState<AccessoriesEstimateS
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 110),
-          child: InvoiceTable(
-            rows: rows
-                .map(
-                  (item) => InvoiceTableRowData(
-                    product: item.name,
-                    unitPrice: item.price,
-                    quantityWidget: QuantityStepper(
-                      quantity: item.quantity,
-                      onIncrement: () => _updateQty(item.id, item.quantity + 1),
-                      onDecrement: item.quantity > 0
-                          ? () => _updateQty(item.id, item.quantity - 1)
-                          : null,
-                    ),
-                    amount: item.price * item.quantity,
-                  ),
-                )
-                .toList(growable: false),
+          child: Column(
+            children: [
+              InvoiceTable(
+                rows: rows
+                    .map(
+                      (item) => InvoiceTableRowData(
+                        product: item.name,
+                        unitPrice: item.price,
+                        quantityWidget: QuantityStepper(
+                          quantity: item.quantity,
+                          onIncrement: () => _updateQty(item.id, item.quantity + 1),
+                          onDecrement: item.quantity > 0
+                              ? () => _updateQty(item.id, item.quantity - 1)
+                              : null,
+                        ),
+                        amount: item.price * item.quantity,
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+              const SizedBox(height: 16),
+              _CustomTextBoxField(),
+            ],
           ),
         ),
       ),
@@ -140,5 +147,79 @@ class _AccessoriesEstimateScreenState extends ConsumerState<AccessoriesEstimateS
           .map((item) => item.id == id ? item.copyWith(quantity: next) : item)
           .toList(growable: false);
     });
+  }
+}
+
+class _CustomTextBoxField extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final customTextBoxValue = ref.watch(bookingFlowProvider).customTextBoxValue;
+    final notifier = ref.read(bookingFlowProvider.notifier);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.notes_outlined, color: AppColors.secondary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Custom Message for Technician',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Add any special instructions or details for the technician (e.g., "Camera near main gate not working")',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            maxLines: 3,
+            maxLength: 500,
+            initialValue: customTextBoxValue ?? '',
+            decoration: InputDecoration(
+              hintText: 'Enter custom message...',
+              hintStyle: const TextStyle(color: AppColors.textMuted),
+              filled: true,
+              fillColor: AppColors.surfaceVariant,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borderLight),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borderLight),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.secondary, width: 1.5),
+              ),
+              counterText: '',
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            onChanged: (value) {
+              notifier.setCustomTextBoxValue(value);
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

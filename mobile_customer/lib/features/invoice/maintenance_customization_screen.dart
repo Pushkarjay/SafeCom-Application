@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
+import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
 import 'package:mobile_customer/features/services/providers/maintenance_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
@@ -32,6 +33,7 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
                     ),
               ),
               const SizedBox(height: 14),
+              _CustomTextBoxField(),
               InvoiceTable(
                 rows: state.items
                     .map(
@@ -109,4 +111,57 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
   }
 
   String _currency(double value) => 'Rs ${value.toStringAsFixed(0)}';
+  }
+}
+
+class _CustomTextBoxField extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final customTextBoxValue = ref.watch(bookingFlowProvider).customTextBoxValue;
+    final notifier = ref.read(bookingFlowProvider.notifier);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Special Instructions (Optional)',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: TextEditingController(text: customTextBoxValue ?? ''),
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'e.g., Camera near the main gate is not working',
+              hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: AppColors.secondary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              filled: true,
+              fillColor: AppColors.surfaceVariant,
+            ),
+            onChanged: (value) => notifier.setCustomTextBoxValue(value.trim().isEmpty ? null : value),
+          ),
+        ],
+      ),
+    );
+  }
 }

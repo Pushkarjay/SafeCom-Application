@@ -120,18 +120,17 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
     final addressState = ref.watch(addressProvider);
     final notifier = ref.read(bookingFlowProvider.notifier);
 
-    final dateOptions = List.generate(
-      6,
-      (index) => DateTime.now().add(Duration(days: index + 1)),
+final dateOptions = List.generate(
+      16,
+      (index) => DateTime.now().add(Duration(days: index)),
     );
 
-    const timeSlots = [
-      '08:00 AM - 10:00 AM',
-      '10:00 AM - 12:00 PM',
-      '12:00 PM - 02:00 PM',
-      '02:00 PM - 04:00 PM',
-      '04:00 PM - 06:00 PM',
-    ];
+    final timeSlots = <String>[];
+    for (int hour = 8; hour < 21; hour++) {
+      final start = '${hour.toString().padLeft(2, '0')}:00';
+      final end = '${(hour + 1).toString().padLeft(2, '0')}:00';
+      timeSlots.add('$start - $end');
+    }
 
     void handleContinue() {
       if (booking.selectedAddress == null) {
@@ -419,7 +418,7 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${date.day}',
+                            _isSameDate(date, DateTime.now()) ? 'Today' : '${date.day}',
                             style: TextStyle(
                               color: isSelected ? Colors.white : AppColors.primary,
                               fontSize: 20,
@@ -445,17 +444,40 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
               padding: const EdgeInsets.only(bottom: 10),
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
-                onTap: () => notifier.selectTimeSlot(slot),
+                onTap: () {
+                  // Disable past time slots on current day
+                  final now = DateTime.now();
+                  final selectedDate = booking.selectedDate;
+                  final isToday = _isSameDate(selectedDate, now);
+                  
+                  if (isToday) {
+                    final slotStartHour = int.parse(slot.split(':')[0]);
+                    if (slotStartHour <= now.hour) {
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                        const SnackBar(
+                          content: Text('This time slot has already passed'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                  }
+                  notifier.selectTimeSlot(slot);
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: isTimeSlotDisabled(slot, booking.selectedDate)
+                        ? AppColors.surfaceVariant.withOpacity(0.5)
+                        : AppColors.surface,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.borderLight,
+                      color: isTimeSlotDisabled(slot, booking.selectedDate)
+                          ? AppColors.borderLight
+                          : (booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.borderLight),
                       width: booking.selectedTimeSlot == slot ? 1.5 : 1,
                     ),
-                    boxShadow: booking.selectedTimeSlot == slot
+                    boxShadow: booking.selectedTimeSlot == slot && !isTimeSlotDisabled(slot, booking.selectedDate)
                         ? [BoxShadow(color: AppColors.secondary.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))]
                         : null,
                   ),
@@ -464,36 +486,45 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
                       Container(
                         width: 36, height: 36,
                         decoration: BoxDecoration(
-                          color: booking.selectedTimeSlot == slot ? AppColors.secondaryLight : AppColors.surfaceVariant,
+                          color: isTimeSlotDisabled(slot, booking.selectedDate)
+                              ? AppColors.borderLight
+                              : (booking.selectedTimeSlot == slot ? AppColors.secondaryLight : AppColors.surfaceVariant),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
                           Icons.access_time_rounded,
-                          color: booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.textMuted,
+                          color: isTimeSlotDisabled(slot, booking.selectedDate)
+                              ? AppColors.textMuted
+                              : (booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.textMuted),
                           size: 18,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          slot,
+                          formatTimeSlot(slot),
                           style: TextStyle(
                             fontWeight: booking.selectedTimeSlot == slot ? FontWeight.w700 : FontWeight.w500,
-                            color: AppColors.textPrimary,
+                            color: isTimeSlotDisabled(slot, booking.selectedDate)
+                                ? AppColors.textMuted
+                                : AppColors.textPrimary,
                           ),
                         ),
                       ),
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.border,
-                            width: booking.selectedTimeSlot == slot ? 6 : 2,
+                      if (isTimeSlotDisabled(slot, booking.selectedDate))
+                        const Icon(Icons.lock_outline, size: 16, color: AppColors.textMuted)
+                      else
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: booking.selectedTimeSlot == slot ? AppColors.secondary : AppColors.border,
+                              width: booking.selectedTimeSlot == slot ? 6 : 2,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -635,6 +666,21 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
 
   bool _isSameDate(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  bool isTimeSlotDisabled(String slot, DateTime selectedDate) {
+    final now = DateTime.now();
+    final isToday = _isSameDate(selectedDate, now);
+    if (!isToday) return false;
+    final slotStartHour = int.parse(slot.split(':')[0]);
+    return slotStartHour <= now.hour;
+  }
+
+  String formatTimeSlot(String slot) {
+    final hour = int.parse(slot.split(':')[0]);
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$displayHour:00 $period';
   }
 
   String _dayName(DateTime value) {

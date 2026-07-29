@@ -90,13 +90,14 @@ class AboutScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Your Trust, Our Protection',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
+const Text(
+                'About SafeCom',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
                   ),
                   const SizedBox(height: 24),
 
@@ -109,7 +110,7 @@ class AboutScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  _buildSectionTitle('What SafeCom does'),
+                  _buildSectionTitle('What IT & Security Solutions does'),
                   const SizedBox(height: 12),
                   _buildBulletPoint('Connect customers with verified technicians'),
                   _buildBulletPoint('CCTV sales and installation'),

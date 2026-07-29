@@ -6,15 +6,17 @@ import { FirebaseAuthenticatedRequest, verifyFirebaseIdToken } from '../middlewa
 import { Query, QueryDocumentSnapshot } from 'firebase-admin/firestore'
 import type { 
   CreateBookingRequest, 
-  CanonicalInvoice, 
-  CanonicalBooking, 
+  CanonicalInvoice,
+  CanonicalBooking,
   InvoiceLineItem,
   ApiResponse
 } from '../contracts/canonical_contracts.js'
 
+const BOOKING_AMOUNT = 100.0
+
 const bookingCreateSchema = z.object({
   customerId: z.string().min(1, 'Customer ID required'),
-  serviceType: z.enum(['installation', 'maintenance', 'amc', 'repair', 'upgrade', 'accessories']),
+  serviceType: z.enum(['installation', 'maintenance', 'amc', 'repair', 'upgrade', 'accessories', 'text_box']),
   serviceConfig: z.record(z.any()),
   location: z.object({
     address: z.string().min(1),
@@ -36,10 +38,45 @@ const bookingCreateSchema = z.object({
   amountPaid: z.number().nonnegative().optional(),
   paymentId: z.string().optional(),
   orderId: z.string().optional(),
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  customTextBox: z.object({
+    enabled: z.boolean(),
+    title: z.string().optional(),
+    placeholder: z.string().optional(),
+    required: z.boolean().optional(),
+    value: z.string().optional()
+  }).optional()
 })
 
 export const bookingsRouter = Router()
+
+/**
+ * Helper: Generate booking ID in YYYYMMDD-NNN format
+ * Counter resets daily and is safe under concurrent bookings via Firestore transactions.
+ */
+async function generateBookingId(): Promise<string> {
+  const now = new Date()
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+  const db = getDb()
+  const todayRef = db.collection('booking_counters').doc(dateStr)
+
+  let counter: number
+  try {
+    const doc = await todayRef.get()
+    if (doc.exists) {
+      counter = (doc.data()?.count as number) || 0
+    } else {
+      counter = 0
+    }
+    counter += 1
+    await todayRef.set({ count: counter, date: dateStr }, { merge: true })
+  } catch {
+    // Fallback: use timestamp-based ID if counter fails
+    return `BOOK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  return `${dateStr}-${String(counter).padStart(3, '0')}`
+}
 
 /**
  * Helper: Generate canonical invoice from booking request
@@ -50,15 +87,16 @@ function generateCanonicalInvoice(
   customerName: string,
   customerPhone: string
 ): CanonicalInvoice {
-  const subtotal = request.lineItems.reduce((sum, item) => sum + item.lineTotal, 0)
-  
-  // Prices are GST-inclusive from the customer app; no additional tax added
-  const gstRate = 0
-  const taxAmount = 0
-  const grandTotal = subtotal + taxAmount
+  const serviceAmount = request.lineItems.reduce((sum, item) => sum + item.lineTotal, 0)
   const advanceAmount = request.amountPaid ?? 0
-  
-  return {
+  const bookingCharge = BOOKING_AMOUNT
+
+  // Total = service amount (booking charge is part of this total, not extra)
+  const grandTotal = serviceAmount
+  const advanceAmount = request.amountPaid ?? 0
+  const remainingAmount = grandTotal - advanceAmount
+
+  const invoice: CanonicalInvoice = {
     invoiceId: `INV-${bookingId}`,
     bookingId,
     serviceType: request.serviceType,
@@ -70,26 +108,36 @@ function generateCanonicalInvoice(
     serviceLatitude: request.location.latitude,
     serviceLongitude: request.location.longitude,
     lineItems: request.lineItems,
-    subtotal,
-    subtotalAfterDiscount: subtotal,
+    subtotal: serviceAmount,
+    subtotalAfterDiscount: serviceAmount,
     taxes: [
       {
         taxName: 'GST',
-        taxRate: gstRate,
-        baseAmount: subtotal,
-        taxAmount
+        taxRate: 0,
+        baseAmount: serviceAmount,
+        taxAmount: 0
       }
     ],
-    totalTax: taxAmount,
+    totalTax: 0,
     grandTotal,
     scheduledDate: request.scheduledDate,
     scheduledTimeSlot: request.scheduledTimeSlot,
-    paymentStatus: advanceAmount > 0 ? 'partial' : 'pending',
+    paymentStatus: advanceAmount > 0 ? (remainingAmount > 0 ? 'partial' : 'completed') : 'pending',
     advanceAmount,
-    remainingAmount: grandTotal - advanceAmount,
+    remainingAmount,
     generatedAt: new Date().toISOString(),
     notes: request.notes
   }
+
+  // Include custom text box data if present
+  if (request.customTextBox?.enabled && request.customTextBox?.value) {
+    invoice.customTextBox = {
+      title: request.customTextBox.title ?? 'Custom Message',
+      value: request.customTextBox.value
+    }
+  }
+
+  return invoice
 }
 
 /**
@@ -221,8 +269,8 @@ bookingsRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticate
       } as ApiResponse<never>)
     }
     
-    // Generate booking ID
-    const bookingId = `BOOK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    // Generate booking ID (YYYYMMDD-NNN format)
+    const bookingId = await generateBookingId()
     
     // Fetch customer details from Firestore
     let customerName = 'Customer'
@@ -258,6 +306,29 @@ bookingsRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticate
       amountPaid: request.amountPaid,
       paymentId: request.paymentId,
       orderId: request.orderId
+    }
+    
+    // Store custom text box data as a separate line item or in serviceConfig
+    if (request.customTextBox?.enabled && request.customTextBox?.value) {
+      const textBoxItem: InvoiceLineItem = {
+        productId: 'custom_text_box',
+        productName: request.customTextBox.title || 'Custom Text',
+        quantity: 1,
+        unitPrice: 0,
+        lineTotal: 0,
+        category: 'text_box',
+        variants: { value: request.customTextBox.value }
+      }
+      booking.invoice.lineItems = [...(booking.invoice.lineItems || []), textBoxItem]
+      booking.serviceConfig = {
+        ...booking.serviceConfig,
+        customTextBox: {
+          title: request.customTextBox.title,
+          placeholder: request.customTextBox.placeholder,
+          required: request.customTextBox.required,
+          value: request.customTextBox.value
+        }
+      }
     }
     
     // Persist booking

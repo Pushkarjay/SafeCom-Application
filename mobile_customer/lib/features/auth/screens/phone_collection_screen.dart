@@ -70,7 +70,7 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
       setState(() => _error = 'Please enter your full name');
       return;
     }
-    if (email.isEmpty || !email.contains('@')) {
+    if (email.isNotEmpty && !email.contains('@')) {
       setState(() => _error = 'Please enter a valid email address');
       return;
     }

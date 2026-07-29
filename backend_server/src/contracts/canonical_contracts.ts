@@ -59,7 +59,7 @@ export interface CanonicalInvoice {
   bookingId: string
   
   /** Type of service this invoice covers */
-  serviceType: 'installation' | 'maintenance' | 'amc' | 'repair' | 'upgrade' | 'accessories'
+  serviceType: ServiceType
   
   /** Customer who placed the booking */
   customerId: string
@@ -111,11 +111,13 @@ export interface CanonicalInvoice {
   
   /** Any notes or terms */
   notes?: string
-}
 
-// ============================================
-// CANONICAL BOOKING CONTRACT
-// ============================================
+  /** Custom text box field data */
+  customTextBox?: {
+    title: string
+    value: string
+  }
+}
 
 export interface CanonicalBooking {
   /** Unique booking ID */
@@ -125,7 +127,7 @@ export interface CanonicalBooking {
   customerId: string
   
   /** Type of service booked */
-  serviceType: 'installation' | 'maintenance' | 'amc' | 'repair' | 'upgrade' | 'accessories'
+  serviceType: ServiceType
   
   /** Service configuration (varies by type) */
   serviceConfig: ServiceConfig
@@ -172,6 +174,15 @@ export interface CanonicalBooking {
   /** Payment gateway order ID */
   orderId?: string
 }
+
+export type ServiceType =
+  | 'installation'
+  | 'maintenance'
+  | 'amc'
+  | 'repair'
+  | 'upgrade'
+  | 'accessories'
+  | 'text_box'
 
 export type BookingStatus = 
   | 'draft'           // Customer is still customizing
@@ -232,7 +243,7 @@ export interface CanonicalJob {
   }
   
   /** What needs to be done */
-  serviceType: 'installation' | 'maintenance' | 'amc' | 'repair' | 'upgrade' | 'accessories'
+  serviceType: ServiceType
   
   /** Invoice details (abbreviated for job card view) */
   invoice: {
@@ -265,23 +276,30 @@ export interface CanonicalJob {
 // ============================================
 
 export interface CreateBookingRequest {
-  customerId: string
-  serviceType: 'installation' | 'maintenance' | 'amc' | 'repair' | 'upgrade' | 'accessories'
-  serviceConfig: ServiceConfig
-  location: {
-    address: string
-    latitude: number
-    longitude: number
-  }
-  scheduledDate: string
-  scheduledTimeSlot: string
-  lineItems: InvoiceLineItem[]
-  totalAmount?: number
-  amountPaid?: number
-  paymentId?: string
-  orderId?: string
-  notes?: string
-}
+   customerId: string
+   serviceType: ServiceType | 'text_box'
+   serviceConfig: ServiceConfig
+   location: {
+     address: string
+     latitude: number
+     longitude: number
+   }
+   scheduledDate: string
+   scheduledTimeSlot: string
+   lineItems: InvoiceLineItem[]
+   totalAmount?: number
+   amountPaid?: number
+   paymentId?: string
+   orderId?: string
+   notes?: string
+   customTextBox?: {
+     enabled: boolean
+     title: string
+     placeholder: string
+     required: boolean
+     value: string
+   }
+ }
 
 export interface CreateBookingResponse {
   bookingId: string

@@ -237,6 +237,7 @@ class ApiService {
     String? paymentId,
     String? orderId,
     String? notes,
+    Map<String, dynamic>? customTextBox,
   }) async {
     try {
       final response = await _dio.post('/bookings', data: {
@@ -252,6 +253,7 @@ class ApiService {
         if (paymentId != null) 'paymentId': paymentId,
         if (orderId != null) 'orderId': orderId,
         if (notes != null) 'notes': notes,
+        if (customTextBox != null) 'customTextBox': customTextBox,
       });
       return response.data as Map<String, dynamic>;
     } catch (e) {

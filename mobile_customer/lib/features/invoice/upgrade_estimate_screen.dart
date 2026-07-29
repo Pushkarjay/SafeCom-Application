@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
+import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
@@ -90,6 +91,8 @@ class _UpgradeEstimateScreenState extends ConsumerState<UpgradeEstimateScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              _CustomTextBoxField(),
             ],
           ),
         ),
@@ -123,18 +126,19 @@ class _UpgradeEstimateScreenState extends ConsumerState<UpgradeEstimateScreen> {
               FilledButton(
                 onPressed: () {
                   ref.read(activeOrderProvider.notifier).setSummary(
-                        ActiveOrderSummary(
-                          serviceName: 'System Upgrade',
-                          packageLabel: widget.bundle.name,
-                          estimatedTotal: total,
-                          serviceTypeId: 'upgrade',
-                          items: [
-                            ActiveOrderLineItem(name: 'Upgrade Bundle', quantity: 1, unitPrice: baseAmount),
-                            if (installationQty > 0) ActiveOrderLineItem(name: 'Installation Support', quantity: installationQty, unitPrice: 499),
-                            if (migrationQty > 0) ActiveOrderLineItem(name: 'Data Migration', quantity: migrationQty, unitPrice: 349),
-                          ],
-                        ),
-                      );
+                         ActiveOrderSummary(
+                           serviceName: 'System Upgrade',
+                           packageLabel: widget.bundle.name,
+                           estimatedTotal: total,
+                           serviceTypeId: 'upgrade',
+                           customTextBoxValue: ref.read(bookingFlowProvider).customTextBoxValue,
+                           items: [
+                             ActiveOrderLineItem(name: 'Upgrade Bundle', quantity: 1, unitPrice: baseAmount),
+                             if (installationQty > 0) ActiveOrderLineItem(name: 'Installation Support', quantity: installationQty, unitPrice: 499),
+                             if (migrationQty > 0) ActiveOrderLineItem(name: 'Data Migration', quantity: migrationQty, unitPrice: 349),
+                           ],
+                         ),
+                       );
                   context.push(AppRoutes.scheduling);
                 },
                 child: const Text('Proceed'),
@@ -142,6 +146,82 @@ class _UpgradeEstimateScreenState extends ConsumerState<UpgradeEstimateScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CustomTextBoxField extends ConsumerWidget {
+  const _CustomTextBoxField();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final booking = ref.watch(bookingFlowProvider);
+    final notifier = ref.read(bookingFlowProvider.notifier);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.notes_outlined, color: AppColors.secondary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Custom Message for Technician',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Add any special instructions or details for the technician (e.g., "Camera near main gate not working")',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            maxLines: 3,
+            maxLength: 500,
+            initialValue: booking.customTextBoxValue,
+            decoration: InputDecoration(
+              hintText: 'Enter custom message...',
+              hintStyle: const TextStyle(color: AppColors.textMuted),
+              filled: true,
+              fillColor: AppColors.surfaceVariant,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borderLight),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borderLight),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.secondary, width: 1.5),
+              ),
+              counterText: '',
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            onChanged: (value) {
+              notifier.setCustomTextBoxValue(value);
+            },
+          ),
+        ],
       ),
     );
   }

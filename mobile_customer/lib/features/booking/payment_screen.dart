@@ -103,6 +103,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         'lineTotal': item.unitPrice * item.quantity,
       }).toList();
 
+      final customTextBoxValue = booking.customTextBoxValue;
+
       final createBookingData = {
         'customerId': authState.customer?.id ?? '',
         'serviceType': serviceType,
@@ -118,6 +120,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         'notes': 'Payment ID: ${response.paymentId}',
       };
 
+      if (customTextBoxValue != null && customTextBoxValue.isNotEmpty) {
+        createBookingData['customTextBox'] = {
+          'enabled': true,
+          'title': 'Custom Message',
+          'placeholder': 'Enter custom message...',
+          'required': false,
+          'value': customTextBoxValue,
+        };
+      }
+
       try {
         await ref.read(apiServiceProvider).createBooking(
           customerId: authState.customer?.id ?? '',
@@ -132,6 +144,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           paymentId: response.paymentId,
           orderId: checkoutOrder.orderId,
           notes: createBookingData['notes'] as String?,
+          customTextBox: createBookingData['customTextBox'] as Map<String, dynamic>?,
         );
       } catch (bookingError) {
         debugPrint('Failed to create booking: $bookingError');
@@ -162,6 +175,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     if (name.contains('repair')) return 'repair';
     if (name.contains('upgrade')) return 'upgrade';
     if (name.contains('accessories')) return 'accessories';
+    if (name.contains('text_box') || name.contains('text box')) return 'text_box';
     if (name.contains('product') || name.contains('purchase') || name.contains('cart')) return 'installation';
     return 'installation';
   }
@@ -268,8 +282,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         'amount': checkoutOrder.amountPaise,
         'currency': checkoutOrder.currency,
         'order_id': checkoutOrder.orderId,
-        'name': 'SafeCom',
-        'description': '${activeOrder.serviceName} - ${activeOrder.packageLabel}',
+'name': 'IT & Security Solutions',
+          'description': '${activeOrder.serviceName} - ${activeOrder.packageLabel}',
         'prefill': <String, String>{
           'contact': customer?.phone ?? '9999999999',
           'email': customer?.email ?? '',
@@ -319,7 +333,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     const bookingAmount = ApiConfig.bookingAmount;
     final productTotal = activeOrder?.estimatedTotal ?? 0;
-    final grandTotal = productTotal + bookingAmount;
+    final grandTotal = productTotal;
 
     return Scaffold(
       appBar: AppBar(
