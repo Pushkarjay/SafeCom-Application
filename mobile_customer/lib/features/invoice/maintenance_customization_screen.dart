@@ -111,7 +111,6 @@ class MaintenanceCustomizationScreen extends ConsumerWidget {
   }
 
   String _currency(double value) => 'Rs ${value.toStringAsFixed(0)}';
-  }
 }
 
 class _CustomTextBoxField extends ConsumerWidget {

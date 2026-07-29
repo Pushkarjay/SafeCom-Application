@@ -8,7 +8,7 @@ import 'package:mobile_customer/features/booking/providers/booking_flow_provider
 import 'package:mobile_customer/features/invoice/widgets/invoice_table.dart';
 import 'package:mobile_customer/features/services/providers/installation_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/quantity_stepper.dart';
-import 'package:mobile_customer/widgets/common/clubbed_product_selector.dart'
+import 'package:mobile_customer/widgets/common/clubbed_product_selector.dart';
 import 'package:mobile_customer/widgets/common/list_product_group_widget.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 
@@ -19,6 +19,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final flow = ref.watch(installationFlowProvider);
     final flowNotifier = ref.read(installationFlowProvider.notifier);
+    final booking = ref.watch(bookingFlowProvider);
     final category = flow.selectedCategory;
     final group = flow.selectedGroup;
 
@@ -381,6 +382,7 @@ class _CustomTextBoxField extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final booking = ref.watch(bookingFlowProvider);
     final notifier = ref.read(bookingFlowProvider.notifier);
+    final controller = TextEditingController(text: booking.customTextBoxValue ?? '');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -416,15 +418,10 @@ class _CustomTextBoxField extends ConsumerWidget {
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
-          Consumer(
-            builder: (context, ref, _) {
-              final booking = ref.watch(bookingFlowProvider);
-              final notifier = ref.read(bookingFlowProvider.notifier);
-              final controller = TextEditingController(text: booking.customTextBoxValue ?? '');
-              return TextField(
-                controller: controller,
-                maxLines: 3,
-                maxLength: 500,
+          TextField(
+            controller: controller,
+            maxLines: 3,
+            maxLength: 500,
             decoration: InputDecoration(
               hintText: 'Enter custom message...',
               hintStyle: const TextStyle(color: AppColors.textMuted),
@@ -452,5 +449,5 @@ class _CustomTextBoxField extends ConsumerWidget {
         ],
       ),
     );
-  },
-)
+  }
+}

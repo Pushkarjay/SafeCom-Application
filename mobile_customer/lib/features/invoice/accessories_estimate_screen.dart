@@ -155,6 +155,7 @@ class _CustomTextBoxField extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final customTextBoxValue = ref.watch(bookingFlowProvider).customTextBoxValue;
     final notifier = ref.read(bookingFlowProvider.notifier);
+    final controller = TextEditingController(text: customTextBoxValue ?? '');
 
     return Container(
       width: double.infinity,
@@ -180,20 +181,27 @@ class _CustomTextBoxField extends ConsumerWidget {
               const SizedBox(width: 10),
               Text(
                 'Custom Message for Technician',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             'Add any special instructions or details for the technician (e.g., "Camera near main gate not working")',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           TextField(
+            controller: controller,
             maxLines: 3,
             maxLength: 500,
-            initialValue: customTextBoxValue ?? '',
             decoration: InputDecoration(
               hintText: 'Enter custom message...',
               hintStyle: const TextStyle(color: AppColors.textMuted),
@@ -212,7 +220,8 @@ class _CustomTextBoxField extends ConsumerWidget {
                 borderSide: const BorderSide(color: AppColors.secondary, width: 1.5),
               ),
               counterText: '',
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
             onChanged: (value) {
               notifier.setCustomTextBoxValue(value);

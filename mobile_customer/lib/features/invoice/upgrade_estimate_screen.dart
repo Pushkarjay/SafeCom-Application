@@ -194,9 +194,9 @@ class _CustomTextBoxField extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           TextField(
+            controller: TextEditingController(text: booking.customTextBoxValue ?? ''),
             maxLines: 3,
             maxLength: 500,
-            initialValue: booking.customTextBoxValue,
             decoration: InputDecoration(
               hintText: 'Enter custom message...',
               hintStyle: const TextStyle(color: AppColors.textMuted),
