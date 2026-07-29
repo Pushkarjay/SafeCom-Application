@@ -88,7 +88,6 @@ function generateCanonicalInvoice(
   customerPhone: string
 ): CanonicalInvoice {
   const serviceAmount = request.lineItems.reduce((sum, item) => sum + item.lineTotal, 0)
-  const advanceAmount = request.amountPaid ?? 0
   const bookingCharge = BOOKING_AMOUNT
 
   // Total = service amount (booking charge is part of this total, not extra)
