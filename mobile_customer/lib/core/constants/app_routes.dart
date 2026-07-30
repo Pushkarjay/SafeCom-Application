@@ -27,9 +27,17 @@ class AppRoutes {
   static const accessoriesEstimate = '/accessories-estimate';
   static const scheduling = '/scheduling';
   static const recommendation = '/recommendation';
-  static const recommendationWithService = '/recommendation/:serviceType';
   static const payment = '/payment';
   static const confirmation = '/confirmation';
   static const addressList = '/address-list';
   static const addressForm = '/address-form';
+
+  static Map<String, String> get serviceRouteMap => {
+    'installation': serviceTypes,
+    'maintenance': maintenanceTypes,
+    'amc': amcPlans,
+    'repair': repairIssues,
+    'upgrade': systemUpgrade,
+    'accessories': accessories,
+  };
 }

@@ -48,21 +48,6 @@ class AmcPlanScreen extends ConsumerWidget {
               return InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () {
-                  ref.read(activeOrderProvider.notifier).setSummary(
-                        ActiveOrderSummary(
-                          serviceName: 'AMC Service',
-                          packageLabel: plan.name,
-                          estimatedTotal: plan.price,
-                          serviceTypeId: 'amc',
-                          items: [
-                            ActiveOrderLineItem(
-                              name: plan.name,
-                              quantity: 1,
-                              unitPrice: plan.price,
-                            ),
-                          ],
-                        ),
-                      );
                   _showAmcConfirmationSheet(context, ref, plan);
                 },
                 child: Ink(
@@ -160,13 +145,31 @@ class _FallbackAmcPlans extends StatelessWidget {
   }
 }
 
+void _setAmcSummary(WidgetRef ref, AmcPlan plan) {
+  ref.read(activeOrderProvider.notifier).setSummary(
+    ActiveOrderSummary(
+      serviceName: 'AMC Service',
+      packageLabel: plan.name,
+      estimatedTotal: plan.price,
+      serviceTypeId: 'amc',
+      items: [
+        ActiveOrderLineItem(
+          name: plan.name,
+          quantity: 1,
+          unitPrice: plan.price,
+        ),
+      ],
+    ),
+  );
+}
+
 void _showAmcConfirmationSheet(BuildContext context, WidgetRef ref, AmcPlan plan) {
   showModalBottomSheet(
     context: context,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => Container(
+    builder: (ctx) => Container(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -193,7 +196,8 @@ void _showAmcConfirmationSheet(BuildContext context, WidgetRef ref, AmcPlan plan
           const SizedBox(height: 24),
           FilledButton(
             onPressed: () {
-              Navigator.pop(context);
+              _setAmcSummary(ref, plan);
+              Navigator.pop(ctx);
               context.push(AppRoutes.recommendation);
             },
             style: FilledButton.styleFrom(
@@ -205,7 +209,8 @@ void _showAmcConfirmationSheet(BuildContext context, WidgetRef ref, AmcPlan plan
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: () {
-              Navigator.pop(context);
+              _setAmcSummary(ref, plan);
+              Navigator.pop(ctx);
               context.push(AppRoutes.scheduling);
             },
             style: OutlinedButton.styleFrom(
@@ -216,7 +221,7 @@ void _showAmcConfirmationSheet(BuildContext context, WidgetRef ref, AmcPlan plan
           ),
           const SizedBox(height: 12),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Go Back'),
           ),
           const SizedBox(height: 8),

@@ -21,6 +21,15 @@ class AccessoriesScreen extends ConsumerStatefulWidget {
 
 class _AccessoriesScreenState extends ConsumerState<AccessoriesScreen> {
   final Map<String, int> _qtyById = {};
+  bool _initialized = false;
+
+  void _initQuantities(List<dynamic> items) {
+    if (_initialized) return;
+    for (final item in items) {
+      _qtyById.putIfAbsent(item.id, () => 0);
+    }
+    _initialized = true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +39,7 @@ class _AccessoriesScreenState extends ConsumerState<AccessoriesScreen> {
       appBar: AppBar(title: const Text('Accessories')),
       body: catalogAsync.when(
         data: (catalog) {
-          for (final item in catalog.items) {
-            _qtyById.putIfAbsent(item.id, () => 0);
-          }
+          _initQuantities(catalog.items);
 
           final total = _totalAmount(catalog.items);
 
@@ -49,7 +56,7 @@ class _AccessoriesScreenState extends ConsumerState<AccessoriesScreen> {
                     return Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
@@ -142,12 +149,40 @@ class _AccessoriesScreenState extends ConsumerState<AccessoriesScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Failed to load: $err')),
+        error: (err, stack) => _FallbackView(),
       ),
     );
   }
 
+class _FallbackView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.textMuted),
+            const SizedBox(height: 16),
+            Text(
+              'Unable to load accessories',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Please check your internet connection and try again.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
   double _totalAmount(List<AccessoryItem> items) {
+
     var sum = 0.0;
     for (final item in items) {
       final qty = _qtyById[item.id] ?? 0;

@@ -85,16 +85,7 @@ void _handleServiceTap(BuildContext context, HomeServiceItem item) {
     return;
   }
 
-  final routes = <String, String>{
-    'installation': AppRoutes.serviceTypes,
-    'maintenance': AppRoutes.maintenanceTypes,
-    'amc': AppRoutes.amcPlans,
-    'repair': AppRoutes.repairIssues,
-    'upgrade': AppRoutes.systemUpgrade,
-    'accessories': AppRoutes.accessories,
-  };
-
-  final route = routes[item.id];
+  final route = AppRoutes.serviceRouteMap[item.id];
   if (route != null) {
     context.push(route);
   } else {

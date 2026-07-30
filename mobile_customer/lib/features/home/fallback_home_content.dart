@@ -67,16 +67,7 @@ class FallbackHomeContent extends ConsumerWidget {
                 return;
               }
 
-              final routes = <String, String>{
-                'installation': AppRoutes.serviceTypes,
-                'maintenance': AppRoutes.maintenanceTypes,
-                'amc': AppRoutes.amcPlans,
-                'repair': AppRoutes.repairIssues,
-                'upgrade': AppRoutes.systemUpgrade,
-                'accessories': AppRoutes.accessories,
-              };
-
-              final route = routes[item.id];
+              final route = AppRoutes.serviceRouteMap[item.id];
               if (route != null) {
                 context.push(route);
               } else {
@@ -99,8 +90,8 @@ class FallbackHomeContent extends ConsumerWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.borderLight),
             ),
-            child: Text('Failed to load services: $error',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.error),
+            child: const Text('Unable to load services. Please check your connection.',
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ),
