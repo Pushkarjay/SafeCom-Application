@@ -343,7 +343,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      customer.email,
+                      customer.email ?? '',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,

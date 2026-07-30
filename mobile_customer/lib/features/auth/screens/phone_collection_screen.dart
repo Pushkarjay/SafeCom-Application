@@ -47,7 +47,7 @@ class _PhoneCollectionScreenState extends ConsumerState<PhoneCollectionScreen> {
       if (customer.name.isNotEmpty && customer.name != 'Customer') {
         _nameController.text = customer.name;
       }
-      _emailController.text = customer.email;
+      _emailController.text = customer.email ?? '';
       _phoneController.text = customer.phone.replaceAll(RegExp(r'^\+\d+'), '');
     }
   }

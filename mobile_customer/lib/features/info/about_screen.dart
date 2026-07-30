@@ -110,7 +110,7 @@ const Text(
                   ),
                   const SizedBox(height: 24),
 
-                  _buildSectionTitle('What IT & Security Solutions does'),
+                  _buildSectionTitle('What SafeCom does'),
                   const SizedBox(height: 12),
                   _buildBulletPoint('Connect customers with verified technicians'),
                   _buildBulletPoint('CCTV sales and installation'),

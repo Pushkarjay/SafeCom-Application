@@ -152,12 +152,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'CUSTOMER',
+                              'IT & Security Solutions',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.secondary,
-                                letterSpacing: 4,
+                                letterSpacing: 2,
                               ),
                             ),
                           ),

@@ -45,10 +45,10 @@ export default function MainLayout() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo-box">
-            <img src="/logo-visual.jpeg" alt="IT & Security Solutions" className="logo-img" />
+            <img src="/logo-visual.jpeg" alt="SafeCom" className="logo-img" />
           </div>
           <div className="logo-text">
-            <h2>IT & Security Solutions</h2>
+            <h2>SafeCom</h2>
             <p>Admin</p>
           </div>
         </div>
@@ -174,7 +174,7 @@ export default function MainLayout() {
             <div className="admin-avatar">{(admin?.name || 'A')[0].toUpperCase()}</div>
             <div className="admin-details">
               <p className="admin-name">{admin?.name || 'Admin'}</p>
-              <p className="admin-email">{admin?.email || 'admin@itsecuritysolutions.com'}</p>
+              <p className="admin-email">{admin?.email || 'admin@safecom.com'}</p>
             </div>
           </div>
           <button className="logout-button" onClick={handleLogout}>

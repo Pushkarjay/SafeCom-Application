@@ -30,9 +30,9 @@ export default function LoginScreen() {
       <div className="login-card">
         <div className="login-header">
           <div className="login-logo">
-            <img src="/logo-visual.jpeg" alt="IT & Security Solutions" />
+            <img src="/logo-visual.jpeg" alt="SafeCom" />
           </div>
-          <h1>IT & Security Solutions Admin</h1>
+          <h1>SafeCom Admin</h1>
           <p>Dashboard</p>
         </div>
 
@@ -44,7 +44,7 @@ export default function LoginScreen() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@itsecuritysolutions.com"
+              placeholder="admin@safecom.com"
               disabled={isLoading}
               required
             />
@@ -81,7 +81,7 @@ export default function LoginScreen() {
           </button>
 
           <div className="demo-credentials">
-            <p>Sign in with your Firebase admin account for IT & Security Solutions.</p>
+            <p>Sign in with your Firebase admin account for SafeCom.</p>
           </div>
         </form>
       </div>

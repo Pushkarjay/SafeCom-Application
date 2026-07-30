@@ -282,7 +282,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         'amount': checkoutOrder.amountPaise,
         'currency': checkoutOrder.currency,
         'order_id': checkoutOrder.orderId,
-'name': 'IT & Security Solutions',
+'name': 'SafeCom',
           'description': '${activeOrder.serviceName} - ${activeOrder.packageLabel}',
         'prefill': <String, String>{
           'contact': customer?.phone ?? '9999999999',

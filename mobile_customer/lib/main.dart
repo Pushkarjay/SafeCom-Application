@@ -33,7 +33,7 @@ class SafeComApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'IT & Security Solutions',
+      title: 'SafeCom',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: router,

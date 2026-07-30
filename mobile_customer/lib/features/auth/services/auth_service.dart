@@ -285,7 +285,7 @@ class AuthService {
       // Sync the users collection so Firebase Auth / users doc stays in sync
       await linkUserToBackend(
         firebaseUid: customerId,
-        email: customer.email,
+        email: customer.email ?? '',
         displayName: customer.name,
         phone: customer.phone,
         address: customer.address,
