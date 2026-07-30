@@ -30,20 +30,24 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
     final cid = customer?.id;
     if (cid != null) {
       ref.read(addressProvider.notifier).loadAddresses(cid).then((_) {
-        final state = ref.read(addressProvider);
-        final defaultAddr = state.defaultAddress;
-        if (defaultAddr != null) {
-          ref.read(bookingFlowProvider.notifier).selectAddress(defaultAddr);
+        final booking = ref.read(bookingFlowProvider);
+        if (booking.selectedAddress == null) {
+          final state = ref.read(addressProvider);
+          final defaultAddr = state.defaultAddress;
+          if (defaultAddr != null) {
+            ref.read(bookingFlowProvider.notifier).selectAddress(defaultAddr);
+          }
         }
       });
     }
   }
 
   void _openAddAddress() async {
-    await Navigator.push(
+    final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const AddressFormScreen()),
     );
+    if (saved != true) return;
     final customer = ref.read(authProvider).customer;
     final cid = customer?.id;
     if (cid != null) {
@@ -81,7 +85,7 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
       );
 
       final tempAddress = SavedAddress(
-        id: 'current_location',
+        id: 'cl_${DateTime.now().millisecondsSinceEpoch}',
         label: 'Current Location',
         address: address,
         latitude: position.latitude,

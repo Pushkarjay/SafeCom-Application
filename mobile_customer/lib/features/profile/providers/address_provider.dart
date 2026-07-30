@@ -34,7 +34,11 @@ class AddressState {
     try {
       return addresses.firstWhere((a) => a.id == defaultAddressId);
     } catch (_) {
-      return addresses.isNotEmpty ? addresses.first : null;
+      try {
+        return addresses.firstWhere((a) => a.isDefault);
+      } catch (_) {
+        return addresses.isNotEmpty ? addresses.first : null;
+      }
     }
   }
 }

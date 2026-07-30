@@ -107,7 +107,7 @@ class BookingConfirmationScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _infoRow(Icons.location_on_outlined, 'Location: ${locationState.location}'),
+                    _infoRow(Icons.location_on_outlined, 'Location: ${booking.selectedAddress?.address ?? locationState.location}'),
                     const SizedBox(height: 6),
                     _infoRow(Icons.calendar_month_outlined, 'Date: ${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year}'),
                     const SizedBox(height: 6),

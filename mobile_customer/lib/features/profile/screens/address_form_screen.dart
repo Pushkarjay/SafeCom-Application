@@ -71,6 +71,17 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if ((_pickedLat == null || _pickedLat == 0.0) && !_isEditing) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please pick a location on the map'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     final customer = ref.read(authProvider).customer;
@@ -108,7 +119,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

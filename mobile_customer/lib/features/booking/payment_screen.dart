@@ -105,15 +105,24 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       final customTextBoxValue = booking.customTextBoxValue;
 
+      final selectedAddr = booking.selectedAddress;
+      final locationPayload = selectedAddr != null
+          ? {
+              'address': selectedAddr.address,
+              'latitude': selectedAddr.latitude,
+              'longitude': selectedAddr.longitude,
+            }
+          : {
+              'address': locationState.location,
+              'latitude': locationState.latitude ?? 25.5941,
+              'longitude': locationState.longitude ?? 85.1376,
+            };
+
       final createBookingData = {
         'customerId': authState.customer?.id ?? '',
         'serviceType': serviceType,
         'serviceConfig': {'packageLabel': activeOrder?.packageLabel ?? 'Standard'},
-        'location': {
-          'address': locationState.location,
-          'latitude': locationState.latitude ?? 25.5941,
-          'longitude': locationState.longitude ?? 85.1376,
-        },
+        'location': locationPayload,
         'scheduledDate': '${booking.selectedDate.year}-${booking.selectedDate.month.toString().padLeft(2, '0')}-${booking.selectedDate.day.toString().padLeft(2, '0')}',
         'scheduledTimeSlot': booking.selectedTimeSlot,
         'lineItems': lineItems,

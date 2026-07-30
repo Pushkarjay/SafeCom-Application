@@ -98,9 +98,17 @@ class _LocationPickerScreenState extends ConsumerState<LocationPickerScreen> {
       _selectedAddress = null;
     });
 
-    final service = ref.read(locationServiceProvider);
-    final address = await service.reverseGeocode(position.latitude, position.longitude);
-    if (mounted) setState(() { _selectedAddress = address; });
+    try {
+      final service = ref.read(locationServiceProvider);
+      final address = await service.reverseGeocode(position.latitude, position.longitude);
+      if (mounted) setState(() { _selectedAddress = address; });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _selectedAddress = '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+        });
+      }
+    }
   }
 
   Future<void> _search() async {
