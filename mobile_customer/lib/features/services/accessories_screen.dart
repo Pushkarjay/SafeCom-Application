@@ -154,6 +154,16 @@ class _AccessoriesScreenState extends ConsumerState<AccessoriesScreen> {
     );
   }
 
+  double _totalAmount(List<AccessoryItem> items) {
+    var sum = 0.0;
+    for (final item in items) {
+      final qty = _qtyById[item.id] ?? 0;
+      sum += item.price * qty;
+    }
+    return sum;
+  }
+}
+
 class _FallbackView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -178,16 +188,5 @@ class _FallbackView extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-  double _totalAmount(List<AccessoryItem> items) {
-
-    var sum = 0.0;
-    for (final item in items) {
-      final qty = _qtyById[item.id] ?? 0;
-      sum += item.price * qty;
-    }
-    return sum;
   }
 }

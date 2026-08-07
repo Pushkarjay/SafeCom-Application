@@ -551,7 +551,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String? value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -581,7 +581,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  value,
+                  value ?? '',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
