@@ -257,45 +257,14 @@ jobs:
           name: employee-app
           path: artifacts/employee
 
-      # --- Customer app: upload to each requested track (full rollout) ---
-      - name: Upload Customer to Internal
+      # --- Customer app: upload bundle once, assign to every requested track in a single edit ---
+      - name: Upload Customer to Play Store
         uses: r0adkll/upload-google-play@v1
-        if: contains(inputs.release_tracks, 'internal')
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
           packageName: ${{ env.CUSTOMER_PACKAGE }}
           releaseFiles: artifacts/customer/**/*.aab
-          track: internal
-          status: completed
-
-      - name: Upload Customer to Alpha
-        uses: r0adkll/upload-google-play@v1
-        if: contains(inputs.release_tracks, 'alpha')
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
-          packageName: ${{ env.CUSTOMER_PACKAGE }}
-          releaseFiles: artifacts/customer/**/*.aab
-          track: alpha
-          status: completed
-
-      - name: Upload Customer to Beta
-        uses: r0adkll/upload-google-play@v1
-        if: contains(inputs.release_tracks, 'beta')
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
-          packageName: ${{ env.CUSTOMER_PACKAGE }}
-          releaseFiles: artifacts/customer/**/*.aab
-          track: beta
-          status: completed
-
-      - name: Upload Customer to Production
-        uses: r0adkll/upload-google-play@v1
-        if: contains(inputs.release_tracks, 'production')
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
-          packageName: ${{ env.CUSTOMER_PACKAGE }}
-          releaseFiles: artifacts/customer/**/*.aab
-          track: production
+          tracks: ${{ inputs.release_tracks }}
           status: completed
 
       # --- Employee app: optional single-track upload ---
@@ -305,5 +274,5 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
           packageName: ${{ env.EMPLOYEE_PACKAGE }}
           releaseFiles: artifacts/employee/**/*.aab
-          track: ${{ inputs.employee_release_track }}
+          tracks: ${{ inputs.employee_release_track }}
           status: completed
