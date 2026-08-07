@@ -1,3 +1,6 @@
+// ignore: unnecessary_import — CupertinoPageTransitionsBuilder is exported by
+// material.dart on some Flutter versions but only by cupertino.dart on others.
+import 'package:flutter/cupertino.dart'; // ignore: unnecessary_import
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
