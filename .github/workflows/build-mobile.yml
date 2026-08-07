@@ -21,8 +21,12 @@ on:
         description: Also upload Employee app to Play Store (set false for customer-only rollout)
         type: boolean
         default: true
-      release_track:
-        description: Play Store track
+      release_tracks:
+        description: Comma-separated Play Store tracks for the Customer app (e.g. internal,alpha,production)
+        type: string
+        default: internal
+      employee_release_track:
+        description: Play Store track for the Employee app (when upload_employee=true)
         type: choice
         default: internal
         options:
@@ -253,19 +257,53 @@ jobs:
           name: employee-app
           path: artifacts/employee
 
-      - uses: r0adkll/upload-google-play@v1
+      # --- Customer app: upload to each requested track (full rollout) ---
+      - name: Upload Customer to Internal
+        uses: r0adkll/upload-google-play@v1
+        if: contains(inputs.release_tracks, 'internal')
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
           packageName: ${{ env.CUSTOMER_PACKAGE }}
           releaseFiles: artifacts/customer/**/*.aab
-          track: ${{ inputs.release_track || 'internal' }}
+          track: internal
           status: completed
 
+      - name: Upload Customer to Alpha
+        uses: r0adkll/upload-google-play@v1
+        if: contains(inputs.release_tracks, 'alpha')
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
+          packageName: ${{ env.CUSTOMER_PACKAGE }}
+          releaseFiles: artifacts/customer/**/*.aab
+          track: alpha
+          status: completed
+
+      - name: Upload Customer to Beta
+        uses: r0adkll/upload-google-play@v1
+        if: contains(inputs.release_tracks, 'beta')
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
+          packageName: ${{ env.CUSTOMER_PACKAGE }}
+          releaseFiles: artifacts/customer/**/*.aab
+          track: beta
+          status: completed
+
+      - name: Upload Customer to Production
+        uses: r0adkll/upload-google-play@v1
+        if: contains(inputs.release_tracks, 'production')
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
+          packageName: ${{ env.CUSTOMER_PACKAGE }}
+          releaseFiles: artifacts/customer/**/*.aab
+          track: production
+          status: completed
+
+      # --- Employee app: optional single-track upload ---
       - uses: r0adkll/upload-google-play@v1
         if: inputs.upload_employee
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
           packageName: ${{ env.EMPLOYEE_PACKAGE }}
           releaseFiles: artifacts/employee/**/*.aab
-          track: ${{ inputs.release_track || 'internal' }}
+          track: ${{ inputs.employee_release_track }}
           status: completed
