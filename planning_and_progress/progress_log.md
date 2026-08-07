@@ -363,3 +363,151 @@ elease_assets\.
 
 *Last Updated: 2026-06-15*
 *Author: Claude Code Assistant (Documentation Update)*
+
+---
+
+## 2026-07-30 (Production Audit & 10-Task Fix — Session 3 Commits)
+
+### Task 1: Universal Custom Text Box Product ✅
+- Backend: Added `customTextBox` field to `CreateBookingRequest` schema, `CanonicalInvoice`, and booking creation flow (`bookings.ts`)
+- Contracts: Added `customTextBox` to `CanonicalInvoice` and `CreateBookingRequest` in `canonical_contracts.ts`
+- Mobile: Added `customTextBoxValue` to `BookingFlowState`, `ActiveOrderSummary`, and all estimate screens
+- Payment: Custom text sent to backend in booking creation payload
+- Admin: Handled via service config — no separate admin UI needed
+
+### Task 2: Invoice Logic Fix ✅
+- Backend: `grandTotal = serviceAmount` (booking charge is part of total, not extra)
+- `advanceAmount = request.amountPaid`, `remainingAmount = grandTotal - advanceAmount`
+- Invoice displays Total Amount, Advance Paid, Remaining Balance
+
+### Task 3: Booking ID Format ✅
+- Format: `YYYYMMDD-NNN` (e.g., `20260729-001`)
+- Daily counter via `booking_counters/{dateStr}` Firestore document
+- Counter resets daily (new doc per date)
+- Concurrent-safe counter increment
+
+### Task 4: Address Module Audit ✅
+**6 critical bugs fixed:**
+- Bug 1: `_initAddresses` no longer overrides user-selected address on reload (`scheduling_screen.dart`)
+- Bug 2: `_openAddAddress` doesn't select last address on cancel — uses `Navigator.pop(context, true)` return value
+- Bug 3: Booking payload uses `booking.selectedAddress` as source of truth instead of `locationState` (`payment_screen.dart`)
+- Bug 4: Confirmation screen shows `booking.selectedAddress?.address ?? locationState.location` (`booking_confirmation_screen.dart`)
+- Bug 8: Coordinate validation before saving address (0,0 Null Island prevention) (`address_form_screen.dart`)
+- Bug 9: Unhandled `reverseGeocode` exception — fallback to coordinate string (`location_picker_screen.dart`)
+- Bug 10: `defaultAddress` getter falls back to `isDefault` flag, not `addresses.first` (`address_provider.dart`)
+- Bug 14: Unique `id` for current location (`cl_${timestamp}`) instead of fixed string
+
+### Task 5: Booking Date & Time Slots ✅
+- Today is selectable (index 0 in `List.generate(16, ...)`)
+- Past time slots on current day disabled (`slotStartHour <= now.hour` check)
+- Slots: 8:00 AM to 9:00 PM (one-hour intervals)
+- Future dates enabled
+
+### Task 6: Email Should Not Be Mandatory ✅
+- `CustomerModel.email` made nullable
+- `email ?? ''` fallback in phone_collection_screen, profile_screen, auth_service, payment_screen
+- Booking proceeds without email
+
+### Task 7: Branding (Correction) ✅
+- **Splash screen only**: Changed `CUSTOMER` → `IT & Security Solutions`
+- Reverted all other files back to `SafeCom`:
+  - Admin sidebar, login, invoice generator
+  - Customer app title, about screen, payment screen
+  - Customer landing page (title, meta, hero, email, Play Store link)
+- Files: 11 files modified across Admin dashboard, customer_landing, mobile_customer
+
+### Task 8: Homepage Improvements ✅
+- Consolidated duplicate service route map into `AppRoutes.serviceRouteMap`
+- Fixed raw error messages shown to users (user-friendly fallback views)
+- Cleaned up fallback_home_content.dart
+
+### Task 9: Services Page Improvements ✅
+- **AMC Plan Screen**: Fixed premature order summary mutation — `setSummary` moved from list item `onTap` into bottom sheet confirm callbacks
+- **Accessories Screen**: Fixed side effect in `build()` — `_qtyById` initialization moved to `_initQuantities` with `_initialized` flag
+- Replaced `Colors.white` with `AppColors.surface` for theme consistency
+- Replaced raw error displays with user-friendly `_FallbackView` widgets
+
+### Task 10: Automatic Login After Reinstallation ✅
+- `android:allowBackup=true` in `AndroidManifest.xml`
+- `backup_rules.xml` ensures SharedPreferences survives reinstallation
+- `_restoreSession()` in `auth_provider.dart` checks Firebase currentUser + SharedPreferences
+
+### Files Modified (This Session)
+```
+Admin/web_app/admin-dashboard/src/features/auth/login_screen.tsx
+Admin/web_app/admin-dashboard/src/features/jobs/InvoiceGeneratorModal.tsx
+Admin/web_app/admin-dashboard/src/widgets/common/main_layout.tsx
+customer_landing/index.html
+mobile_customer/lib/core/constants/app_routes.dart
+mobile_customer/lib/features/auth/screens/phone_collection_screen.dart
+mobile_customer/lib/features/auth/services/auth_service.dart
+mobile_customer/lib/features/booking/booking_confirmation_screen.dart
+mobile_customer/lib/features/booking/payment_screen.dart
+mobile_customer/lib/features/booking/scheduling_screen.dart
+mobile_customer/lib/features/home/fallback_home_content.dart
+mobile_customer/lib/features/info/about_screen.dart
+mobile_customer/lib/features/location/location_picker_screen.dart
+mobile_customer/lib/features/profile/providers/address_provider.dart
+mobile_customer/lib/features/profile/screens/address_form_screen.dart
+mobile_customer/lib/features/profile/screens/profile_screen.dart
+mobile_customer/lib/features/services/accessories_screen.dart
+mobile_customer/lib/features/services/amc_plan_screen.dart
+mobile_customer/lib/features/splash/splash_screen.dart
+mobile_customer/lib/core/sdui/sdui_builders.dart
+mobile_customer/lib/main.dart
+```
+
+### Git Commits
+| Hash | Message |
+|------|---------|
+| `0d3fef6` | fix: revert branding to SafeCom everywhere except splash screen; fix email optional null safety |
+| `cfcde11` | fix: address module audit - fix 6 critical bugs |
+| `f063137` | fix: homepage and services page improvements |
+
+### Database Changes
+- `booking_counters/{dateStr}` — collection for daily booking ID counters (auto-created)
+
+### Deployment
+- CI/CD auto-deploys on push to `main`
+- Backend: Cloud Run (us-central1 + asia-south1)
+- Admin Dashboard: Firebase Hosting
+- Customer Landing: Firebase Hosting
+- Mobile: Manual APK build required via GitHub Actions (build-mobile.yml)
+
+---
+
+## 2026-08-07 (Post-Session Verification & Data Retention Fix)
+
+### Task 7 Branding — Verified ✅
+- Audited entire repo: `IT & Security Solutions` appears **only** in `mobile_customer/lib/features/splash/splash_screen.dart`
+- All other surfaces (admin login/sidebar/invoice, customer about/profile/home/payment, landing pages) use `SafeCom`
+- No stray `CUSTOMER` branding remains in customer app UI
+- Note: If installed APK still shows old branding, rebuild the APK (`build-mobile.yml` / manual build) — source is correct
+
+### Task 10 Correction — Data Retention on Uninstall ❌→✅
+- **Reversed** Android auto-backup so uninstalling the app clears ALL user data (email, auth token, saved session)
+- `AndroidManifest.xml`: `android:allowBackup` changed `true` → `false`, removed `android:fullBackupContent="@xml/backup_rules"`
+- Deleted `mobile_customer/android/app/src/main/res/xml/backup_rules.xml`
+- `_restoreSession()` in `auth_provider.dart` kept — it only restores an in-memory session on normal app restart (Firebase currentUser still signed in), NOT across uninstall/reinstall
+
+### Uncommitted Fixes Committed (leftover from previous session)
+- `main.dart`: added `final router = ref.watch(appRouterProvider)` (compile fix — committed version referenced undefined `router`); removed 30+ unused imports
+- `accessories_screen.dart`: moved `_totalAmount` inside the state class (fixes top-level stray method)
+- `profile_screen.dart`: `_buildInfoRow` accepts nullable value (`value ?? ''`) for optional email
+- `about_screen.dart`: added top padding to "About SafeCom" header
+
+### Files Modified (This Session)
+```
+mobile_customer/android/app/src/main/AndroidManifest.xml
+mobile_customer/android/app/src/main/res/xml/backup_rules.xml (deleted)
+mobile_customer/lib/main.dart
+planning_and_progress/progress_log.md
+```
+
+### Git Commits
+| Hash | Message |
+|------|---------|
+| (new) | fix: disable Android auto-backup so uninstall clears all user data; fix compile issues in main.dart & accessories |
+
+### Verification
+- `flutter analyze` passes (exit 0); remaining items are pre-existing info-level lints only
