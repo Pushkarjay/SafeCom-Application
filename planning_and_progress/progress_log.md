@@ -522,3 +522,37 @@ planning_and_progress/progress_log.md
 
 ### Verification
 - `flutter analyze` passes (exit 0); remaining items are pre-existing info-level lints only
+
+---
+
+## 2026-08-07 (Customer App Play Store Rollout — v1.3.8+36)
+
+### What happened
+- User requested rolling out the latest **customer app** to the Play Store, skipping the employee app.
+- Diagnosed `com.safecom.customer` tracks: **internal (v31), alpha (v32), production (v33)** all on 1.3.8; **beta track exists but is empty** (skipped per user).
+
+### CI/workflow changes
+- Added `upload_employee` toggle to `build-mobile.yml` for customer-only rollouts.
+- Removed `continue-on-error` from the customer upload step (was masking upload failures).
+- Replaced the deprecated `track` input with `tracks` (comma-separated) so the AAB is uploaded **once** and assigned to all requested tracks in a **single Play edit**. The old 4-step approach failed with `Version code 35 has already been used.` because the Play Publisher API only allows one bundle upload per version code per app — extra tracks require promotion, which the `tracks` input does internally.
+
+### Rollout result (verified via Play Publisher API)
+| Track | Version | Status |
+|-------|---------|--------|
+| internal | 1.3.8 (v36) | ✅ completed |
+| alpha | 1.3.8 (v36) | ✅ completed |
+| production | 1.3.8 (v36) | ✅ completed — LIVE (100%) |
+| beta | — | skipped (empty track) |
+
+### Notes
+- v35 was consumed by the failed first attempt (uploaded to internal only). Customer app bumped `1.3.8+34 → 1.3.8+36` for the successful rollout.
+- Employee app untouched (build only, not uploaded); employee version remains `1.1.2+27`.
+- Upload edit committed: `10975790504149519055`.
+
+### Git Commits
+| Hash | Message |
+|------|---------|
+| `20b2fc4` | ci: add upload_employee toggle for customer-only Play Store rollout; stop masking upload failures |
+| `7b34f91` | ci: support multi-track customer Play Store upload (internal/alpha/beta/production) with employee toggle |
+| `c1005a9` | ci: upload customer bundle once to all requested tracks (fix 'version code already used'); bump customer to 1.3.8+36 |
+| `1bdcb0e` | chore: bump customer build to 1.3.8+36 for Play Store rollout (v35 already used in internal) |
