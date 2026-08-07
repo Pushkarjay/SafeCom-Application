@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:mobile_customer/data/datasources/api_service.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 
@@ -11,8 +12,8 @@ class PricingApiDataSource {
     try {
       return InstallationPricingContract.fromJson(response);
     } catch (e, st) {
-      print('*** INSTALL ERROR *** PricingApiDataSource.getInstallationPricing fromJson error: $e');
-      print('*** INSTALL ERROR *** StackTrace: $st');
+      debugPrint('*** INSTALL ERROR *** PricingApiDataSource.getInstallationPricing fromJson error: $e');
+      debugPrint('*** INSTALL ERROR *** StackTrace: $st');
       rethrow;
     }
   }

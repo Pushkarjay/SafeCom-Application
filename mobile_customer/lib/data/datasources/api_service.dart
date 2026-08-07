@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/config/api_config.dart';
@@ -78,10 +79,10 @@ class ApiService {
   Future<Map<String, dynamic>> getInstallationPricing() async {
     try {
       final response = await _dio.get('/catalog-public/pricing/installation');
-      print('*** INSTALL RESPONSE *** status=${response.statusCode} type=${response.data.runtimeType}');
+      debugPrint('*** INSTALL RESPONSE *** status=${response.statusCode} type=${response.data.runtimeType}');
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      print('*** INSTALL ERROR *** ApiService.getInstallationPricing: $e');
+      debugPrint('*** INSTALL ERROR *** ApiService.getInstallationPricing: $e');
       throw Exception('Failed to fetch installation pricing: $e');
     }
   }
@@ -248,12 +249,12 @@ class ApiService {
         'scheduledDate': scheduledDate,
         'scheduledTimeSlot': scheduledTimeSlot,
         'lineItems': lineItems,
-        if (totalAmount != null) 'totalAmount': totalAmount,
-        if (amountPaid != null) 'amountPaid': amountPaid,
-        if (paymentId != null) 'paymentId': paymentId,
-        if (orderId != null) 'orderId': orderId,
-        if (notes != null) 'notes': notes,
-        if (customTextBox != null) 'customTextBox': customTextBox,
+        'totalAmount': ?totalAmount,
+        'amountPaid': ?amountPaid,
+        'paymentId': ?paymentId,
+        'orderId': ?orderId,
+        'notes': ?notes,
+        'customTextBox': ?customTextBox,
       });
       return response.data as Map<String, dynamic>;
     } catch (e) {

@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -106,13 +105,13 @@ class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3),
         ).copyWith(
-          elevation: MaterialStateProperty.resolveWith<double>((states) {
-            if (states.contains(MaterialState.hovered)) return 4;
-            if (states.contains(MaterialState.pressed)) return 1;
+          elevation: WidgetStateProperty.resolveWith<double>((states) {
+            if (states.contains(WidgetState.hovered)) return 4;
+            if (states.contains(WidgetState.pressed)) return 1;
             return 0;
           }),
-          backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-            if (states.contains(MaterialState.disabled)) return AppColors.surfaceVariant;
+          backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.disabled)) return AppColors.surfaceVariant;
             return AppColors.primary;
           }),
         ),
@@ -137,9 +136,9 @@ class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3),
         ).copyWith(
-          backgroundColor: MaterialStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(MaterialState.hovered)) return AppColors.hoverEffect;
-            if (states.contains(MaterialState.pressed)) return AppColors.surfaceVariant;
+          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+            if (states.contains(WidgetState.hovered)) return AppColors.hoverEffect;
+            if (states.contains(WidgetState.pressed)) return AppColors.surfaceVariant;
             return null;
           }),
         ),
@@ -201,14 +200,14 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
         indicatorColor: AppColors.secondaryLight,
-        labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>((states) {
-          if (states.contains(MaterialState.selected)) {
+        labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((states) {
+          if (states.contains(WidgetState.selected)) {
             return const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.primary);
           }
           return const TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: AppColors.textMuted);
         }),
-        iconTheme: MaterialStateProperty.resolveWith<IconThemeData>((states) {
-          if (states.contains(MaterialState.selected)) {
+        iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((states) {
+          if (states.contains(WidgetState.selected)) {
             return const IconThemeData(size: 24, color: AppColors.primary);
           }
           return const IconThemeData(size: 24, color: AppColors.textMuted);

@@ -53,7 +53,7 @@ class BookingConfirmationScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.successLight,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.success.withOpacity(0.2), width: 3),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.2), width: 3),
                 ),
                 child: const Icon(Icons.check_rounded, size: 44, color: AppColors.success),
               ),
@@ -200,7 +200,7 @@ class BookingConfirmationScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

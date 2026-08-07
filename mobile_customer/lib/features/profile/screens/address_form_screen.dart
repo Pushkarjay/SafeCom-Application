@@ -248,7 +248,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                           color: _pickedLat != null ? AppColors.secondaryLight : AppColors.surfaceVariant,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _pickedLat != null ? AppColors.secondary.withOpacity(0.3) : AppColors.borderLight,
+                            color: _pickedLat != null ? AppColors.secondary.withValues(alpha: 0.3) : AppColors.borderLight,
                           ),
                         ),
                         child: Row(

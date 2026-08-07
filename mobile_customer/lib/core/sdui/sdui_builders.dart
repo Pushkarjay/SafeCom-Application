@@ -1,7 +1,7 @@
-/// SDUI Widget Builders
-///
-/// Each function maps a JSON SDUI component to a Flutter widget.
-/// These builders reuse existing SafeCom widgets where possible.
+// SDUI Widget Builders
+//
+// Each function maps a JSON SDUI component to a Flutter widget.
+// These builders reuse existing SafeCom widgets where possible.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -614,7 +614,7 @@ Widget buildAnnouncementsList(SduiComponent component, BuildContext context) {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: a.color.withOpacity(0.1),
+                    color: a.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(a.icon, color: a.color, size: 22),

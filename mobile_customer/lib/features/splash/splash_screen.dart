@@ -93,7 +93,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       height: 280,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.secondary.withOpacity(0.04),
+                        color: AppColors.secondary.withValues(alpha: 0.04),
                       ),
                     ),
                   ),
@@ -148,7 +148,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                             decoration: BoxDecoration(
-                              color: AppColors.secondary.withOpacity(0.1),
+                              color: AppColors.secondary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -182,7 +182,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary.withOpacity(0.5)),
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary.withValues(alpha: 0.5)),
                         ),
                       ),
                     ),

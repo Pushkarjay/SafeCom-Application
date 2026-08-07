@@ -8,14 +8,12 @@ import 'package:mobile_customer/features/auth/providers/auth_provider.dart';
 import 'package:mobile_customer/routes/app_router.dart';
 import 'package:mobile_customer/main.dart';
 
-final _mockAppRouterProvider = Provider<GoRouter>((ref) {
-  return GoRouter(
-    initialLocation: '/',
-    routes: [
-      GoRoute(path: '/', builder: (_, __) => const SizedBox()),
-    ],
-  );
-});
+final _mockGoRouter = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(path: '/', builder: (_, _) => const SizedBox()),
+  ],
+);
 
 void main() {
   testWidgets('App renders without errors', (WidgetTester tester) async {
@@ -27,7 +25,7 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          appRouterProvider.overrideWithProvider(_mockAppRouterProvider),
+          appRouterProvider.overrideWith((ref) => _mockGoRouter),
         ],
         child: const SafeComApp(),
       ),

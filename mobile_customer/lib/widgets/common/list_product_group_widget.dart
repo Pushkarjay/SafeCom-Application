@@ -285,7 +285,7 @@ class _TotalPill extends StatelessWidget {
               ? const Color(0xFF22C55E)
               : (!isValid && total > 0
                   ? AppColors.error
-                  : AppColors.secondary.withOpacity(0.4)),
+                  : AppColors.secondary.withValues(alpha: 0.4)),
         ),
       ),
       child: Row(

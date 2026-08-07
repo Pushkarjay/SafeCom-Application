@@ -863,24 +863,26 @@ class _ProductVariantSelectorSheetState extends ConsumerState<_ProductVariantSel
         ),
         const Divider(height: 1),
         Expanded(
-          child: ListView.builder(
-            itemCount: variant.options.length,
-            itemBuilder: (context, i) {
-              final option = variant.options[i];
-              return RadioListTile<String>(
-                title: Text(option),
-                value: option,
-                groupValue: selections[variant.variantId],
-                onChanged: (val) {
-                  if (val != null) {
-                    ref.read(productSelectionProvider.notifier).selectOption(product.id, variant.variantId, val);
-                    final updatedSelections = ref.read(productSelectionProvider)[product.id]?.variantSelections ?? {};
-                    final isNowComplete = _isProductComplete(product, updatedSelections);
-                    ref.read(selectedAccessoriesProvider.notifier).setSelected(product.id, isNowComplete);
-                  }
-                },
-              );
+          child: RadioGroup<String>(
+            groupValue: selections[variant.variantId],
+            onChanged: (val) {
+              if (val != null) {
+                ref.read(productSelectionProvider.notifier).selectOption(product.id, variant.variantId, val);
+                final updatedSelections = ref.read(productSelectionProvider)[product.id]?.variantSelections ?? {};
+                final isNowComplete = _isProductComplete(product, updatedSelections);
+                ref.read(selectedAccessoriesProvider.notifier).setSelected(product.id, isNowComplete);
+              }
             },
+            child: ListView.builder(
+              itemCount: variant.options.length,
+              itemBuilder: (context, i) {
+                final option = variant.options[i];
+                return RadioListTile<String>(
+                  title: Text(option),
+                  value: option,
+                );
+              },
+            ),
           ),
         ),
       ],

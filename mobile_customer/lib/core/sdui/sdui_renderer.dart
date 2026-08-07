@@ -1,7 +1,7 @@
-/// SDUI Renderer
-///
-/// Core widget that takes a list of [SduiComponent]s and renders them
-/// into a scrollable column using the [SduiComponentRegistry].
+// SDUI Renderer
+//
+// Core widget that takes a list of [SduiComponent]s and renders them
+// into a scrollable column using the [SduiComponentRegistry].
 
 import 'package:flutter/material.dart';
 import 'package:mobile_customer/core/sdui/sdui_models.dart';

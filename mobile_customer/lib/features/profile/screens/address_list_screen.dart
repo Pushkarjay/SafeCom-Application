@@ -132,7 +132,7 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.cloud_off_rounded, size: 56, color: AppColors.textMuted.withOpacity(0.5)),
+              Icon(Icons.cloud_off_rounded, size: 56, color: AppColors.textMuted.withValues(alpha: 0.5)),
               const SizedBox(height: 16),
               Text(state.errorMessage!, style: const TextStyle(color: AppColors.textSecondary)),
               const SizedBox(height: 16),
@@ -157,7 +157,7 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.1),
+                  color: AppColors.secondary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.location_on_rounded, size: 48, color: AppColors.secondary),
@@ -207,7 +207,7 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDefault ? AppColors.secondary.withOpacity(0.4) : AppColors.borderLight,
+          color: isDefault ? AppColors.secondary.withValues(alpha: 0.4) : AppColors.borderLight,
           width: isDefault ? 1.5 : 1,
         ),
         boxShadow: [
@@ -231,7 +231,7 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(

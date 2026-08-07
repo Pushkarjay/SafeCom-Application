@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/data_providers.dart';
@@ -202,8 +203,8 @@ class InstallationFlowNotifier extends StateNotifier<InstallationFlowState> {
       final config = await _repo.getInstallationPricing();
       state = InstallationFlowState(isLoading: false, config: config);
     } catch (e, st) {
-      print('*** INSTALL ERROR *** _loadConfig error: $e');
-      print('*** INSTALL ERROR *** StackTrace: $st');
+      debugPrint('*** INSTALL ERROR *** _loadConfig error: $e');
+      debugPrint('*** INSTALL ERROR *** StackTrace: $st');
       state = InstallationFlowState(isLoading: false);
     }
   }

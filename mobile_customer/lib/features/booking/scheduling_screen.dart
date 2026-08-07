@@ -228,7 +228,7 @@ final dateOptions = List.generate(
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(color: AppColors.secondary.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4)),
+                  BoxShadow(color: AppColors.secondary.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4)),
                 ],
               ),
               child: Row(
@@ -236,7 +236,7 @@ final dateOptions = List.generate(
                   Container(
                     width: 44, height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.2),
+                      color: AppColors.secondary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.build_outlined, color: AppColors.secondary, size: 22),
@@ -407,7 +407,7 @@ final dateOptions = List.generate(
                           color: isSelected ? AppColors.primary : AppColors.borderLight,
                         ),
                         boxShadow: isSelected
-                            ? [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]
+                            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))]
                             : null,
                       ),
                       child: Column(
@@ -415,7 +415,7 @@ final dateOptions = List.generate(
                           Text(
                             _dayName(date),
                             style: TextStyle(
-                              color: isSelected ? Colors.white.withOpacity(0.9) : AppColors.textSecondary,
+                              color: isSelected ? Colors.white.withValues(alpha: 0.9) : AppColors.textSecondary,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -472,7 +472,7 @@ final dateOptions = List.generate(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
                     color: isTimeSlotDisabled(slot, booking.selectedDate)
-                        ? AppColors.surfaceVariant.withOpacity(0.5)
+                        ? AppColors.surfaceVariant.withValues(alpha: 0.5)
                         : AppColors.surface,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
@@ -482,7 +482,7 @@ final dateOptions = List.generate(
                       width: booking.selectedTimeSlot == slot ? 1.5 : 1,
                     ),
                     boxShadow: booking.selectedTimeSlot == slot && !isTimeSlotDisabled(slot, booking.selectedDate)
-                        ? [BoxShadow(color: AppColors.secondary.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))]
+                        ? [BoxShadow(color: AppColors.secondary.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))]
                         : null,
                   ),
                   child: Row(
@@ -567,7 +567,7 @@ final dateOptions = List.generate(
       ),
       child: Column(
         children: [
-          Icon(Icons.location_off_rounded, size: 32, color: AppColors.textMuted.withOpacity(0.5)),
+          Icon(Icons.location_off_rounded, size: 32, color: AppColors.textMuted.withValues(alpha: 0.5)),
           const SizedBox(height: 8),
           const Text(
             'No saved addresses',
@@ -640,7 +640,7 @@ final dateOptions = List.generate(
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.secondary.withOpacity(0.15),
+                              color: AppColors.secondary.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(

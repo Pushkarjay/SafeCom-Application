@@ -201,7 +201,7 @@ class _ClubbedProductSelectorState extends State<ClubbedProductSelector> {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: i == _navStack.length - 1
-                                ? AppColors.primary.withOpacity(0.1)
+                                ? AppColors.primary.withValues(alpha: 0.1)
                                 : AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(8),
                           ),

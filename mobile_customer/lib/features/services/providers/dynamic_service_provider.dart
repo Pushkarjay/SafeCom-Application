@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_customer/data/models/pricing_contracts.dart';
 import 'package:mobile_customer/data/providers/data_providers.dart';
@@ -112,8 +113,8 @@ class DynamicServiceFlowNotifier extends StateNotifier<DynamicServiceState> {
         config: config,
       );
     } catch (e, st) {
-      print('*** DYNAMIC SERVICE ERROR *** _loadConfig error: $e');
-      print('*** DYNAMIC SERVICE ERROR *** StackTrace: $st');
+      debugPrint('*** DYNAMIC SERVICE ERROR *** _loadConfig error: $e');
+      debugPrint('*** DYNAMIC SERVICE ERROR *** StackTrace: $st');
       state = DynamicServiceState(
         isLoading: false,
         error: 'Failed to load service configuration: $e',

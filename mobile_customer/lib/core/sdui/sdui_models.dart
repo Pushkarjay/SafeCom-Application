@@ -1,7 +1,7 @@
-/// Server-Driven UI (SDUI) Models
-///
-/// Dart models matching the backend SDUI JSON schema.
-/// Used by [SduiRenderer] to render dynamic layouts.
+// Server-Driven UI (SDUI) Models
+//
+// Dart models matching the backend SDUI JSON schema.
+// Used by [SduiRenderer] to render dynamic layouts.
 
 /// Action to perform when a component is tapped.
 class SduiAction {

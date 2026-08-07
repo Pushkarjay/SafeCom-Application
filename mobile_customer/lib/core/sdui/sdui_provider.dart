@@ -1,7 +1,7 @@
-/// SDUI Provider
-///
-/// Riverpod providers for fetching and caching SDUI layouts.
-/// Includes in-memory cache with TTL and fallback to default layout.
+// SDUI Provider
+//
+// Riverpod providers for fetching and caching SDUI layouts.
+// Includes in-memory cache with TTL and fallback to default layout.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_customer/core/sdui/sdui_models.dart';

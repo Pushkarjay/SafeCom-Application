@@ -189,7 +189,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.secondary.withOpacity(0.15),
+                        color: AppColors.secondary.withValues(alpha: 0.15),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -201,7 +201,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.secondary.withOpacity(0.2),
+                          color: AppColors.secondary.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.person_outline, size: 32, color: AppColors.secondary),
@@ -244,7 +244,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       try {
                         await ref.read(authProvider.notifier).continueWithGoogle();
                       } catch (e) {
-                        if (mounted) AppErrorHandler.showSnackbar(context, e);
+                        if (context.mounted) AppErrorHandler.showSnackbar(context, e);
                       }
                     },
                     icon: const Icon(Icons.account_circle_outlined, color: AppColors.secondary),
@@ -295,7 +295,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.secondary.withOpacity(0.15),
+                      color: AppColors.secondary.withValues(alpha: 0.15),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -311,7 +311,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.surface,
-                          border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 4),
+                          border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3), width: 4),
                           image: customer.profileImage != null
                               ? DecorationImage(
                                   image: NetworkImage(customer.profileImage!),
@@ -320,7 +320,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               : null,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -511,7 +511,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         border: Border.all(color: AppColors.borderLight),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.06),
+            color: color.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -522,7 +522,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 22),
@@ -625,7 +625,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: color, size: 22),

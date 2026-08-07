@@ -86,7 +86,7 @@ class AppErrorHandler {
   }
 
   /// Show a user-friendly error dialog.
-  static void showDialog(context, dynamic error, {String? title}) {
+  static void showDialog(BuildContext context, dynamic error, {String? title}) {
     final message = mapError(error);
     showAdaptiveDialog(
       context: context,
@@ -104,7 +104,7 @@ class AppErrorHandler {
   }
 
   /// Show a lightweight snackbar for non-critical errors.
-  static void showSnackbar(context, dynamic error) {
+  static void showSnackbar(BuildContext context, dynamic error) {
     final message = mapError(error);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

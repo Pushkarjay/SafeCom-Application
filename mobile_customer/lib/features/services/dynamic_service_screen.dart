@@ -259,7 +259,7 @@ class DynamicServiceScreen extends ConsumerWidget {
                       flowNotifier.updateVariant(mappedProduct.productId, variant.variantId, option);
                     }
                   },
-                  selectedColor: AppColors.secondary.withOpacity(0.15),
+                  selectedColor: AppColors.secondary.withValues(alpha: 0.15),
                   backgroundColor: AppColors.surfaceVariant,
                   side: BorderSide(
                     color: currentSelection == option ? AppColors.secondary : AppColors.borderLight,
@@ -496,7 +496,7 @@ class DynamicServiceScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: AppColors.secondaryLight,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 0.5),
+                border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3), width: 0.5),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -565,7 +565,7 @@ class DynamicServiceScreen extends ConsumerWidget {
                     );
                   }
                 },
-                selectedColor: AppColors.secondary.withOpacity(0.15),
+                selectedColor: AppColors.secondary.withValues(alpha: 0.15),
                 backgroundColor: AppColors.surfaceVariant,
                 side: BorderSide(
                   color: isSelected ? AppColors.secondary : AppColors.borderLight,
@@ -682,7 +682,7 @@ class _GroupCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.inventory_2_outlined, color: AppColors.primary),

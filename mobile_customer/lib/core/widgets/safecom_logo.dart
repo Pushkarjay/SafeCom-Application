@@ -30,7 +30,7 @@ class SafeComLogo extends StatelessWidget {
             borderRadius: BorderRadius.circular(size * 0.22),
             boxShadow: [
               BoxShadow(
-                color: AppColors.secondary.withOpacity(0.4),
+                color: AppColors.secondary.withValues(alpha: 0.4),
                 blurRadius: size * 0.3,
                 offset: Offset(0, size * 0.1),
               ),
@@ -91,7 +91,7 @@ class SafeComLogoSmall extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.22),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withOpacity(0.3),
+            color: AppColors.secondary.withValues(alpha: 0.3),
             blurRadius: size * 0.2,
             offset: Offset(0, size * 0.08),
           ),

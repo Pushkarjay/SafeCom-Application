@@ -1,7 +1,7 @@
-/// SDUI Component Registry
-///
-/// Maps component `type` strings to widget builder functions.
-/// New component types can be registered without modifying the renderer.
+// SDUI Component Registry
+//
+// Maps component `type` strings to widget builder functions.
+// New component types can be registered without modifying the renderer.
 
 import 'package:flutter/material.dart';
 import 'package:mobile_customer/core/sdui/sdui_models.dart';

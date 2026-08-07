@@ -31,7 +31,7 @@ class BookingDetailScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-              color: statusInfo.$3.withOpacity(0.1),
+              color: statusInfo.$3.withValues(alpha: 0.1),
               child: Column(
                 children: [
                   Icon(statusInfo.$2, size: 48, color: statusInfo.$3),
@@ -49,7 +49,7 @@ class BookingDetailScreen extends StatelessWidget {
                     'Booking ID: ${booking.id}',
                     style: TextStyle(
                       fontSize: 13,
-                      color: statusInfo.$3.withOpacity(0.8),
+                      color: statusInfo.$3.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -121,7 +121,7 @@ class BookingDetailScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.accentLight,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.accent.withOpacity(0.15)),
+                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.15)),
                     ),
                     child: const Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,7 +225,7 @@ class BookingDetailScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.warningLight,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.warning.withOpacity(0.2)),
+                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

@@ -60,7 +60,7 @@ class InstallationCustomizationScreen extends ConsumerWidget {
                       flowNotifier.updateVariant(mappedProduct.productId, variant.variantId, option);
                     }
                   },
-                  selectedColor: AppColors.secondary.withOpacity(0.15),
+                  selectedColor: AppColors.secondary.withValues(alpha: 0.15),
                   backgroundColor: AppColors.surfaceVariant,
                   side: BorderSide(
                     color: currentSelection == option ? AppColors.secondary : AppColors.borderLight,
@@ -269,7 +269,7 @@ ref.read(activeOrderProvider.notifier).setSummary(
                 decoration: BoxDecoration(
                   color: AppColors.secondaryLight,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 0.5),
+                  border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3), width: 0.5),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -328,7 +328,7 @@ ref.read(activeOrderProvider.notifier).setSummary(
                         );
                   }
                 },
-                selectedColor: AppColors.secondary.withOpacity(0.15),
+                selectedColor: AppColors.secondary.withValues(alpha: 0.15),
                 backgroundColor: AppColors.surfaceVariant,
                 side: BorderSide(color: isSelected ? AppColors.secondary : AppColors.borderLight, width: isSelected ? 2 : 1),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
