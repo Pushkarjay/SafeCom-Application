@@ -516,15 +516,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _openMapsApp(double lat, double lng) async {
+    final messenger = ScaffoldMessenger.of(context);
     final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open maps for: $lat, $lng')),
-        );
-      }
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not open maps for: $lat, $lng')),
+      );
     }
   }
 }

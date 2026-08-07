@@ -411,6 +411,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
 
     // Google Maps URI scheme
     final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+    final messenger = ScaffoldMessenger.of(context);
 
     try {
       if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
@@ -419,12 +420,12 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
           mode: LaunchMode.externalApplication,
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Could not open Google Maps')),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('Error opening maps: $e')),
       );
     }

@@ -6,21 +6,19 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_employee/routes/app_router.dart';
 import 'package:mobile_employee/main.dart';
 
-final _mockAppRouterProvider = Provider<GoRouter>((ref) {
-  return GoRouter(
-    initialLocation: '/',
-    routes: [
-      GoRoute(path: '/', builder: (_, __) => const SizedBox()),
-    ],
-  );
-});
+final _mockGoRouter = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(path: '/', builder: (_, _) => const SizedBox()),
+  ],
+);
 
 void main() {
   testWidgets('App renders without errors', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          appRouterProvider.overrideWithProvider(_mockAppRouterProvider),
+          appRouterProvider.overrideWith((ref) => _mockGoRouter),
         ],
         child: const SafeComEmployeeApp(),
       ),

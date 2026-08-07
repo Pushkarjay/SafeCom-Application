@@ -325,10 +325,10 @@ class EmployeeProfileScreen extends ConsumerWidget {
               ref.invalidate(activeEmployeeIdProvider);
               if (context.mounted) {
                 context.go(AppRoutes.login);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logged out successfully')),
+                );
               }
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Logged out successfully')),
-              );
             },
             child: const Text('Logout'),
           ),

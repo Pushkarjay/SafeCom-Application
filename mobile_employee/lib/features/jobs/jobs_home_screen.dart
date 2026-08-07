@@ -112,7 +112,7 @@ class _JobsHomeScreenState extends ConsumerState<JobsHomeScreen> with SingleTick
                           return _Badge(text: '$active');
                         },
                         loading: () => const SizedBox(),
-                        error: (_, __) => const SizedBox(),
+                        error: (_, _) => const SizedBox(),
                       ),
                     ],
                   ),
@@ -131,7 +131,7 @@ class _JobsHomeScreenState extends ConsumerState<JobsHomeScreen> with SingleTick
                           return const SizedBox();
                         },
                         loading: () => const SizedBox(),
-                        error: (_, __) => const SizedBox(),
+                        error: (_, _) => const SizedBox(),
                       ),
                     ],
                   ),
@@ -164,7 +164,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.15),
+        color: AppColors.primary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -346,7 +346,7 @@ class _JobCard extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _statusColor.withOpacity(0.1),
+                      color: _statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(_statusIcon, color: _statusColor, size: 22),
