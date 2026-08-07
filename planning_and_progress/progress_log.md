@@ -375,6 +375,17 @@ elease_assets\.
 - Payment: Custom text sent to backend in booking creation payload
 - Admin: Handled via service config — no separate admin UI needed
 
+**IMPORTANT — HOW TO FIND THE TEXT BOX "PRODUCT":**
+- The text box is **NOT a real catalog product**. It is a **virtual/hardcoded field** that exists only at booking time.
+- It will NOT appear in the Admin product list, the `catalog_product` Firestore collection, or any database seed — this is by design.
+- Internal identifiers used by the system:
+  - `productId: 'custom_text_box'` (synthesized line item in `bookings.ts`)
+  - `category: 'text_box'`
+  - `serviceType: 'text_box'` (valid enum value in booking schema)
+  - Display name: `request.customTextBox.title || 'Custom Text'` (invoice) / `'Custom Message'` (invoice.customTextBox)
+- Customer app shows a hardcoded `_CustomTextBoxField` ("Custom Message for Technician") on every estimate screen (installation, maintenance, repair, upgrade, accessories). It is always visible and cannot be enabled/disabled per service from Admin.
+- Flow: customer types text → `customTextBoxValue` in booking flow → sent in booking payload → backend synthesizes a ₹0 line item + stores `serviceConfig.customTextBox` on the booking → appears on invoice + job
+
 ### Task 2: Invoice Logic Fix ✅
 - Backend: `grandTotal = serviceAmount` (booking charge is part of total, not extra)
 - `advanceAmount = request.amountPaid`, `remainingAmount = grandTotal - advanceAmount`
