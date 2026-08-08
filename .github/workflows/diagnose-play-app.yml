@@ -7,6 +7,15 @@ on:
         type: choice
         default: employee
         options: [customer, employee]
+      promote_track:
+        description: Promote the latest internal release to this track (empty = diagnose only)
+        type: choice
+        default: ''
+        options: ['', alpha, beta, production]
+      promote_version_code:
+        description: Explicit version code to promote (defaults to latest internal release)
+        type: string
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -24,3 +33,11 @@ jobs:
         env:
           SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
           APP: ${{ inputs.app }}
+      - name: Promote release
+        if: inputs.promote_track != ''
+        run: node scripts/promote-play-release.js
+        env:
+          SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
+          APP: ${{ inputs.app }}
+          PROMOTE_TRACK: ${{ inputs.promote_track }}
+          PROMOTE_VERSION_CODE: ${{ inputs.promote_version_code }}
