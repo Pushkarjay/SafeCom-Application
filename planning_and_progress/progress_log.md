@@ -742,3 +742,33 @@ Also: customer & employee profile flows audited for critical bugs.
 - The metadata leak fix covers the clubbed-product/branch selectors; the service-placeholder "next in implementation" screen was left as-is (no route currently lands there in the live home config).
 - Recommend a manual sanity check: install the new customer build, book with a typed message from the cart, and confirm the message appears on: booking details (customer), job detail (employee app), and job detail (admin).
 
+
+### Verified Rollout State (post-fix release)
+- **Customer app `com.safecom.customer` 1.3.9 (v38)** — verified via Play Publisher API (diagnose workflow):
+  | Track | Version | Status |
+  |-------|---------|--------|
+  | internal | 1.3.9 (v38) | ✅ completed |
+  | alpha (closed testing) | 1.3.9 (v38) | ✅ completed |
+  | production | 1.3.9 (v38) | ✅ completed — LIVE (100%) |
+- **Employee app `com.safecom.employee` 1.1.3 (v29)**:
+  | Track | Version | Status |
+  |-------|---------|--------|
+  | internal | 1.1.3 (v29) | ✅ completed |
+  | alpha (closed testing) | 1.1.3 (v29) | ✅ completed (promoted internal → alpha, edit `08241668365124803365`) |
+  | production / beta | — | not configured |
+- **Backend** — deployed to Cloud Run (asia-south1) and verified live: `/health` OK, `/api/catalog-public/services` OK.
+- **Admin dashboard** — deploy workflow success.
+- **CI quality gates** — success (all runs green: backend deploy, admin deploy, build-mobile push build, build-mobile rollout dispatch).
+
+### Final Acceptance Checklist (this session)
+- ✅ Custom message visible to the customer on: payment summary, confirmation, booking details ("Your Message / Instructions")
+- ✅ Custom message flows: Cart (new universal field) → Booking → Backend → Job → Employee app (highlighted card) → Admin dashboard (highlighted section)
+- ✅ Invoice math consistent everywhere: Grand Total = bill total; booking advance shown as included; remaining = total − advance (payment, confirmation, booking details)
+- ✅ Phone number saved to customer profile (self-service PATCH fixed) + duplicate-check routes added; profile updates persist
+- ✅ Internal builder/installation metadata no longer rendered as UI titles
+- ✅ Versions bumped: customer 1.3.9+38, employee 1.1.3+29 (version codes unique — no Play Store rejection)
+- ✅ Customer app rolled out to internal / closed (alpha) / production @ 100%
+- ✅ Employee app rolled out to internal + closed (alpha) testing
+- ✅ Backend + admin dashboard deployed and verified; CI green; tests added & passing
+- ✅ Documentation appended (append-only; no history modified)
+
