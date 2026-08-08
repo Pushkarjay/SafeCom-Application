@@ -631,3 +631,40 @@ mobile_employee/pubspec.yaml
 - Beta (open testing) track for customer app remains empty — not part of this rollout.
 - Homepage improvements deferred per CTO instruction (low priority; optional).
 - After rollout completes, verify a live booking: saved Patna address + Jaipur GPS must record Patna.
+
+### Play Store Rollout — Verified ✅ (2026-08-08, via Play Publisher API)
+- **Customer app `com.safecom.customer` 1.3.9+37** — uploaded once to all requested tracks in a single edit (`03487021397873149007`):
+  | Track | Version | Status |
+  |-------|---------|--------|
+  | internal (internal testing) | 1.3.9 (v37) | ✅ completed |
+  | alpha (closed testing) | 1.3.9 (v37) | ✅ completed |
+  | production | 1.3.9 (v37) | ✅ completed — LIVE (100%) |
+  | beta (open testing) | — | empty track, skipped |
+- **Employee app `com.safecom.employee` 1.1.3+28**:
+  | Track | Version | Status |
+  |-------|---------|--------|
+  | internal (internal testing) | 1.1.3 (v28) | ✅ completed |
+  | alpha (closed testing) | 1.1.3 (v28) | ✅ completed (promoted via new `promote-play-release.js`, edit `13389656252596134478`) |
+  | production / beta | — | not configured |
+- **Backend** — deployed to Cloud Run in both regions and verified live: `GET /health` → `{"status":"ok",...}` (asia-south1) and `GET /api/catalog-public/services` (us-central1) both respond.
+
+### Rollout Tooling
+- Added `scripts/promote-play-release.js` + `promote_track`/`promote_version_code` inputs to `diagnose-play-app.yml` so releases can be promoted between tracks (internal → alpha/beta/production @ 100%) from CI.
+
+### Git Commits (rollout tooling & docs)
+| Hash | Message |
+|------|---------|
+| `be73328` | ci: add release promotion to Play ops workflow |
+| `25fbfe0` | docs: log 2026-08-08 session — text box fix, address source-of-truth, optional email, backup, version bumps & rollout |
+
+### Final Acceptance Checklist
+- ✅ Custom text box: native typing/backspace/cursor behavior (controller no longer recreated per keystroke)
+- ✅ Address: selected address is the single source of truth; no geolocation fallback/override; UI shows selected address
+- ✅ Email optional: booking/payment succeed for phone-only customers (backend + app fixed)
+- ✅ Uninstall clears data: customer app (`allowBackup=false` verified by test) + employee app (new `allowBackup=false` + guard test)
+- ✅ Invoice wording: booking advance shown as included in total (remaining = total − advance)
+- ✅ Versions bumped: customer 1.3.9+37, employee 1.1.3+28
+- ✅ Customer app rolled out to internal / closed (alpha) / production @ 100%
+- ✅ Employee app rolled out to internal + closed (alpha) testing
+- ✅ Backend deployed & verified; CI quality gates green
+- ✅ Documentation appended (append-only; no history modified)
