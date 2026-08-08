@@ -74,6 +74,7 @@ export interface Job {
   longitude?: number
   customerName?: string
   customerPhone?: string
+  customMessage?: string
 }
 
 export interface Payment {

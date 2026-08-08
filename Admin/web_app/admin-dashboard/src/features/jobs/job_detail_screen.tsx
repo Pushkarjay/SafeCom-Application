@@ -359,6 +359,13 @@ export default function JobDetailScreen() {
             </div>
           </div>
 
+          {job!.customMessage && (
+            <div className="notes-section" style={{ borderLeft: '4px solid #f59e0b' }}>
+              <h3>Customer's Message / Instruction</h3>
+              <p className="notes-text">{job!.customMessage}</p>
+            </div>
+          )}
+
           {job!.notes && (
             <div className="notes-section">
               <h3>Notes</h3>

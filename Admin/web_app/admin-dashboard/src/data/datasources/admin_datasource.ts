@@ -4,6 +4,29 @@ import { getApiBaseUrl } from '../../core/config/api'
 
 const BASE_URL = getApiBaseUrl()
 
+/**
+ * Extract the customer's typed message/instruction from a job/booking record.
+ * The message lives on invoice.customTextBox.value (new bookings) or as a
+ * text-box line item (category 'text_box' with variants.value) on older ones.
+ */
+function extractCustomMessage(item: any): string | undefined {
+  const invoiceText = item?.invoice?.customTextBox?.value
+  if (invoiceText && String(invoiceText).trim().length > 0) {
+    return String(invoiceText)
+  }
+  const lineItems = Array.isArray(item?.invoice?.lineItems) ? item.invoice.lineItems : []
+  for (const line of lineItems) {
+    if (line?.category === 'text_box' && line?.variants?.value && String(line.variants.value).trim().length > 0) {
+      return String(line.variants.value)
+    }
+  }
+  const configText = item?.serviceConfig?.customTextBox?.value
+  if (configText && String(configText).trim().length > 0) {
+    return String(configText)
+  }
+  return undefined
+}
+
 async function authHeaders(): Promise<Record<string, string>> {
   // Always try to get a fresh Firebase ID token first.
   try {
@@ -110,7 +133,8 @@ export class AdminDatasource {
       latitude: item.location?.latitude || 0,
       longitude: item.location?.longitude || 0,
       customerName: item.customer?.name || '',
-      customerPhone: item.customer?.phone || ''
+      customerPhone: item.customer?.phone || '',
+      customMessage: extractCustomMessage(item)
     }))
   }
 
@@ -743,7 +767,8 @@ export class AdminDatasource {
         latitude: item.location?.latitude || 0,
         longitude: item.location?.longitude || 0,
         customerName: item.customer?.name || '',
-        customerPhone: item.customer?.phone || ''
+        customerPhone: item.customer?.phone || '',
+        customMessage: extractCustomMessage(item)
       }
     } catch {
       return null
