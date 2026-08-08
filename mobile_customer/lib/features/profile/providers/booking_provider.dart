@@ -10,18 +10,25 @@ class BookingLineItem {
   final String name;
   final int quantity;
   final double unitPrice;
+  final String? variantValue;
+  final String? category;
 
   const BookingLineItem({
     required this.name,
     required this.quantity,
     required this.unitPrice,
+    this.variantValue,
+    this.category,
   });
 
   factory BookingLineItem.fromJson(Map<String, dynamic> json) {
+    final variants = json['variants'] as Map<String, dynamic>?;
     return BookingLineItem(
       name: json['productName'] as String? ?? json['name'] as String? ?? '',
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0.0,
+      variantValue: variants?['value'] as String?,
+      category: json['category'] as String?,
     );
   }
 }
@@ -39,6 +46,8 @@ class BookingModel {
   final DateTime? completedAt;
   final String? location;
   final List<BookingLineItem>? lineItems;
+  final String? customMessage;
+  final String? notes;
 
   BookingModel({
     required this.id,
@@ -53,11 +62,38 @@ class BookingModel {
     this.completedAt,
     this.location,
     this.lineItems,
+    this.customMessage,
+    this.notes,
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     final invoice = json['invoice'] as Map<String, dynamic>?;
     final lineItemsRaw = (json['lineItems'] ?? invoice?['lineItems'] ?? []) as List<dynamic>?;
+
+    // The custom text box message can live in three places depending on when the
+    // booking was created: invoice.customTextBox.value, serviceConfig.customTextBox.value,
+    // or as a line item with category 'text_box' / variants.value.
+    final invoiceText = invoice?['customTextBox'] as Map<String, dynamic>?;
+    final serviceConfig = json['serviceConfig'] as Map<String, dynamic>?;
+    final configText = serviceConfig?['customTextBox'] as Map<String, dynamic>?;
+    final lineItems = lineItemsRaw
+        ?.map((e) => BookingLineItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final textLineItem = lineItems
+        ?.where((i) => i.category == 'text_box' || (i.variantValue != null && i.variantValue!.isNotEmpty))
+        .toList();
+    final lineItemText = textLineItem != null && textLineItem.isNotEmpty
+        ? (textLineItem.first.variantValue ?? '')
+        : '';
+
+    final invoiceMessage = (invoiceText?['value'] as String? ?? '').trim();
+    final configMessage = (configText?['value'] as String? ?? '').trim();
+    final String? customMessage = invoiceMessage.isNotEmpty
+        ? invoiceMessage
+        : (configMessage.isNotEmpty
+            ? configMessage
+            : (lineItemText.isNotEmpty ? lineItemText : null));
+
     return BookingModel(
       id: json['bookingId'] as String? ?? json['id'] as String? ?? '',
       serviceType: json['serviceType'] as String? ?? 'Service',
@@ -70,7 +106,9 @@ class BookingModel {
       timeSlot: json['scheduledTimeSlot'] as String?,
       completedAt: DateTime.tryParse(json['completedAt'] as String? ?? ''),
       location: json['location']?['address'] as String?,
-      lineItems: lineItemsRaw?.map((e) => BookingLineItem.fromJson(e as Map<String, dynamic>)).toList(),
+      lineItems: lineItems,
+      customMessage: customMessage,
+      notes: json['notes'] as String?,
     );
   }
 }

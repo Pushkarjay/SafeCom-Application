@@ -10,10 +10,13 @@ class BookingDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusInfo = _getStatusInfo(booking.status);
+    // Inclusive booking-advance model (consistent with the payment & confirmation
+    // screens): the total bill already includes the advance paid now. The
+    // customer only pays the difference on-site.
     final productTotal = booking.totalAmount;
     final bookingCharge = booking.amountPaid;
-    final grandTotal = productTotal + bookingCharge;
-    final remainingAmount = productTotal;
+    final grandTotal = productTotal;
+    final remainingAmount = (productTotal - bookingCharge).clamp(0.0, double.infinity);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -95,13 +98,13 @@ class BookingDetailScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _paymentRow('Product / Service Total', 'Rs ${productTotal.toStringAsFixed(0)}', AppColors.textPrimary, FontWeight.w600),
-                        const SizedBox(height: 8),
-                        _paymentRow('Booking Charge', 'Rs ${bookingCharge.toStringAsFixed(0)}', AppColors.textPrimary, FontWeight.w600),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 8),
                           child: Divider(color: AppColors.borderLight),
                         ),
                         _paymentRow('Grand Total', 'Rs ${grandTotal.toStringAsFixed(0)}', AppColors.primary, FontWeight.w800),
+                        const SizedBox(height: 4),
+                        _paymentRow('Booking Advance (included in total)', 'Rs ${bookingCharge.toStringAsFixed(0)}', AppColors.textSecondary, FontWeight.w500),
                         const SizedBox(height: 8),
                         const Divider(color: AppColors.borderLight),
                         const SizedBox(height: 8),
@@ -139,6 +142,39 @@ class BookingDetailScreen extends StatelessWidget {
                     ),
                   ),
 
+                  // Custom Message / Instruction
+                  if (booking.customMessage != null && booking.customMessage!.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _SectionHeader(title: 'Your Message / Instructions'),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentLight,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.notes_outlined, size: 18, color: AppColors.accent),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              booking.customMessage!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 24),
 
                   // Products / Items
@@ -171,10 +207,16 @@ class BookingDetailScreen extends StatelessWidget {
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                    children: [                                        Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                                       const SizedBox(height: 2),
                                       Text('Qty: ${item.quantity} × Rs ${item.unitPrice.toStringAsFixed(0)}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                      if (item.variantValue != null && item.variantValue!.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item.variantValue!,
+                                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontStyle: FontStyle.italic),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
