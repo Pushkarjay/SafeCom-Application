@@ -143,7 +143,7 @@ class BookingConfirmationScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Booking Charge Paid: Rs ${bookingAmount.toStringAsFixed(0)} (extra)',
+                        'Booking Advance Paid: Rs ${bookingAmount.toStringAsFixed(0)} (included in total)',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.accent,
                           fontWeight: FontWeight.w600,
