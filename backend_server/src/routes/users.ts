@@ -171,4 +171,51 @@ router.get('/me', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReques
   }
 });
 
+/**
+ * GET /api/users/by-phone/:phone
+ * Returns the user document linked to a phone number, if any.
+ * Used by the customer app to detect duplicate phone numbers before
+ * saving a profile / completing phone collection.
+ */
+router.get('/by-phone/:phone', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+  const phone = String(req.params.phone || '').trim();
+  if (!phone) {
+    return res.status(400).json({ success: false, message: 'Phone is required' });
+  }
+
+  try {
+    const user = await getFirestoreUserByPhone(phone);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No user found with this phone number' });
+    }
+    return res.json({ success: true, id: user.uid, uid: user.uid, phone: user.phone, email: user.email });
+  } catch (error) {
+    console.error('Error looking up user by phone:', error);
+    return res.status(500).json({ success: false, message: 'Error looking up user by phone' });
+  }
+});
+
+/**
+ * GET /api/users/by-email/:email
+ * Returns the user document linked to an email address, if any.
+ * Used by the customer app to detect duplicate emails before saving.
+ */
+router.get('/by-email/:email', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedRequest, res) => {
+  const email = String(req.params.email || '').trim();
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required' });
+  }
+
+  try {
+    const user = await getFirestoreUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No user found with this email address' });
+    }
+    return res.json({ success: true, id: user.uid, uid: user.uid, phone: user.phone, email: user.email });
+  } catch (error) {
+    console.error('Error looking up user by email:', error);
+    return res.status(500).json({ success: false, message: 'Error looking up user by email' });
+  }
+});
+
 export default router;

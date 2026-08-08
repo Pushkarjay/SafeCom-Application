@@ -102,7 +102,18 @@ customersRouter.post('/', authenticateToken, requireRole(['admin']), async (req,
 })
 
 // PATCH /customers/:id - Update customer
-customersRouter.patch('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+// A customer may update their OWN profile (name/email/phone/address) — the
+// customer app calls this when the user edits their profile. Admin may update
+// any customer.
+customersRouter.patch('/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  const uid = (req as unknown as { firebaseUid?: string }).firebaseUid
+  const targetId = req.params.id as string
+
+  // Allow if authenticated user is updating their own profile, or if admin
+  if (uid !== targetId && req.user?.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Forbidden: can only update your own profile' })
+  }
+
   const parsed = customerUpdateSchema.safeParse(req.body)
 
   if (!parsed.success) {
@@ -110,9 +121,9 @@ customersRouter.patch('/:id', authenticateToken, requireRole(['admin']), async (
   }
 
   try {
-    await updateDocument('customers', req.params.id as string, parsed.data)
-    const updated = await getDocument<Record<string, unknown>>('customers', req.params.id as string)
-    return res.json({ success: true, data: updated })
+    await updateDocument('customers', targetId, parsed.data)
+    const updated = await getDocument<Record<string, unknown>>('customers', targetId)
+    return res.json({ success: true, data: { id: targetId, ...updated } })
   } catch (error) {
     console.error('Firestore update customer failed:', error)
     return res.status(500).json({ success: false, message: 'Failed to update customer' })
