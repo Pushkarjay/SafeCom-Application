@@ -72,6 +72,7 @@ class CanonicalInvoice {
   final double remainingAmount;
   final String generatedAt;
   final String? notes;
+  final CustomTextBoxData? customTextBox;
 
   CanonicalInvoice({
     required this.invoiceId,
@@ -97,6 +98,7 @@ class CanonicalInvoice {
     required this.remainingAmount,
     required this.generatedAt,
     this.notes,
+    this.customTextBox,
   });
 
   factory CanonicalInvoice.fromJson(Map<String, dynamic> json) {
@@ -127,6 +129,9 @@ class CanonicalInvoice {
       remainingAmount: (json['remainingAmount'] as num?)?.toDouble() ?? 0.0,
       generatedAt: json['generatedAt'] ?? '',
       notes: json['notes'],
+      customTextBox: json['customTextBox'] != null
+          ? CustomTextBoxData.fromJson(json['customTextBox'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -155,6 +160,31 @@ class CanonicalInvoice {
       'remainingAmount': remainingAmount,
       'generatedAt': generatedAt,
       'notes': notes,
+      if (customTextBox != null) 'customTextBox': customTextBox!.toJson(),
+    };
+  }
+}
+
+// ============================================
+// CUSTOM TEXT BOX (customer's message/instruction)
+// ============================================
+class CustomTextBoxData {
+  final String title;
+  final String value;
+
+  const CustomTextBoxData({required this.title, required this.value});
+
+  factory CustomTextBoxData.fromJson(Map<String, dynamic> json) {
+    return CustomTextBoxData(
+      title: json['title']?.toString() ?? 'Custom Message',
+      value: json['value']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'value': value,
     };
   }
 }

@@ -95,6 +95,8 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            if (_jobCustomMessage(widget.job) != null)
+              _buildCustomMessageCard(context, _jobCustomMessage(widget.job)!),
             if (widget.job.notes != null)
               _buildInfoCard(
                 context,
@@ -302,6 +304,58 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
     );
   }
 
+  /// Customer's typed message/instruction attached to the invoice, if any.
+  /// Checks the invoice customTextBox first, then falls back to a text-box
+  /// line item (category 'text_box' with variants.value) for older bookings.
+  String? _jobCustomMessage(AssignedJob job) {
+    final invoice = job.invoice;
+    if (invoice != null) {
+      if (invoice.customTextBox != null && invoice.customTextBox!.value.isNotEmpty) {
+        return invoice.customTextBox!.value;
+      }
+      for (final item in invoice.lineItems) {
+        if (item.category == 'text_box' && item.variants?['value'] != null && item.variants!['value']!.isNotEmpty) {
+          return item.variants!['value']!;
+        }
+      }
+    }
+    return null;
+  }
+
+  Widget _buildCustomMessageCard(BuildContext context, String message) {
+    return Card(
+      color: Colors.amber.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.notes_outlined, color: Colors.orange, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Customer's Message / Instruction",
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    message,
+                    style: const TextStyle(fontSize: 14, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildInvoiceCard(BuildContext context, CanonicalInvoice invoice) {
     return Card(
       color: Colors.blue.shade50,
@@ -346,6 +400,14 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                           'Qty: ${item.quantity} × Rs ${item.unitPrice.toStringAsFixed(0)}',
                           style: const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
+                        if (item.variants?['value'] != null && item.variants!['value']!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              item.variants!['value']!,
+                              style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontStyle: FontStyle.italic),
+                            ),
+                          ),
                       ],
                     ),
                   ),
