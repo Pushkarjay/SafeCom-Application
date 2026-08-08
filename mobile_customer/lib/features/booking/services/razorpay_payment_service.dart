@@ -87,6 +87,11 @@ class RazorpayPaymentService {
       throw Exception('MISSING_PHONE:Please add your phone number in Profile to complete booking');
     }
 
+    // Email is optional: send null (not empty string) when the customer has no
+    // email so the backend schema accepts it.
+    final normalizedEmail =
+        (customerEmail == null || customerEmail.trim().isEmpty) ? null : customerEmail.trim();
+
     final payload = <String, dynamic>{
       'amount': amountRupees,
       'currency': 'INR',
@@ -94,7 +99,7 @@ class RazorpayPaymentService {
       'packageLabel': packageLabel,
       'customerId': customerId,
       'customerName': customerName,
-      'customerEmail': customerEmail,
+      'customerEmail': normalizedEmail,
       'customerPhone': customerPhone,
       'jobId': jobId,
       'receipt': 'safecom_${DateTime.now().millisecondsSinceEpoch}',
@@ -127,6 +132,11 @@ class RazorpayPaymentService {
     required String serviceName,
     required String packageLabel,
   }) async {
+    // Email is optional: send null (not empty string) when the customer has no
+    // email so payment verification never fails for phone-only customers.
+    final normalizedEmail =
+        (customerEmail == null || customerEmail.trim().isEmpty) ? null : customerEmail.trim();
+
     final payload = <String, dynamic>{
       'orderId': orderId,
       'paymentId': paymentId,
@@ -135,7 +145,7 @@ class RazorpayPaymentService {
       'currency': 'INR',
       'customerId': customerId,
       'customerName': customerName,
-      'customerEmail': customerEmail,
+      'customerEmail': normalizedEmail,
       'jobId': jobId,
       'serviceName': serviceName,
       'packageLabel': packageLabel,

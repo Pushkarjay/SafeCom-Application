@@ -7,7 +7,10 @@ import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 
 const customerCreateSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  // Email is optional for phone-authenticated customers. Allow empty string
+  // (app sends '') and null (no email on record) so profile updates from the
+  // customer app never fail for users who signed in with just a phone number.
+  email: z.string().email().or(z.literal('')).nullable().optional().default(''),
   phone: z.string().min(4),
   address: z.string().nullable().optional().default(''),
   status: z.enum(['active', 'inactive']).nullable().optional(),

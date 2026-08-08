@@ -252,7 +252,11 @@ class AuthService {
     );
 
     if (response.statusCode == 200) {
-      return Customer.fromJson(response.data as Map<String, dynamic>);
+      final body = response.data as Map<String, dynamic>;
+      // Backend returns { success: true, data: {...} }; unwrap it so the
+      // profile actually loads instead of silently failing on the wrapper.
+      final payload = (body['data'] as Map<String, dynamic>?) ?? body;
+      return Customer.fromJson(payload);
     }
 
     throw Exception('Failed to fetch profile');

@@ -25,7 +25,8 @@ const verifyPaymentSchema = z.object({
   currency: z.string().trim().min(3).max(3).default('INR'),
   customerId: z.string().trim().min(1).optional(),
   customerName: z.string().trim().min(1).optional(),
-  customerEmail: z.string().email().optional(),
+  // Allow empty email so phone-only customers can pay without an email address.
+  customerEmail: z.string().email().optional().or(z.literal('')),
   jobId: z.string().trim().min(1).optional().nullable(),
   serviceName: z.string().trim().min(1).optional(),
   packageLabel: z.string().trim().min(1).optional(),
