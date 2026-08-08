@@ -668,3 +668,77 @@ mobile_employee/pubspec.yaml
 - ✅ Employee app rolled out to internal + closed (alpha) testing
 - ✅ Backend deployed & verified; CI quality gates green
 - ✅ Documentation appended (append-only; no history modified)
+
+---
+
+## Session — 2026-08-09: Custom message visibility, invoice math, profile/phone, metadata leak, cart message (audit + fix + rollout)
+
+### Objective
+Customer reported five issues after the 1.3.9+37 rollout:
+1. The typed custom message was invisible everywhere — not on the customer's own booking details, not to the employee, not to admin.
+2. Invoice/bill math was inconsistent — opening a booking from "My Bookings" showed a different (wrong) total than the payment page.
+3. Every booking asked for the phone number again — the phone was never saved to the customer's profile in the database.
+4. Internal builder/installation metadata was visible in the customer app.
+5. The custom message box was not available in the cart for all products.
+Also: customer & employee profile flows audited for critical bugs.
+
+### Root Causes Found
+| Issue | Root cause |
+|-------|-----------|
+| Message invisible | `createCorrespondingJob` (backend) stripped `invoice.customTextBox` when creating the job → employee/admin never got the message. Customer `BookingModel` never parsed it and `BookingDetailScreen` never rendered it; confirmation screen didn't show it either. |
+| Invoice math uneven | `BookingDetailScreen` computed `grandTotal = productTotal + bookingCharge` (added the ₹100 advance AGAIN, e.g. 700 on a 600 bill) and `remaining = productTotal` (wrong; should be total − advance). |
+| Phone not saving | `PATCH /customers/:id` required the **admin** role → a customer editing their own profile got 403 and the change silently never reached Firestore; the app kept asking for a phone (MISSING_PHONE on payment). Additionally `updateProfile` parsed the `{success,data}` envelope instead of `data` (would wipe the in-memory profile), and the `/users/by-phone` + `/users/by-email` duplicate-check routes didn't exist (always 404 → checks silently skipped). |
+| Metadata visible | Clubbed-product/branch selectors rendered raw internal keys (`item.key`, `mappedProduct.productKey`) as section titles in `dynamic_service_screen.dart` and `installation_customization_screen.dart` — admin-builder metadata leaked to customers. |
+| No cart message | Cart screen had no message input; the custom text box existed only on the 5 estimate/invoice screens. |
+
+### Changes Made
+**Backend (`backend_server/src/routes/`)**
+- `bookings.ts` — `createCorrespondingJob` now copies `invoice.customTextBox` onto the job invoice so employees/admin receive the customer's message.
+- `customers.ts` — `PATCH /:id` now allows a customer to update their OWN profile (uid === targetId) in addition to admin (was admin-only → 403). Response now returns `{id, ...data}`.
+- `users.ts` — added missing `GET /by-phone/:phone` and `GET /by-email/:email` (Firebase-auth protected) used by the app's duplicate checks.
+
+**Customer app (`mobile_customer/`)**
+- `booking_provider.dart` — `BookingModel` now parses the custom message (invoice.customTextBox → serviceConfig.customTextBox → text-box line item variants.value) and line-item variants; `BookingLineItem` gains `variantValue`/`category`.
+- `booking_detail_screen.dart` — fixed math to the inclusive model (Grand Total = total; Booking Advance shown as included; Remaining = total − advance, clamped ≥ 0); added "Your Message / Instructions" card; line items show variant/message text.
+- `cart_screen.dart` — added universal "Add Instructions / Request" field (stateful controller, wired to `bookingFlowProvider.customTextBoxValue`) so a message can be attached to any cart order.
+- `payment_screen.dart` — order summary shows the typed message read-only.
+- `booking_confirmation_screen.dart` — shows the typed message.
+- `dynamic_service_screen.dart` + `installation_customization_screen.dart` — selector titles now use display name/product name instead of internal `key`/`productKey` (fallback to key only if both empty).
+- `auth_service.dart` — `updateProfile` unwraps `data` from the API envelope.
+- Added `test/booking_model_test.dart` (custom-message parsing ×4 + inclusive-math test).
+
+**Employee app (`mobile_employee/`)**
+- `job_models.dart` — `CanonicalInvoice` gains `customTextBox` (`CustomTextBoxData`), parsed from API.
+- `job_detail_screen.dart` — highlighted "Customer's Message / Instruction" card (customTextBox, with fallback to text-box line-item variants) + line items show variant text.
+
+**Admin dashboard (`Admin/web_app/admin-dashboard/src/`)**
+- `admin_models.ts` — `Job.customMessage?`.
+- `admin_datasource.ts` — `extractCustomMessage()` helper (invoice.customTextBox → text-box line item → serviceConfig.customTextBox) wired into `getJobs`/`getJob`.
+- `job_detail_screen.tsx` — highlighted "Customer's Message / Instruction" section.
+
+### Verification
+- `backend_server` `tsc --noEmit` ✅ (0 errors)
+- Admin dashboard `tsc --noEmit` ✅
+- `flutter analyze` clean on both apps ✅
+- `flutter test` passes on both apps (incl. new booking-model tests) ✅
+
+### Git Commits
+| Hash | Message |
+|------|---------|
+| `eb621c7` | fix(backend): persist customer's custom message on the job invoice |
+| `f78cd1a` | fix(backend): let customers update their own profile; add phone/email lookup routes |
+| `e0988b4` | fix(customer): show custom message on booking details; fix invoice math |
+| `3f1d17e` | feat(customer): universal message box on cart, shown through payment & confirmation |
+| `c48d830` | fix(customer): hide internal product keys from UI; unwrap profile update response |
+| `af05427` | feat(employee): show customer's message on job details |
+| `fbca02e` | feat(admin): surface customer's message on job detail |
+
+### Deployment / Rollout (this session)
+- Pushed to `main` → CI quality gates + backend deploy + admin dashboard deploy + mobile builds auto-triggered.
+- Triggered `build-mobile.yml` rollout: customer → `internal,alpha,production` (100%), employee → `internal` (then promote to `alpha` closed testing). Version codes auto-bumped by the workflow.
+
+### Known Issues / Notes
+- Beta (open testing) track remains empty/skipped for the customer app; employee app has no production track (by design).
+- The metadata leak fix covers the clubbed-product/branch selectors; the service-placeholder "next in implementation" screen was left as-is (no route currently lands there in the live home config).
+- Recommend a manual sanity check: install the new customer build, book with a typed message from the cart, and confirm the message appears on: booking details (customer), job detail (employee app), and job detail (admin).
+
