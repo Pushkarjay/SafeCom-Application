@@ -238,7 +238,7 @@ ref.read(activeOrderProvider.notifier).setSummary(
           if (isMulti) {
             final selected = await ClubbedProductSelector.showMulti(
               context,
-              title: item.key,
+              title: item.name,
               options: item.clubbedOptions,
               preSelectedKeys: ref.read(installationFlowProvider).selectedMultiOptions[item.parentProductKey],
             );
@@ -249,7 +249,7 @@ ref.read(activeOrderProvider.notifier).setSummary(
           } else {
             final selected = await ClubbedProductSelector.show(
               context,
-              title: item.key,
+              title: item.name,
               options: item.clubbedOptions,
             );
             if (selected != null) {
@@ -311,7 +311,11 @@ ref.read(activeOrderProvider.notifier).setSummary(
 
       selectors.add(
         _OptionSection(
-          title: mappedProduct.productKey,
+          title: mappedProduct.displayLabel?.isNotEmpty == true
+              ? mappedProduct.displayLabel!
+              : (mappedProduct.product.productName.isNotEmpty
+                  ? mappedProduct.product.productName
+                  : mappedProduct.productKey),
           child: Wrap(
             spacing: 8,
             runSpacing: 6,

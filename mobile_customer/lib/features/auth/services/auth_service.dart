@@ -281,7 +281,11 @@ class AuthService {
 
       Customer updated;
       if (response.statusCode == 200) {
-        updated = Customer.fromJson(response.data as Map<String, dynamic>);
+        final body = response.data as Map<String, dynamic>;
+        // Backend returns { success: true, data: {...} }; unwrap it so the
+        // updated profile isn't parsed as the wrapper (which has no fields).
+        final payload = (body['data'] as Map<String, dynamic>?) ?? body;
+        updated = Customer.fromJson(payload);
       } else {
         throw Exception('Failed to update profile');
       }
