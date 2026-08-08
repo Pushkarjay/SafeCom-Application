@@ -556,3 +556,78 @@ planning_and_progress/progress_log.md
 | `7b34f91` | ci: support multi-track customer Play Store upload (internal/alpha/beta/production) with employee toggle |
 | `c1005a9` | ci: upload customer bundle once to all requested tracks (fix 'version code already used'); bump customer to 1.3.8+36 |
 | `1bdcb0e` | chore: bump customer build to 1.3.8+36 for Play Store rollout (v35 already used in internal) |
+
+
+---
+
+## 2026-08-08 (Customer & Employer App Fixes + Full Play Store Rollout)
+
+### Objective
+Address the remaining production issues reported by the CTO/CEO: broken custom text box input, address selection being overridden by device geolocation (Jaipur/Patna case), optional-email booking failures, employee app data surviving uninstall, invoice wording consistency, plus version bumps and full rollout of both apps.
+
+### Audit Findings
+- **Custom text box (root cause found):** `TextEditingController` was created inside `build()` in all 5 invoice screens. Every keystroke updated the Riverpod provider, which rebuilt the widget with a brand-new controller — resetting cursor position and IME composing state, producing reversed/character-by-character typing and broken backspace/mid-text editing.
+- **Address (root cause found):** Two silent override paths — (1) `_initAddresses()` auto-selected the default saved address whenever no booking address was chosen, overriding a manually-selected map/home location; (2) payment payload fell back to `locationState` (device GPS) when `booking.selectedAddress` was null. The backend (`bookings.ts`) was verified to use `request.location` verbatim — it never replaced the address — so the wrong address originated in the app.
+- **Email optional:** Backend `customers.ts` PATCH rejected empty email (`z.string().email()`), and the Razorpay `verify` schema rejected empty email — a phone-only customer who paid would hit a 400 on verification (charged but no booking). `getProfile` also passed the `{success, data}` envelope into `Customer.fromJson`, silently failing the profile refresh.
+- **Task 10 (data clearing):** Customer app already had `android:allowBackup="false"`. The employee app had NO `allowBackup` attribute (defaults to true) — session data survived uninstall.
+- **Invoice wording:** Payment/confirmation screens still described the Rs 100 booking charge as "added on top"/"(extra)", contradicting the inclusive model (backend already computes `grandTotal = serviceAmount`, `remaining = grandTotal - advance`).
+
+### Changes Made
+1. **Custom text box fixed** — converted `_CustomTextBoxField` to `ConsumerStatefulWidget` with a single controller created in `initState` (disposed properly), syncing only external provider changes. Applied to accessories, installation, maintenance, repair and upgrade estimate screens. Typing, backspace, cursor movement, paste and mid-text editing now behave natively.
+2. **Address source of truth enforced** —
+   - Payment: booking payload uses ONLY `booking.selectedAddress` (text + lat/lng). No geolocation fallback; if no address is selected the payment is blocked with a clear message.
+   - Scheduling: no longer auto-selects the default saved address over a manually-chosen location; a manual location is converted into the booking address.
+   - Payment UI shows the selected address (not device GPS); warning banner triggers only when no service address is selected.
+3. **Email optional** — backend customer schema accepts empty/null email; Razorpay verify schema accepts empty email; app normalizes empty email → null before sending; `getProfile` unwraps the API envelope.
+4. **Employee app data clearing** — `android:allowBackup="false"` added to employee manifest + guard test (`mobile_employee/test/android_backup_config_test.dart`).
+5. **Invoice wording** — payment & confirmation screens now show the booking advance as included in the total (remaining = total − advance).
+6. **Version bumps** — Customer app `1.3.8+36 → 1.3.9+37`, Employee app `1.1.2+27 → 1.1.3+28`.
+
+### Files Modified
+```
+backend_server/src/routes/customers.ts
+backend_server/src/routes/razorpay.ts
+mobile_customer/lib/features/auth/services/auth_service.dart
+mobile_customer/lib/features/booking/booking_confirmation_screen.dart
+mobile_customer/lib/features/booking/payment_screen.dart
+mobile_customer/lib/features/booking/scheduling_screen.dart
+mobile_customer/lib/features/booking/services/razorpay_payment_service.dart
+mobile_customer/lib/features/invoice/accessories_estimate_screen.dart
+mobile_customer/lib/features/invoice/installation_customization_screen.dart
+mobile_customer/lib/features/invoice/maintenance_customization_screen.dart
+mobile_customer/lib/features/invoice/repair_estimate_screen.dart
+mobile_customer/lib/features/invoice/upgrade_estimate_screen.dart
+mobile_customer/pubspec.yaml
+mobile_employee/android/app/src/main/AndroidManifest.xml
+mobile_employee/test/android_backup_config_test.dart (new)
+mobile_employee/pubspec.yaml
+```
+
+### Database Changes
+- None (no schema changes; booking payload now carries the selected address coordinates).
+
+### Tests & Verification
+- `flutter analyze --no-fatal-infos`: customer app ✅ no issues; employee app ✅ no issues.
+- `flutter test`: customer ✅ (3/3, incl. Android backup guard); employee ✅ (3/3, incl. new backup guard).
+- `tsc --noEmit` (backend): ✅ no errors.
+- CI Quality Gates (push): backend build, admin build, customer/employee analyze — running on `main`.
+
+### Git Commits
+| Hash | Message |
+|------|---------|
+| `d0066f7` | fix(customer): repair custom text box input behavior |
+| `41acc61` | fix(booking): selected service address is the single source of truth |
+| `1cdda5b` | fix(invoice): show booking advance as included in total on confirmation |
+| `7f27f6e` | fix(booking): allow bookings without email for phone-only customers |
+| `8fa71c9` | fix(auth): disable Android auto-backup in employee app so uninstall clears data |
+| `4b3e70b` | chore(release): bump customer app to 1.3.9+37 and employee app to 1.1.3+28 |
+
+### Deployment Status
+- **Backend:** pushed to `main` → `deploy-backend.yml` auto-deploy to Cloud Run (us-central1 + asia-south1) — in progress.
+- **Customer App (1.3.9+37):** Play Store rollout triggered via `build-mobile.yml` (workflow_dispatch) → internal, alpha (closed testing), production @ 100%.
+- **Employee App (1.1.3+28):** Play Store rollout to internal testing track (closed testing where supported).
+
+### Known Issues / Next Steps
+- Beta (open testing) track for customer app remains empty — not part of this rollout.
+- Homepage improvements deferred per CTO instruction (low priority; optional).
+- After rollout completes, verify a live booking: saved Patna address + Jaipur GPS must record Patna.
