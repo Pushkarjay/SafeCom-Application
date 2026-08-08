@@ -112,6 +112,31 @@ class BookingConfirmationScreen extends ConsumerWidget {
                     _infoRow(Icons.calendar_month_outlined, 'Date: ${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year}'),
                     const SizedBox(height: 6),
                     _infoRow(Icons.access_time_rounded, 'Time: ${booking.selectedTimeSlot}'),
+                    if (booking.customTextBoxValue != null && booking.customTextBoxValue!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentLight,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.notes_outlined, size: 16, color: AppColors.accent),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                booking.customTextBoxValue!,
+                                style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (hasItems) ...[
                       const SizedBox(height: 12),
                       const Divider(color: AppColors.borderLight),

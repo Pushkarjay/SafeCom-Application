@@ -345,6 +345,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final activeOrder = ref.watch(activeOrderProvider);
     final booking = ref.watch(bookingFlowProvider);
     final locationState = ref.watch(locationProvider);
+    final customTextBoxValue = booking.customTextBoxValue;
 
     const bookingAmount = ApiConfig.bookingAmount;
     final productTotal = activeOrder?.estimatedTotal ?? 0;
@@ -420,6 +421,32 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   label: 'Location',
                   value: booking.selectedAddress?.address ?? locationState.location,
                 ),
+
+                if (customTextBoxValue != null && customTextBoxValue.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.notes_outlined, size: 16, color: AppColors.accent),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            customTextBoxValue,
+                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),

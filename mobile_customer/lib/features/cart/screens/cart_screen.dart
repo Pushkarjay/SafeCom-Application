@@ -5,6 +5,7 @@ import 'package:mobile_customer/core/constants/app_routes.dart';
 import 'package:mobile_customer/core/theme/app_theme.dart';
 import 'package:mobile_customer/data/providers/cart_provider.dart';
 import 'package:mobile_customer/features/booking/providers/active_order_provider.dart';
+import 'package:mobile_customer/features/booking/providers/booking_flow_provider.dart';
 import 'package:mobile_customer/widgets/common/customer_bottom_navigation.dart';
 
 class CartScreen extends ConsumerWidget {
@@ -32,8 +33,13 @@ class CartScreen extends ConsumerWidget {
           ? _EmptyCart(onBrowse: () => context.push(AppRoutes.productsDiscovery))
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: cartItems.length,
+              itemCount: cartItems.length + 1,
               itemBuilder: (context, index) {
+                // Last row = the universal message/instruction box so the
+                // customer can attach a note to the whole cart order.
+                if (index == cartItems.length) {
+                  return const _CustomMessageField();
+                }
                 final item = cartItems[index];
                 return _CartItemCard(
                   item: item,
@@ -220,6 +226,106 @@ class _CartItemCard extends StatelessWidget {
           border: Border.all(color: AppColors.secondaryLight),
         ),
         child: Icon(icon, size: 16, color: AppColors.secondary),
+      ),
+    );
+  }
+}
+
+/// Text field for attaching a custom instruction/request to the whole cart.
+/// Stateful so the TextEditingController survives rebuilds — typing, backspace
+/// and cursor movement behave like a normal input.
+class _CustomMessageField extends ConsumerStatefulWidget {
+  const _CustomMessageField();
+
+  @override
+  ConsumerState<_CustomMessageField> createState() => _CustomMessageFieldState();
+}
+
+class _CustomMessageFieldState extends ConsumerState<_CustomMessageField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: ref.read(bookingFlowProvider).customTextBoxValue ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final value = ref.watch(bookingFlowProvider).customTextBoxValue;
+    if (value != _controller.text) {
+      _controller.text = value ?? '';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4, bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.accentLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.notes_outlined, size: 18, color: AppColors.accent),
+              const SizedBox(width: 8),
+              Text(
+                'Add Instructions / Request',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Tell us anything about this order — the message goes to the technician with your invoice.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _controller,
+            maxLines: 3,
+            minLines: 2,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: 'e.g. Camera near the main gate is not working...',
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.all(12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borderLight),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borderLight),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+              ),
+            ),
+            onChanged: (value) {
+              ref
+                  .read(bookingFlowProvider.notifier)
+                  .setCustomTextBoxValue(value.trim().isEmpty ? null : value);
+            },
+          ),
+        ],
       ),
     );
   }
