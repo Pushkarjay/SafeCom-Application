@@ -183,7 +183,8 @@ async function createCorrespondingJob(
         advanceAmount: booking.invoice.advanceAmount,
         remainingAmount: booking.invoice.remainingAmount,
         generatedAt: booking.invoice.generatedAt,
-        notes: booking.invoice.notes
+        notes: booking.invoice.notes,
+        customTextBox: booking.invoice.customTextBox
       },
       status: 'pending',
       assignedTo: null,
