@@ -68,7 +68,6 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       final activeOrder = ref.read(activeOrderProvider);
       final booking = ref.read(bookingFlowProvider);
       final authState = ref.read(authProvider);
-      final locationState = ref.read(locationProvider);
 
       final verification = await ref.read(razorpayPaymentServiceProvider).verifyPayment(
             orderId: checkoutOrder.orderId,
@@ -105,18 +104,25 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       final customTextBoxValue = booking.customTextBoxValue;
 
+      // Single source of truth: the address the customer explicitly selected.
+      // NEVER fall back to the device geolocation here — a booking must never
+      // silently be created for a different city than the selected address.
       final selectedAddr = booking.selectedAddress;
-      final locationPayload = selectedAddr != null
-          ? {
-              'address': selectedAddr.address,
-              'latitude': selectedAddr.latitude,
-              'longitude': selectedAddr.longitude,
-            }
-          : {
-              'address': locationState.location,
-              'latitude': locationState.latitude ?? 25.5941,
-              'longitude': locationState.longitude ?? 85.1376,
-            };
+      if (selectedAddr == null) {
+        setState(() { _isProcessing = false; _checkoutOrder = null; });
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Service address is missing. Please go back and select a service address.'),
+            backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      final locationPayload = {
+        'address': selectedAddr.address,
+        'latitude': selectedAddr.latitude,
+        'longitude': selectedAddr.longitude,
+      };
 
       final createBookingData = {
         'customerId': authState.customer?.id ?? '',
@@ -343,6 +349,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     const bookingAmount = ApiConfig.bookingAmount;
     final productTotal = activeOrder?.estimatedTotal ?? 0;
     final grandTotal = productTotal;
+    // Inclusive model: the booking advance is part of the total bill and is
+    // deducted from it — the customer pays only the difference on-site.
+    final remainingAmount = (productTotal - bookingAmount).clamp(0.0, double.infinity);
 
     return Scaffold(
       appBar: AppBar(
@@ -351,7 +360,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (locationState.location == 'Fetching location...' || locationState.latitude == null)
+          if (booking.selectedAddress == null)
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 16),
@@ -367,7 +376,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Delivery location not set. Please go back and set your location.',
+                      'Service address not set. Please go back and select a service address.',
                       style: TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -407,7 +416,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 const SizedBox(height: 20),
                 _SummaryRow(label: 'Service', value: activeOrder == null ? 'Service details unavailable' : '${activeOrder.serviceName} (${activeOrder.packageLabel})'),
                 _SummaryRow(label: 'Schedule', value: '${booking.selectedDate.day}/${booking.selectedDate.month}/${booking.selectedDate.year} • ${booking.selectedTimeSlot}'),
-                _SummaryRow(label: 'Location', value: locationState.location),
+                _SummaryRow(
+                  label: 'Location',
+                  value: booking.selectedAddress?.address ?? locationState.location,
+                ),
 
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -443,7 +455,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ]),
                 const SizedBox(height: 6),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('Booking Charge', style: TextStyle(color: AppColors.textSecondary)),
+                  const Text('Booking Advance (paid now)', style: TextStyle(color: AppColors.textSecondary)),
                   Text(_currency(bookingAmount), style: const TextStyle(fontWeight: FontWeight.w600)),
                 ]),
                 const SizedBox(height: 6),
@@ -461,7 +473,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     const SizedBox(width: 6),
                     const Expanded(
                       child: Text(
-                        'All product prices are inclusive of GST. Booking charge of Rs 100 is added on top and paid now.',
+                        'All product prices are inclusive of GST. The Rs 100 booking advance is part of your total bill and is paid now; the balance is payable on-site.',
                         style: TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.3),
                       ),
                     ),
@@ -484,12 +496,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('Pay Now (Booking Charge)', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: AppColors.accent)),
+                  Text('Pay Now (Booking Advance)', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: AppColors.accent)),
                   Text(_currency(bookingAmount), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: AppColors.success)),
                 ]),
                 const SizedBox(height: 8),
                 Text(
-                  'Pay Rs ${bookingAmount.toInt()} now to confirm. Remaining Rs ${productTotal.toInt()} will be paid on-site to the technician.',
+                  'Pay Rs ${bookingAmount.toInt()} now to confirm. Remaining Rs ${remainingAmount.toInt()} will be paid on-site to the technician.',
                   style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 6),

@@ -32,6 +32,21 @@ class _SchedulingScreenState extends ConsumerState<SchedulingScreen> {
       ref.read(addressProvider.notifier).loadAddresses(cid).then((_) {
         final booking = ref.read(bookingFlowProvider);
         if (booking.selectedAddress == null) {
+          final locState = ref.read(locationProvider);
+          if (locState.isManuallySet && locState.latitude != null) {
+            // The customer explicitly chose a location (map/home picker).
+            // Convert it to the booking address instead of silently letting
+            // the default saved address override their explicit choice.
+            ref.read(bookingFlowProvider.notifier).selectAddress(SavedAddress(
+              id: 'cl_${DateTime.now().millisecondsSinceEpoch}',
+              label: 'Selected Location',
+              address: locState.location,
+              latitude: locState.latitude ?? 0.0,
+              longitude: locState.longitude ?? 0.0,
+              isDefault: false,
+            ));
+            return;
+          }
           final state = ref.read(addressProvider);
           final defaultAddr = state.defaultAddress;
           if (defaultAddr != null) {
