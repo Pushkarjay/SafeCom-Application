@@ -375,14 +375,44 @@ class _OptionSection extends StatelessWidget {
   }
 }
 
-class _CustomTextBoxField extends ConsumerWidget {
+class _CustomTextBoxField extends ConsumerStatefulWidget {
   const _CustomTextBoxField();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final booking = ref.watch(bookingFlowProvider);
+  ConsumerState<_CustomTextBoxField> createState() => _CustomTextBoxFieldState();
+}
+
+class _CustomTextBoxFieldState extends ConsumerState<_CustomTextBoxField> {
+  // Created ONCE, never inside build(): a fresh controller on every rebuild
+  // was resetting the cursor/IME on each keystroke (characters appeared in
+  // reverse, backspace and mid-text editing broke).
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: ref.read(bookingFlowProvider).customTextBoxValue ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final customTextBoxValue = ref.watch(bookingFlowProvider).customTextBoxValue;
     final notifier = ref.read(bookingFlowProvider.notifier);
-    final controller = TextEditingController(text: booking.customTextBoxValue ?? '');
+
+    // Sync only when the value changed from outside (e.g. flow reset). While
+    // typing, onChanged keeps provider == controller text, so this never
+    // interferes with the cursor position or IME composition.
+    if (customTextBoxValue != _controller.text) {
+      _controller.text = customTextBoxValue ?? '';
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -419,7 +449,7 @@ class _CustomTextBoxField extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           TextField(
-            controller: controller,
+            controller: _controller,
             maxLines: 3,
             maxLength: 500,
             decoration: InputDecoration(

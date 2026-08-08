@@ -111,11 +111,44 @@ class RepairEstimateScreen extends ConsumerWidget {
   }
 }
 
-class _CustomTextBoxField extends ConsumerWidget {
+class _CustomTextBoxField extends ConsumerStatefulWidget {
+  const _CustomTextBoxField();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CustomTextBoxField> createState() => _CustomTextBoxFieldState();
+}
+
+class _CustomTextBoxFieldState extends ConsumerState<_CustomTextBoxField> {
+  // Created ONCE, never inside build(): a fresh controller on every rebuild
+  // was resetting the cursor/IME on each keystroke (characters appeared in
+  // reverse, backspace and mid-text editing broke).
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: ref.read(bookingFlowProvider).customTextBoxValue ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final customTextBoxValue = ref.watch(bookingFlowProvider).customTextBoxValue;
     final notifier = ref.read(bookingFlowProvider.notifier);
+
+    // Sync only when the value changed from outside (e.g. flow reset). While
+    // typing, onChanged keeps provider == controller text, so this never
+    // interferes with the cursor position or IME composition.
+    if (customTextBoxValue != _controller.text) {
+      _controller.text = customTextBoxValue ?? '';
+    }
 
     return Container(
       width: double.infinity,
@@ -134,7 +167,7 @@ class _CustomTextBoxField extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           TextField(
-            controller: TextEditingController(text: customTextBoxValue ?? ''),
+            controller: _controller,
             maxLines: 3,
             decoration: InputDecoration(
               hintText: 'e.g., Camera near the main gate is not working',
