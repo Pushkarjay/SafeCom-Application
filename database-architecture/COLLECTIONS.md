@@ -1,4 +1,4 @@
-# Collections Schema (Updated: 2026-05-08)
+# Collections Schema (Updated: 2026-08-09 — audit verified)
 
 ## CURRENT ACTIVE COLLECTIONS
 
@@ -9,7 +9,12 @@
 
 ### customers
 {
-  uid, name, phone, email, profileImage, defaultLocationId, savedLocations[], status, createdAt
+  uid, name, phone (persisted — optional email), profileImage, defaultLocationId, savedLocations[] (with lat/lng from map picker), status, createdAt
+}
+
+### users (NEW)
+{
+  uid, role, linked customer/employee/admin id — used for cross-role lookup: /me, /by-phone/:phone, /by-email/:email
 }
 
 ### employees
@@ -26,20 +31,51 @@
 {
   id, name, key, description, icon, status, createdAt
   └── [Dynamic nested structure]
-      └── Category (e.g., "shakti")
-          └── Setup (e.g., "4 Camera Setup")
-              └── Product N → Option N
-                  ├── Price (product reference)
-                  ├── Deafult q
-                  ├── min q
-                  ├── max q
-                  ├── available
-                  └── rigid
+      └── Category
+          └── Setup
+              └── Product → Options / Branches / Clubbed products
+                  ├── price ref, defaultQty, minQty, maxQty, available, rigid
+                  └── dependency engine (auto-mapped quantities)
+}
+
+### catalog_maintenance_plans (NEW)
+{
+  id, name, description, frequency (monthly/quarterly/half_yearly/yearly), price, status, createdAt, updatedAt
+}
+
+### jobs
+{
+  jobId, bookingId, customerId, serviceType, status, assignedTo{employeeId,name,phone}, location{address,city,pincode}, items[], subtotal, tax, discount, total, paymentStatus, invoice (incl. customTextBox — customer message), scheduledDate, completedAt?, completionNotes?, createdAt, updatedAt
+}
+
+### bookings
+{
+  bookingId, customerId, orderId, serviceId, variantId?, locationId, items[], subtotal, tax, discount, total, amountPaid, totalAmount, status, paymentStatus, scheduledDate, createdAt
 }
 
 ### sdui_layouts
 {
   id, name, layoutType, config (JSON), status
+}
+
+### sdui_feature_flags (NEW)
+{
+  key, enabled, config
+}
+
+### serviceable_areas (NEW)
+{
+  areaCode, name, city, status — shared by admin CRUD, /serviceability/check, and SDUI (hideWhenServiceable)
+}
+
+### home_cms (NEW)
+{
+  promo banners, sections — public read, admin write via homeCms.ts
+}
+
+### booking_counters (NEW)
+{
+  sequential booking-id counters
 }
 
 ### Invoices
@@ -51,25 +87,34 @@
 
 ## LEGACY/DELETED COLLECTIONS
 
-- ❌ customer_user - Deleted (use customers)
+- ❌ customer_user / Customer_User - Deleted (use customers)
 - ❌ sample_customer - Deleted (not used)
-- ❌ admin_user - Deleted (use admins)
-- ❌ employee_user - Deleted (use employees)
-- ❌ Banners - Deleted (not used)
-- ❌ Bookings - Deleted (use jobs instead)
+- ❌ admin_user / Admin_User - Deleted (use admins)
+- ❌ employee_user / Employee_User - Deleted (use employees)
+- ❌ PService - Deleted (replaced by Services tree)
+- ❌ Catalog_Product (legacy) - Deleted (use catalog_product)
+- ❌ Banners - Deleted (use home_cms / SDUI)
+- ❌ Bookings (legacy) - Deleted (use bookings)
 - ❌ Configurations - Deleted (not used)
 - ❌ Locations - Deleted (not used)
 - ❌ Offers - Deleted (not used)
-- ❌ Orders - Deleted (use jobs)
+- ❌ Orders - Deleted (use bookings/jobs)
+
+> ⚠️ `firestore.rules` still references many legacy names above — it should be
+> reconciled with this collection set (the backend uses the admin SDK and
+> bypasses rules).
 
 ---
 
 ## DATA FLOW
 
 1. **Master Products**: Stored in `catalog_product` - single source of truth
-2. **Services**: Reference products from catalog_product via document references
-3. **Jobs**: Created from bookings, assigned to employees
-4. **Payments**: Linked to bookings/jobs
+2. **Services**: Reference products from catalog_product via document references; dynamic tree built by servicesAdmin/installationAdmin
+3. **Bookings**: Created by customers (with amountPaid/totalAmount + optional custom message) → backend creates a `job`
+4. **Jobs**: Created from bookings, assigned to employees; carry invoice incl. customTextBox
+5. **Payments**: Linked to bookings/jobs; Razorpay order → verify (signature required)
+6. **Serviceability**: `serviceable_areas` drives /serviceability/check + SDUI banners
+7. **CMS**: `home_cms` + `sdui_layouts` + `sdui_feature_flags` drive the customer home screen
 
 ## Nested Service Architecture
 

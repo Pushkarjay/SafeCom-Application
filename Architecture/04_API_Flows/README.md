@@ -6,23 +6,45 @@
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/health` | Health check |
-| POST | `/api/auth/login` | Admin login (Firebase token) |
-| GET | `/api/catalog-public/*` | Service catalog (read-only) |
-| GET | `/api/sdui/*` | UI layouts |
-| GET | `/api/serviceability/*` | Location validation |
+| GET | `/health` | Health check (deployed dual-region) |
+| POST | `/api/auth/login` | Login (Firebase ID token) |
+| GET | `/api/auth/health` | Auth service health |
+| GET | `/api/catalog-public/*` | Service catalog, pricing, upgrade, accessories, products, recommendations (read-only) |
+| GET | `/api/sdui/layout` `/api/sdui/screens` | SDUI layouts (public) |
+| GET | `/api/home-cms/` | Home CMS content (public read) |
+| POST | `/api/serviceability/check` | Location serviceability check (public) |
+| GET | `/api/serviceability/areas` | Serviceable areas (public read) |
+| GET | `/api/catalog/services` `/accessories` `/maintenance-plans` `/recommendations` | Read-only catalog views |
 
-### Protected Endpoints (Firebase Auth Required)
+### Firebase-Token Endpoints (mobile clients, `verifyFirebaseIdToken`)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET/POST | `/api/dashboard/*` | Analytics & metrics |
-| GET/POST | `/api/customers/*` | Customer management |
-| GET/POST/PATCH | `/api/jobs/*` | Job lifecycle |
-| GET/POST/PATCH | `/api/bookings/*` | Booking management |
-| GET/POST | `/api/employees/*` | Employee operations |
-| GET/POST | `/api/payments/*` | Payment processing |
-| GET/POST | `/api/catalog/*` | Catalog management (admin) |
+| POST | `/api/auth/logout` | Logout |
+| GET | `/api/users/me` `/by-phone/:phone` `/by-email/:email` | Customer lookup/dup-check |
+| GET/POST/PATCH/DELETE | `/api/customers/*` | Customer profile + saved addresses |
+| GET/POST/PATCH/DELETE | `/api/jobs/*` | Job lifecycle (incl. `/:id/pickup`, `/:id/complete`) |
+| POST/GET/PATCH | `/api/bookings/*` | Booking management (creates job) |
+| POST | `/api/payments/razorpay/create-order` `/verify` | Razorpay order + signature verify |
+| GET | `/api/employees/me` `/:id` `/:id/earnings` | Employee profile/earnings |
+| POST | `/api/employees/device-token` | FCM device token registration |
+| GET | `/api/catalog/metadata` `/pricing` `/packages` `/addons` `/taxes` `/invoices` | Catalog reads |
+
+### Admin-Token Endpoints (`authenticateToken` + `requireRole`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/dashboard/*` | Analytics & metrics |
+| GET/POST/PATCH/DELETE | `/api/customers/*` | Customer management (admin) |
+| GET/POST/PATCH/DELETE | `/api/technicians/*` | Technician CRUD + passwords |
+| GET/POST/PATCH/DELETE | `/api/payments/*` | Payment records (+ `/:id/request`) |
+| GET/POST/PATCH/DELETE | `/api/catalog/services-admin/*` | Dynamic service tree builder |
+| GET/POST/PATCH/DELETE | `/api/catalog/installation-admin/*` | Installation tree builder |
+| GET/POST/PATCH/DELETE | `/api/catalog/sdui-admin/*` | SDUI layouts + feature flags |
+| GET/POST/PATCH/DELETE | `/api/catalog/*` (metadata, packages, addons, taxes, invoices, products, maintenance-plans, accessories) | Catalog management |
+| POST | `/api/catalog/services` `/accessories` `/maintenance-plans` `/recommendations` | Catalog writes |
+| POST/PATCH/DELETE | `/api/serviceability/areas` | Area CRUD (admin) |
+| GET/POST/PATCH/DELETE | `/api/home-cms` | Home CMS admin |
 
 ## Request Lifecycle
 
@@ -229,9 +251,17 @@ flowchart LR
 }
 ```
 
+## Audit Update (2026-08-09)
+
+- Route files grew 17 → **25**; endpoint inventory above is the full current set.
+- Auth is now tiered: public → Firebase-ID-token (mobile) → admin-JWT + `requireRole`.
+- Payment verification now **requires** the Razorpay signature.
+- `PATCH /customers/:id` allows customers to update their own profile (was admin-only).
+- Response shape standardized to `{ success, data }`; error responses use `{ success: false, error: { code, message } }`.
+
 ## Confidence Level
 
 **High** - Verified through:
 - `backend_server/src/app.ts` (route registration)
 - `backend_server/src/routes/*.ts` (handler implementations)
-- `backend_server/src/middleware/firebaseAuth.ts` (auth flow)
+- `backend_server/src/middleware/firebaseAuth.ts` + `middleware/auth.ts` (auth flows)

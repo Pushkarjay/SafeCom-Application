@@ -4,26 +4,38 @@
 
 The system uses Firestore as its primary database with the following active collections:
 
-### Primary Collections
+### Primary Collections (current — verified 2026-08-09)
 
 | Collection | Purpose | Document Count |
 |------------|---------|-----------------|
 | `admins` | Admin user profiles | Low (team size) |
-| `customers` | Customer profiles | Medium |
+| `customers` | Customer profiles (+ saved addresses, phone) | Medium |
 | `employees` | Employee/technician profiles | Low-medium |
+| `users` | Cross-role user lookup / linking | Low |
 | `catalog_product` | Master product catalog | High |
-| `Services` | Service configurations (nested tree) | Low |
-| `jobs` | Job/work orders | High |
-| `bookings` | Customer bookings | High |
+| `Services` | Dynamic service tree (categories/setups/products/nodes/branches/clubs) | Low |
+| `catalog_maintenance_plans` | **NEW** AMC/maintenance plan catalog | Low-medium |
+| `jobs` | Job/work orders (carry invoice incl. custom message) | High |
+| `bookings` | Customer bookings (bookingId-based) | High |
 | `Invoices` | Invoice documents | Medium |
 | `sdui_layouts` | Server-driven UI layouts | Low |
+| `sdui_feature_flags` | **NEW** SDUI feature flags | Low |
+| `serviceable_areas` | **NEW** Serviceable pincode/area registry | Low-medium |
+| `home_cms` | **NEW** Home page CMS content | Low |
+| `booking_counters` | **NEW** Sequential booking-id counters | Low |
+
+> ⚠️ `firestore.rules` still references legacy names (`PService`, `Catalog_Product`,
+> `Customer_User`, `Orders`, `Employee_User`, `Admin_User`, `Bookings`,
+> `Configurations`, `Banners`, `Offers`, `Locations`). The backend uses the admin
+> SDK (bypasses rules) and `firestore.indexes.json` defines only 3 indexes — both
+> should be reconciled with the collection set above.
 
 ### Legacy/Deleted Collections
 
 - `customer_user` → migrated to `customers`
 - `admin_user` → migrated to `admins`
 - `employee_user` → migrated to `employees`
-- `Banners`, `Bookings`, `Configurations`, `Locations`, `Offers`, `Orders` → deleted
+- `Banners`, `Bookings` (old), `Configurations`, `Locations`, `Offers`, `Orders`, `PService`, `Catalog_Product`, `Customer_User`, `Employee_User`, `Admin_User` → no longer used by the backend
 
 ## Document Schema
 
@@ -47,11 +59,11 @@ The system uses Firestore as its primary database with the following active coll
 {
   uid: string;           // Firebase UID
   name: string;
-  phone: string;
-  email: string;
+  phone: string;        // now persisted on profile (optional email)
+  email?: string;
   profileImage?: string;
   defaultLocationId?: string;
-  savedLocations: Location[];
+  savedLocations: Location[];  // addresses now carry lat/lng from the map picker
   status: 'active' | 'inactive';
   createdAt: string;      // ISO 8601
 }
@@ -119,11 +131,47 @@ The system uses Firestore as its primary database with the following active coll
   discount: number;
   total: number;
   paymentStatus: 'unpaid' | 'paid' | 'partial';
+  invoice?: CanonicalInvoice; // incl. customTextBox (customer message)
   scheduledDate: string;
   completedAt?: string;
   completionNotes?: string;
   createdAt: string;
   updatedAt: string;
+}
+```
+
+### catalog_maintenance_plans (NEW)
+
+```typescript
+{
+  id: string;
+  name: string;
+  description?: string;
+  frequency: 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';
+  price: number;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+### serviceable_areas (NEW)
+
+```typescript
+{
+  areaCode: string;      // e.g. pincode or area id
+  name: string;
+  city: string;
+  status: 'active' | 'inactive';
+  // shared between admin CRUD, backend /serviceability/check, and SDUI
+}
+```
+
+### home_cms (NEW)
+
+```typescript
+{
+  // promo banners, sections, feature flags rendered by the home screen / SDUI
 }
 ```
 
@@ -223,6 +271,18 @@ The `firestore.rules` file exists but was not reviewed in detail. Assumed rules:
 
 **High** - Schema inferred from:
 - `backend_server/src/types.ts`
-- `database-architecture/COLLECTIONS.md`
+- `database-architecture/COLLECTIONS.md` (updated 2026-08-09)
 - `backend_server/src/contracts/canonical_contracts.ts`
+- `backend_server/src/routes/*.ts` collection usage (verified 2026-08-09)
 - Firestore collection snapshots
+
+---
+
+## Audit Update (2026-08-09)
+
+Collections **added** since the 2026-05-09 snapshot:
+`users`, `catalog_maintenance_plans`, `sdui_feature_flags`, `serviceable_areas`,
+`home_cms`, `booking_counters`. Booking/`jobs` schemas now include the customer's
+custom message (`invoice.customTextBox`) and advance payment fields
+(`amountPaid`/`totalAmount`). `firestore.rules` + `firestore.indexes.json` are
+stale vs. the runtime collection set (see Audit Delta §3/§8).

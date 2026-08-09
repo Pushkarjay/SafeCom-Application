@@ -4,6 +4,11 @@
 
 The system uses **Firebase Authentication** as the primary identity provider, with backend authorization checks against Firestore collections.
 
+> **Audit 2026-08-09**: the backend now runs **two auth middleware paths** —
+> `verifyFirebaseIdToken` (Firebase ID tokens from mobile clients) and
+> `authenticateToken` + `requireRole` (admin JWT issued at `/api/auth/login`
+> for the admin dashboard). See the appendices below.
+
 ```mermaid
 flowchart TB
     subgraph "Auth Providers"
@@ -177,3 +182,34 @@ flowchart LR
 ## Confidence Level
 
 **High** - Auth flow verified through code inspection of all auth-related files across all three applications.
+
+---
+
+## Audit Update (2026-08-09)
+
+### Dual middleware paths
+
+```mermaid
+flowchart LR
+    Mobile[Customer / Employee App] -->|Bearer Firebase ID token| VF[verifyFirebaseIdToken]
+    VF -->|firebaseUid attached| Handler[Route Handler]
+
+    Admin[Admin Web] -->|POST /api/auth/login| JWT[authenticateToken]
+    JWT -->|admin JWT issued| AdminReq[Bearer admin JWT]
+    AdminReq --> Role[requireRole(['admin'])]
+    Role --> Handler2[Route Handler]
+```
+
+### Guest-first customer auth
+- Only `payment`, `confirmation`, `profile`, `order-history`, `booking-detail`
+  require login; everything else is public.
+- After login, customers without a saved phone are routed to
+  `/phone-collection?continue=<route>`; email is optional.
+- `PATCH /customers/:id` now lets a customer update their **own** profile
+  (previously admin-only → 403), which is what persists the phone number.
+- `/api/users/by-phone/:phone` + `/api/users/by-email/:email` were added for
+  duplicate checks (previously 404 → checks silently skipped).
+
+### Privacy
+- Android auto-backup disabled on both apps (`allowBackup=false`, guard-tested)
+  so logout/uninstall clears all local user data including tokens.

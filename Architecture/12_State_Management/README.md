@@ -97,10 +97,17 @@ flowchart TB
 
 | Provider | Purpose | Location |
 |----------|---------|----------|
-| `JobsProvider` | Job list state, filtering | `lib/data/providers/jobs_provider.dart` |
-| `JobsProviders` | Jobs data management | `lib/data/providers/jobs_providers.dart` |
+| `JobsProvider` | Job list state, filtering | `lib/data/providers/jobs_providers.dart` |
 | `EmployeeProviders` | Employee profile state | `lib/data/providers/employee_providers.dart` |
 | `EmployeeLocationProvider` | Location tracking | `lib/features/map/providers/employee_location_provider.dart` |
+| `ThemeProvider` | Light/dark theme mode | `lib/data/providers/theme_provider.dart` |
+
+> **Audit 2026-08-09**: `jobs_provider.dart` was consolidated into
+> `jobs_providers.dart`; `theme_provider.dart` (dark mode) was added. The
+> customer app added `dynamic_service_provider.dart`,
+> `installation_flow_provider.dart`, `maintenance_flow_provider.dart`,
+> `product_selection_provider.dart`, `active_order_provider.dart`, and the SDUI
+> providers (`core/sdui/sdui_provider.dart`) for the dynamic service tree.
 
 ## Data Flow Pattern
 
@@ -160,10 +167,15 @@ The Admin web app uses React's built-in state management:
 | App | Storage | Purpose |
 |-----|---------|---------|
 | Customer | SecureStorage | Auth tokens |
-| Customer | In-memory | Cart, active booking |
+| Customer | In-memory + SharedPreferences | Cart, active booking, message box |
 | Employee | SecureStorage | Auth tokens |
-| Employee | In-memory | Job cache |
+| Employee | In-memory | Job cache, theme mode |
 | Admin | Memory/LocalStorage | Auth token |
+
+> **Audit 2026-08-09**: the customer app seeds `SharedPreferences` at startup
+> (`sharedPreferencesProvider` override in `main.dart`) and the custom-message /
+> cart state lives in `bookingFlowProvider`/`cartProvider`. Employee app supports
+> persisted light/dark theme via `themeModeProvider`.
 
 ## Confidence Level
 

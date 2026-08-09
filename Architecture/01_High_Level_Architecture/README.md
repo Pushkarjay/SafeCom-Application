@@ -4,10 +4,16 @@
 
 SafeCom is a comprehensive CCTV installation and maintenance service platform that consists of four major components:
 
-1. **Customer Mobile App** (Flutter) - Self-service booking, service discovery, payment, and tracking
-2. **Employee Mobile App** (Flutter) - Job management, earnings tracking, location services
+1. **Customer Mobile App** (Flutter 1.3.9+38) - Self-service booking, service discovery, payment, and tracking
+2. **Employee Mobile App** (Flutter 1.1.3+29) - Job management, earnings tracking, location services
 3. **Admin Web Dashboard** (React + Vite) - Service catalog management, job orchestration, analytics
 4. **Backend Server** (Express + TypeScript) - REST API, business logic, Firebase integration
+
+Plus a **static Customer Landing** site (marketing + legal/Play-Store policy pages).
+
+> 📌 **Audit update 2026-08-09** — see the appendices at the end of this document and
+> the **[Audit Delta](../AUDIT_DELTA_2026_05_09_to_2026_08_09.md)** for what changed
+> since the original 2026-05-09 snapshot.
 
 ## Infrastructure Architecture
 
@@ -28,24 +34,32 @@ SafeCom is a comprehensive CCTV installation and maintenance service platform th
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │  Express.js + TypeScript (Port: 3000 / Deployed on Cloud Run)      │   │
 │  ├─────────────────────────────────────────────────────────────────────┤   │
-│  │  ROUTES LAYER                                                       │   │
-│  │  ├── /api/auth          - Authentication                            │   │
-│  │  ├── /api/catalog-public - Public service catalog                   │   │
-│  │  ├── /api/sdui          - Server-driven UI layouts                  │   │
-│  │  ├── /api/customers     - Customer management                       │   │
-│  │  ├── /api/employees    - Employee operations                        │   │
-│  │  ├── /api/jobs          - Job lifecycle                             │   │
-│  │  ├── /api/bookings     - Booking management                        │   │
-│  │  ├── /api/payments     - Payment processing                         │   │
-│  │  ├── /api/dashboard    - Analytics & metrics                        │   │
-│  │  └── /api/catalog/*    - Service/Product/Accessory management       │   │
+│  │  ROUTES LAYER (25 route files)                                       │   │
+│  │  ├── /api/auth           - Authentication                            │   │
+│  │  ├── /api/catalog-public - Public service catalog & pricing          │   │
+│  │  ├── /api/sdui           - Server-driven UI layouts (public)         │   │
+│  │  ├── /api/home-cms       - Home page CMS (public read)               │   │
+│  │  ├── /api/serviceability - Serviceable-area check + CRUD (public)    │   │
+│  │  ├── /api/customers      - Customer management + addresses           │   │
+│  │  ├── /api/users          - Customer lookup (/me, by-phone, by-email) │   │
+│  │  ├── /api/employees      - Employee operations + device tokens       │   │
+│  │  ├── /api/jobs           - Job lifecycle (pickup, complete, patch)   │   │
+│  │  ├── /api/bookings       - Booking management + job creation         │   │
+│  │  ├── /api/payments       - Payment records + razorpay order/verify   │   │
+│  │  ├── /api/technicians    - Technician management + passwords         │   │
+│  │  ├── /api/dashboard      - Analytics & metrics                       │   │
+│  │  ├── /api/catalog/*      - products, services, accessories,          │   │
+│  │  │                          maintenance-plans, recommendations       │   │
+│  │  ├── /api/catalog/services-admin      - Dynamic service tree builder │   │
+│  │  ├── /api/catalog/installation-admin  - Installation tree builder    │   │
+│  │  └── /api/catalog/sdui-admin          - SDUI layouts + feature flags │   │
 │  ├─────────────────────────────────────────────────────────────────────┤   │
-│  │  MIDDLEWARE LAYER                                                   │   │
-│  │  ├── firebaseAuth.ts   - Firebase ID token verification             │   │
-│  │  └── auth.ts            - JWT token generation/validation           │   │
+│  │  MIDDLEWARE LAYER (2 auth paths)                                    │   │
+│  │  ├── firebaseAuth.ts   - verifyFirebaseIdToken (mobile clients)     │   │
+│  │  └── auth.ts           - authenticateToken + requireRole (admin JWT)│   │
 │  ├─────────────────────────────────────────────────────────────────────┤   │
-│  │  SERVICES LAYER                                                     │   │
-│  │  ├── firestore.ts      - Database abstraction                       │   │
+│  │  SERVICES LAYER (8 services)                                        │   │
+│  │  ├── firestore.ts      - Database abstraction (custom DB id)        │   │
 │  │  ├── notificationService.ts - Push notifications (FCM)             │   │
 │  │  ├── catalogService.ts - Service catalog business logic            │   │
 │  │  ├── userService.ts    - User management                           │   │
@@ -65,13 +79,14 @@ SafeCom is a comprehensive CCTV installation and maintenance service platform th
 │ Flutter/Dart    │   │ Flutter/Dart   │   │ React/Vite/TS   │
 │                 │   │                 │   │                 │
 │ Features:       │   │ Features:       │   │ Features:       │
-│ - Auth          │   │ - Auth          │   │ - Dashboard     │
+│ - Guest browse  │   │ - Auth          │   │ - Dashboard     │
 │ - Home/SDUI     │   │ - Job Board     │   │ - Jobs          │
-│ - Services      │   │ - Job Detail    │   │ - Customers     │
-│ - Booking       │   │ - Work Complete │   │ - Technicians   │
-│ - Payment       │   │ - Earnings      │   │ - Catalog       │
-│ - Profile       │   │ - Map/Location  │   │ - Payments      │
-│ - Invoices      │   │ - Photo Upload │   │ - Services      │
+│ - Dynamic Svc   │   │ - Job Detail    │   │ - Customers     │
+│ - Cart + Msg    │   │ - Work Complete │   │ - Technicians   │
+│ - Booking       │   │ - Earnings      │   │ - Svc Tree Bldr │
+│ - Payment       │   │ - Map/Location  │   │ - Mobile Prev   │
+│ - Profile       │   │ - FCM Notifs    │   │ - Payments      │
+│ - Invoices      │   │ - Dark Mode     │   │ - Serviceability│
 └─────────────────┘   └─────────────────┘   └─────────────────┘
 ```
 
@@ -100,6 +115,9 @@ SafeCom is a comprehensive CCTV installation and maintenance service platform th
 | Storage | Firebase Cloud Storage | - |
 | Notifications | Firebase Cloud Messaging | - |
 | Payment Gateway | Razorpay | API v2 |
+| Backend Hosting | Google Cloud Run (dual-region) | asia-south1 + us-central1 |
+| Frontend Hosting | Firebase Hosting | Admin Web + Landing |
+| Mobile Distribution | Google Play Store | internal / alpha / beta / production |
 
 ## Service Catalog Architecture
 
@@ -166,4 +184,45 @@ Each service references products from the `catalog_product` collection via Fires
 
 ## Confidence Level
 
-**High** - Architecture inferred from 40+ source files with consistent patterns across all components.
+**High** - Architecture inferred from 80+ source files with consistent patterns across all components.
+
+---
+
+## Appendix A — Audit Update (2026-08-09)
+
+### What changed since the original 2026-05-09 snapshot
+
+1. **Guest-First architecture** — the customer app now only requires login for
+   payment, confirmation, profile, order history, and booking detail. Browsing,
+   estimates, scheduling, and recommendations are public. Phone collection and
+   optional email were added to the auth flow.
+2. **Dynamic service tree** — services are fully dynamic (admin-built tree:
+   categories → setups → products → options → branches/clubs, with a
+   quantity/dependency engine). The customer app renders any service through the
+   `DynamicServiceScreen`; `installationAdmin`, `servicesAdmin`, `sduiAdmin`
+   route families power the builders.
+3. **Backend growth** — 17 → **25 route files**; added `addresses`, `homeCms`,
+   `installationAdmin`, `maintenance-plans`, `products`, `razorpay`,
+   `recommendations`, `sduiAdmin`, `serviceability`, `servicesAdmin`, `users`,
+   `accessories`; dual auth middleware (Firebase ID tokens for mobile, admin JWT
+   + `requireRole` for the dashboard).
+4. **Deployment** — backend now deployed to **two Cloud Run regions**
+   (asia-south1 + us-central1); all deploys automated via GitHub Actions
+   (8 workflows), including Play Store multi-track rollout with auto version
+   bump and track promotion.
+5. **Data layer** — custom Firestore DB `safecom-database-nosql`; new collections
+   `catalog_maintenance_plans`, `sdui_feature_flags`, `serviceable_areas`,
+   `home_cms`, `booking_counters`, `users`.
+6. **Payments** — Razorpay signature now required at verify; booking advance
+   (`amountPaid`) recorded; min ₹100 charge.
+7. **Messaging** — customer's custom message travels cart → booking → job →
+   employee app → admin dashboard (`invoice.customTextBox`).
+8. **Privacy** — Android auto-backup disabled on both apps (`allowBackup=false`,
+   guard-tested) so uninstall clears user data.
+9. **UI/UX** — customer app light premium theme (warm amber `#D4760A` + slate
+   `#0F172A`), employee app gained dark mode + FCM notifications, admin dashboard
+   redesigned (dark command-center, dual-phone mobile preview, service tree
+   builder, serviceable areas, invoice PDF). See **[21_UI_UX](../21_UI_UX/README.md)**.
+10. **Employee app** — photo capture/gallery feature removed.
+
+Full record: **[Audit Delta](../AUDIT_DELTA_2026_05_09_to_2026_08_09.md)**.

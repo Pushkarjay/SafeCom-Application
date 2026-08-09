@@ -6,6 +6,11 @@ Start with **[MASTER_ARCHITECTURE_INDEX.md](./MASTER_ARCHITECTURE_INDEX.md)** fo
 
 For a quick overview, see **[ARCHITECTURE_SUMMARY.md](./20_Architecture_Report/README.md)**.
 
+> 📌 **Recent**: the documentation was regenerated on 2026-05-09; the platform has
+> since shipped 220+ commits. See **[AUDIT_DELTA_2026_05_09_to_2026_08_09.md](./AUDIT_DELTA_2026_05_09_to_2026_08_09.md)**
+> for everything that changed, and **[21_UI_UX](./21_UI_UX/README.md)** for the new
+> per-app UI/UX documentation.
+
 ## Available Documentation
 
 ### Core Architecture
@@ -37,22 +42,32 @@ For a quick overview, see **[ARCHITECTURE_SUMMARY.md](./20_Architecture_Report/R
 - [Shared Modules](./17_Shared_Modules/README.md) - Code duplication
 - [Microservice Suggestions](./08_Microservice_Suggestions/README.md) - Future architecture
 
+### UI/UX
+- [UI/UX Documentation](./21_UI_UX/README.md) - Screens, flows & design system per app
+
+### Audit
+- [Audit Delta 2026-05-09 → 2026-08-09](./AUDIT_DELTA_2026_05_09_to_2026_08_09.md) - What changed
+
 ## Quick Stats
 
 | Metric | Value |
 |--------|-------|
-| Components | 4 (Customer App, Employee App, Admin Web, Backend) |
-| Routes | 17+ API route files |
-| Collections | 12 active Firestore collections |
-| Documentation Files | 86+ (across all directories) |
+| Components | 4 (Customer App, Employee App, Admin Web, Backend) + Landing |
+| Routes | 25 API route files |
+| Collections | 15 active Firestore collections |
+| Documentation Files | 100+ (across all directories) |
 | Architecture Score | 7/10 |
+| Customer App | 1.3.9+38 (Play Store: internal/alpha/production) |
+| Employee App | 1.1.3+29 (Play Store: internal/alpha) |
+| Backend | Cloud Run, dual-region (asia-south1 + us-central1) |
 
 ## Key Findings Summary
 
 ### Strengths
 - Clear component separation
 - Firebase integration for scalability
-- SDUI pattern for flexible catalog
+- SDUI + dynamic service tree for flexible catalog
+- Guest-first browsing; full CI/CD; Play Store rollout automation
 
 ### Areas to Improve
 - Add pagination (missing)
@@ -60,7 +75,8 @@ For a quick overview, see **[ARCHITECTURE_SUMMARY.md](./20_Architecture_Report/R
 - Add caching layer
 - Extract shared code to packages
 - Add rate limiting
+- Reconcile `firestore.rules` with current collections
 
 ---
 
-*Generated: 2026-05-09*
+*Generated: 2026-05-09 · Updated: 2026-08-09 (audit delta appended)*

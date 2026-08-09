@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart TB
-    subgraph "Customer App Routes"
+    subgraph "Customer App Routes (Guest-First)"
         Splash[splash_screen] --> Auth
         Auth[login_screen / phone_auth_screen] -->|Authenticated| Home
         Auth -->|Unauthenticated| Home
@@ -16,52 +16,81 @@ flowchart TB
         Home --> Profile
         Home --> Invoice
 
-        subgraph "Service Flow"
+        subgraph "Service Flow (public)"
             Services[service_type_screen]
+            Services --> Dynamic[dynamic_service_screen /:serviceId]
+            Services --> Products[products_discovery_screen]
             Services --> Package[package_selection_screen]
+            Services --> InstallCust[installation_customization_screen]
             Services --> Maintenance[maintenance_type_screen]
+            Services --> MaintPkg[maintenance_package_screen]
+            Services --> MaintCust[maintenance_customization_screen]
+            Services --> Amc[amc_plan_screen]
             Services --> Repair[repair_issue_screen]
             Services --> Upgrade[system_upgrade_screen]
             Services --> Accessories[accessories_screen]
         end
 
         subgraph "Booking Flow"
-            Booking[booking_flow_provider]
-            Booking --> Schedule[scheduling_screen]
-            Booking --> Payment[payment_screen]
-            Booking --> Confirm[booking_confirmation_screen]
+            Cart[cart_screen (message box)] --> Schedule[scheduling_screen]
+            Services --> Schedule
+            Schedule --> Recommendation[recommendation_screen]
+            Recommendation --> Payment[payment_screen]
+            Payment --> Confirm[booking_confirmation_screen]
         end
 
-        subgraph "Profile Flow"
+        subgraph "Profile Flow (auth required)"
             Profile[profile_screen]
             Profile --> Orders[order_history_screen]
             Profile --> Detail[booking_detail_screen]
+            Profile --> Addresses[address_list_screen / address_form_screen]
+            Profile --> About[about_screen]
         end
     end
 ```
 
-### Route Definitions
+### Route Definitions (current — verified 2026-08-09)
 
 | Screen | Route | Parameters | Guard |
 |--------|-------|-------------|-------|
 | Splash | `/` | - | None |
 | Login | `/login` | - | None |
 | Phone Auth | `/phone-auth` | - | None |
-| Home | `/home` | - | Auth |
-| Service Type | `/services` | - | Auth |
-| Package Selection | `/services/package` | `serviceType` | Auth |
-| Maintenance | `/services/maintenance` | - | Auth |
-| Repair Issue | `/services/repair` | - | Auth |
-| System Upgrade | `/services/upgrade` | - | Auth |
-| Accessories | `/services/accessories` | - | Auth |
-| Booking | `/booking/*` | `bookingId` | Auth |
-| Payment | `/booking/payment` | - | Auth |
-| Confirmation | `/booking/confirmation` | `bookingId` | Auth |
-| Profile | `/profile` | - | Auth |
-| Order History | `/profile/orders` | - | Auth |
-| Booking Detail | `/profile/booking/:id` | `bookingId` | Auth |
-| Location Picker | `/location-picker` | - | Auth |
-| Invoice Estimate | `/invoice/*` | `type` | Auth |
+| Phone Collection | `/phone-collection` | `continue` query | Auth + phone missing |
+| Location Permission | `/location-permission` | - | None |
+| Location Picker | `/location-picker` | - | None |
+| Home | `/home` | - | None (guest-first) |
+| Products Discovery | `/products-discovery` | - | None |
+| Service Types | `/service-types` | - | None |
+| Dynamic Service | `/service/:serviceId` | `serviceId` | None |
+| Package Selection | `/package-selection` | - | None |
+| Installation Customization | `/installation-customization` | - | None |
+| Maintenance Types | `/maintenance-types` | - | None |
+| Maintenance Package | `/maintenance-package-selection` | - | None |
+| Maintenance Customization | `/maintenance-customization` | - | None |
+| AMC Plans | `/amc-plans` | - | None |
+| Repair Issues | `/repair-issues` | - | None |
+| Repair Estimate | `/repair-estimate` | - | None |
+| System Upgrade | `/system-upgrade` | - | None |
+| Upgrade Estimate | `/upgrade-estimate` | `UpgradeBundle` extra | None |
+| Accessories | `/accessories` | - | None |
+| Accessories Estimate | `/accessories-estimate` | entries extra | None |
+| Scheduling | `/scheduling` | - | None |
+| Cart (sheet w/ message box) | in-app screen, not routed | - | None |
+| Recommendation | `/recommendation(/:serviceType)` | `serviceType` | None |
+| Payment | `/payment` | - | **Auth + phone** |
+| Confirmation | `/confirmation` | - | **Auth + phone** |
+| Profile | `/profile` | - | **Auth + phone** |
+| Order History | `/order-history` | - | **Auth + phone** |
+| Booking Detail | `/booking-detail` | `BookingModel` extra | **Auth + phone** |
+| Address List | `/address-list` | - | None |
+| Address Form | `/address-form` | `SavedAddress?` extra | None |
+| About | `/about` | - | None |
+
+**Auth guard**: only `payment`, `confirmation`, `profile`, `order-history`,
+`booking-detail` require login (`authRequiredRoutes`). Logged-in users with no
+saved phone are redirected to `/phone-collection?continue=...` for those routes.
+Logged-in users are bounced off `/login` and `/phone-auth` to `/home`.
 
 ### Navigation Implementation
 
@@ -99,28 +128,28 @@ flowchart TB
         JobsHome --> WorkComplete[work_completion_screen.dart]
 
         JobsHome --> Map[map_screen.dart]
-        JobsHome --> Photo[photo_capture_screen.dart]
-        JobsHome --> Gallery[photo_gallery_screen.dart]
+        JobsHome --> LocPicker[location_picker_screen.dart]
 
         JobsHome --> Earnings[earnings_screen.dart]
-        JobsHome --> Profile[profile_screen.dart]
+        JobsHome --> Profile[employee_profile_screen.dart]
     end
 ```
 
-### Route Definitions
+> Photo capture / photo gallery screens were **removed** (camera feature dropped, 2026-07).
+
+### Route Definitions (current — verified 2026-08-09)
 
 | Screen | Route | Parameters | Guard |
 |--------|-------|-------------|-------|
 | Splash | `/` | - | None |
 | Login | `/login` | - | None |
 | Jobs Home | `/jobs` | - | Auth |
-| Job Detail | `/jobs/:id` | `jobId` | Auth |
-| Work Completion | `/jobs/:id/complete` | `jobId` | Auth |
-| Map | `/map` | - | Auth |
-| Photo Capture | `/photos/capture` | `jobId` | Auth |
-| Photo Gallery | `/photos/gallery` | `jobId` | Auth |
+| Job Detail | `/job-detail` | `AssignedJob` extra | Auth |
+| Work Completion | `/work-completion` | `WorkCompletion` extra | Auth |
+| Map | `/map` | `job` / `jobs` extra | Auth |
+| Location Picker | `/location-picker` | - | Auth |
 | Earnings | `/earnings` | - | Auth |
-| Profile | `/profile` | - | Auth |
+| Profile | `/profile` (alias `/employee-profile`) | - | Auth |
 
 **File**: `mobile_employee/lib/routes/app_router.dart`
 **File**: `mobile_employee/lib/core/constants/app_routes.dart`
@@ -167,3 +196,15 @@ if (isAuthenticated && route.isAuthOnly) {
 - `mobile_customer/lib/core/constants/app_routes.dart`
 - `mobile_employee/lib/routes/app_router.dart`
 - `mobile_employee/lib/core/constants/app_routes.dart`
+
+---
+
+## Audit Update (2026-08-09)
+
+- Customer app moved to **guest-first**: only 5 routes require auth; new phone
+  collection gate; ~30 registered routes (was ~17).
+- Service flow is now one **dynamic service screen** (`/service/:serviceId`)
+  rendering any admin-built service, plus dedicated estimate/customization screens.
+- Employee app: photo capture/gallery routes removed; map + location picker,
+  earnings, and profile remain; job data passed via GoRouter `extra`.
+- See **[21_UI_UX](../21_UI_UX/README.md)** for screen-by-screen UI/UX flows.

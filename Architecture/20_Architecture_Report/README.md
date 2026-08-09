@@ -2,9 +2,13 @@
 
 ## Overall Architecture Quality
 
-**Rating: 7/10 - Good with Improvement Areas**
+**Rating: 7.5/10 - Good with Improvement Areas** (up from 7/10 at 2026-05-09)
 
 The SafeCom application demonstrates a well-structured multi-component architecture with clear separation of concerns between the customer app, employee app, admin web, and backend server. The use of Firebase as a backend-as-a-service platform provides strong foundational capabilities, though there are several areas requiring attention for production scalability.
+
+> 📌 **Audit update 2026-08-09**: this report is refreshed against `main` @
+> `a8c9ee1`. The platform shipped 220+ commits since the original 2026-05-09
+> assessment — full record in **[AUDIT_DELTA_2026_05_09_to_2026_08_09.md](../AUDIT_DELTA_2026_05_09_to_2026_08_09.md)**.
 
 ## Dimension Scores
 
@@ -34,31 +38,37 @@ The SafeCom application demonstrates a well-structured multi-component architect
 - No caching layer
 - N+1 query pattern in catalog resolution
 
-### 3. Security Score: 7/10
+### 3. Security Score: 7.5/10 (up from 7/10)
 
 **Strengths**:
 - Firebase ID token validation (industry standard)
+- Dual auth: Firebase ID tokens (mobile) + admin JWT with `requireRole` RBAC
 - CORS whitelist validation
 - Helmet.js for security headers
-- Role-based access control implementation
+- Secrets moved to GitHub Secrets (no hardcoded keys); secret scanning enabled
+- Android auto-backup disabled (privacy: uninstall clears data)
+- Razorpay signature verification now required
 
 **Areas for Improvement**:
 - No rate limiting (brute force vulnerable)
 - No server-side token invalidation
-- Firestore security rules not verified
+- `firestore.rules` stale (legacy collection names) and not verified vs runtime
 - No API key validation for service-to-service
 
-### 4. Maintainability Score: 7/10
+### 4. Maintainability Score: 7.5/10 (up from 7/10)
 
 **Strengths**:
 - TypeScript throughout backend
 - Zod validation for API contracts
 - Clear file organization
 - Consistent naming conventions
+- Unit tests now exist (`mobile_customer/test/booking_model_test.dart`,
+  `mobile_employee/test/android_backup_config_test.dart`) and are enforced by CI
+- CI quality gates (`ci.yml`) run `tsc`, `flutter analyze`, `flutter test` on every push
 
 **Areas for Improvement**:
 - Some duplication in mobile apps
-- No tests visible in repository
+- Test coverage still thin (2 test files)
 - Error handling inconsistent across routes
 - Logging varies by route
 
@@ -76,32 +86,35 @@ The SafeCom application demonstrates a well-structured multi-component architect
 - Blocking auth middleware
 - Large JSON payloads
 
-### 6. Testability Score: 6/10
+### 6. Testability Score: 6.5/10 (up from 6/10)
 
 **Strengths**:
 - Clear API contracts (TypeScript interfaces)
 - Zod for request validation
 - Modular services
+- First unit tests landed (booking model, Android backup config) with CI gate
 
 **Areas for Improvement**:
-- No unit tests visible
-- No integration tests
+- Unit tests limited to two files
+- No backend unit/integration tests
 - No E2E tests in repository
-- Manual testing likely
+- Manual testing still dominant
 
-### 7. Reliability Score: 7/10
+### 7. Reliability Score: 7.5/10 (up from 7/10)
 
 **Strengths**:
 - Firebase infrastructure reliability
 - Error handling in routes
-- Health check endpoint
-- Structured error responses
+- Health check endpoint + verified live in two regions
+- Structured `{ success, data }` responses
+- Dual-region Cloud Run deployment (asia-south1 + us-central1)
+- Rollback workflow (`rollback-backend.yml`)
 
 **Areas for Improvement**:
 - No circuit breaker pattern
 - No retry logic
 - No fallback mechanisms
-- No load balancing strategy
+- No traffic-splitting strategy
 
 ## Technical Debt Estimation
 
@@ -111,12 +124,13 @@ The SafeCom application demonstrates a well-structured multi-component architect
 | Caching | Missing feature | 30-40 |
 | Rate Limiting | Security gap | 16-24 |
 | Query Optimization | Performance | 40-60 |
-| Test Coverage | Quality | 80-120 |
+| Test Coverage | Quality | 60-100 (reduced: first tests landed) |
 | Code Sharing | Duplication | 40-60 |
 | Error Handling | Consistency | 20-30 |
 | Monitoring | Operations | 30-40 |
+| `firestore.rules` reconciliation | Security/ops | 8-16 (new) |
 
-**Total Estimated Debt**: 296-434 hours
+**Total Estimated Debt**: 294-430 hours
 
 ## Strongest Architectural Decisions
 
@@ -138,9 +152,10 @@ The SafeCom application demonstrates a well-structured multi-component architect
 
 ### Immediate (Next 2 Sprints)
 1. Implement pagination for all list endpoints
-2. Fix jobs query with composite indexes
+2. Fix jobs query with composite indexes (or switch to `where` + index)
 3. Add rate limiting middleware
-4. Add basic unit tests for critical paths
+4. Reconcile `firestore.rules` + `firestore.indexes.json` with the current collection set
+5. Expand unit tests (backend contracts, cart/booking math)
 
 ### Short-term (Next Quarter)
 1. Implement Redis caching for catalog
@@ -162,6 +177,6 @@ The SafeCom application demonstrates a well-structured multi-component architect
 
 ---
 
-*Assessment Date: 2026-05-09*
+*Assessment Date: 2026-05-09 (refreshed 2026-08-09)*
 *Analyst: Repository Intelligence Agent*
-*Confidence: 85%*
+*Confidence: 90%*

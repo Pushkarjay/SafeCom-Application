@@ -78,9 +78,13 @@ flowchart TB
             Auth[features/auth/]
             Jobs[features/jobs/]
             Map[features/map/]
-            Photos[features/photos/]
             Earnings[features/earnings/]
             Profile[features/profile/]
+        end
+
+        subgraph "Core Services"
+            Notif[core/services/notification_service.dart]
+            Theme[core/theme/app_theme.dart + theme_provider]
         end
 
         subgraph "Routing"
@@ -96,10 +100,14 @@ flowchart TB
     Jobs --> API
     Jobs --> Providers
     Map --> Services
-    Photos --> API
     Earnings --> API
+    Notif --> API
     Router --> Routes
 ```
+
+> **Audit 2026-08-09**: `features/photos/` (photo capture + gallery) was removed;
+> `core/services/notification_service.dart` (FCM) and `theme_provider.dart`
+> (light/dark) were added.
 
 ## 3. Admin Web Architecture
 
@@ -125,6 +133,9 @@ flowchart TB
             Catalog[features/catalog/]
             Payments[features/payments/]
             Auth[features/auth/]
+            Settings[features/settings/]
+            MobilePreview[features/mobile_preview/]
+            Styles[features/styles/]
         end
 
         subgraph "Widgets"
@@ -140,27 +151,37 @@ flowchart TB
         Technicians --> DS
         Catalog --> DS
         Payments --> DS
+        Settings --> DS
+        MobilePreview --> DS
         Layout --> Hooks
 ```
+
+> **Audit 2026-08-09**: added `features/settings/` (serviceable areas),
+> `features/mobile_preview/` (dual-phone SDUI preview), `features/styles/`;
+> catalog consolidated (products/accessories/maintenance-plans merged into the
+> catalog module, deduped).
 
 ## 4. Backend Component Interactions
 
 ```mermaid
 flowchart LR
-    subgraph "Routes (17 route files)"
+    subgraph "Routes (25 route files)"
         AuthR[auth.ts]
         JobR[jobs.ts]
         BookingR[bookings.ts]
-        PayR[payments.ts]
-        CatR[catalog.ts]
-        EmpR[employees.ts]
+        PayR[payments.ts · razorpay.ts]
+        CatR[catalog.ts · products · services · accessories · maintenance-plans · recommendations]
+        EmpR[employees.ts · technicians.ts]
         DashR[dashboard.ts]
-        SDUIR[sdui.ts]
+        SDUIR[sdui.ts · sduiAdmin.ts]
+        SvcAdminR[servicesAdmin.ts · installationAdmin.ts]
+        CustR[customers.ts · addresses.ts · users.ts]
+        SvcR[serviceability.ts · homeCms.ts]
     end
 
     subgraph "Middleware"
         FireAuth[firebaseAuth.ts]
-        JWT[auth.ts]
+        JWT[auth.ts + requireRole]
     end
 
     subgraph "Services"
@@ -175,25 +196,22 @@ flowchart LR
     end
 
     subgraph "Data"
-        FS[(Firestore)]
+        FS[(Firestore: safecom-database-nosql)]
         FBA[(Firebase Auth)]
+        RZ[(Razorpay)]
     end
 
     AuthR --> FireAuth
     JobR --> FireAuth
     BookingR --> FireAuth
     PayR --> FireAuth
-    CatR --> FireAuth
+    CatR --> JWT
     EmpR --> FireAuth
-    DashR --> FireAuth
+    DashR --> JWT
     SDUIR --> FireAuth
-
-    FireAuth --> JWT
-    JWT --> Firestore
-    JobR --> Firestore
-    BookingR --> Firestore
-    PayR --> Firestore
-    CatR --> Firestore
+    SvcAdminR --> JWT
+    CustR --> FireAuth
+    SvcR --> FireAuth
 
     Firestore --> FS
     Notif --> FS
@@ -202,7 +220,13 @@ flowchart LR
     Catalog --> FS
     SDUI --> FS
     Notif --> FBA
+    Razor --> RZ
 ```
+
+> **Audit 2026-08-09**: routes grew 17 → 25; auth is tiered (Firebase ID tokens
+> for mobile via `verifyFirebaseIdToken`, admin JWT + `requireRole` for
+> management routes); Razorpay moved to its own route module with signature
+> verification; Firestore uses the custom DB `safecom-database-nosql`.
 
 ## 5. Cross-Component Data Flow
 
@@ -244,3 +268,15 @@ sequenceDiagram
 ## Confidence Level
 
 **High** - All component boundaries verified through file inspection and import statements across all applications.
+
+---
+
+## Audit Update (2026-08-09)
+
+1. Customer app: SDUI engine extended (promo banner `hideWhenServiceable`,
+   component registry, feature flags); `features/cart/`, `features/info/`,
+   `features/splash/`, `features/navigation/` modules added; guest-first auth.
+2. Employee app: `features/photos/` removed; notification service + theme
+   provider added.
+3. Admin web: catalog consolidated; settings/mobile-preview/styles modules added.
+4. Backend: see §4 diagram above (25 route files, tiered auth, Razorpay module).
