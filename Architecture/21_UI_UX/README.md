@@ -76,7 +76,7 @@ flowchart LR
 
     Customer -->|REST API + SDUI| B[(Backend + Firestore)]
     Employee -->|REST API + FCM| B
-    Admin -->|REST API (admin JWT)| B
+    Admin -->|"REST API (admin JWT)"| B
     Customer -->|Razorpay SDK| RZ[(Razorpay)]
 ```
 

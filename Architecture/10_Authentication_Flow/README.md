@@ -196,7 +196,7 @@ flowchart LR
 
     Admin[Admin Web] -->|POST /api/auth/login| JWT[authenticateToken]
     JWT -->|admin JWT issued| AdminReq[Bearer admin JWT]
-    AdminReq --> Role[requireRole(['admin'])]
+    AdminReq --> Role["requireRole(['admin'])"]
     Role --> Handler2[Route Handler]
 ```
 

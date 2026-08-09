@@ -56,7 +56,7 @@ flowchart TB
     subgraph "Middleware Pipeline"
         Helmet[Helmet.js - Security Headers]
         CORS[CORS - Origin Validation]
-        JSON[express.json() - Body Parser]
+        JSON["express.json() - Body Parser"]
         Morgan[Morgan - Request Logging]
     end
 

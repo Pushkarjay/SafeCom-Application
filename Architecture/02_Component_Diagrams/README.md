@@ -154,6 +154,7 @@ flowchart TB
         Settings --> DS
         MobilePreview --> DS
         Layout --> Hooks
+    end
 ```
 
 > **Audit 2026-08-09**: added `features/settings/` (serviceable areas),

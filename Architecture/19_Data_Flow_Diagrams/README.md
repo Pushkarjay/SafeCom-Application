@@ -11,7 +11,7 @@ flowchart LR
     end
 
     subgraph "Backend"
-        API[/api/catalog-public]
+        API["/api/catalog-public"]
         Resolver[Product Resolver]
     end
 

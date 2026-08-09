@@ -32,7 +32,7 @@ flowchart TB
         end
 
         subgraph "Booking Flow"
-            Cart[cart_screen (message box)] --> Schedule[scheduling_screen]
+            Cart["cart_screen (message box)"] --> Schedule[scheduling_screen]
             Services --> Schedule
             Schedule --> Recommendation[recommendation_screen]
             Recommendation --> Payment[payment_screen]

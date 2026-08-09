@@ -6,7 +6,7 @@
 flowchart TB
     subgraph "Startup Sequence"
         Start[server.ts main] --> Init[initialize Firebase]
-        Init --> Create[createApp()]
+        Init --> Create["createApp()"]
         Create --> Middleware[Register middleware]
         Middleware --> Routes[Register routes]
         Routes --> Listen[Start HTTP server]
