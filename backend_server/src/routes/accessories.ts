@@ -11,19 +11,19 @@ import type {
 
 const accessoryCreateUpdateSchema = z.object({
   name: z.string().min(1, 'Name required'),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   type: z.enum(['installation', 'upgrades', 'warranty', 'support', 'other']),
   category: z.string().min(1, 'Category required'),
   price: z.number().positive('Price must be positive'),
   stock: z.number().nonnegative(),
   isAvailable: z.boolean().default(true),
-  isFeatured: z.boolean().optional(),
-  imageUrl: z.string().optional(),
+  isFeatured: z.boolean().optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
   compatibility: z.object({
     compatibleProductIds: z.array(z.string()).optional(),
     compatibleServiceIds: z.array(z.string()).optional(),
     notes: z.string().optional()
-  }).optional(),
+  }).optional().nullable(),
   taxRate: z.number().default(18),
   displayPriority: z.number().default(0)
 })
@@ -120,15 +120,15 @@ accessoriesRouter.post(
       const now = new Date().toISOString()
       const accessory: Omit<CatalogAccessory, 'accessoryId'> = {
         name: validated.name,
-        description: validated.description,
+        description: validated.description ?? undefined,
         type: validated.type,
         category: validated.category,
         price: validated.price,
         stock: validated.stock,
         isAvailable: validated.isAvailable,
         isFeatured: validated.isFeatured ?? false,
-        imageUrl: validated.imageUrl,
-        compatibility: validated.compatibility,
+        imageUrl: validated.imageUrl ?? undefined,
+        compatibility: validated.compatibility ?? undefined,
         taxRate: validated.taxRate,
         displayPriority: validated.displayPriority ?? 0,
         createdAt: now,

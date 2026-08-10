@@ -503,9 +503,9 @@ bookingsRouter.get('/:id', async (req, res) => {
 bookingsRouter.patch('/:id', async (req, res) => {
   try {
     const updateSchema = z.object({
-      status: z.enum(['draft', 'pending', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold']).optional(),
-      assignedEmployeeId: z.string().optional(),
-      notes: z.string().optional()
+      status: z.enum(['draft', 'pending', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold']).optional().nullable(),
+      assignedEmployeeId: z.string().optional().nullable(),
+      notes: z.string().optional().nullable()
     })
     
     const parsed = updateSchema.safeParse(req.body)

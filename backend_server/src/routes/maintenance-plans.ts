@@ -22,18 +22,18 @@ const maintenancePlanItemSchema = z.object({
 
 const createUpdatePlanSchema = z.object({
   planName: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   category: z.string().min(1),
   planItems: z.array(maintenancePlanItemSchema).min(1),
   basePrice: z.number().positive(),
   frequency: z.enum(['weekly', 'monthly', 'quarterly', 'semi-annual', 'annual']),
   durationMonths: z.number().int().positive(),
-  renewalPrice: z.number().positive().optional(),
+  renewalPrice: z.number().positive().optional().nullable(),
   isAvailable: z.boolean(),
-  isFeatured: z.boolean().optional(),
-  imageUrl: z.string().optional(),
-  taxRate: z.number().min(0).max(100).optional(),
-  displayPriority: z.number().int().nonnegative().optional()
+  isFeatured: z.boolean().optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
+  taxRate: z.number().min(0).max(100).optional().nullable(),
+  displayPriority: z.number().int().nonnegative().optional().nullable()
 })
 
 // GET /api/catalog/maintenance-plans - Get all maintenance plans with filtering

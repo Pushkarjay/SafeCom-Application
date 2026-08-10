@@ -14,26 +14,26 @@ import type {
 
 const productCreateUpdateSchema = z.object({
   productName: z.string().min(1, 'Product name required'),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   category: z.string().min(1, 'Category required'),
-  group: z.string().optional(),
+  group: z.string().optional().nullable(),
   basePrice: z.number().nonnegative('Price must be non-negative'),
-  unit: z.string().optional(),
+  unit: z.string().optional().nullable(),
   pricingTiers: z.array(z.object({
     minQuantity: z.number().positive(),
     unitPrice: z.number().positive()
-  })).optional(),
+  })).optional().nullable(),
   variants: z.array(z.object({
     variantId: z.string().min(1),
     name: z.string().min(1),
     options: z.array(z.string()),
     allowMultiple: z.boolean(),
     required: z.boolean()
-  })).optional(),
-  stock: z.number().nonnegative().optional(),
+  })).optional().nullable(),
+  stock: z.number().nonnegative().optional().nullable(),
   isAvailable: z.boolean().default(true),
-  isFeatured: z.boolean().optional(),
-  imageUrl: z.string().optional(),
+  isFeatured: z.boolean().optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
   taxRate: z.number().default(18)
 })
 

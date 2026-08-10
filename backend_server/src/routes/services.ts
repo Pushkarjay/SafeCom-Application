@@ -13,7 +13,7 @@ import type {
 
 const serviceCreateUpdateSchema = z.object({
   serviceName: z.string().min(1, 'Service name required'),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   category: z.enum(['installation', 'maintenance', 'amc', 'repair', 'upgrade', 'accessories']),
   productIds: z.array(z.string().min(1)).min(1, 'At least one product required'),
   addons: z.array(z.object({
@@ -22,21 +22,21 @@ const serviceCreateUpdateSchema = z.object({
     description: z.string(),
     additionalCost: z.number().nonnegative(),
     isOptional: z.boolean()
-  })).optional(),
+  })).optional().nullable(),
   discountRules: z.array(z.object({
     ruleId: z.string().min(1),
     name: z.string().min(1),
     type: z.enum(['percentage', 'fixed']),
     value: z.number().positive(),
     minimumQuantity: z.number().nonnegative().optional()
-  })).optional(),
+  })).optional().nullable(),
   basePrice: z.number().positive('Price must be positive'),
   isAvailable: z.boolean().default(true),
-  isFeatured: z.boolean().optional(),
-  duration: z.string().optional(),
+  isFeatured: z.boolean().optional().nullable(),
+  duration: z.string().optional().nullable(),
   isRecurring: z.boolean().default(false),
-  renewalFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']).optional(),
-  serviceConfig: z.record(z.unknown()).optional(),
+  renewalFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']).optional().nullable(),
+  serviceConfig: z.record(z.unknown()).optional().nullable(),
   taxRate: z.number().default(18),
   displayPriority: z.number().default(0)
 })
@@ -140,18 +140,19 @@ servicesRouter.post(
       const now = new Date().toISOString()
       const service: Omit<CatalogService, 'serviceId'> = {
         serviceName: validated.serviceName,
-        description: validated.description,
+        // Optional fields may arrive as null; treat null as "absent" and drop it.
+        description: validated.description ?? undefined,
         category: validated.category,
         productIds: validated.productIds,
-        addons: validated.addons,
-        discountRules: validated.discountRules,
+        addons: validated.addons ?? undefined,
+        discountRules: validated.discountRules ?? undefined,
         basePrice: validated.basePrice,
         isAvailable: validated.isAvailable,
         isFeatured: validated.isFeatured ?? false,
-        duration: validated.duration,
+        duration: validated.duration ?? undefined,
         isRecurring: validated.isRecurring,
-        renewalFrequency: validated.renewalFrequency,
-        serviceConfig: validated.serviceConfig,
+        renewalFrequency: validated.renewalFrequency ?? undefined,
+        serviceConfig: validated.serviceConfig ?? undefined,
         taxRate: validated.taxRate,
         displayPriority: validated.displayPriority ?? 0,
         createdAt: now,

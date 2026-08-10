@@ -100,10 +100,10 @@ jobsRouter.post('/', verifyFirebaseIdToken, async (req: FirebaseAuthenticatedReq
     customerId: z.string().min(1),
     serviceType: z.string().min(1),
     amount: z.number().nonnegative(),
-    scheduledDate: z.string().optional(),
-    technicianId: z.string().optional(),
-    notes: z.string().optional(),
-    status: z.string().optional().default('pending')
+    scheduledDate: z.string().optional().nullable(),
+    technicianId: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+    status: z.string().optional().nullable().default('pending')
   })
 
   const parsed = jobCreateSchema.safeParse(req.body)
@@ -289,19 +289,19 @@ jobsRouter.delete('/:id', verifyFirebaseIdToken, async (req: FirebaseAuthenticat
  */
 jobsRouter.patch('/:id', verifyFirebaseIdToken, async (req, res) => {
   const jobUpdateSchema = z.object({
-    status: z.enum(['draft', 'pending', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold']).optional(),
+    status: z.enum(['draft', 'pending', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold']).optional().nullable(),
     assignedTo: z.object({
       employeeId: z.string(),
       name: z.string(),
       phone: z.string()
-    }).optional(),
-    notes: z.string().optional(),
-    customerId: z.string().optional(),
-    serviceType: z.string().optional(),
-    amount: z.number().nonnegative().optional(),
-    scheduledDate: z.string().optional(),
-    completedDate: z.string().optional(),
-    technicianId: z.string().optional()
+    }).optional().nullable(),
+    notes: z.string().optional().nullable(),
+    customerId: z.string().optional().nullable(),
+    serviceType: z.string().optional().nullable(),
+    amount: z.number().nonnegative().optional().nullable(),
+    scheduledDate: z.string().optional().nullable(),
+    completedDate: z.string().optional().nullable(),
+    technicianId: z.string().optional().nullable()
   })
 
   const parsed = jobUpdateSchema.safeParse(req.body)

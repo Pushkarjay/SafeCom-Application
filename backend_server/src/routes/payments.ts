@@ -10,17 +10,17 @@ const paymentCreateSchema = z.object({
   jobId: z.string().min(1),
   customerId: z.string().min(1),
   amount: z.number().nonnegative(),
-  status: z.enum(['pending', 'completed', 'failed']).optional(),
+  status: z.enum(['pending', 'completed', 'failed']).optional().nullable(),
   paymentMethod: paymentMethodSchema,
-  timestamp: z.string().min(1).optional()
+  timestamp: z.string().min(1).optional().nullable()
 })
 
 const paymentUpdateSchema = z.object({
-  status: z.enum(['pending', 'partial', 'completed', 'failed']).optional(),
-  paidAmount: z.number().nonnegative().optional(),
-  remainingAmount: z.number().nonnegative().optional(),
-  paymentMethod: paymentMethodSchema.optional(),
-  transactionId: z.string().optional()
+  status: z.enum(['pending', 'partial', 'completed', 'failed']).optional().nullable(),
+  paidAmount: z.number().nonnegative().optional().nullable(),
+  remainingAmount: z.number().nonnegative().optional().nullable(),
+  paymentMethod: paymentMethodSchema.optional().nullable(),
+  transactionId: z.string().optional().nullable()
 })
 
 export const paymentsRouter = Router()

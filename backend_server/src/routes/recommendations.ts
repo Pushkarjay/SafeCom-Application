@@ -10,10 +10,10 @@ import type {
 
 const recommendationCreateUpdateSchema = z.object({
   name: z.string().min(1, 'Name required'),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   productIds: z.array(z.string().min(1)).min(1, 'At least one product required'),
   placement: z.enum(['checkout', 'cart', 'service', 'general']),
-  serviceTypes: z.array(z.enum(['installation', 'maintenance', 'amc', 'repair', 'upgrade', 'accessories'])).optional(),
+  serviceTypes: z.array(z.enum(['installation', 'maintenance', 'amc', 'repair', 'upgrade', 'accessories'])).optional().nullable(),
   isAvailable: z.boolean().default(true),
   displayPriority: z.number().default(0)
 })
@@ -119,10 +119,10 @@ recommendationsRouter.post(
       const now = new Date().toISOString()
       const recommendation: Omit<CatalogRecommendationRule, 'recommendationId'> = {
         name: validated.name,
-        description: validated.description,
+        description: validated.description ?? undefined,
         productIds: validated.productIds,
         placement: validated.placement,
-        serviceTypes: validated.serviceTypes,
+        serviceTypes: validated.serviceTypes ?? undefined,
         isAvailable: validated.isAvailable,
         displayPriority: validated.displayPriority ?? 0,
         createdAt: now,

@@ -5,15 +5,16 @@ import { verifyFirebaseIdToken } from '../middleware/firebaseAuth.js'
 import { authenticateToken, requireRole } from '../middleware/auth.js'
 
 const catalogCreateSchema = z.object({
-  name: z.string().min(1).optional(),
-  productName: z.string().min(1).optional(),
+  // Optional fields accept null (clients send null for "absent"), so null/undefined both pass.
+  name: z.string().min(1).optional().nullable(),
+  productName: z.string().min(1).optional().nullable(),
   category: z.string().min(1),
-  group: z.string().optional(),
-  unit: z.string().optional(),
-  price: z.number().nonnegative().optional(),
-  basePrice: z.number().nonnegative().optional(),
-  status: z.enum(['active', 'inactive']).optional(),
-  isAvailable: z.boolean().optional()
+  group: z.string().optional().nullable(),
+  unit: z.string().optional().nullable(),
+  price: z.number().nonnegative().optional().nullable(),
+  basePrice: z.number().nonnegative().optional().nullable(),
+  status: z.enum(['active', 'inactive']).optional().nullable(),
+  isAvailable: z.boolean().optional().nullable()
 })
 
 const catalogUpdateSchema = catalogCreateSchema.partial()
@@ -21,12 +22,12 @@ const catalogUpdateSchema = catalogCreateSchema.partial()
 // Package Schemas
 const packageCreateSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional(),
-  productIds: z.array(z.string()).optional(),
-  totalPrice: z.number().nonnegative().optional(),
-  discountPercent: z.number().min(0).max(100).optional(),
+  description: z.string().optional().nullable(),
+  productIds: z.array(z.string()).optional().nullable(),
+  totalPrice: z.number().nonnegative().optional().nullable(),
+  discountPercent: z.number().min(0).max(100).optional().nullable(),
   finalPrice: z.number().nonnegative(),
-  status: z.enum(['active', 'inactive']).optional()
+  status: z.enum(['active', 'inactive']).optional().nullable()
 })
 
 const packageUpdateSchema = packageCreateSchema.partial()
@@ -34,10 +35,10 @@ const packageUpdateSchema = packageCreateSchema.partial()
 // Add-on Schemas
 const addonCreateSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   category: z.string().min(1),
   price: z.number().nonnegative(),
-  status: z.enum(['active', 'inactive']).optional()
+  status: z.enum(['active', 'inactive']).optional().nullable()
 })
 
 const addonUpdateSchema = addonCreateSchema.partial()
@@ -45,9 +46,9 @@ const addonUpdateSchema = addonCreateSchema.partial()
 // Tax Schemas
 const taxCreateSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   rate: z.number().min(0).max(100),
-  status: z.enum(['active', 'inactive']).optional()
+  status: z.enum(['active', 'inactive']).optional().nullable()
 })
 
 const taxUpdateSchema = taxCreateSchema.partial()
@@ -55,11 +56,11 @@ const taxUpdateSchema = taxCreateSchema.partial()
 // Invoice Template Schemas
 const invoiceTemplateCreateSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional(),
-  terms: z.string().optional(),
-  notes: z.string().optional(),
-  showTax: z.boolean().optional(),
-  status: z.enum(['active', 'inactive']).optional()
+  description: z.string().optional().nullable(),
+  terms: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  showTax: z.boolean().optional().nullable(),
+  status: z.enum(['active', 'inactive']).optional().nullable()
 })
 
 const invoiceTemplateUpdateSchema = invoiceTemplateCreateSchema.partial()
