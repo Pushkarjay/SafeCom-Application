@@ -7,9 +7,12 @@ const createOrderSchema = z.object({
   amount: z.number().positive(),
   currency: z.string().trim().min(3).max(3).default('INR'),
   receipt: z.string().trim().min(1).optional(),
-  customerId: z.string().trim().min(1).optional(),
-  customerName: z.string().trim().min(1).optional(),
-  customerEmail: z.string().email().optional().or(z.literal('')),
+  // Optional customer fields may arrive as null (the app sends null instead of
+  // omitting them), so accept null/undefined — e.g. phone-only customers have
+  // no email and the app normalizes empty emails to null.
+  customerId: z.string().trim().min(1).optional().nullable(),
+  customerName: z.string().trim().min(1).optional().nullable(),
+  customerEmail: z.string().trim().email().optional().nullable().or(z.literal('')),
   customerPhone: z.string().trim().min(1).optional(),
   jobId: z.string().trim().min(1).optional().nullable(),
   serviceName: z.string().trim().min(1).optional(),
@@ -23,10 +26,11 @@ const verifyPaymentSchema = z.object({
   signature: z.string().trim().min(1, 'Payment signature is required for verification'),
   amount: z.number().positive(),
   currency: z.string().trim().min(3).max(3).default('INR'),
-  customerId: z.string().trim().min(1).optional(),
-  customerName: z.string().trim().min(1).optional(),
+  customerId: z.string().trim().min(1).optional().nullable(),
+  customerName: z.string().trim().min(1).optional().nullable(),
   // Allow empty email so phone-only customers can pay without an email address.
-  customerEmail: z.string().email().optional().or(z.literal('')),
+  // The app sends null (not empty string) when the customer has no email.
+  customerEmail: z.string().trim().email().optional().nullable().or(z.literal('')),
   jobId: z.string().trim().min(1).optional().nullable(),
   serviceName: z.string().trim().min(1).optional(),
   packageLabel: z.string().trim().min(1).optional(),
